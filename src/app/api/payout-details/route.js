@@ -38,7 +38,20 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { supplier_id, supplier_name, bank_name, account_holder_name, sort_code, account_number } = body
+    const {
+      supplier_id,
+      supplier_name,
+      bank_name,
+      account_holder_name,
+      sort_code,
+      account_number,
+      vat_number,
+      company_reg_number,
+      business_address_line1,
+      business_address_line2,
+      business_city,
+      business_postcode
+    } = body
 
     if (!supplier_id) {
       return NextResponse.json({ error: 'Supplier ID is required' }, { status: 400 })
@@ -73,6 +86,12 @@ export async function POST(request) {
         account_holder_name,
         sort_code,
         account_number,
+        vat_number: vat_number || null,
+        company_reg_number: company_reg_number || null,
+        business_address_line1: business_address_line1 || null,
+        business_address_line2: business_address_line2 || null,
+        business_city: business_city || null,
+        business_postcode: business_postcode || null,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'supplier_id'

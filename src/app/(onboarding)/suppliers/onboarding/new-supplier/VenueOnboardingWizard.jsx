@@ -1774,7 +1774,7 @@ export default function VenueOnboardingWizard() {
         case 7: // Restrictions
           return true // Optional
         case 8: // Photos
-          return wizardData.photos.length >= 5
+          return wizardData.photos.length >= 2
         case 9: // Pricing
           return wizardData.pricing.hourlyRate > 0
         case 10: // Calendar

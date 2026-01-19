@@ -20,12 +20,13 @@ const CATEGORY_IMAGES = {
   cakes: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753224729/hpvtz7jiktglaxcivftv.jpg",
   catering: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1760617877/iStock-530205524_tjmnq7.jpg",
   facePainting: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1755590150/howzjwfgpd9swhvcwqke.jpg",
-  activities: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386709/bouncy-castle-3587770_640_dhjv02.webp",
+  activities: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768831921/ChatGPT_Image_Jan_19_2026_02_09_57_PM_prlmt0.png",
   partyBags: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
   decorations: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1760617929/iStock-1463458517_vqltq9.jpg",
   balloons: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg",
   photography: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386547/iStock-1181011006_tf3w8n.jpg",
-  bouncyCastle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386872/iStock-120532646_bdk29o.jpg"
+  bouncyCastle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386872/iStock-120532646_bdk29o.jpg",
+  sweetTreats: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768859789/ChatGPT_Image_Jan_19_2026_09_56_15_PM_tozjbo.png"
 }
 
 // Snappy's expert tips for each category
@@ -137,6 +138,18 @@ const CATEGORY_TIPS = {
       "Balloons appeal universally across age groups, from toddlers to pre-teens"
     ],
     conclusion: "Balloons offer exceptional value as decorative elements, creating significant visual impact relative to investment."
+  },
+  sweetTreats: {
+    title: "Snappy's Sweet Treats Guide",
+    intro: "Sweet treat stations add an extra layer of excitement and are always a hit with children and adults alike.",
+    tips: [
+      "Candy carts and sweet stations create a visual centerpiece that gets children excited",
+      "Mix and match options like candy floss, popcorn, and slush machines for variety",
+      "Sweet treats work perfectly as an activity - children love watching candy floss being made",
+      "Most suppliers offer package deals when you book multiple treat stations together",
+      "Consider timing - sweet treats work brilliantly as a mid-party energy boost or end-of-party treat"
+    ],
+    conclusion: "Sweet treat stations consistently rank among children's favorite party elements and create memorable photo opportunities."
   }
 }
 
@@ -224,8 +237,15 @@ export default function EmptySupplierCard({
   const [showUnavailableInfo, setShowUnavailableInfo] = useState(false)
   const router = useRouter()
 
-  // Check if this is a cake supplier that needs customization first
+  // Check if this supplier needs customization first (package selection)
   const isCakeSupplier = type === 'cakes'
+  const isBalloonSupplier = type === 'balloons'
+  const isPartyBagsSupplier = type === 'partyBags'
+  const isFacePaintingSupplier = type === 'facePainting'
+  const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
+  const isSweetTreatsSupplier = type === 'sweetTreats'
+  const isCateringSupplier = type === 'catering'
+  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier
 
   // Check if this category is restricted by the selected venue
   const isVenueRestricted = useMemo(() => {
@@ -324,8 +344,8 @@ export default function EmptySupplierCard({
       return
     }
 
-    // For cake suppliers, open customization modal first to select size, flavor, etc.
-    if (isCakeSupplier) {
+    // For suppliers that need customization (cakes, balloons, party bags), open modal first
+    if (needsCustomization) {
       setIsAdding(true)
       try {
         // Fetch full supplier data with packages
@@ -400,6 +420,8 @@ export default function EmptySupplierCard({
           // Ensure price reflects the full total including delivery
           price: selectedPackage?.totalPrice || selectedPackage?.enhancedPrice || selectedPackage?.price,
           totalPrice: totalPrice || selectedPackage?.totalPrice,
+          // Preserve image for balloons/face painting theme-based display
+          image: selectedPackage?.image,
         },
         // Also set selectedPackage for backwards compatibility
         selectedPackage: selectedPackage,
@@ -442,7 +464,8 @@ export default function EmptySupplierCard({
       cakes: "Cakes",
       partyBags: "Party Bags",
       photography: "Photography",
-      bouncyCastle: "Bouncy Castle"
+      bouncyCastle: "Bouncy Castle",
+      sweetTreats: "Sweet Treats"
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
@@ -712,8 +735,8 @@ export default function EmptySupplierCard({
           type={type}
         />
 
-        {/* Customization Modal for Cakes */}
-        {isCakeSupplier && (
+        {/* Customization Modal for Cakes, Balloons, Party Bags */}
+        {needsCustomization && (
           <SupplierCustomizationModal
             isOpen={showCustomizationModal}
             onClose={() => setShowCustomizationModal(false)}
@@ -927,8 +950,8 @@ export default function EmptySupplierCard({
           type={type}
         />
 
-        {/* Customization Modal for Cakes */}
-        {isCakeSupplier && (
+        {/* Customization Modal for Cakes, Balloons, Party Bags */}
+        {needsCustomization && (
           <SupplierCustomizationModal
             isOpen={showCustomizationModal}
             onClose={() => setShowCustomizationModal(false)}
@@ -1141,8 +1164,8 @@ export default function EmptySupplierCard({
         type={type}
       />
 
-      {/* Customization Modal for Cakes */}
-      {isCakeSupplier && (
+      {/* Customization Modal for Cakes, Balloons, Party Bags */}
+      {needsCustomization && (
         <SupplierCustomizationModal
           isOpen={showCustomizationModal}
           onClose={() => setShowCustomizationModal(false)}

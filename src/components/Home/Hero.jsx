@@ -202,7 +202,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 <div className="relative">
                   <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-400" />
                   <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)} required>
-                    <SelectTrigger className="bg-white py-6 px-28 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
+                    <SelectTrigger className="bg-white py-6 pr-4 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10 w-full">
                       <SelectValue placeholder="Children" />
                     </SelectTrigger>
                     <SelectContent>

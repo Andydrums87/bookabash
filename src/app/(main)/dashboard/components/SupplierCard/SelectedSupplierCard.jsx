@@ -125,6 +125,12 @@ export default function SelectedSupplierCard({
   const hasAddons = addons && addons.length > 0
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization || type === 'cakes'
+  const isBalloonSupplier = type === 'balloons'
+  const isFacePaintingSupplier = type === 'facePainting'
+  const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
+  const balloonPackageData = supplier?.packageData
+  const facePaintingPackageData = supplier?.packageData
+  const activitiesPackageData = supplier?.packageData
 
   const showDurationInfo = !!(
     (supplier?.extraHourRate || supplier?.serviceDetails?.extraHourRate) &&
@@ -169,10 +175,18 @@ export default function SelectedSupplierCard({
               <Skeleton className="w-full h-full" />
             ) : (
               <>
-                {/* Static Image */}
+                {/* Static Image - Use package image for balloons/face painting/activities if available */}
                 <div className="absolute inset-0">
                   <Image
-                    src={supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png'}
+                    src={
+                      (isBalloonSupplier && balloonPackageData?.image)
+                        ? (typeof balloonPackageData.image === 'object' ? balloonPackageData.image.src : balloonPackageData.image)
+                        : (isFacePaintingSupplier && facePaintingPackageData?.image)
+                          ? (typeof facePaintingPackageData.image === 'object' ? facePaintingPackageData.image.src : facePaintingPackageData.image)
+                          : (isActivitiesSupplier && activitiesPackageData?.image)
+                            ? (typeof activitiesPackageData.image === 'object' ? activitiesPackageData.image.src : activitiesPackageData.image)
+                            : (supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png')
+                    }
                     alt={supplier.name}
                     fill
                     className="object-cover"
@@ -198,23 +212,34 @@ export default function SelectedSupplierCard({
                   </button>
                 </div>
 
-                {/* Cake badge */}
+                {/* Cake customization details */}
                 {(isCakeSupplier || type === 'cakes') && (
-                  <div className="absolute bottom-4 right-4 z-20">
-                    <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
-                      🎂 {supplier.packageData?.name || 'Custom Cake'} 
-                      {cakeCustomization?.flavorName && ` • ${cakeCustomization.flavorName}`}
-                    </Badge>
+                  <div className="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-1.5">
+                    {supplier.packageData?.name && (
+                      <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm text-xs">
+                        🎂 {supplier.packageData.name}
+                      </Badge>
+                    )}
+                    {cakeCustomization?.flavorName && (
+                      <Badge className="bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm text-xs">
+                        {cakeCustomization.flavorName}
+                      </Badge>
+                    )}
                   </div>
                 )}
+
 
                 {/* Supplier info */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="text-white">
+                    {/* Subtle image context - only for non-venues */}
+                    {type !== 'venue' && (
+                      <p className="text-[9px] text-white/50 mb-1 tracking-wide">Typical setup shown</p>
+                    )}
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                       {supplier.name}
                     </h3>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="text-white">
                         <div className="flex items-center gap-2">

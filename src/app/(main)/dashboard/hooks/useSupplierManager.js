@@ -27,7 +27,8 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
       balloons: 'Balloons',
       catering: 'Catering',
       photography: 'Photography',
-      bouncyCastle: 'Bouncy Castle'
+      bouncyCastle: 'Bouncy Castle',
+      sweetTreats: 'Sweet Treats'
     }
     return displayNames[type] || type
   }

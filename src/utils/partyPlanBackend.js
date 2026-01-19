@@ -21,7 +21,8 @@ const CATEGORY_TYPE_MAP = {
     'Balloons': 'balloons',
     'Activities': 'activities',
     'Face Painting': 'facePainting',
-    'Cakes' : 'cakes'
+    'Cakes': 'cakes',
+    'Sweet Treats': 'sweetTreats'
 };
 
 // Then in your saveInviteToPartyPlan function:
@@ -507,7 +508,7 @@ addAddonToPlan(addon) {
       }
       
       // If not found in global addons, check supplier selectedAddons
-      const supplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle'];
+      const supplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle', 'sweetTreats'];
       
       for (const supplierType of supplierTypes) {
         const supplier = plan[supplierType];
@@ -560,7 +561,7 @@ addAddonToPlan(addon) {
       const plan = this.getPartyPlan();
       let updated = false;
 
-  
+
 
       // Check main supplier slots - INCLUDE ALL POSSIBLE SLOTS
       const mainSlots = [
@@ -574,12 +575,13 @@ addAddonToPlan(addon) {
         'decorations',  // ✅ ADDED
         'balloons',     // ✅ ADDED
         'photography',
-        'bouncyCastle'
+        'bouncyCastle',
+        'sweetTreats'   // ✅ ADDED for multi-select sweet treats
       ];
 
       for (const slot of mainSlots) {
         if (plan[slot] && plan[slot].id === supplierId) {
-        
+
 
           // Update the package info
           plan[slot].price = newPackage.price;
@@ -685,9 +687,10 @@ addAddonToPlan(addon) {
         'decorations',  // ✅ ADDED
         'balloons',     // ✅ ADDED
         'photography',
-        'bouncyCastle'
+        'bouncyCastle',
+        'sweetTreats'   // ✅ ADDED for multi-select sweet treats
       ];
-      
+
       for (const slot of mainSlots) {
         if (plan[slot] && plan[slot].id === supplierId) {
           return {
@@ -753,8 +756,8 @@ addAddonToPlan(addon) {
       // Use fallback
     }
     
-    const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes', 'photography', 'bouncyCastle'];
-    
+    const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes', 'photography', 'bouncyCastle', 'sweetTreats'];
+
     const supplierCost = realSupplierTypes
       .filter(type => plan[type] !== null && plan[type] !== undefined)
       .reduce((total, type) => {
@@ -804,8 +807,8 @@ addAddonToPlan(addon) {
       const plan = this.getPartyPlan();
 
       // Only include real supplier types
-      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle'];
-      
+      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle', 'sweetTreats'];
+
       const suppliers = realSupplierTypes
         .filter(type => plan[type] !== null && plan[type] !== undefined)
         .map(type => ({ ...plan[type], type }));

@@ -749,7 +749,15 @@ export const suppliersAPI = {
         query = supabase.from('suppliers_secure').select('*').eq('legacy_id', id).limit(1)
       }
 
-      const { data, error } = await query
+      let { data, error } = await query
+
+      // If not found in suppliers_secure, try suppliers table directly
+      if ((!data || data.length === 0) && isValidUUID(id)) {
+        console.log('🔄 Supplier not found in suppliers_secure, trying suppliers table...')
+        const fallbackQuery = await supabase.from('suppliers').select('*').eq('id', id).limit(1)
+        data = fallbackQuery.data
+        error = fallbackQuery.error
+      }
 
       if (error) {
         console.error("❌ Supabase error:", error)
@@ -765,6 +773,8 @@ export const suppliersAPI = {
         id: data[0].id,
         legacyId: data[0].legacy_id,
         ...data[0].data ?? data[0], // Adjust for your schema
+        // Also preserve original data object for components that expect it
+        data: data[0].data,
       }
 
       // Regenerate venue packages on-the-fly to ensure correct party time calculation

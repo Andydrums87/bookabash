@@ -118,12 +118,12 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
         style={{ touchAction: 'auto' }}
       >
         {/* Modal Header */}
-        <div className="relative h-48 sm:h-64 flex-shrink-0">
+        <div className="relative h-48 sm:h-64 flex-shrink-0 bg-gray-100">
           <Image
             src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
             alt={pkg.name}
             fill
-            className="object-cover"
+            className="object-contain"
           />
           {/* Dark gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -317,6 +317,7 @@ export default function SupplierCustomizationModal({
     }
   }, [isOpen, supplier]);
   const [selectedPackageId, setSelectedPackageId] = useState(null)
+  const [selectedPackageIds, setSelectedPackageIds] = useState([]) // For multi-select suppliers
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: "planning_empty_slot", showModal: false })
@@ -373,20 +374,42 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Detect supplier types using unified system
   const supplierTypeDetection = useMemo(() => {
-    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false }
+    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false, isBalloons: false, isFacePainting: false, isSoftPlay: false, isMultiSelect: false, isCatering: false, isSweetTreats: false }
 
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
+
+    // Check for multi-select pricing model
+    const supplierData = supplier?.data || {}
+    const isMultiSelectModel = supplierData?.pricingModel === 'multiSelect' || supplier?.pricingModel === 'multiSelect'
+    // Check for per-child pricing model (catering)
+    const isPerChildModel = supplierData?.pricingModel === 'perChild' || supplier?.pricingModel === 'perChild'
 
     // ✅ If supplierType prop is provided, use it as the primary source
     if (supplierType) {
       const isCakeFromType = supplierType === 'cakes' || supplierType.toLowerCase().includes('cake')
       const isPartyBagsFromType = supplierType === 'partyBags' || supplierType.toLowerCase().includes('party')
+      const isBalloonsFromType = supplierType === 'balloons' || supplierType.toLowerCase().includes('balloon')
+      const isFacePaintingFromType = supplierType === 'facePainting' || supplierType.toLowerCase().includes('face') || supplierType.toLowerCase().includes('painting')
+      const isSoftPlayFromType = supplierType === 'activities' || supplierType === 'softPlay' || supplierType.toLowerCase().includes('soft play')
+      const isCateringFromType = supplierType === 'catering' || supplierType.toLowerCase().includes('catering') || supplierType.toLowerCase().includes('lunchbox')
+      const isSweetTreatsFromType = supplierType === 'sweetTreats' || supplierType.toLowerCase().includes('sweet') || supplierType.toLowerCase().includes('candy')
+
+      // For activities/soft play and sweet treats, always treat as multi-select
+      // These suppliers are inherently multi-select (users pick individual items)
+      const isMultiSelectForActivities = isSoftPlayFromType || isSweetTreatsFromType
 
       console.log('🔍 [Type Detection] Using supplierType prop override:', {
         supplierType,
         isCake: isCakeFromType,
-        isPartyBags: isPartyBagsFromType
+        isPartyBags: isPartyBagsFromType,
+        isBalloons: isBalloonsFromType,
+        isFacePainting: isFacePaintingFromType,
+        isSoftPlay: isSoftPlayFromType,
+        isCatering: isCateringFromType,
+        isSweetTreats: isSweetTreatsFromType,
+        isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
+        hasPackages: supplierData?.packages?.length
       })
 
       return {
@@ -394,6 +417,12 @@ export default function SupplierCustomizationModal({
         isTimeBased,
         isCake: isCakeFromType,
         isPartyBags: isPartyBagsFromType,
+        isBalloons: isBalloonsFromType,
+        isFacePainting: isFacePaintingFromType,
+        isSoftPlay: isSoftPlayFromType,
+        isCatering: isCateringFromType,
+        isSweetTreats: isSweetTreatsFromType,
+        isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
       }
     }
 
@@ -437,9 +466,58 @@ export default function SupplierCustomizationModal({
       supplier?.category?.toLowerCase().includes("party bag") ||
       supplier?.type?.toLowerCase().includes("party bag")
 
+    // Detect if this is a balloon supplier
+    const isBalloonsSupplier =
+      categoryStr.includes("balloon") ||
+      supplier?.type?.toLowerCase()?.includes("balloon")
+
+    // Detect if this is a face painting supplier
+    const isFacePaintingSupplier =
+      categoryStr.includes("facepainting") ||
+      categoryStr.includes("face painting") ||
+      categoryStr.includes("face-painting") ||
+      supplier?.type?.toLowerCase()?.includes("face") ||
+      supplier?.serviceType === 'facePainting' ||
+      dataObj?.serviceType === 'facePainting'
+
+    // Detect if this is a soft play / activities supplier
+    const isSoftPlaySupplier =
+      categoryStr.includes("activities") ||
+      categoryStr.includes("soft play") ||
+      categoryStr.includes("softplay") ||
+      supplier?.serviceType === 'activities' ||
+      dataObj?.serviceType === 'activities'
+
+    // Detect if this is a catering supplier (per-child pricing like lunchboxes)
+    const isCateringSupplier =
+      categoryStr.includes("catering") ||
+      categoryStr.includes("lunchbox") ||
+      supplier?.serviceType === 'catering' ||
+      dataObj?.serviceType === 'catering' ||
+      isPerChildModel
+
+    // Detect if this is a sweet treats supplier (multi-select - candy cart, ice cream, etc.)
+    const isSweetTreatsSupplier =
+      categoryStr.includes("sweet treats") ||
+      categoryStr.includes("sweettreats") ||
+      categoryStr.includes("candy") ||
+      categoryStr.includes("ice cream") ||
+      supplier?.serviceType === 'sweetTreats' ||
+      dataObj?.serviceType === 'sweetTreats'
+
+    // Sweet treats also uses multi-select
+    const isMultiSelectForSweetTreats = isSoftPlaySupplier || isSweetTreatsSupplier
+
     console.log('🔍 [Type Detection] Checking supplier type:', {
       category: categoryStr,
       isCake: isCakeSupplier,
+      isPartyBags: isPartyBagsSupplier,
+      isBalloons: isBalloonsSupplier,
+      isFacePainting: isFacePaintingSupplier,
+      isSoftPlay: isSoftPlaySupplier,
+      isCatering: isCateringSupplier,
+      isSweetTreats: isSweetTreatsSupplier,
+      isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
       hasDataFlavours: dataObj?.flavours?.length > 0,
       hasDataPackages: dataObj?.packages?.length > 0
     })
@@ -449,6 +527,12 @@ export default function SupplierCustomizationModal({
       isTimeBased,
       isCake: isCakeSupplier,
       isPartyBags: isPartyBagsSupplier,
+      isBalloons: isBalloonsSupplier,
+      isFacePainting: isFacePaintingSupplier,
+      isSoftPlay: isSoftPlaySupplier,
+      isCatering: isCateringSupplier,
+      isSweetTreats: isSweetTreatsSupplier,
+      isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
     }
   }, [supplier, supplierType])
 
@@ -669,16 +753,26 @@ export default function SupplierCustomizationModal({
       serviceDetails?.packages ||
       []
 
+    // Check if this is a multi-select supplier (don't limit items)
+    // Use the already-computed supplierTypeDetection if available
+    const isMultiSelectSupplier = supplierTypeDetection?.isMultiSelect || dataObj?.pricingModel === 'multiSelect' || supplier?.pricingModel === 'multiSelect'
+
     console.log('📦 [Packages] Looking for packages:', {
       supplierPackages: supplier.packages,
       dataPackages: dataObj?.packages,
       serviceDetailsPackages: serviceDetails?.packages,
       found: supplierPackages?.length,
-      firstPackage: supplierPackages?.[0]
+      firstPackage: supplierPackages?.[0],
+      isMultiSelect: isMultiSelectSupplier,
+      supplierTypeDetectionIsMultiSelect: supplierTypeDetection?.isMultiSelect,
+      supplierType,
+      supplierDataKeys: Object.keys(dataObj || {}),
     })
 
     if (supplierPackages.length > 0) {
-      return supplierPackages.slice(0, 3).map((pkg, index) => {
+      // For multi-select suppliers, show all items; for others, limit to 3
+      const packagesToShow = isMultiSelectSupplier ? supplierPackages : supplierPackages.slice(0, 3)
+      return packagesToShow.map((pkg, index) => {
         const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
         return {
           id: pkg.id || `real-${index}`,
@@ -688,6 +782,7 @@ export default function SupplierCustomizationModal({
           duration: pkg.duration,
           image: pkg.image,
           features: pkg.whatsIncluded || pkg.features || [],
+          contents: pkg.contents || [], // Catering lunchbox contents
           popular: index === 1,
           description: pkg.description,
           // Cake-specific fields
@@ -776,6 +871,42 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Unified pricing calculation for modal totals
   const calculateModalPricing = useMemo(() => {
+    // Multi-select suppliers (soft play) - sum up all selected items
+    if (supplierTypeDetection.isMultiSelect) {
+      const selectedItems = packages.filter(pkg => selectedPackageIds.includes(pkg.id))
+      const itemsPrice = selectedItems.reduce((sum, item) => sum + (item.price || 0), 0)
+      const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
+        const addon = availableAddons.find((a) => a.id === addonId)
+        return sum + (addon?.price || 0)
+      }, 0)
+
+      return {
+        packagePrice: itemsPrice,
+        addonsTotalPrice,
+        totalPrice: itemsPrice + addonsTotalPrice,
+        hasEnhancedPricing: false,
+        pricingInfo: null,
+        selectedItems,
+      }
+    }
+
+    // Face painting has flat rate, no package selection needed
+    if (supplierTypeDetection.isFacePainting) {
+      const basePrice = supplier?.price || supplier?.priceFrom || 150
+      const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
+        const addon = availableAddons.find((a) => a.id === addonId)
+        return sum + (addon?.price || 0)
+      }, 0)
+
+      return {
+        packagePrice: basePrice,
+        addonsTotalPrice,
+        totalPrice: basePrice + addonsTotalPrice,
+        hasEnhancedPricing: false,
+        pricingInfo: null,
+      }
+    }
+
     if (!selectedPackage || !supplier) {
       return {
         packagePrice: 0,
@@ -802,6 +933,18 @@ export default function SupplierCustomizationModal({
         originalPrice: selectedPackage.price,
         pricePerBag,
         customQuantity: partyBagsQuantity,
+        newPackagePrice: packagePrice,
+      })
+    }
+
+    // ✅ CATERING: Adjust price based on number of children (uses same quantity state as party bags)
+    if (supplierTypeDetection.isCatering) {
+      const pricePerChild = selectedPackage.price
+      packagePrice = pricePerChild * partyBagsQuantity
+      console.log("🍱 Catering per-child pricing:", {
+        originalPrice: selectedPackage.price,
+        pricePerChild,
+        numberOfChildren: partyBagsQuantity,
         newPackagePrice: packagePrice,
       })
     }
@@ -841,7 +984,7 @@ export default function SupplierCustomizationModal({
           }
         : null,
     }
-  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions])
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages])
 
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
@@ -892,35 +1035,79 @@ export default function SupplierCustomizationModal({
     }
   }, [isOpen, availableFlavors, supplier])
 
+  // ✅ Helper function to find best matching package for party theme
+  const findThemeMatchingPackage = (packages, partyTheme) => {
+    if (!partyTheme || !packages.length) return null
+
+    const themeLower = partyTheme.toLowerCase()
+
+    // Find package with themeMatch array that includes this theme
+    for (const pkg of packages) {
+      if (pkg.themeMatch && Array.isArray(pkg.themeMatch)) {
+        const matches = pkg.themeMatch.some(t =>
+          themeLower.includes(t.toLowerCase()) || t.toLowerCase().includes(themeLower)
+        )
+        if (matches) {
+          console.log('🎨 [Theme Match] Found matching package:', pkg.name, 'for theme:', partyTheme)
+          return pkg.id
+        }
+      }
+    }
+
+    // Fallback: check package name/id for theme keywords
+    for (const pkg of packages) {
+      const pkgNameLower = (pkg.name || pkg.id || '').toLowerCase()
+      if (themeLower.includes('spider') || themeLower.includes('superhero') || themeLower.includes('avenger') || themeLower.includes('marvel')) {
+        if (pkgNameLower.includes('superhero') || pkgNameLower.includes('hero')) return pkg.id
+      }
+      if (themeLower.includes('princess') || themeLower.includes('frozen') || themeLower.includes('fairy') || themeLower.includes('unicorn')) {
+        if (pkgNameLower.includes('princess') || pkgNameLower.includes('fantasy')) return pkg.id
+      }
+      if (themeLower.includes('safari') || themeLower.includes('jungle') || themeLower.includes('animal') || themeLower.includes('dinosaur')) {
+        if (pkgNameLower.includes('animal') || pkgNameLower.includes('kingdom')) return pkg.id
+      }
+    }
+
+    return null
+  }
+
   // ✅ Initialize selected package when modal opens or supplier changes
   useEffect(() => {
     if (isOpen && packages.length > 0) {
       // Check if supplier already has a selected package
       const existingPackageId = supplier?.packageData?.id || supplier?.packageId;
 
-    
-
       if (existingPackageId) {
         // Verify the package still exists in the packages array
         const packageExists = packages.some(pkg => pkg.id === existingPackageId);
         if (packageExists) {
-
           setSelectedPackageId(existingPackageId);
           return;
         }
       }
 
-      // Default to first package if no existing selection
+      // ✅ NEW: For face painting and balloons, try to auto-select based on party theme
+      if (supplierTypeDetection.isFacePainting || supplierTypeDetection.isBalloons) {
+        const partyTheme = databasePartyData?.theme || partyDetails?.theme
+        if (partyTheme) {
+          const themeMatchedPackageId = findThemeMatchingPackage(packages, partyTheme)
+          if (themeMatchedPackageId) {
+            console.log('🎨 [Auto-Select] Setting package based on party theme:', partyTheme, '->', themeMatchedPackageId)
+            setSelectedPackageId(themeMatchedPackageId)
+            return
+          }
+        }
+      }
 
+      // Default to first package if no existing selection or theme match
       setSelectedPackageId(packages[0].id)
     }
 
     // Reset when modal closes
     if (!isOpen) {
-
       setSelectedPackageId(null);
     }
-  }, [isOpen, packages, supplier])
+  }, [isOpen, packages, supplier, supplierTypeDetection.isFacePainting, supplierTypeDetection.isBalloons, databasePartyData?.theme, partyDetails?.theme])
 
   // ✅ Restore previously selected addons when modal opens/closes
   useEffect(() => {
@@ -1062,6 +1249,98 @@ export default function SupplierCustomizationModal({
         isTimeBased: supplierTypeDetection.isTimeBased,
         isLeadBased: supplierTypeDetection.isLeadBased,
       }
+    } else if (supplierTypeDetection.isCatering) {
+      // ✅ CATERING: Include quantity and per-child pricing (similar to party bags)
+      const pricePerChild = selectedPackage.price
+      finalPackage = {
+        ...selectedPackage,
+        price: pricePerChild, // Store per-child price
+        originalPrice: pricePerChild,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        totalPrice: calculateModalPricing.packagePrice,
+        // Catering specific data
+        cateringQuantity: partyBagsQuantity,
+        guestCount: partyDetails?.guestCount || 10,
+        pricePerChild: pricePerChild,
+        // Include cateringMetadata for pricing calculations
+        cateringMetadata: {
+          quantity: partyBagsQuantity,
+          pricePerChild: pricePerChild,
+          totalPrice: calculateModalPricing.packagePrice,
+          deliveryIncluded: true,
+          deliveryTiming: 'Evening before party (5-8pm)',
+        },
+        enhancedPricing: calculateModalPricing.pricingInfo,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased,
+      }
+    } else if (supplierTypeDetection.isFacePainting) {
+      // ✅ FACE PAINTING: Flat rate with theme-based designs
+      const partyTheme = databasePartyData?.theme || partyDetails?.theme || 'general'
+      // Check both supplier.themeDesigns and supplier.data.themeDesigns
+      const allThemeDesigns = supplier?.themeDesigns || supplier?.data?.themeDesigns || {}
+      const themeDesigns = allThemeDesigns[partyTheme.toLowerCase()] || allThemeDesigns.general
+      const basePrice = supplier?.price || supplier?.priceFrom || supplier?.data?.price || 150
+
+      finalPackage = {
+        id: 'face-painting-flat',
+        name: 'Face Painting',
+        price: basePrice,
+        originalPrice: basePrice,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        totalPrice: calculateModalPricing.totalPrice,
+        duration: supplier?.duration || supplier?.data?.duration || '2 hours',
+        // Theme-specific data
+        partyTheme: partyTheme,
+        themeDesigns: themeDesigns?.featured || [],
+        image: themeDesigns?.image || supplier?.coverPhoto || supplier?.data?.coverPhoto || supplier?.image || supplier?.data?.image,
+        description: themeDesigns?.description || 'Professional face painting',
+        // Include classic designs info
+        classicDesigns: supplier?.classicDesigns || supplier?.data?.classicDesigns || [],
+        features: [
+          'Professional face painter',
+          'FDA-approved hypoallergenic paints',
+          'Theme-specific designs',
+          'Classic designs available',
+          'All equipment provided'
+        ],
+        enhancedPricing: null,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: false,
+        isLeadBased: true,
+      }
+    } else if (supplierTypeDetection.isMultiSelect) {
+      // ✅ MULTI-SELECT (Soft Play): Multiple items selected
+      const selectedItems = packages.filter(pkg => selectedPackageIds.includes(pkg.id))
+      const firstItem = selectedItems[0] || {}
+
+      console.log('🎯 [Multi-Select] Building finalPackage:', {
+        selectedItems: selectedItems.map(i => ({ id: i.id, name: i.name, image: i.image })),
+        firstItem: { id: firstItem.id, name: firstItem.name, image: firstItem.image },
+      })
+
+      finalPackage = {
+        id: 'multi-select-bundle',
+        name: selectedItems.map(item => item.name).join(' + '),
+        price: calculateModalPricing.packagePrice,
+        originalPrice: calculateModalPricing.packagePrice,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        totalPrice: calculateModalPricing.totalPrice,
+        duration: firstItem.duration || '2 hours',
+        // Store all selected items
+        selectedItems: selectedItems,
+        selectedItemIds: selectedPackageIds,
+        // Use first item's image for the card
+        image: firstItem.image || supplier?.coverPhoto || supplier?.data?.coverPhoto,
+        description: `${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} selected`,
+        features: selectedItems.map(item => item.name),
+        enhancedPricing: null,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: false,
+        isLeadBased: true,
+        isMultiSelect: true,
+      }
     } else {
       // ✅ UPDATED: For non-cake, non-party-bags suppliers, still apply unified pricing
       // ✅ FIX: Use totalPrice (includes add-ons) not just packagePrice
@@ -1093,6 +1372,16 @@ export default function SupplierCustomizationModal({
             quantity: partyBagsQuantity,
             pricePerBag: selectedPackage.price,
             totalPrice: calculateModalPricing.packagePrice,
+          },
+        }),
+        // ✅ Add cateringMetadata for easy access in cards
+        ...(supplierTypeDetection.isCatering && {
+          cateringMetadata: {
+            quantity: partyBagsQuantity,
+            pricePerChild: selectedPackage.price,
+            totalPrice: calculateModalPricing.packagePrice,
+            deliveryIncluded: true,
+            deliveryTiming: 'Evening before party (5-8pm)',
           },
         }),
       },
@@ -1140,6 +1429,30 @@ export default function SupplierCustomizationModal({
       return `Book Cake - £${totalPrice}`
     }
 
+    if (supplierTypeDetection.isBalloons) {
+      return `Book Balloons - £${totalPrice}`
+    }
+
+    if (supplierTypeDetection.isFacePainting) {
+      return `Book Face Painting - £${totalPrice}`
+    }
+
+    if (supplierTypeDetection.isSoftPlay) {
+      return `Book Soft Play - £${totalPrice}`
+    }
+
+    if (supplierTypeDetection.isSweetTreats) {
+      return `Book Sweet Treats - £${totalPrice}`
+    }
+
+    if (supplierTypeDetection.isCatering) {
+      return `Book Catering - £${totalPrice}`
+    }
+
+    if (supplierTypeDetection.isMultiSelect) {
+      return `Book Selection - £${totalPrice}`
+    }
+
     return `Book Service - £${totalPrice}`
   }
 
@@ -1151,7 +1464,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
+        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[85vh] max-h-[95vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">
@@ -1169,6 +1482,10 @@ export default function SupplierCustomizationModal({
               <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2">
                 {supplierTypeDetection.isCake && <span className="flex-shrink-0">🎂</span>}
                 {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />}
+                {supplierTypeDetection.isBalloons && <span className="flex-shrink-0">🎈</span>}
+                {supplierTypeDetection.isFacePainting && <span className="flex-shrink-0">🎨</span>}
+                {supplierTypeDetection.isCatering && <span className="flex-shrink-0">🍱</span>}
+                {supplierTypeDetection.isSweetTreats && <span className="flex-shrink-0">🍭</span>}
                 <span className="truncate">{supplier.name || supplier.data?.name || 'Supplier'}</span>
               </h2>
             </div>
@@ -1618,8 +1935,245 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Non-Cake Suppliers - Package Selection */}
-            {!supplierTypeDetection.isCake && (
+            {/* Face Painting - What's included */}
+            {supplierTypeDetection.isFacePainting && (
+              <section>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">What's included:</h4>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      Professional face painter for 2 hours
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      FDA-approved, hypoallergenic paints
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      Theme-specific + classic designs
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      All equipment provided
+                    </li>
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* Multi-Select Suppliers (Soft Play) - Item Selection */}
+            {supplierTypeDetection.isMultiSelect && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-primary-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Items</h3>
+                  <span className="text-sm text-gray-500">(select one or more)</span>
+                </div>
+
+                <div className="space-y-3">
+                  {packages.map((pkg) => {
+                    const isSelected = selectedPackageIds.includes(pkg.id)
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 cursor-pointer group relative flex ${
+                          isSelected
+                            ? "ring-2 ring-[hsl(var(--primary-500))]"
+                            : "hover:shadow-lg hover:ring-2 hover:ring-gray-200"
+                        }`}
+                        onClick={() => {
+                          setSelectedPackageIds(prev =>
+                            prev.includes(pkg.id)
+                              ? prev.filter(id => id !== pkg.id)
+                              : [...prev, pkg.id]
+                          )
+                        }}
+                      >
+                        {/* Item Image - Square on left */}
+                        {pkg.image || pkg.imageUrl ? (
+                          <div className="relative w-24 h-24 flex-shrink-0">
+                            <Image
+                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
+                              alt={pkg.name}
+                              fill
+                              className="object-cover group-hover:brightness-110 transition-all duration-300"
+                              sizes="96px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-24 h-24 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+
+                        {/* Item Info - Right side */}
+                        <div className="flex-1 p-3 flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-gray-800 text-base mb-1">
+                              {pkg.name}
+                            </h4>
+                            <p className="font-bold text-[hsl(var(--primary-600))] text-lg">
+                              £{pkg.price}
+                            </p>
+                          </div>
+
+                          {/* Selection Indicator */}
+                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected
+                              ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
+                              : 'bg-white border-gray-300'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Selected Items Summary */}
+                {selectedPackageIds.length > 0 && (
+                  <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-100">
+                    <p className="text-sm text-green-800 font-medium">
+                      {selectedPackageIds.length} item{selectedPackageIds.length > 1 ? 's' : ''} selected - £{calculateModalPricing.packagePrice}
+                    </p>
+                  </div>
+                )}
+
+                {/* Minimum Selection Warning */}
+                {selectedPackageIds.length === 0 && (
+                  <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-sm text-amber-700">
+                      Please select at least one item to continue
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Catering Suppliers - Lunchbox Selection with Contents */}
+            {supplierTypeDetection.isCatering && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Package className="w-5 h-5 text-primary-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Lunchbox</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {packages.map((pkg) => {
+                    const isSelected = selectedPackageId === pkg.id
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 cursor-pointer group ${
+                          isSelected
+                            ? "ring-2 ring-[hsl(var(--primary-500))]"
+                            : "hover:shadow-lg hover:ring-2 hover:ring-gray-200"
+                        }`}
+                        onClick={() => setSelectedPackageId(pkg.id)}
+                      >
+                        {/* Header with Image, Title, Price and Checkbox */}
+                        <div className="flex items-center p-3 gap-3">
+                          {/* Lunchbox Image */}
+                          <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
+                            <Image
+                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
+                              alt={pkg.name}
+                              fill
+                              className="object-cover group-hover:brightness-110 transition-all duration-300"
+                              sizes="80px"
+                            />
+                          </div>
+
+                          {/* Title and Price */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-900 text-base">{pkg.name}</h4>
+                            <p className="text-xs text-gray-500 mt-0.5">{pkg.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="font-bold text-[hsl(var(--primary-600))] text-lg">
+                                £{pkg.price.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-gray-400">per child</span>
+                            </div>
+                          </div>
+
+                          {/* Selection Indicator */}
+                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                            isSelected
+                              ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
+                              : 'bg-white border-gray-300'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Contents - Compact when not selected, full when selected */}
+                        {/* Show contents if available, or fallback message for catering */}
+                        {(pkg.contents && pkg.contents.length > 0) ? (
+                          <div className={`border-t border-gray-100 px-3 pb-3 pt-2 ${isSelected ? 'bg-green-50' : 'bg-gray-50'}`}>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {/* Show first 3 items when not selected, all items when selected */}
+                              {(isSelected ? pkg.contents : pkg.contents.slice(0, 3)).map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    isSelected
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-white text-gray-600 border border-gray-200'
+                                  }`}
+                                >
+                                  {item}
+                                </span>
+                              ))}
+                              {/* Show "+X more" badge when not selected and there are more items */}
+                              {!isSelected && pkg.contents.length > 3 && (
+                                <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-500 font-medium">
+                                  +{pkg.contents.length - 3} more
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Features badges - show when selected */}
+                            {isSelected && pkg.features && pkg.features.length > 0 && (
+                              <div className="mt-3 pt-2 border-t border-green-200">
+                                <div className="flex flex-wrap gap-2">
+                                  {pkg.features.map((feature, idx) => (
+                                    <span key={idx} className="inline-flex items-center gap-1 text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-medium">
+                                      <Check className="w-3 h-3" />
+                                      {feature}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : supplierTypeDetection.isCatering && (
+                          <div className={`border-t border-gray-100 px-3 pb-3 pt-2 ${isSelected ? 'bg-green-50' : 'bg-gray-50'}`}>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
+                            <p className="text-xs text-gray-500 italic">
+                              Full menu details confirmed after booking
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Non-Cake/Non-FacePainting/Non-MultiSelect/Non-Catering Suppliers - Package Selection */}
+            {!supplierTypeDetection.isCake && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-primary-500" />
@@ -1705,6 +2259,36 @@ export default function SupplierCustomizationModal({
                                 </p>
                               )}
                             </div>
+
+                            {/* Balloon package description - show what's included */}
+                            {supplierTypeDetection.isBalloons && pkg.description && (
+                              <p className="text-[10px] text-gray-500 mb-1.5 line-clamp-2 leading-tight px-1">
+                                {pkg.description}
+                              </p>
+                            )}
+
+                            {/* Balloon features preview - show first 2 features */}
+                            {supplierTypeDetection.isBalloons && !pkg.description && pkg.features?.length > 0 && (
+                              <div className="text-[10px] text-gray-500 mb-1.5 space-y-0.5">
+                                {pkg.features.slice(0, 2).map((feature, i) => (
+                                  <p key={i} className="truncate px-1">{feature}</p>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Face painting package description */}
+                            {supplierTypeDetection.isFacePainting && pkg.description && (
+                              <p className="text-[10px] text-gray-500 mb-1.5 line-clamp-2 leading-tight px-1">
+                                {pkg.description}
+                              </p>
+                            )}
+
+                            {/* Face painting designs preview - show first 3 designs */}
+                            {supplierTypeDetection.isFacePainting && pkg.designs?.length > 0 && (
+                              <p className="text-[10px] text-gray-500 mb-1.5 truncate px-1">
+                                {pkg.designs.slice(0, 3).join(', ')}{pkg.designs.length > 3 ? '...' : ''}
+                              </p>
+                            )}
 
                             {/* Feeds info for cakes */}
                             {supplierTypeDetection.isCake && (pkg.serves || pkg.feeds) && (
@@ -1819,6 +2403,86 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
+            {supplierTypeDetection.isCatering && selectedPackage && (
+              <section className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="mb-3">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Number of Lunchboxes</h4>
+                  <p className="text-xs text-gray-600">
+                    Pre-set to match your guest count ({partyDetails?.guestCount || 10}), adjust if needed
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPartyBagsQuantity(Math.max(supplier?.minimumOrder || 10, Number(partyBagsQuantity) - 1))}
+                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    disabled={Number(partyBagsQuantity) <= (supplier?.minimumOrder || 10)}
+                  >
+                    <span className="text-lg">−</span>
+                  </Button>
+
+                  <div className="text-center">
+                    <div className="text-2xl font-semibold text-gray-900">{partyBagsQuantity}</div>
+                    <div className="text-xs text-gray-500">lunchboxes</div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
+                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                  >
+                    <span className="text-lg">+</span>
+                  </Button>
+                </div>
+
+                <div className="bg-white rounded p-3 border border-gray-200">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="font-medium text-gray-900">{partyBagsQuantity} lunchboxes</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Price per lunchbox:</span>
+                      <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-gray-200 pt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900 text-sm">Total:</span>
+                        <span className="font-bold text-xl text-gray-900">
+                          £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Delivery info */}
+                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-start gap-2">
+                    <Truck className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">Free Delivery Included</p>
+                      <p className="text-xs text-green-700 mt-0.5">
+                        Delivered the evening before your party (5-8pm). You&apos;ll be emailed delivery details in advance.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Minimum order note */}
+                {(supplier?.minimumOrder || supplier?.data?.minimumOrder) && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Minimum order: {supplier?.minimumOrder || supplier?.data?.minimumOrder} lunchboxes
+                  </p>
+                )}
+              </section>
+            )}
+
             {availableAddons.length > 0 && !supplierTypeDetection.isCake && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -1862,7 +2526,7 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && (
+            {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && !supplierTypeDetection.isCatering && (
               <section className="bg-gray-50 rounded-lg p-5 border border-gray-200">
                 {/* ✅ EDIT MODE: Price diff banner */}
                 {mode === "edit" && priceDiff !== 0 && (
@@ -1940,7 +2604,9 @@ export default function SupplierCustomizationModal({
                   : "bg-primary-500 hover:bg-primary-600 text-white"
               }`}
               disabled={
-                !selectedPackageId ||
+                // For multi-select, require at least one item; for others, require package selection
+                // Face painting doesn't need package selection (flat rate)
+                (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting)) ||
                 isAdding ||
                 !canAddCheck.canAdd
               }

@@ -34,20 +34,14 @@ export async function NavServer() {
           </div>
 
           {/* Desktop Navigation - Server rendered static links */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden lg:flex space-x-8">
             <Link href="/" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
               Home
-            </Link>
-            <Link href="/browse" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              Snap Suppliers
             </Link>
             {/* Client component for interactive dropdown */}
             <DashboardDropdown initialUser={user} />
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
               Snapspiration
-            </Link>
-            <Link href="/favorites" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              My Favorites
             </Link>
           </nav>
 
@@ -57,7 +51,7 @@ export async function NavServer() {
             <SearchWidget />
 
             {/* Desktop CTAs - Client component */}
-            <div className="hidden md:flex items-center space-x-2">
+            <div className="hidden lg:flex items-center space-x-2">
               <AuthButtons initialUser={user} />
               <CartIndicator />
             </div>

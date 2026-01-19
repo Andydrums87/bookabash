@@ -67,7 +67,7 @@ export default function VenuePhotosStep({
     onChange(photos.filter(p => p.id !== id))
   }
 
-  const minPhotos = customMinPhotos ?? 5
+  const minPhotos = customMinPhotos ?? 2
   const photosNeeded = Math.max(0, minPhotos - photos.length)
 
   // Use custom title/subtitle or defaults

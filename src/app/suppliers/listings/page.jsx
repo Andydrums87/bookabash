@@ -1,11 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, LayoutGrid, Building2, Loader2, Trash2, X, Settings, Cake } from "lucide-react"
+import { Plus, LayoutGrid, Building2, Loader2, Trash2, X, Settings, Cake, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useBusiness } from "@/contexts/BusinessContext"
 import Image from "next/image"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Check if the primary business is a cake supplier
 function isCakeSupplier(businesses) {
@@ -55,6 +62,8 @@ function formatCategory(serviceType) {
     'activity': 'Activity',
     'party bags': 'Party Bags',
     'partybags': 'Party Bags',
+    'balloons': 'Balloons',
+    'balloon': 'Balloons',
   }
 
   return categoryMap[normalized] || serviceType.charAt(0).toUpperCase() + serviceType.slice(1)
@@ -295,13 +304,34 @@ export default function ListingsPage() {
 
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [removing, setRemoving] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState("all")
 
   // Check if this is a cake supplier
   const isCake = isCakeSupplier(businesses)
   const primaryBusiness = getPrimaryBusiness(businesses)
 
   // For cake suppliers, only show products (non-primary), not the business shell
-  const displayedBusinesses = isCake ? getCakeProducts(businesses) : businesses
+  const baseBusinesses = isCake ? getCakeProducts(businesses) : businesses
+
+  // Get unique categories for filter dropdown
+  const uniqueCategories = useMemo(() => {
+    if (!baseBusinesses || isCake) return []
+    const categories = baseBusinesses
+      .map(b => b.serviceType || b.data?.serviceType || b.data?.category)
+      .filter(Boolean)
+      .map(c => c.toLowerCase().trim())
+    return [...new Set(categories)]
+  }, [baseBusinesses, isCake])
+
+  // Apply category filter
+  const displayedBusinesses = useMemo(() => {
+    if (!baseBusinesses) return []
+    if (categoryFilter === "all" || isCake) return baseBusinesses
+    return baseBusinesses.filter(b => {
+      const category = (b.serviceType || b.data?.serviceType || b.data?.category || '').toLowerCase().trim()
+      return category === categoryFilter
+    })
+  }, [baseBusinesses, categoryFilter, isCake])
 
   // Navigate to onboarding wizard for creating new listing
   const handleCreateNewListing = () => {
@@ -403,13 +433,37 @@ export default function ListingsPage() {
                 </p>
               </>
             ) : (
-              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
-                {businesses?.length === 1 ? "Your listing" : "Your listings"}
-              </h1>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+                  {businesses?.length === 1 ? "Your listing" : "Your listings"}
+                </h1>
+                {categoryFilter !== "all" && (
+                  <p className="text-gray-500 mt-1">
+                    Showing {displayedBusinesses?.length || 0} of {baseBusinesses?.length || 0} listings
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Category filter - only show if not cake supplier and has multiple categories */}
+            {!isCake && uniqueCategories.length > 1 && (
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[160px] border-[hsl(var(--primary-200))] rounded-xl">
+                  <Filter className="w-4 h-4 mr-2 text-gray-500" />
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {uniqueCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {formatCategory(category)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {/* Settings button - only for cake suppliers */}
             {isCake && (
               <button
@@ -448,8 +502,28 @@ export default function ListingsPage() {
 
         {/* Content */}
         {/* For cake suppliers, show empty state if no products (even if primary exists) */}
-        {(isCake ? displayedBusinesses.length === 0 : (!businesses || businesses.length === 0)) ? (
+        {(isCake ? baseBusinesses.length === 0 : (!businesses || businesses.length === 0)) ? (
           <EmptyState onCreateClick={handleCreateNewListing} isCake={isCake} />
+        ) : displayedBusinesses.length === 0 ? (
+          // No results for current filter
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Filter className="w-10 h-10 text-gray-300" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              No {formatCategory(categoryFilter).toLowerCase()} listings
+            </h2>
+            <p className="text-gray-500 mb-6">
+              Try selecting a different category filter.
+            </p>
+            <Button
+              onClick={() => setCategoryFilter("all")}
+              variant="outline"
+              className="rounded-full px-6"
+            >
+              Show all listings
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {displayedBusinesses.map((business) => (

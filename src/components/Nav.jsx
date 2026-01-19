@@ -634,17 +634,11 @@ const handleSignOut = async () => {
             <Link href="/" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
               Home
             </Link>
-            <Link href="/browse" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              Snap Suppliers
-            </Link>
              {/* Replace dashboard link with dropdown */}
              <DashboardDropdown />
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
             Snapspiration
             </Link>
-            <Link href="/favorites" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-  My Favorites
-</Link>
           </nav>
 
           {/* Right side - Search + CTA */}

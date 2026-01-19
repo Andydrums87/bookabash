@@ -171,6 +171,38 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     return total;
   }
 
+  // Special handling for catering (per-child pricing like party bags)
+  if (supplier.category === 'Catering' || supplier.category?.toLowerCase().includes('catering') || supplier.category?.toLowerCase().includes('lunchbox')) {
+    // Check if we have cateringMetadata with totalPrice (from customization modal)
+    if (supplier.cateringMetadata?.totalPrice) {
+      return supplier.cateringMetadata.totalPrice;
+    }
+
+    // Check if packageData has totalPrice
+    if (supplier.packageData?.totalPrice) {
+      return supplier.packageData.totalPrice;
+    }
+
+    // Check if packageData has cateringMetadata
+    if (supplier.packageData?.cateringMetadata?.totalPrice) {
+      return supplier.packageData.cateringMetadata.totalPrice;
+    }
+
+    // Calculate from packageData if available (pricePerChild × quantity)
+    if (supplier.packageData?.price && supplier.cateringMetadata?.quantity) {
+      const total = supplier.packageData.price * supplier.cateringMetadata.quantity;
+      return total;
+    }
+
+    // Fall back to calculation using guest count
+    const pricePerChild = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const quantity = supplier.cateringMetadata?.quantity ||
+                    supplier.packageData?.quantity ||
+                    getGuestCount(partyDetails);
+    const total = pricePerChild * quantity;
+    return total;
+  }
+
   // Special handling for cakes - use originalPrice (base price without delivery)
   const isCake = supplier.category?.toLowerCase().includes('cake') ||
                  supplier.serviceType?.toLowerCase().includes('cake')
@@ -446,6 +478,15 @@ export const getDisplayPrice = (supplier, partyDetails = {}, addons = []) => {
     return `£${pricePerBag} per bag (${quantity} bags = £${pricing.finalPrice} total)`;
   }
 
+  // Special display for catering (per-child pricing)
+  if (supplier.category === 'Catering' || supplier.category?.toLowerCase().includes('catering') || supplier.category?.toLowerCase().includes('lunchbox')) {
+    const pricePerChild = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const quantity = supplier.cateringMetadata?.quantity ||
+                    supplier.packageData?.quantity ||
+                    getGuestCount(partyDetails);
+    return `£${pricePerChild} per child (${quantity} children = £${pricing.finalPrice} total)`;
+  }
+
   return `£${pricing.finalPrice}`;
 };
 
@@ -468,6 +509,13 @@ export const getPriceBreakdownText = (supplier, partyDetails = {}, addons = []) 
                     supplier.packageData?.partyBagsQuantity ||
                     getGuestCount(partyDetails);
     parts.push(`${quantity} bags × £${pricePerBag}`);
+  } else if (supplier.category === 'Catering' || supplier.category?.toLowerCase().includes('catering') || supplier.category?.toLowerCase().includes('lunchbox')) {
+    // Special handling for catering (per-child pricing)
+    const pricePerChild = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const quantity = supplier.cateringMetadata?.quantity ||
+                    supplier.packageData?.quantity ||
+                    getGuestCount(partyDetails);
+    parts.push(`${quantity} children × £${pricePerChild}`);
   } else {
     parts.push(`Base £${pricing.basePrice}`);
   }

@@ -374,14 +374,17 @@ export default function SupplierQuickViewModal({
                 {/* Content with padding */}
                 <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
 
-                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for venues since VenueDisplay handles it */}
+                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for venues/balloons/facePainting since their displays handle it */}
                 {(() => {
                   const category = displaySupplier?.category?.toLowerCase() || ''
+                  const serviceType = displaySupplier?.serviceType?.toLowerCase() || ''
                   const isCake = category === 'cakes' || category === 'cake'
                   const isVenue = category === 'venues' || category === 'venue'
+                  const isBalloons = category === 'balloons' || category === 'balloon'
+                  const isFacePainting = category === 'facepainting' || serviceType === 'facepainting' || category.includes('face')
 
-                  // Skip for venues - VenueDisplay handles the aboutUs section
-                  if (isVenue) return null
+                  // Skip for venues, balloons, and face painting - their specific sections handle aboutUs
+                  if (isVenue || isBalloons || isFacePainting) return null
 
                   // For cakes, show description as "About This Cake"
                   if (isCake) {
@@ -422,7 +425,466 @@ export default function SupplierQuickViewModal({
                 {/* 2. WHAT'S INCLUDED - Simple List (SECOND) */}
                 {(() => {
                   const category = displaySupplier?.category?.toLowerCase() || ''
+                  const serviceType = displaySupplier?.serviceType?.toLowerCase() || ''
                   const isCake = category === 'cakes' || category === 'cake'
+                  const isBalloons = category === 'balloons' || category === 'balloon'
+                  const isFacePainting = category === 'facepainting' || serviceType === 'facepainting' || category.includes('face')
+
+                  // For face painting, show packages with designs
+                  if (isFacePainting) {
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Face Painting
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Design Collections / Packages */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Design Collections
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-5 bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-100">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                  </div>
+                                  {pkg.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                  )}
+                                  {pkg.designs && pkg.designs.length > 0 && (
+                                    <div className="mb-3">
+                                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Includes designs:</p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {pkg.designs.map((design, dIndex) => (
+                                          <span key={dIndex} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                            {design}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {pkg.features && pkg.features.length > 0 && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.features.map((feature, fIndex) => (
+                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-green-500 mt-0.5">✓</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Service Info */}
+                        {(serviceDetails.paintsUsed || serviceDetails.avgTimePerChild || serviceDetails.maxChildren) && (
+                          <div className="p-4 bg-green-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">🎨</span>
+                              <div className="space-y-2">
+                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
+                                {serviceDetails.paintsUsed && (
+                                  <p className="text-sm text-gray-700"><strong>Paints:</strong> {serviceDetails.paintsUsed}</p>
+                                )}
+                                {serviceDetails.avgTimePerChild && (
+                                  <p className="text-sm text-gray-700"><strong>Time per design:</strong> {serviceDetails.avgTimePerChild}</p>
+                                )}
+                                {serviceDetails.maxChildren && (
+                                  <p className="text-sm text-gray-700"><strong>Capacity:</strong> {serviceDetails.maxChildren}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // For activities/soft play, show items with images
+                  const isActivities = category === 'activities' || serviceType === 'activities' || category.includes('soft play')
+                  if (isActivities) {
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Soft Play
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Equipment Items */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Available Equipment
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gradient-to-br from-yellow-50 to-white rounded-2xl border border-yellow-100 overflow-hidden">
+                                  {/* Item Image */}
+                                  {pkg.image && (
+                                    <div className="relative h-32 w-full">
+                                      <Image
+                                        src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
+                                        alt={pkg.name}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 640px) 100vw, 50vw"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && (
+                                      <ul className="space-y-1">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-yellow-500 mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    {pkg.duration && (
+                                      <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Service Info */}
+                        {(serviceDetails.ageRange || serviceDetails.setupTime || serviceDetails.spaceRequired) && (
+                          <div className="p-4 bg-yellow-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">🎪</span>
+                              <div className="space-y-2">
+                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
+                                {serviceDetails.ageRange && (
+                                  <p className="text-sm text-gray-700"><strong>Ages:</strong> {serviceDetails.ageRange}</p>
+                                )}
+                                {serviceDetails.setupTime && (
+                                  <p className="text-sm text-gray-700"><strong>Setup:</strong> {serviceDetails.setupTime}</p>
+                                )}
+                                {serviceDetails.spaceRequired && (
+                                  <p className="text-sm text-gray-700"><strong>Space needed:</strong> {serviceDetails.spaceRequired}</p>
+                                )}
+                                {serviceDetails.collectionTime && (
+                                  <p className="text-sm text-gray-700"><strong>Collection:</strong> {serviceDetails.collectionTime}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // For sweet treats, show available items with multi-select options
+                  const isSweetTreats = category === 'sweettreats' || category === 'sweet treats' || serviceType === 'sweettreats' || serviceType === 'sweet treats'
+                  if (isSweetTreats) {
+                    const packages = displaySupplier?.packages || displaySupplier?.items || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Sweet Treats
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-400 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Available Items */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Available Treats
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-400 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">Pick and choose from our range - mix and match for your perfect party!</p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gradient-to-br from-pink-50 to-white rounded-2xl border border-pink-100 overflow-hidden">
+                                  {/* Item Image */}
+                                  {pkg.image && (
+                                    <div className="relative h-32 w-full">
+                                      <Image
+                                        src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
+                                        alt={pkg.name}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 640px) 100vw, 50vw"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <span className="font-black text-xl text-pink-500">£{pkg.price}</span>
+                                    </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && (
+                                      <ul className="space-y-1">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-pink-500 mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    {pkg.duration && (
+                                      <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Service Info */}
+                        {(serviceDetails.setupTime || serviceDetails.spaceRequired || serviceDetails.staffIncluded) && (
+                          <div className="p-4 bg-pink-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">🍭</span>
+                              <div className="space-y-2">
+                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
+                                {serviceDetails.setupTime && (
+                                  <p className="text-sm text-gray-700"><strong>Setup:</strong> {serviceDetails.setupTime}</p>
+                                )}
+                                {serviceDetails.spaceRequired && (
+                                  <p className="text-sm text-gray-700"><strong>Space needed:</strong> {serviceDetails.spaceRequired}</p>
+                                )}
+                                {serviceDetails.staffIncluded !== undefined && (
+                                  <p className="text-sm text-gray-700"><strong>Staff:</strong> {serviceDetails.staffIncluded ? 'Included' : 'Self-service'}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // For catering/lunchboxes, show packages with per-child pricing
+                  const isCatering = category === 'catering' || serviceType === 'catering' || category.includes('lunchbox')
+                  if (isCatering) {
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+                    const dietaryOptions = displaySupplier?.dietaryOptions || serviceDetails?.dietaryOptions || []
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Catering
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-orange-400 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Lunchbox Packages */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Lunchbox Options
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-orange-400 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">Price per child - order for each guest</p>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-5 bg-gradient-to-br from-orange-50 to-white rounded-2xl border border-orange-100">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <div className="text-right">
+                                      <span className="font-black text-2xl text-orange-500">£{pkg.price}</span>
+                                      <p className="text-xs text-gray-500">per child</p>
+                                    </div>
+                                  </div>
+                                  {pkg.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                  )}
+                                  {pkg.features && pkg.features.length > 0 && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.features.map((feature, fIndex) => (
+                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-orange-500 mt-0.5">✓</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Dietary Options */}
+                        {dietaryOptions.length > 0 && (
+                          <div className="p-4 bg-orange-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">🥗</span>
+                              <div>
+                                <h4 className="font-bold text-lg text-gray-900">Dietary Options Available</h4>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {dietaryOptions.map((option, index) => (
+                                    <span key={index} className="px-3 py-1 bg-white text-orange-700 rounded-full text-sm border border-orange-200">
+                                      {typeof option === 'object' ? option.name : option}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Service Info */}
+                        {(serviceDetails.leadTime || serviceDetails.minimumOrder) && (
+                          <div className="p-4 bg-gray-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">📦</span>
+                              <div className="space-y-2">
+                                <h4 className="font-bold text-lg text-gray-900">Ordering Info</h4>
+                                {serviceDetails.leadTime && (
+                                  <p className="text-sm text-gray-700"><strong>Lead time:</strong> {serviceDetails.leadTime}</p>
+                                )}
+                                {serviceDetails.minimumOrder && (
+                                  <p className="text-sm text-gray-700"><strong>Minimum order:</strong> {serviceDetails.minimumOrder}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // For balloons, show packages and delivery info
+                  if (isBalloons) {
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || ''
+                    const deliveryInfo = displaySupplier?.serviceDetails?.deliveryInfo || ''
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Balloons
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Packages */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Packages
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-5 bg-gradient-to-br from-cyan-50 to-white rounded-2xl border border-cyan-100">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                  </div>
+                                  {pkg.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                  )}
+                                  {pkg.features && pkg.features.length > 0 && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.features.map((feature, fIndex) => (
+                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-cyan-500 mt-0.5">✓</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Delivery Info */}
+                        {deliveryInfo && (
+                          <div className="p-4 bg-blue-50 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">🎈</span>
+                              <div>
+                                <h4 className="font-bold text-lg text-gray-900">Delivery</h4>
+                                <p className="text-base text-gray-700 mt-1">{deliveryInfo}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
 
                   // For cakes, show flavours/dietary/sizes and delivery options
                   if (isCake) {

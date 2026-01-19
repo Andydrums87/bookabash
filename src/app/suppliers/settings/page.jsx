@@ -220,6 +220,12 @@ export default function Settings() {
     accountHolderName: '',
     sortCode: '',
     accountNumber: '',
+    vatNumber: '',
+    companyRegNumber: '',
+    businessAddressLine1: '',
+    businessAddressLine2: '',
+    businessCity: '',
+    businessPostcode: '',
   })
 
   // Cake-specific settings (only used for cake suppliers)
@@ -278,13 +284,32 @@ export default function Settings() {
         const response = await fetch(`/api/payout-details?supplier_id=${supplier.id}`)
         const data = await response.json()
 
+        // Get supplier's address from their profile for pre-filling
+        const supplierAddress = supplierData?.venueAddress || supplierData?.serviceDetails?.venueAddress || {}
+
         if (data.payoutDetails) {
+          // Use saved payout details, but fall back to supplier address if business address not set
           setPayoutDetails({
             bankName: data.payoutDetails.bank_name || '',
             accountHolderName: data.payoutDetails.account_holder_name || '',
             sortCode: data.payoutDetails.sort_code || '',
             accountNumber: data.payoutDetails.account_number || '',
+            vatNumber: data.payoutDetails.vat_number || '',
+            companyRegNumber: data.payoutDetails.company_reg_number || '',
+            businessAddressLine1: data.payoutDetails.business_address_line1 || supplierAddress.addressLine1 || '',
+            businessAddressLine2: data.payoutDetails.business_address_line2 || supplierAddress.addressLine2 || '',
+            businessCity: data.payoutDetails.business_city || supplierAddress.city || '',
+            businessPostcode: data.payoutDetails.business_postcode || supplierAddress.postcode || '',
           })
+        } else if (supplierAddress.addressLine1) {
+          // No payout details yet, pre-fill with supplier address
+          setPayoutDetails(prev => ({
+            ...prev,
+            businessAddressLine1: supplierAddress.addressLine1 || '',
+            businessAddressLine2: supplierAddress.addressLine2 || '',
+            businessCity: supplierAddress.city || '',
+            businessPostcode: supplierAddress.postcode || '',
+          }))
         }
       } catch (error) {
         console.error('Error fetching payout details:', error)
@@ -292,7 +317,7 @@ export default function Settings() {
     }
 
     fetchPayoutDetails()
-  }, [supplier?.id])
+  }, [supplier?.id, supplierData])
 
   // Load cake settings from primary business
   useEffect(() => {
@@ -443,6 +468,12 @@ export default function Settings() {
             account_holder_name: editValue.accountHolderName,
             sort_code: editValue.sortCode,
             account_number: editValue.accountNumber,
+            vat_number: editValue.vatNumber || null,
+            company_reg_number: editValue.companyRegNumber || null,
+            business_address_line1: editValue.businessAddressLine1 || null,
+            business_address_line2: editValue.businessAddressLine2 || null,
+            business_city: editValue.businessCity || null,
+            business_postcode: editValue.businessPostcode || null,
           })
         })
 
@@ -457,6 +488,12 @@ export default function Settings() {
           accountHolderName: editValue.accountHolderName || '',
           sortCode: editValue.sortCode || '',
           accountNumber: editValue.accountNumber || '',
+          vatNumber: editValue.vatNumber || '',
+          companyRegNumber: editValue.companyRegNumber || '',
+          businessAddressLine1: editValue.businessAddressLine1 || '',
+          businessAddressLine2: editValue.businessAddressLine2 || '',
+          businessCity: editValue.businessCity || '',
+          businessPostcode: editValue.businessPostcode || '',
         })
 
         setSaveSuccess(true)
@@ -838,6 +875,33 @@ export default function Settings() {
                 <SettingRow
                   label="Account number"
                   value={payoutDetails.accountNumber ? '••••' + payoutDetails.accountNumber.slice(-4) : null}
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <div className="pt-4 mt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+                    Business Information (Optional)
+                  </h3>
+                </div>
+
+                <SettingRow
+                  label="VAT number"
+                  value={payoutDetails.vatNumber}
+                  description="If you're VAT registered"
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <SettingRow
+                  label="Company registration number"
+                  value={payoutDetails.companyRegNumber}
+                  description="For limited companies"
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <SettingRow
+                  label="Business address"
+                  value={payoutDetails.businessAddressLine1 ? `${payoutDetails.businessAddressLine1}${payoutDetails.businessCity ? `, ${payoutDetails.businessCity}` : ''}${payoutDetails.businessPostcode ? ` ${payoutDetails.businessPostcode}` : ''}` : null}
+                  description="Pre-filled from your profile. Edit if your billing address is different."
                   onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
                 />
 
@@ -1504,6 +1568,94 @@ export default function Settings() {
                     }
                     return null
                   })()}
+
+                  {/* Business Information Section */}
+                  <div className="pt-6 mt-6 border-t border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 mb-4">Business Information (Optional)</h3>
+                    <p className="text-xs text-gray-500 mb-4">These details will appear on your invoices. Address is pre-filled from your profile.</p>
+
+                    {/* VAT & Company Reg Row */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          VAT number
+                        </label>
+                        <input
+                          type="text"
+                          value={editValue.vatNumber || ''}
+                          onChange={(e) => setEditValue(prev => ({ ...prev, vatNumber: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                          placeholder="GB123456789"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Company reg. number
+                        </label>
+                        <input
+                          type="text"
+                          value={editValue.companyRegNumber || ''}
+                          onChange={(e) => setEditValue(prev => ({ ...prev, companyRegNumber: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                          placeholder="12345678"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Business Address */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Business address line 1
+                        </label>
+                        <input
+                          type="text"
+                          value={editValue.businessAddressLine1 || ''}
+                          onChange={(e) => setEditValue(prev => ({ ...prev, businessAddressLine1: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                          placeholder="123 Business Street"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Business address line 2 (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={editValue.businessAddressLine2 || ''}
+                          onChange={(e) => setEditValue(prev => ({ ...prev, businessAddressLine2: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                          placeholder="Suite 100"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            City
+                          </label>
+                          <input
+                            type="text"
+                            value={editValue.businessCity || ''}
+                            onChange={(e) => setEditValue(prev => ({ ...prev, businessCity: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                            placeholder="London"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Postcode
+                          </label>
+                          <input
+                            type="text"
+                            value={editValue.businessPostcode || ''}
+                            onChange={(e) => setEditValue(prev => ({ ...prev, businessPostcode: e.target.value.toUpperCase() }))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                            placeholder="SW1A 1AA"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

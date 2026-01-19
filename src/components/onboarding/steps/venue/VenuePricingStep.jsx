@@ -58,7 +58,6 @@ export default function VenuePricingStep({ pricing, onChange }) {
             <option value="6">6 hours</option>
             <option value="8">8 hours (full day)</option>
           </select>
-          <p className="text-sm text-gray-600 mt-2">Most venues require 3-4 hours minimum</p>
         </div>
 
         {/* Cleaning/Security Deposit (Optional) */}

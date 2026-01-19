@@ -400,9 +400,31 @@ export default function InvoiceTemplate({ invoice }) {
               <Text style={[styles.infoText, styles.infoTextBold]}>
                 {supplier.name || 'Supplier'}
               </Text>
-              <Text style={styles.infoText}>
-                Service Category: {service.category || 'N/A'}
-              </Text>
+              {payoutDetails?.business_address_line1 && (
+                <Text style={styles.infoText}>
+                  {payoutDetails.business_address_line1}
+                </Text>
+              )}
+              {payoutDetails?.business_address_line2 && (
+                <Text style={styles.infoText}>
+                  {payoutDetails.business_address_line2}
+                </Text>
+              )}
+              {(payoutDetails?.business_city || payoutDetails?.business_postcode) && (
+                <Text style={styles.infoText}>
+                  {[payoutDetails.business_city, payoutDetails.business_postcode].filter(Boolean).join(' ')}
+                </Text>
+              )}
+              {payoutDetails?.vat_number && (
+                <Text style={styles.infoText}>
+                  VAT: {payoutDetails.vat_number}
+                </Text>
+              )}
+              {payoutDetails?.company_reg_number && (
+                <Text style={styles.infoText}>
+                  Company No: {payoutDetails.company_reg_number}
+                </Text>
+              )}
             </View>
           </View>
           <View style={styles.infoBlock}>

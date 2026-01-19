@@ -242,6 +242,7 @@ const childPhotoRef = useRef(null)
     catering: partyPlan.catering || null,
     photography: partyPlan.photography || null,
     bouncyCastle: partyPlan.bouncyCastle || null,
+    sweetTreats: partyPlan.sweetTreats || null,
   }), [partyPlan])
 
   // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
@@ -632,7 +633,8 @@ useEffect(() => {
           decorations: 'Decorations',
           balloons: 'Balloons',
           photography: 'Photography',
-          bouncyCastle: 'Bouncy Castle'
+          bouncyCastle: 'Bouncy Castle',
+          sweetTreats: 'Sweet Treats'
         }
 
         const newRecommendations = {}
@@ -798,7 +800,8 @@ const handleNameSubmit = (nameData) => {
       partyBags: 'Party Bags',
       balloons: 'Balloons',
       photography: 'Photography',
-      bouncyCastle: 'Bouncy Castle'
+      bouncyCastle: 'Bouncy Castle',
+      sweetTreats: 'Sweet Treats'
     }
     
     setModalConfig({
@@ -904,7 +907,7 @@ const handleNameSubmit = (nameData) => {
         
         const supplierTypeMapping = {
           'Venues': 'venue',
-          'Entertainment': 'entertainment', 
+          'Entertainment': 'entertainment',
           'Catering': 'catering',
           'Cakes': 'cakes',
           'Face Painting': 'facePainting',
@@ -912,7 +915,8 @@ const handleNameSubmit = (nameData) => {
           'Decorations': 'decorations',
           'Photography': 'photography',
           'Party Bags': 'partyBags',
-          'Bouncy Castle': 'bouncyCastle'
+          'Bouncy Castle': 'bouncyCastle',
+          'Sweet Treats': 'sweetTreats'
         }
         
         const supplierType = supplierTypeMapping[supplier.category] || 'venue'
@@ -1103,7 +1107,7 @@ const handleNameSubmit = (nameData) => {
       let result = await removeAddon(addonId)
       
       if (!result.success) {
-        const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons']
+        const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'sweetTreats']
         
         for (const supplierType of supplierTypes) {
           const supplier = suppliers[supplierType]
@@ -1149,7 +1153,8 @@ const handleNameSubmit = (nameData) => {
       decorations: 'The Decorations',
       balloons: 'Balloons',
       photography: 'Photography',
-      bouncyCastle: 'Bouncy Castle'
+      bouncyCastle: 'Bouncy Castle',
+      sweetTreats: 'Sweet Treats'
     }
     return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
@@ -1166,7 +1171,8 @@ const handleNameSubmit = (nameData) => {
       activities: '/category-icons/activities.png',
       balloons: '/category-icons/balloons.png',
       photography: '/category-icons/photography.png',
-      bouncyCastle: '/category-icons/bouncy-castle.png'
+      bouncyCastle: '/category-icons/bouncy-castle.png',
+      sweetTreats: '/category-icons/sweet-treats.png'
     }
     return categoryIcons[type] || null
   }
@@ -1186,7 +1192,8 @@ const handleNameSubmit = (nameData) => {
         decorations: 'Create an epic hero hideout',
         balloons: 'Bold colors for brave heroes',
         photography: 'Capture heroic action shots',
-        bouncyCastle: 'Bounce like a superhero'
+        bouncyCastle: 'Bounce like a superhero',
+        sweetTreats: 'Super sweet treats for heroes'
       },
       princess: {
         venue: 'A royal palace for the celebration',
@@ -1199,7 +1206,8 @@ const handleNameSubmit = (nameData) => {
         decorations: 'Transform into an enchanted castle',
         balloons: 'Sparkles and princess colors',
         photography: 'Capture royal memories',
-        bouncyCastle: 'Bounce in the royal court'
+        bouncyCastle: 'Bounce in the royal court',
+        sweetTreats: 'Royal sweets for little princesses'
       },
       // Add more themes as needed
     }
@@ -1215,7 +1223,8 @@ const handleNameSubmit = (nameData) => {
       decorations: 'Set the perfect party scene',
       balloons: 'Add color and excitement',
       photography: 'Capture all the magical moments',
-      bouncyCastle: 'Non-stop bouncing fun'
+      bouncyCastle: 'Non-stop bouncing fun',
+      sweetTreats: 'Candy carts, ice cream & sweet delights'
     }
 
     const taglines = themeTaglines[theme] || defaultTaglines
@@ -1603,7 +1612,8 @@ const handleCustomizationComplete = async (customizationData) => {
           'activities': 'activities',
           'partybags': 'partyBags',
           'balloons': 'balloons',
-          'catering': 'catering'
+          'catering': 'catering',
+          'sweettreats': 'sweetTreats'
         }
         supplierType = categoryToSlot[supplierCategory]
       }
@@ -1664,7 +1674,9 @@ const handleCustomizationComplete = async (customizationData) => {
         totalPrice: selectedPackage.partyBagsMetadata?.totalPrice || totalPrice,
         // Include any other special customizations
         features: selectedPackage.features,
-        description: selectedPackage.description
+        description: selectedPackage.description,
+        // ✅ Preserve image for balloons/face painting theme-based display
+        image: selectedPackage.image,
       }
 
 
@@ -1876,7 +1888,8 @@ const handleChildPhotoUpload = async (file) => {
                           'decorations',
                           'balloons',
                           'photography',
-                          'bouncyCastle'
+                          'bouncyCastle',
+                          'sweetTreats'
                         ];
 
                         // Helper function to render venue card
@@ -2006,7 +2019,7 @@ const handleChildPhotoUpload = async (file) => {
                           const recommendedSupplier = getRecommendedSupplierForType(type);
                           const isLoading = loadingCards[type];
                           const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
-                          const alwaysShowCategories = ['photography', 'bouncyCastle'];
+                          const alwaysShowCategories = ['photography', 'bouncyCastle', 'catering', 'sweetTreats'];
                           const shouldAlwaysShow = alwaysShowCategories.includes(type);
 
                           // Show if: no supplier AND (has recommendation OR is loading OR is deleting OR should always show)

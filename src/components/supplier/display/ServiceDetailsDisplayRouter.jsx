@@ -130,13 +130,25 @@ const detectCategory = (supplier) => {
   }
 
   // Decorations
-  if (indicators.some(i => 
-    ['decoration', 'balloon', 'styling', 'party planning'].some(k => i.includes(k))
+  if (indicators.some(i =>
+    ['decoration', 'styling', 'party planning'].some(k => i.includes(k))
   )) {
-
     return 'decorations';
   }
 
+  // Balloons - separate from decorations
+  if (indicators.some(i =>
+    ['balloon', 'balloons'].some(k => i.includes(k))
+  )) {
+    return 'balloons';
+  }
+
+  // Party Bags - return null (modal handles all content)
+  if (indicators.some(i =>
+    ['party bag', 'party bags', 'partybags', 'partybag'].some(k => i.includes(k))
+  )) {
+    return 'party_bags';
+  }
 
   return 'basic';
 };
@@ -144,6 +156,12 @@ const detectCategory = (supplier) => {
 const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) => {
   const serviceDetails = supplier?.serviceDetails;
 
+  const detectedCategory = detectCategory(supplier);
+
+  // Party bags, cakes, and balloons return null - modal handles all their content
+  if (detectedCategory === 'party_bags' || detectedCategory === 'cakes' || detectedCategory === 'balloons') {
+    return null;
+  }
 
   if (!serviceDetails) {
     return (
@@ -155,8 +173,6 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) 
       </div>
     );
   }
-
-  const detectedCategory = detectCategory(supplier);
 
   // Create props WITH isPreview and themeAccentColor for the specific display components
   const displayProps = {
@@ -188,6 +204,9 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) 
 
             case 'cakes':
               return <CakeDisplay {...displayProps} />;
+
+            case 'party_bags':
+              return null; // Modal handles all party bag content
 
             case 'decorations':
               return <DecorationsDisplay {...displayProps} />;

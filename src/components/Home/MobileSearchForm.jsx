@@ -61,7 +61,7 @@ export default function MobileSearchForm({
   };
 
   return (
-    <div className="md:hidden px-4 pt-2 pb-4 relative z-30 bg-primary-50 " id="search-form">
+    <div className="lg:hidden px-4 pt-2 pb-4 relative z-30 bg-primary-50 " id="search-form">
       <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-4 shadow-2xl border-[hsl(var(--primary-500))] border-2">
         <div className="space-y-4">
     

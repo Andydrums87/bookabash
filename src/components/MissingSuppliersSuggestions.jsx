@@ -133,6 +133,14 @@ export default function MissingSuppliersSuggestions({
       description: "Capture the memories",
       priority: 11,
       categories: ["Photography"]
+    },
+    sweetTreats: {
+      name: "Sweet Treats",
+      icon: "🍭",
+      color: "bg-pink-400",
+      description: "Candy carts, ice cream & more",
+      priority: 12,
+      categories: ["Sweet Treats"]
     }
   }
 

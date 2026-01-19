@@ -19,8 +19,6 @@ export const AVAILABILITY_TYPES = {
     'face_painter': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'photographer': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'photography': AVAILABILITY_TYPES.TIME_SLOT_BASED,
-    'catering': AVAILABILITY_TYPES.TIME_SLOT_BASED,
-    'caterer': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'magician': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'clown': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'balloon artist': AVAILABILITY_TYPES.TIME_SLOT_BASED,
@@ -46,7 +44,24 @@ export const AVAILABILITY_TYPES = {
     'party_supplies': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'activities': AVAILABILITY_TYPES.LEAD_TIME_BASED, // Could be either, but defaulting to lead time
     'soft play': AVAILABILITY_TYPES.LEAD_TIME_BASED,
-    'party equipment': AVAILABILITY_TYPES.LEAD_TIME_BASED
+    'party equipment': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+
+    // Catering (lunchbox delivery - per-child ordering with advance notice)
+    'catering': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'caterer': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'lunchbox': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'lunchboxes': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'party food': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+
+    // Sweet Treats (multi-select - candy cart, candy floss, ice cream, etc.)
+    'sweet treats': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'sweettreats': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'sweet_treats': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'candy cart': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'candy floss': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'ice cream': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'sweet stand': AVAILABILITY_TYPES.LEAD_TIME_BASED,
+    'popcorn': AVAILABILITY_TYPES.LEAD_TIME_BASED
   }
   
   /**

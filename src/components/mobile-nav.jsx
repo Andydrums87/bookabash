@@ -228,10 +228,8 @@ useEffect(() => {
   // Basic nav items
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/browse", label: "Snap Suppliers", icon: Search },
     // Dashboard will be inserted here as expandable
     { href: "/blog", label: "Snapspiration", icon: BookOpen },
-    { href: "/favorites", label: "My Favorites", icon: Heart },
   ]
 
   // Dashboard items with same logic as desktop
@@ -330,7 +328,7 @@ useEffect(() => {
   return (
     <>
       {/* Mobile Header with Menu Button and Cart */}
-      <div className="md:hidden flex items-center space-x-2">
+      <div className="lg:hidden flex items-center space-x-2">
         {/* Cart Indicator - now handles its own click with party ID */}
         <MobileCartIndicator 
           onCartClick={closeMenu} 
@@ -352,14 +350,14 @@ useEffect(() => {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[250] md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[250] lg:hidden transition-opacity duration-300"
           onClick={closeMenu}
         />
       )}
 
       <div
         className={`
-          fixed top-0 right-0 h-full w-80 z-[300] md:hidden
+          fixed top-0 right-0 h-full w-80 z-[300] lg:hidden
           transform transition-all duration-300 ease-out flex flex-col
           bg-primary-500
           ${isOpen ? "translate-x-0" : "translate-x-full"}
@@ -422,14 +420,6 @@ useEffect(() => {
             onClick={closeMenu}
           >
             Home
-          </Link>
-
-          <Link
-            href="/browse"
-            className="block py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
-            onClick={closeMenu}
-          >
-            Snap Suppliers
           </Link>
 
           {isSupplier ? (
@@ -496,14 +486,6 @@ useEffect(() => {
             onClick={closeMenu}
           >
             Snapspiration
-          </Link>
-
-          <Link
-            href="/favorites"
-            className="block py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
-            onClick={closeMenu}
-          >
-            My Favorites
           </Link>
 
           {!user && (

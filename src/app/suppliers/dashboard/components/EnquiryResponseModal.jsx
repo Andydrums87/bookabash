@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Mail, Phone, Cake, Truck } from "lucide-react"
+import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Mail, Phone, Cake, Truck, Package } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 import Link from "next/link"
@@ -11,6 +11,7 @@ const shortcodes = [
   { code: '{child_name}', label: 'Child name' },
   { code: '{event_date}', label: 'Event date' },
   { code: '{event_time}', label: 'Event time' },
+  { code: '{package_name}', label: 'Package name' },
   { code: '{business_name}', label: 'Your business name' },
   { code: '{total_price}', label: 'Total price' },
 ]
@@ -42,6 +43,12 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
     : enquiry?.addon_details || {}
 
   const cakeCustomization = addonDetails?.cakeCustomization || {}
+
+  // Get package name from addon_details or fallback to formatted package_id
+  const packageName = addonDetails?.packageName ||
+                      addonDetails?.selectedPackage?.name ||
+                      addonDetails?.packageData?.name ||
+                      null
 
   const handleTextareaBlur = () => {
     const textarea = textareaRef.current
@@ -154,6 +161,33 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
     return ""
   }
 
+  const formatTimeRange = (party) => {
+    if (!party) return null
+    if (party.start_time && party.end_time) {
+      const formatSingleTime = (timeStr) => {
+        const [hours, minutes] = timeStr.split(":")
+        const time = new Date()
+        time.setHours(Number(hours), Number(minutes))
+        return time.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+      }
+      return `${formatSingleTime(party.start_time)} - ${formatSingleTime(party.end_time)}`
+    }
+    return null
+  }
+
+  const calculateDuration = (party) => {
+    if (!party?.start_time || !party?.end_time) return null
+    const [startH, startM] = party.start_time.split(":").map(Number)
+    const [endH, endM] = party.end_time.split(":").map(Number)
+    const startMinutes = startH * 60 + startM
+    const endMinutes = endH * 60 + endM
+    const durationMinutes = endMinutes - startMinutes
+    const hours = Math.floor(durationMinutes / 60)
+    const mins = durationMinutes % 60
+    if (mins === 0) return `${hours} hour${hours !== 1 ? 's' : ''}`
+    return `${hours}h ${mins}m`
+  }
+
   const processTemplate = (template) => {
     if (!template || !enquiry) return template
     // Get business name from multiple possible locations
@@ -176,7 +210,7 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
       .replace(/{total_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{guest_count}/g, party?.guest_count || "the children")
       .replace(/{business_name}/g, businessName)
-      .replace(/{package_name}/g, enquiry.package_id?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "your package")
+      .replace(/{package_name}/g, packageName || "your package")
   }
 
   const loadMessageTemplates = async () => {
@@ -407,14 +441,14 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
                   <p className="font-medium text-gray-900">{formatDate(party?.party_date)}</p>
                 </div>
               </div>
-              {timeDisplay && (
+              {(timeDisplay || formatTimeRange(party)) && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                     <Clock className="w-5 h-5 text-gray-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Time</p>
-                    <p className="font-medium text-gray-900">{timeDisplay}</p>
+                    <p className="text-sm text-gray-500">Time{calculateDuration(party) ? ` (${calculateDuration(party)})` : ''}</p>
+                    <p className="font-medium text-gray-900">{formatTimeRange(party) || timeDisplay}</p>
                   </div>
                 </div>
               )}
@@ -427,7 +461,31 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
                   <p className="font-medium text-gray-900">{party?.guest_count} children</p>
                 </div>
               </div>
-              {(party?.full_delivery_address || party?.delivery_address_line_1 || party?.location) && (
+              {(enquiry?.package_id || packageName) && !isCakeOrder && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Package</p>
+                    <p className="font-medium text-gray-900">{packageName || 'Selected package'}</p>
+                  </div>
+                </div>
+              )}
+              {enquiry?.addon_ids && enquiry.addon_ids.length > 0 && !isCakeOrder && (
+                <div className="flex items-start gap-3 col-span-2">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-gray-600 text-sm font-medium">✨</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Add-ons</p>
+                    <p className="font-medium text-gray-900">
+                      {enquiry.addon_ids.map(id => id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {isCakeOrder && (party?.full_delivery_address || party?.delivery_address_line_1 || party?.location) && (
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-5 h-5 text-gray-600" />

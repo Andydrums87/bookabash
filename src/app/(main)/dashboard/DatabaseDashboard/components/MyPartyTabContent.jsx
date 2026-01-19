@@ -55,7 +55,8 @@ export default function MyPartyTabContent({
       activities: { color: "bg-yellow-500", icon: "🎪" },
       decorations: { color: "bg-indigo-500", icon: "🎈" },
       balloons: { color: "bg-cyan-500", icon: "🎈" },
-      partyBags: { color: "bg-red-500", icon: "🎁" }
+      partyBags: { color: "bg-red-500", icon: "🎁" },
+      sweetTreats: { color: "bg-pink-400", icon: "🍭" }
     }
     return configs[supplierType] || { color: "bg-gray-500", icon: "📦" }
   }
@@ -150,7 +151,8 @@ export default function MyPartyTabContent({
       decorations: 'The Decorations',
       balloons: 'Balloons',
       photography: 'Photography',
-      bouncyCastle: 'Bouncy Castle'
+      bouncyCastle: 'Bouncy Castle',
+      sweetTreats: 'Sweet Treats'
     }
     return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
@@ -167,6 +169,7 @@ export default function MyPartyTabContent({
       activities: '/category-icons/activities.png',
       balloons: '/category-icons/balloons.png',
       photography: '/category-icons/photography.png',
+      sweetTreats: '/category-icons/sweet-treats.png',
       bouncyCastle: '/category-icons/bouncy-castle.png'
     }
     return categoryIcons[type] || null
@@ -372,7 +375,8 @@ export default function MyPartyTabContent({
       decorations: 'Set the perfect party scene',
       balloons: 'Add color and excitement',
       photography: 'Capture all the magical moments',
-      bouncyCastle: 'Non-stop bouncing fun'
+      bouncyCastle: 'Non-stop bouncing fun',
+      sweetTreats: 'Candy carts, ice cream & sweet delights'
     }
 
     const taglines = themeTaglines[theme] || defaultTaglines
@@ -460,13 +464,39 @@ export default function MyPartyTabContent({
             setSelectedSupplierForQuickView(supplier)
           }}
         >
-          <Image
-            src={supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png'}
-            alt={supplierName}
-            fill
-            className="object-cover transition-transform duration-300 group-hover/image:scale-105"
-            sizes="(max-width: 1024px) 50vw, 33vw"
-          />
+          {/* Use package image for balloons, face painting, activities, and sweet treats if available */}
+          {(() => {
+            const isBalloons = type === 'balloons'
+            const isFacePainting = type === 'facePainting'
+            const isActivities = type === 'activities' || type === 'softPlay'
+            const isSweetTreats = type === 'sweetTreats'
+            const packageImage = supplier?.packageData?.image
+            // For multi-select (sweet treats), get first selected item's image
+            const selectedItems = supplier?.packageData?.selectedItems || []
+            const firstSelectedItemImage = selectedItems[0]?.image
+
+            let imageSrc = supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png'
+
+            if ((isBalloons || isFacePainting || isActivities) && packageImage) {
+              imageSrc = typeof packageImage === 'object' ? packageImage.src : packageImage
+            }
+
+            // Sweet treats: use first selected item's image if available
+            if (isSweetTreats && (firstSelectedItemImage || packageImage)) {
+              const sweetTreatsImage = firstSelectedItemImage || packageImage
+              imageSrc = typeof sweetTreatsImage === 'object' ? sweetTreatsImage.src : sweetTreatsImage
+            }
+
+            return (
+              <Image
+                src={imageSrc}
+                alt={supplierName}
+                fill
+                className="object-cover transition-transform duration-300 group-hover/image:scale-105"
+                sizes="(max-width: 1024px) 50vw, 33vw"
+              />
+            )
+          })()}
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-90" />
@@ -498,9 +528,27 @@ export default function MyPartyTabContent({
           {/* Supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
+              {/* Subtle image context - only for non-venues */}
+              {type !== 'venue' && (
+                <p className="text-[9px] text-white/50 mb-1 tracking-wide">Typical setup shown</p>
+              )}
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                 {supplierName}
               </h3>
+
+              {/* Sweet Treats selected items display */}
+              {type === 'sweetTreats' && supplier?.packageData?.selectedItems?.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-sm text-white/90 font-medium">
+                    {supplier.packageData.selectedItems[0]?.name}
+                    {supplier.packageData.selectedItems.length > 1 && (
+                      <span className="ml-1 text-white/70">
+                        +{supplier.packageData.selectedItems.length - 1} more
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="text-white">
