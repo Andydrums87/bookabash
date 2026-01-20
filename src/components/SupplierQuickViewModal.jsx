@@ -15,13 +15,17 @@ import ServiceDetailsDisplayRouter from '@/components/supplier/display/ServiceDe
 export default function SupplierQuickViewModal({
   supplier,
   isOpen,
-  onClose
+  onClose,
+  onCustomize, // NEW: Callback to open customization modal
+  partyDetails,
+  type
 }) {
   const [fullSupplier, setFullSupplier] = useState(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
   const [showLightbox, setShowLightbox] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
 
   // Detect theme from supplier name/description
   const getSupplierTheme = (supplier) => {
@@ -249,14 +253,65 @@ export default function SupplierQuickViewModal({
               <>
                 {/* Mobile: Carousel | Desktop: Gallery Grid */}
                 <div className="relative">
-                  {/* Mobile carousel (hidden on lg+) */}
-                  <div className="lg:hidden relative h-56 sm:h-64 md:h-72">
-                    <SwipeableSupplierCarousel
-                      supplier={displaySupplier}
-                      className="h-full"
-                      aspectRatio="h-full"
-                      onIndexChange={setCarouselIndex}
-                    />
+                  {/* Mobile carousel with blurred background (hidden on lg+) */}
+                  <div className="lg:hidden relative h-56 sm:h-64 md:h-72 overflow-hidden">
+                    {/* Blurred background fill */}
+                    {supplierImages.length > 0 && (
+                      <div
+                        className="absolute inset-0 scale-110"
+                        style={{
+                          backgroundImage: `url(${supplierImages[carouselIndex] || supplierImages[0]})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          filter: 'blur(20px)',
+                        }}
+                      />
+                    )}
+                    {/* Dark overlay for better contrast */}
+                    <div className="absolute inset-0 bg-black/20" />
+                    {/* Main image with object-contain */}
+                    {supplierImages.length > 0 && (
+                      <div className="relative h-full w-full">
+                        <Image
+                          src={supplierImages[carouselIndex] || supplierImages[0]}
+                          alt={`Image ${carouselIndex + 1}`}
+                          fill
+                          className="object-contain relative z-10"
+                          sizes="100vw"
+                        />
+                      </div>
+                    )}
+                    {/* Navigation dots for multiple images */}
+                    {supplierImages.length > 1 && (
+                      <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-1.5">
+                        {supplierImages.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCarouselIndex(idx)}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              idx === carouselIndex
+                                ? 'bg-white w-4'
+                                : 'bg-white/50 hover:bg-white/70'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {/* Swipe areas for navigation */}
+                    {supplierImages.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCarouselIndex(prev => prev === 0 ? supplierImages.length - 1 : prev - 1)}
+                          className="absolute left-0 top-0 bottom-0 w-1/4 z-10"
+                          aria-label="Previous image"
+                        />
+                        <button
+                          onClick={() => setCarouselIndex(prev => prev === supplierImages.length - 1 ? 0 : prev + 1)}
+                          className="absolute right-0 top-0 bottom-0 w-1/4 z-10"
+                          aria-label="Next image"
+                        />
+                      </>
+                    )}
                     {/* Maximize button */}
                     {supplierImages.length > 0 && (
                       <button
@@ -269,6 +324,12 @@ export default function SupplierQuickViewModal({
                         <Maximize2 className="w-4 h-4 text-white" />
                         <span className="text-white text-xs font-medium">View</span>
                       </button>
+                    )}
+                    {/* Image counter */}
+                    {supplierImages.length > 1 && (
+                      <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full">
+                        <span className="text-white text-xs font-medium">{carouselIndex + 1}/{supplierImages.length}</span>
+                      </div>
                     )}
                   </div>
 
@@ -655,6 +716,15 @@ export default function SupplierQuickViewModal({
                                       ))}
                                     </ul>
                                   )}
+                                  {/* Book button */}
+                                  {onCustomize && (
+                                    <button
+                                      onClick={() => onCustomize()}
+                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                    >
+                                      Book
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -773,6 +843,15 @@ export default function SupplierQuickViewModal({
                                         </li>
                                       ))}
                                     </ul>
+                                  )}
+                                  {/* Book button */}
+                                  {onCustomize && (
+                                    <button
+                                      onClick={() => onCustomize()}
+                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                    >
+                                      Book
+                                    </button>
                                   )}
                                 </div>
                               ))}
@@ -941,44 +1020,64 @@ export default function SupplierQuickViewModal({
                               <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
                             <div className="grid gap-4 sm:grid-cols-2">
-                              {packages.map((pkg, index) => (
-                                <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
-                                  {/* Item Image */}
-                                  {pkg.image && (
-                                    <div className="relative h-32 w-full">
-                                      <Image
-                                        src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
-                                        alt={pkg.name}
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 640px) 100vw, 50vw"
-                                      />
+                              {packages.map((pkg, index) => {
+                                const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
+                                return (
+                                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
+                                    {/* Item Image with View button */}
+                                    {pkg.image && (
+                                      <div className="relative h-32 w-full">
+                                        <Image
+                                          src={imageUrl}
+                                          alt={pkg.name}
+                                          fill
+                                          className="object-cover"
+                                          sizes="(max-width: 640px) 100vw, 50vw"
+                                        />
+                                        {/* View button overlay */}
+                                        <button
+                                          onClick={() => setExpandedPackageImage(imageUrl)}
+                                          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all"
+                                        >
+                                          <Maximize2 className="w-3 h-3 text-gray-600" />
+                                          <span className="text-[10px] font-medium text-gray-600">View</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                    <div className="p-4">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                        <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                      </div>
+                                      {pkg.description && (
+                                        <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                      )}
+                                      {pkg.features && pkg.features.length > 0 && (
+                                        <ul className="space-y-1">
+                                          {pkg.features.map((feature, fIndex) => (
+                                            <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                              <span>{feature}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                      {pkg.duration && (
+                                        <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
+                                      )}
+                                      {/* Book button */}
+                                      {onCustomize && (
+                                        <button
+                                          onClick={() => onCustomize()}
+                                          className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                        >
+                                          Book
+                                        </button>
+                                      )}
                                     </div>
-                                  )}
-                                  <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && (
-                                      <ul className="space-y-1">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    {pkg.duration && (
-                                      <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
-                                    )}
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           </div>
                         )}
@@ -1070,44 +1169,64 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <p className="text-sm text-gray-500 mb-4">Pick and choose from our range - mix and match for your perfect party!</p>
                             <div className="grid gap-4 sm:grid-cols-2">
-                              {packages.map((pkg, index) => (
-                                <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
-                                  {/* Item Image */}
-                                  {pkg.image && (
-                                    <div className="relative h-32 w-full">
-                                      <Image
-                                        src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
-                                        alt={pkg.name}
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 640px) 100vw, 50vw"
-                                      />
+                              {packages.map((pkg, index) => {
+                                const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
+                                return (
+                                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
+                                    {/* Item Image with View button */}
+                                    {pkg.image && (
+                                      <div className="relative h-32 w-full">
+                                        <Image
+                                          src={imageUrl}
+                                          alt={pkg.name}
+                                          fill
+                                          className="object-cover"
+                                          sizes="(max-width: 640px) 100vw, 50vw"
+                                        />
+                                        {/* View button overlay */}
+                                        <button
+                                          onClick={() => setExpandedPackageImage(imageUrl)}
+                                          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all"
+                                        >
+                                          <Maximize2 className="w-3 h-3 text-gray-600" />
+                                          <span className="text-[10px] font-medium text-gray-600">View</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                    <div className="p-4">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                        <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                      </div>
+                                      {pkg.description && (
+                                        <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                      )}
+                                      {pkg.features && pkg.features.length > 0 && (
+                                        <ul className="space-y-1">
+                                          {pkg.features.map((feature, fIndex) => (
+                                            <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                              <span>{feature}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                      {pkg.duration && (
+                                        <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
+                                      )}
+                                      {/* Book button */}
+                                      {onCustomize && (
+                                        <button
+                                          onClick={() => onCustomize()}
+                                          className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                        >
+                                          Book
+                                        </button>
+                                      )}
                                     </div>
-                                  )}
-                                  <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && (
-                                      <ul className="space-y-1">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    {pkg.duration && (
-                                      <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
-                                    )}
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           </div>
                         )}
@@ -1215,6 +1334,15 @@ export default function SupplierQuickViewModal({
                                         </li>
                                       ))}
                                     </ul>
+                                  )}
+                                  {/* Book button */}
+                                  {onCustomize && (
+                                    <button
+                                      onClick={() => onCustomize()}
+                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                    >
+                                      Book
+                                    </button>
                                   )}
                                 </div>
                               ))}
@@ -1405,6 +1533,15 @@ export default function SupplierQuickViewModal({
                                       ))}
                                     </ul>
                                   )}
+                                  {/* Book button */}
+                                  {onCustomize && (
+                                    <button
+                                      onClick={() => onCustomize()}
+                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                    >
+                                      Book
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -1510,6 +1647,15 @@ export default function SupplierQuickViewModal({
                                         </li>
                                       ))}
                                     </ul>
+                                  )}
+                                  {/* Book button */}
+                                  {onCustomize && (
+                                    <button
+                                      onClick={() => onCustomize()}
+                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                    >
+                                      Book
+                                    </button>
                                   )}
                                 </div>
                               ))}
@@ -1875,6 +2021,30 @@ export default function SupplierQuickViewModal({
               <ChevronRight className="w-8 h-8 text-white" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Expanded Package Image Modal */}
+      {expandedPackageImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          onClick={() => setExpandedPackageImage(null)}
+        >
+          <button
+            onClick={() => setExpandedPackageImage(null)}
+            className="absolute top-4 right-4 z-20 w-12 h-12 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="relative w-full h-full max-w-4xl max-h-[90vh] m-4">
+            <Image
+              src={expandedPackageImage}
+              alt="Expanded view"
+              fill
+              className="object-contain"
+              sizes="100vw"
+            />
+          </div>
         </div>
       )}
     </div>

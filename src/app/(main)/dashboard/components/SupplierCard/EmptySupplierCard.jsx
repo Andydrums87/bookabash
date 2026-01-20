@@ -753,6 +753,10 @@ export default function EmptySupplierCard({
           onAddSupplier={onAddSupplier}
           partyDetails={partyDetails}
           type={type}
+          onCustomize={needsCustomization ? () => {
+            setShowQuickView(false)
+            setShowCustomizationModal(true)
+          } : undefined}
         />
 
         {/* Customization Modal for Cakes, Balloons, Party Bags */}
@@ -968,6 +972,10 @@ export default function EmptySupplierCard({
           onAddSupplier={onAddSupplier}
           partyDetails={partyDetails}
           type={type}
+          onCustomize={needsCustomization ? () => {
+            setShowQuickView(false)
+            setShowCustomizationModal(true)
+          } : undefined}
         />
 
         {/* Customization Modal for Cakes, Balloons, Party Bags */}
@@ -1182,6 +1190,10 @@ export default function EmptySupplierCard({
         onAddSupplier={onAddSupplier}
         partyDetails={partyDetails}
         type={type}
+        onCustomize={needsCustomization ? () => {
+          setShowQuickView(false)
+          setShowCustomizationModal(true)
+        } : undefined}
       />
 
       {/* Customization Modal for Cakes, Balloons, Party Bags */}
