@@ -283,13 +283,7 @@ export default function SupplierCustomizationModal({
   // ✅ NEW: Allow parent to override supplier type detection
   supplierType = null, // e.g., "cakes", "partyBags" - forces specific UI mode
 }) {
-  // DEBUG: Log partyDetails on every render to find theme
-  console.log('🔴🔴🔴 PARTY DETAILS CHECK:', {
-    partyDetails,
-    partyDetailsKeys: partyDetails ? Object.keys(partyDetails) : 'null',
-    theme: partyDetails?.theme,
-    partyTheme: partyDetails?.partyTheme,
-  })
+
 
   // ✅ DEBUG: Log when modal receives new supplier prop
   useEffect(() => {
@@ -1588,6 +1582,15 @@ export default function SupplierCustomizationModal({
             totalPrice: calculateModalPricing.totalPrice,
           },
         }),
+        // ✅ Add facePaintingMetadata for special requests
+        ...(supplierTypeDetection.isFacePainting && {
+          facePaintingMetadata: {
+            specialRequests: specialRequests.trim(),
+            partyTheme: databasePartyData?.theme || partyDetails?.theme || 'general',
+            duration: 2, // Standardised 2-hour party
+            totalPrice: calculateModalPricing.totalPrice,
+          },
+        }),
       },
       package: finalPackage,
       addons: selectedAddonObjects,
@@ -2141,9 +2144,10 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Face Painting - What's included */}
+            {/* Face Painting - Simplified view with what's included + special requests */}
             {supplierTypeDetection.isFacePainting && (
-              <section>
+              <section className="space-y-4">
+                {/* What's Included */}
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold text-gray-900 mb-3">What's included:</h4>
                   <ul className="space-y-2 text-sm text-gray-600">
@@ -2164,6 +2168,21 @@ export default function SupplierCustomizationModal({
                       All equipment provided
                     </li>
                   </ul>
+                </div>
+
+                {/* Special Requests */}
+                <div className="bg-primary-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Let the face painter know about any design preferences or special requirements
+                  </p>
+                  <Textarea
+                    placeholder="e.g., Birthday child wants a dragon, please avoid glitter, child has sensitive skin..."
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    className="bg-white border-gray-200 text-sm resize-none"
+                    rows={3}
+                  />
                 </div>
               </section>
             )}
@@ -2732,8 +2751,8 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Balloons/Face Painting/Party Bags - Card Grid Package Selection */}
-            {(supplierTypeDetection.isBalloons || supplierTypeDetection.isFacePainting || supplierTypeDetection.isPartyBags) && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
+            {/* Balloons/Party Bags - Card Grid Package Selection */}
+            {(supplierTypeDetection.isBalloons || supplierTypeDetection.isPartyBags) && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-primary-500" />
@@ -2815,15 +2834,12 @@ export default function SupplierCustomizationModal({
                               </p>
                             )}
                             <ul className="text-[10px] text-gray-600 space-y-0.5">
-                              {pkg.features?.slice(0, 4).map((feature, i) => (
+                              {pkg.features?.map((feature, i) => (
                                 <li key={i} className="flex items-start gap-1">
                                   <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
                                   <span className="line-clamp-1">{feature}</span>
                                 </li>
                               ))}
-                              {pkg.features?.length > 4 && (
-                                <li className="text-gray-400 pl-4">+{pkg.features.length - 4} more</li>
-                              )}
                             </ul>
                           </div>
                         </div>

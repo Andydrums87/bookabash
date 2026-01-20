@@ -186,12 +186,12 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           )}
         </h4>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-hidden">
           {/* Grid layout for better organization */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {displayItems.map((item, index) => (
-              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center text-sm py-1.5`}>
-                {item}
+              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center text-sm py-1.5 truncate max-w-full`}>
+                <span className="truncate">{item}</span>
               </Badge>
             ))}
           </div>

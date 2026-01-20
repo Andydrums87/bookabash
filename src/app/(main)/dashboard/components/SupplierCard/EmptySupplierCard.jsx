@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X } from "lucide-react"
+import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X, Eye } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
 import SupplierCustomizationModal from '@/components/SupplierCustomizationModal'
@@ -482,6 +482,26 @@ export default function EmptySupplierCard({
 
   // Get generic image for this category
   const genericImage = CATEGORY_IMAGES[type] || `/placeholder.svg`
+
+  // Get actual supplier image - for decorations/party bags, use theme-specific image if available
+  const getSupplierImage = () => {
+    const partyTheme = partyDetails?.theme
+
+    // For decorations and party bags, check for theme-specific images in packages
+    if ((type === 'decorations' || type === 'partyBags') && partyTheme) {
+      // Check packages for theme images
+      const packages = recommendedSupplier?.packages || recommendedSupplier?.data?.packages || []
+      for (const pkg of packages) {
+        if (pkg.themeImages && pkg.themeImages[partyTheme]) {
+          return pkg.themeImages[partyTheme]
+        }
+      }
+    }
+
+    // Fall back to cover photo, image, or generic
+    return recommendedSupplier?.coverPhoto || recommendedSupplier?.image || recommendedSupplier?.imageUrl || genericImage
+  }
+  const supplierImage = getSupplierImage()
   const categoryDisplayName = getDisplayName(type)
 
   // ✅ Check supplier availability
@@ -600,28 +620,17 @@ export default function EmptySupplierCard({
           className="overflow-hidden bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-300))] h-full relative"
         >
           <div className="flex flex-col h-full">
-            {/* Image section - clickable and smaller */}
+            {/* Image section - clickable to show quick view */}
             <div
               className="relative h-32 w-full flex-shrink-0 cursor-pointer group/img"
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.stopPropagation()
-                // For cake suppliers, open customization modal instead of quick view
-                if (isCakeSupplier) {
-                  try {
-                    const fullData = await fetchFullSupplierData(recommendedSupplier.id)
-                    setFullSupplierData(fullData || recommendedSupplier)
-                    setShowCustomizationModal(true)
-                  } catch (error) {
-                    setFullSupplierData(recommendedSupplier)
-                    setShowCustomizationModal(true)
-                  }
-                } else {
-                  setShowQuickView(true)
-                }
+                // Always open quick view when tapping image (customization happens via Add button)
+                setShowQuickView(true)
               }}
             >
               <Image
-                src={genericImage}
+                src={supplierImage}
                 alt={categoryDisplayName}
                 fill
                 className="object-cover transition-transform duration-300 group-hover/img:scale-105"
@@ -630,6 +639,16 @@ export default function EmptySupplierCard({
 
               {/* Subtle overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/40 transition-opacity group-hover/img:opacity-80" />
+
+              {/* View badge - shows on available suppliers to indicate clickable */}
+              {!isUnavailable && (
+                <div className="absolute top-2 left-2 z-10">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                    <Eye className="w-3 h-3 text-gray-600" />
+                    <span className="text-[10px] font-medium text-gray-600">View</span>
+                  </div>
+                </div>
+              )}
 
               {/* Info icon - shows unavailability reason when unavailable */}
               {isUnavailable && unavailabilityExplanation && (
@@ -810,16 +829,16 @@ export default function EmptySupplierCard({
               }}
             >
               <Image
-                src={genericImage}
+                src={supplierImage}
                 alt={categoryDisplayName}
                 fill
-                className="object-cover grayscale-[30%] opacity-70 group-hover:grayscale-[30%] group-hover:opacity-60 transition-all"
+                className="object-cover transition-all"
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
             </div>
 
             {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/80 pointer-events-none" />
 
             {/* Info icon - shows supplier details OR unavailability reason */}
             {!isUnavailableCategory && (
@@ -1023,16 +1042,16 @@ export default function EmptySupplierCard({
             }}
           >
             <Image
-              src={genericImage}
+              src={supplierImage}
               alt={categoryDisplayName}
               fill
-              className="object-cover grayscale-[30%] opacity-70 group-hover:grayscale-[30%] group-hover:opacity-60 transition-all"
+              className="object-cover transition-all"
               sizes="(max-width: 1024px) 50vw, 33vw"
             />
           </div>
 
-          {/* Darker overlay for greyed effect */}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/80 pointer-events-none" />
 
            {/* Info icon - shows supplier details OR unavailability reason */}
            <div className="absolute top-2 right-2 z-10">

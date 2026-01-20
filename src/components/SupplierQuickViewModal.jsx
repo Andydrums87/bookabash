@@ -204,7 +204,7 @@ export default function SupplierQuickViewModal({
       style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full h-[85vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 relative"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 relative"
         onClick={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         style={{ touchAction: 'auto' }}
@@ -433,9 +433,10 @@ export default function SupplierQuickViewModal({
                   const isDecorations = category === 'decorations' || category === 'decoration' || serviceType === 'decorations'
                   const isActivities = category === 'activities' || category === 'softplay' || serviceType === 'activities' || serviceType === 'softplay'
                   const isSweetTreats = category === 'sweettreats' || category === 'sweet treats' || serviceType === 'sweettreats'
+                  const isBouncyCastle = category === 'bouncycastle' || category === 'bouncy castle' || serviceType === 'bouncycastle' || category.includes('bouncy')
 
                   // Skip for categories that have their own aboutUs section
-                  if (isVenue || isBalloons || isFacePainting || isCatering || isPartyBags || isDecorations || isActivities || isSweetTreats) return null
+                  if (isVenue || isBalloons || isFacePainting || isCatering || isPartyBags || isDecorations || isActivities || isSweetTreats || isBouncyCastle) return null
 
                   // For cakes, show description as "About This Cake"
                   if (isCake) {
@@ -790,13 +791,13 @@ export default function SupplierQuickViewModal({
                             {/* Delivery Info */}
                             <div>
                               <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{serviceDetails?.delivery || 'Delivered to your door the evening before your party (5-8pm)'}</span>
+                              <span>{serviceDetails?.delivery || 'Delivered to your home address within 3-5 working days'}</span>
                             </div>
 
                             {/* Lead Time */}
                             <div>
                               <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '7 days notice required'}</span>
+                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '5 days notice required'}</span>
                             </div>
 
                             {/* Allergen Info */}
@@ -824,7 +825,84 @@ export default function SupplierQuickViewModal({
                             <div>
                               <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
                               <p className="text-base text-gray-700 mt-1">
-                                Party bags delivered to your home the evening before your party so everything is ready for the big day!
+                                Party bags delivered to your home within 3-5 working days so everything is ready for the big day!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // For bouncy castle - simple hire for party duration
+                  const isBouncyCastle = category === 'bouncycastle' || category === 'bouncy castle' || serviceType === 'bouncycastle' || serviceType === 'bouncy castle' || category.includes('bouncy')
+                  if (isBouncyCastle) {
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Bouncy Castle
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Hire Duration */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Hire duration: </span>
+                              <span>Included for the full duration of your party</span>
+                            </div>
+
+                            {/* Space Required */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Space needed: </span>
+                              <span>{serviceDetails?.spaceRequired || 'Flat outdoor area or large indoor space with high ceiling'}</span>
+                            </div>
+
+                            {/* Setup */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Setup: </span>
+                              <span>We arrive 30-45 minutes before to inflate and secure the castle</span>
+                            </div>
+
+                            {/* Collection */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Collection: </span>
+                              <span>We pack away after your party - you don't need to do anything!</span>
+                            </div>
+
+                            {/* Safety */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Safety: </span>
+                              <span>All castles are safety-tested and we provide safety mats</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🏰</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Bouncy Castle Hire</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                The bouncy castle is included for your entire party - endless bouncing fun for the kids!
                               </p>
                             </div>
                           </div>
@@ -1450,7 +1528,7 @@ export default function SupplierQuickViewModal({
                             {/* Delivery */}
                             <div>
                               <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{deliveryInfo || 'Balloons delivered and set up at your venue on the morning of your party'}</span>
+                              <span>{deliveryInfo || 'Balloons delivered to your home address on the morning of your party'}</span>
                             </div>
 
                             {/* Lead Time */}
@@ -1478,9 +1556,9 @@ export default function SupplierQuickViewModal({
                           <div className="flex items-start gap-3">
                             <span className="text-2xl">🎈</span>
                             <div>
-                              <h4 className="font-bold text-lg text-gray-900">Setup Included</h4>
+                              <h4 className="font-bold text-lg text-gray-900">Home Delivery</h4>
                               <p className="text-base text-gray-700 mt-1">
-                                We deliver and set up your balloon display at your venue - you don't need to do a thing!
+                                Balloons are delivered to your home address ready for you to take to your party venue.
                               </p>
                             </div>
                           </div>
