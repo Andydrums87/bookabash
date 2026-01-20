@@ -245,7 +245,8 @@ export default function EmptySupplierCard({
   const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
   const isSweetTreatsSupplier = type === 'sweetTreats'
   const isCateringSupplier = type === 'catering'
-  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier
+  const isDecorationsSupplier = type === 'decorations'
+  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier || isDecorationsSupplier
 
   // Check if this category is restricted by the selected venue
   const isVenueRestricted = useMemo(() => {

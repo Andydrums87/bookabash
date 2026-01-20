@@ -159,40 +159,28 @@ const renderAddOnServices = (addOnServices) => {
             </div>
           )}
 
-          {/* Timings */}
-          {(serviceDetails.setupTime || packageData?.duration) && (
-            <div>
-              <span className="font-semibold text-gray-900 block mb-2">Timings:</span>
-              <div className="pl-4 space-y-1.5">
-                {serviceDetails.setupTime && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                    <span>Team arrive {serviceDetails.setupTime} minutes before to setup</span>
-                  </div>
-                )}
-                {packageData?.duration && (
-                  <>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                      <span>First {Math.floor(packageData.duration * 60 * 0.6)} minutes of games and activities</span>
-                    </div>
-                    {packageData.duration >= 2 && (
-                      <>
-                        <div className="flex items-start gap-2">
-                          <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                          <span>20 minutes for food and refreshments</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                          <span>Final {Math.floor(packageData.duration * 60 * 0.33)} minutes of more entertainment</span>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
+          {/* Timings - Standardised for 2-hour parties */}
+          <div>
+            <span className="font-semibold text-gray-900 block mb-2">Timings:</span>
+            <div className="pl-4 space-y-1.5">
+              <div className="flex items-start gap-2">
+                <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                <span>Entertainer typically arrives 15-30 minutes before to setup</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                <span>First hour of games and activities</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                <span>20 minutes for food and refreshments</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                <span>Final 40 minutes of more entertainment</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

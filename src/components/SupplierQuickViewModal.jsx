@@ -272,46 +272,115 @@ export default function SupplierQuickViewModal({
                     )}
                   </div>
 
-                  {/* Desktop gallery grid (hidden below lg) */}
+                  {/* Desktop gallery grid (hidden below lg) - adapts to image count */}
                   <div className="hidden lg:block">
-                    <div className="grid grid-cols-3 gap-2 h-80">
-                      {/* Main large image */}
+                    {/* Single image - full width with blurred background */}
+                    {supplierImages.length === 1 && (
                       <div
-                        className="col-span-2 relative rounded-bl-2xl overflow-hidden cursor-pointer group"
+                        className="relative h-80 rounded-b-2xl overflow-hidden cursor-pointer group"
                         onClick={() => {
                           setLightboxIndex(0)
                           setShowLightbox(true)
                         }}
                       >
+                        {/* Blurred background fill */}
+                        <div
+                          className="absolute inset-0 scale-110"
+                          style={{
+                            backgroundImage: `url(${supplierImages[0]})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px)',
+                          }}
+                        />
+                        {/* Main image with contain */}
                         <Image
-                          src={supplierImages[0] || '/placeholder.png'}
+                          src={supplierImages[0]}
                           alt="Main image"
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(min-width: 1024px) 66vw, 100vw"
+                          className="object-contain group-hover:scale-105 transition-transform duration-300 relative z-10"
+                          sizes="(min-width: 1024px) 100vw, 100vw"
                         />
-                        {/* View button */}
-                        <button
-                          className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
-                        >
+                        <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
                           <Maximize2 className="w-4 h-4 text-white" />
                           <span className="text-white text-xs font-medium">View</span>
                         </button>
                       </div>
+                    )}
 
-                      {/* Side images stack */}
-                      <div className="flex flex-col gap-2">
-                        {/* Top side image */}
+                    {/* Two images - side by side */}
+                    {supplierImages.length === 2 && (
+                      <div className="grid grid-cols-2 gap-2 h-80">
                         <div
-                          className={`relative flex-1 overflow-hidden ${supplierImages[1] ? 'cursor-pointer group' : ''}`}
+                          className="relative rounded-bl-2xl overflow-hidden cursor-pointer group"
                           onClick={() => {
-                            if (supplierImages[1]) {
-                              setLightboxIndex(1)
-                              setShowLightbox(true)
-                            }
+                            setLightboxIndex(0)
+                            setShowLightbox(true)
                           }}
                         >
-                          {supplierImages[1] ? (
+                          <Image
+                            src={supplierImages[0]}
+                            alt="Image 1"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(min-width: 1024px) 50vw, 100vw"
+                          />
+                          <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
+                            <Maximize2 className="w-4 h-4 text-white" />
+                            <span className="text-white text-xs font-medium">View</span>
+                          </button>
+                        </div>
+                        <div
+                          className="relative rounded-br-2xl overflow-hidden cursor-pointer group"
+                          onClick={() => {
+                            setLightboxIndex(1)
+                            setShowLightbox(true)
+                          }}
+                        >
+                          <Image
+                            src={supplierImages[1]}
+                            alt="Image 2"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(min-width: 1024px) 50vw, 100vw"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Three or more images - original layout */}
+                    {supplierImages.length >= 3 && (
+                      <div className="grid grid-cols-3 gap-2 h-80">
+                        {/* Main large image */}
+                        <div
+                          className="col-span-2 relative rounded-bl-2xl overflow-hidden cursor-pointer group"
+                          onClick={() => {
+                            setLightboxIndex(0)
+                            setShowLightbox(true)
+                          }}
+                        >
+                          <Image
+                            src={supplierImages[0]}
+                            alt="Main image"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(min-width: 1024px) 66vw, 100vw"
+                          />
+                          <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
+                            <Maximize2 className="w-4 h-4 text-white" />
+                            <span className="text-white text-xs font-medium">View</span>
+                          </button>
+                        </div>
+
+                        {/* Side images stack */}
+                        <div className="flex flex-col gap-2">
+                          <div
+                            className="relative flex-1 overflow-hidden cursor-pointer group"
+                            onClick={() => {
+                              setLightboxIndex(1)
+                              setShowLightbox(true)
+                            }}
+                          >
                             <Image
                               src={supplierImages[1]}
                               alt="Gallery image 2"
@@ -319,62 +388,39 @@ export default function SupplierQuickViewModal({
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
                               sizes="(min-width: 1024px) 33vw, 100vw"
                             />
-                          ) : (
-                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                              <div className="text-gray-300">
-                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                          </div>
 
-                        {/* Bottom side image with +X overlay */}
-                        <div
-                          className={`relative flex-1 rounded-br-2xl overflow-hidden ${supplierImages[2] ? 'cursor-pointer group' : ''}`}
-                          onClick={() => {
-                            if (supplierImages[2]) {
+                          <div
+                            className="relative flex-1 rounded-br-2xl overflow-hidden cursor-pointer group"
+                            onClick={() => {
                               setLightboxIndex(2)
                               setShowLightbox(true)
-                            }
-                          }}
-                        >
-                          {supplierImages[2] ? (
-                            <>
-                              <Image
-                                src={supplierImages[2]}
-                                alt="Gallery image 3"
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                sizes="(min-width: 1024px) 33vw, 100vw"
-                              />
-                              {/* +X more overlay */}
-                              {supplierImages.length > 3 && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                  <span className="text-white text-2xl font-bold">+{supplierImages.length - 3}</span>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                              <div className="text-gray-300">
-                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
+                            }}
+                          >
+                            <Image
+                              src={supplierImages[2]}
+                              alt="Gallery image 3"
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              sizes="(min-width: 1024px) 33vw, 100vw"
+                            />
+                            {/* +X more overlay */}
+                            {supplierImages.length > 3 && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="text-white text-2xl font-bold">+{supplierImages.length - 3}</span>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Content with padding */}
                 <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
 
-                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for venues/balloons/facePainting since their displays handle it */}
+                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for categories that have their own aboutUs section */}
                 {(() => {
                   const category = displaySupplier?.category?.toLowerCase() || ''
                   const serviceType = displaySupplier?.serviceType?.toLowerCase() || ''
@@ -382,9 +428,14 @@ export default function SupplierQuickViewModal({
                   const isVenue = category === 'venues' || category === 'venue'
                   const isBalloons = category === 'balloons' || category === 'balloon'
                   const isFacePainting = category === 'facepainting' || serviceType === 'facepainting' || category.includes('face')
+                  const isCatering = category === 'catering' || category === 'caterer' || serviceType === 'catering'
+                  const isPartyBags = category === 'partybags' || category === 'party bags' || serviceType === 'partybags'
+                  const isDecorations = category === 'decorations' || category === 'decoration' || serviceType === 'decorations'
+                  const isActivities = category === 'activities' || category === 'softplay' || serviceType === 'activities' || serviceType === 'softplay'
+                  const isSweetTreats = category === 'sweettreats' || category === 'sweet treats' || serviceType === 'sweettreats'
 
-                  // Skip for venues, balloons, and face painting - their specific sections handle aboutUs
-                  if (isVenue || isBalloons || isFacePainting) return null
+                  // Skip for categories that have their own aboutUs section
+                  if (isVenue || isBalloons || isFacePainting || isCatering || isPartyBags || isDecorations || isActivities || isSweetTreats) return null
 
                   // For cakes, show description as "About This Cake"
                   if (isCake) {
@@ -429,6 +480,119 @@ export default function SupplierQuickViewModal({
                   const isCake = category === 'cakes' || category === 'cake'
                   const isBalloons = category === 'balloons' || category === 'balloon'
                   const isFacePainting = category === 'facepainting' || serviceType === 'facepainting' || category.includes('face')
+                  const isEntertainment = category === 'entertainment' || category === 'entertainer' || serviceType === 'entertainment' || serviceType === 'entertainer'
+
+                  // For entertainers, show "What You Need to Know" with timing info
+                  if (isEntertainment) {
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+                    const ageGroups = serviceDetails?.ageGroups || []
+
+                    // Helper to format age groups into a readable range
+                    const formatAgeRange = (ageGroups) => {
+                      if (!ageGroups?.length) return 'All ages'
+                      const ages = ageGroups.flatMap(group => {
+                        const matches = group.match(/\d+/g)
+                        return matches ? matches.map(Number) : []
+                      })
+                      if (ages.length === 0) return ageGroups.join(', ')
+                      const min = Math.min(...ages)
+                      const max = Math.max(...ages)
+                      if (min === max) return `${min} years`
+                      return `${min}-${max} years`
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Age Range */}
+                            {ageGroups.length > 0 && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Perfect for: </span>
+                                <span>{formatAgeRange(ageGroups)}</span>
+                              </div>
+                            )}
+
+                            {/* Space Requirements */}
+                            {serviceDetails.performanceSpecs?.spaceRequired && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Space needed: </span>
+                                <span>{serviceDetails.performanceSpecs.spaceRequired}</span>
+                              </div>
+                            )}
+
+                            {/* Travel Radius */}
+                            {serviceDetails.travelRadius && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Coverage area: </span>
+                                <span>Up to {serviceDetails.travelRadius} miles</span>
+                              </div>
+                            )}
+
+                            {/* Timings */}
+                            <div>
+                              <span className="font-semibold text-gray-900 block mb-2">Timings:</span>
+                              <div className="pl-4 space-y-1.5">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                                  <span>Entertainer typically arrives 15-30 minutes before to setup</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                                  <span>First hour of games and activities</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                                  <span>20 minutes for food and refreshments</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                                  <span>Final 40 minutes of more entertainment</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Meet the Entertainer */}
+                        {serviceDetails.personalBio?.personalStory && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Meet the Entertainer
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            {serviceDetails.personalBio.yearsExperience && (
+                              <p className="text-base text-gray-700 mb-3">
+                                <span className="font-semibold">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties
+                              </p>
+                            )}
+                            <p className="text-base text-gray-700 leading-relaxed">
+                              {serviceDetails.personalBio.personalStory}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎉</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Party Entertainment</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                Our entertainers bring all the equipment needed and keep the kids engaged throughout the party!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
 
                   // For face painting, show packages with designs
                   if (isFacePainting) {
@@ -460,7 +624,7 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-100">
+                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
@@ -473,7 +637,7 @@ export default function SupplierQuickViewModal({
                                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Includes designs:</p>
                                       <div className="flex flex-wrap gap-1.5">
                                         {pkg.designs.map((design, dIndex) => (
-                                          <span key={dIndex} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                          <span key={dIndex} className="px-2 py-1 bg-primary-100 text-[hsl(var(--primary-700))] text-xs rounded-full">
                                             {design}
                                           </span>
                                         ))}
@@ -484,7 +648,7 @@ export default function SupplierQuickViewModal({
                                     <ul className="space-y-1.5">
                                       {pkg.features.map((feature, fIndex) => (
                                         <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-green-500 mt-0.5">✓</span>
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                                           <span>{feature}</span>
                                         </li>
                                       ))}
@@ -496,26 +660,175 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Service Info */}
-                        {(serviceDetails.paintsUsed || serviceDetails.avgTimePerChild || serviceDetails.maxChildren) && (
-                          <div className="p-4 bg-green-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">🎨</span>
-                              <div className="space-y-2">
-                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
-                                {serviceDetails.paintsUsed && (
-                                  <p className="text-sm text-gray-700"><strong>Paints:</strong> {serviceDetails.paintsUsed}</p>
-                                )}
-                                {serviceDetails.avgTimePerChild && (
-                                  <p className="text-sm text-gray-700"><strong>Time per design:</strong> {serviceDetails.avgTimePerChild}</p>
-                                )}
-                                {serviceDetails.maxChildren && (
-                                  <p className="text-sm text-gray-700"><strong>Capacity:</strong> {serviceDetails.maxChildren}</p>
-                                )}
-                              </div>
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Time per child */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Time per design: </span>
+                              <span>{serviceDetails?.avgTimePerChild || '3-5 minutes per child for most designs'}</span>
+                            </div>
+
+                            {/* Capacity */}
+                            <div>
+                              <span className="font-semibold text-gray-900">How many kids: </span>
+                              <span>{serviceDetails?.maxChildren || 'Can paint approximately 10-15 children per hour'}</span>
+                            </div>
+
+                            {/* Paints used */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Paints used: </span>
+                              <span>{serviceDetails?.paintsUsed || 'Professional, hypoallergenic face paints safe for sensitive skin'}</span>
+                            </div>
+
+                            {/* Setup */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Setup: </span>
+                              <span>Just need a table and chair - we bring everything else!</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎨</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Face Painting Fun</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                Kids love choosing their design! We work continuously throughout the party so everyone gets a turn.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // For party bags, show "What You Need to Know"
+                  const isPartyBags = category === 'partybags' || category === 'party bags' || serviceType === 'partybags' || category.includes('party bag')
+                  if (isPartyBags) {
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = serviceDetails?.aboutUs || displaySupplier?.description || ''
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Party Bags
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Packages */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Party Bag Options
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">Price per bag - order one for each guest</p>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <div className="text-right">
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                      <p className="text-xs text-gray-500">per bag</p>
+                                    </div>
+                                  </div>
+                                  {pkg.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                  )}
+                                  {pkg.contents && pkg.contents.length > 0 && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.contents.map((item, cIndex) => (
+                                        <li key={cIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                          <span>{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  {pkg.features && pkg.features.length > 0 && !pkg.contents && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.features.map((feature, fIndex) => (
+                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}
+
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Delivery Info */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Delivery: </span>
+                              <span>{serviceDetails?.delivery || 'Delivered to your door the evening before your party (5-8pm)'}</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '7 days notice required'}</span>
+                            </div>
+
+                            {/* Allergen Info */}
+                            {serviceDetails?.allergenInfo && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Allergen info: </span>
+                                <span>{serviceDetails.allergenInfo}</span>
+                              </div>
+                            )}
+
+                            {/* Minimum Order */}
+                            {serviceDetails?.minimumOrder && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Minimum order: </span>
+                                <span>{serviceDetails.minimumOrder} bags</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Delivery Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎁</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                Party bags delivered to your home the evening before your party so everything is ready for the big day!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -551,7 +864,7 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="bg-gradient-to-br from-yellow-50 to-white rounded-2xl border border-yellow-100 overflow-hidden">
+                                <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
                                   {/* Item Image */}
                                   {pkg.image && (
                                     <div className="relative h-32 w-full">
@@ -576,7 +889,7 @@ export default function SupplierQuickViewModal({
                                       <ul className="space-y-1">
                                         {pkg.features.map((feature, fIndex) => (
                                           <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-yellow-500 mt-0.5">✓</span>
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                                             <span>{feature}</span>
                                           </li>
                                         ))}
@@ -592,29 +905,58 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Service Info */}
-                        {(serviceDetails.ageRange || serviceDetails.setupTime || serviceDetails.spaceRequired) && (
-                          <div className="p-4 bg-yellow-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">🎪</span>
-                              <div className="space-y-2">
-                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
-                                {serviceDetails.ageRange && (
-                                  <p className="text-sm text-gray-700"><strong>Ages:</strong> {serviceDetails.ageRange}</p>
-                                )}
-                                {serviceDetails.setupTime && (
-                                  <p className="text-sm text-gray-700"><strong>Setup:</strong> {serviceDetails.setupTime}</p>
-                                )}
-                                {serviceDetails.spaceRequired && (
-                                  <p className="text-sm text-gray-700"><strong>Space needed:</strong> {serviceDetails.spaceRequired}</p>
-                                )}
-                                {serviceDetails.collectionTime && (
-                                  <p className="text-sm text-gray-700"><strong>Collection:</strong> {serviceDetails.collectionTime}</p>
-                                )}
-                              </div>
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Age Range */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Perfect for: </span>
+                              <span>{serviceDetails?.ageRange || 'Ages 1-6 years'}</span>
+                            </div>
+
+                            {/* Space Required */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Space needed: </span>
+                              <span>{serviceDetails?.spaceRequired || 'Minimum 3m x 3m clear floor area'}</span>
+                            </div>
+
+                            {/* Setup & Collection */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Delivery & setup: </span>
+                              <span>{serviceDetails?.setupTime || 'We deliver and set up 30-60 mins before your party starts'}</span>
+                            </div>
+
+                            {/* Collection */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Collection: </span>
+                              <span>{serviceDetails?.collectionTime || 'Collected after your party - no need to pack anything away!'}</span>
+                            </div>
+
+                            {/* Safety */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Safety: </span>
+                              <span>All equipment is cleaned and safety-checked before every hire</span>
                             </div>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Delivery Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎪</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Full Service Hire</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                We handle everything - delivery, setup, and collection. You just enjoy the party!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -633,7 +975,7 @@ export default function SupplierQuickViewModal({
                           <div className="prose prose-sm sm:prose max-w-none">
                             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                               About Our Sweet Treats
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-400 -skew-x-12 opacity-70"></div>
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
@@ -646,12 +988,12 @@ export default function SupplierQuickViewModal({
                           <div>
                             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                               Available Treats
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-400 -skew-x-12 opacity-70"></div>
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
                             <p className="text-sm text-gray-500 mb-4">Pick and choose from our range - mix and match for your perfect party!</p>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="bg-gradient-to-br from-pink-50 to-white rounded-2xl border border-pink-100 overflow-hidden">
+                                <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
                                   {/* Item Image */}
                                   {pkg.image && (
                                     <div className="relative h-32 w-full">
@@ -667,7 +1009,7 @@ export default function SupplierQuickViewModal({
                                   <div className="p-4">
                                     <div className="flex justify-between items-start mb-2">
                                       <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <span className="font-black text-xl text-pink-500">£{pkg.price}</span>
+                                      <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
                                     </div>
                                     {pkg.description && (
                                       <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
@@ -676,7 +1018,7 @@ export default function SupplierQuickViewModal({
                                       <ul className="space-y-1">
                                         {pkg.features.map((feature, fIndex) => (
                                           <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-pink-500 mt-0.5">✓</span>
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                                             <span>{feature}</span>
                                           </li>
                                         ))}
@@ -692,26 +1034,52 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Service Info */}
-                        {(serviceDetails.setupTime || serviceDetails.spaceRequired || serviceDetails.staffIncluded) && (
-                          <div className="p-4 bg-pink-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">🍭</span>
-                              <div className="space-y-2">
-                                <h4 className="font-bold text-lg text-gray-900">Good to Know</h4>
-                                {serviceDetails.setupTime && (
-                                  <p className="text-sm text-gray-700"><strong>Setup:</strong> {serviceDetails.setupTime}</p>
-                                )}
-                                {serviceDetails.spaceRequired && (
-                                  <p className="text-sm text-gray-700"><strong>Space needed:</strong> {serviceDetails.spaceRequired}</p>
-                                )}
-                                {serviceDetails.staffIncluded !== undefined && (
-                                  <p className="text-sm text-gray-700"><strong>Staff:</strong> {serviceDetails.staffIncluded ? 'Included' : 'Self-service'}</p>
-                                )}
-                              </div>
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Setup */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Setup: </span>
+                              <span>{serviceDetails?.setupTime || 'We arrive 30-60 minutes before your party to set up'}</span>
+                            </div>
+
+                            {/* Space Required */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Space needed: </span>
+                              <span>{serviceDetails?.spaceRequired || 'One table for the treats station'}</span>
+                            </div>
+
+                            {/* Staffing */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Staffing: </span>
+                              <span>{serviceDetails?.staffIncluded ? 'Staff member included to serve the treats' : 'Self-service - we set it up and you help yourselves!'}</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{serviceDetails?.leadTime || '5 days notice required'}</span>
                             </div>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🍭</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Sweet Treats at Your Party</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                A fun treat station the kids will love! Perfect for keeping energy levels up during the party.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -731,7 +1099,7 @@ export default function SupplierQuickViewModal({
                           <div className="prose prose-sm sm:prose max-w-none">
                             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                               About Our Catering
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-orange-400 -skew-x-12 opacity-70"></div>
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
@@ -744,16 +1112,16 @@ export default function SupplierQuickViewModal({
                           <div>
                             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                               Lunchbox Options
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-orange-400 -skew-x-12 opacity-70"></div>
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
                             <p className="text-sm text-gray-500 mb-4">Price per child - order for each guest</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-gradient-to-br from-orange-50 to-white rounded-2xl border border-orange-100">
+                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-orange-500">£{pkg.price}</span>
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
                                       <p className="text-xs text-gray-500">per child</p>
                                     </div>
                                   </div>
@@ -764,7 +1132,7 @@ export default function SupplierQuickViewModal({
                                     <ul className="space-y-1.5">
                                       {pkg.features.map((feature, fIndex) => (
                                         <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-orange-500 mt-0.5">✓</span>
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                                           <span>{feature}</span>
                                         </li>
                                       ))}
@@ -778,14 +1146,14 @@ export default function SupplierQuickViewModal({
 
                         {/* Dietary Options */}
                         {dietaryOptions.length > 0 && (
-                          <div className="p-4 bg-orange-50 rounded-xl">
+                          <div className="p-4 bg-primary-50 rounded-xl">
                             <div className="flex items-start gap-3">
                               <span className="text-2xl">🥗</span>
                               <div>
                                 <h4 className="font-bold text-lg text-gray-900">Dietary Options Available</h4>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {dietaryOptions.map((option, index) => (
-                                    <span key={index} className="px-3 py-1 bg-white text-orange-700 rounded-full text-sm border border-orange-200">
+                                    <span key={index} className="px-3 py-1 bg-white text-[hsl(var(--primary-700))] rounded-full text-sm border border-primary-200">
                                       {typeof option === 'object' ? option.name : option}
                                     </span>
                                   ))}
@@ -795,23 +1163,224 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Service Info */}
-                        {(serviceDetails.leadTime || serviceDetails.minimumOrder) && (
-                          <div className="p-4 bg-gray-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">📦</span>
-                              <div className="space-y-2">
-                                <h4 className="font-bold text-lg text-gray-900">Ordering Info</h4>
-                                {serviceDetails.leadTime && (
-                                  <p className="text-sm text-gray-700"><strong>Lead time:</strong> {serviceDetails.leadTime}</p>
-                                )}
-                                {serviceDetails.minimumOrder && (
-                                  <p className="text-sm text-gray-700"><strong>Minimum order:</strong> {serviceDetails.minimumOrder}</p>
-                                )}
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Delivery */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Delivery: </span>
+                              <span>{serviceDetails?.delivery || 'Lunchboxes delivered chilled to your venue on the morning of your party'}</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{serviceDetails?.leadTime || '5 days notice required'}</span>
+                            </div>
+
+                            {/* Minimum Order */}
+                            {serviceDetails?.minimumOrder && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Minimum order: </span>
+                                <span>{serviceDetails.minimumOrder}</span>
                               </div>
+                            )}
+
+                            {/* Dietary note */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Dietary requirements: </span>
+                              <span>Let us know any allergies or dietary needs when you book and we'll take care of it</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Delivery Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🚚</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                Fresh lunchboxes delivered direct to your party venue - one less thing to worry about!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // For decorations, show packages with theme images gallery
+                  const isDecorations = category === 'decorations' || serviceType === 'decorations'
+                  if (isDecorations) {
+                    const packages = displaySupplier?.packages || []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+
+                    // Collect unique theme images from all packages
+                    const getThemeImagesGallery = () => {
+                      const themeImages = {}
+                      packages.forEach(pkg => {
+                        if (pkg.themeImages) {
+                          Object.entries(pkg.themeImages).forEach(([theme, url]) => {
+                            if (!themeImages[theme]) {
+                              themeImages[theme] = url
+                            }
+                          })
+                        }
+                      })
+                      return themeImages
+                    }
+
+                    const themeImagesGallery = getThemeImagesGallery()
+                    const themeNames = {
+                      pirate: 'Pirate',
+                      princess: 'Princess',
+                      superhero: 'Superhero',
+                      dinosaur: 'Dinosaur',
+                      unicorn: 'Unicorn',
+                      safari: 'Safari',
+                      space: 'Space',
+                      mermaid: 'Mermaid',
+                      science: 'Science',
+                      frozen: 'Frozen',
+                      'paw-patrol': 'Paw Patrol',
+                      football: 'Football'
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {/* About */}
+                        {aboutUs && (
+                          <div className="prose prose-sm sm:prose max-w-none">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              About Our Decorations
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                              {aboutUs}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Theme Gallery */}
+                        {Object.keys(themeImagesGallery).length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Available Themes
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">Our tableware and decorations are available in these popular themes</p>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                              {Object.entries(themeImagesGallery).map(([theme, imageUrl]) => (
+                                <div key={theme} className="relative aspect-square rounded-xl overflow-hidden group">
+                                  <Image
+                                    src={imageUrl}
+                                    alt={`${themeNames[theme] || theme} theme`}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                  <span className="absolute bottom-2 left-2 right-2 text-white text-xs font-semibold text-center truncate">
+                                    {themeNames[theme] || theme.charAt(0).toUpperCase() + theme.slice(1)}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}
+
+                        {/* Packages */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Packages
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">Priced per guest - we round up to pack sizes to ensure you have enough</p>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <div className="text-right">
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                      <p className="text-xs text-gray-500">per guest</p>
+                                    </div>
+                                  </div>
+                                  {pkg.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                  )}
+                                  {pkg.features && pkg.features.length > 0 && (
+                                    <ul className="space-y-1.5">
+                                      {pkg.features.map((feature, fIndex) => (
+                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Delivery */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Delivery: </span>
+                              <span>{serviceDetails?.delivery || 'Delivered to your home the evening before your party (5-8pm)'}</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '5 days notice required'}</span>
+                            </div>
+
+                            {/* Pack sizes */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Pack sizes: </span>
+                              <span>Tableware comes in packs of 8 - we'll round up your guest count to ensure you have enough</span>
+                            </div>
+
+                            {/* Eco-friendly */}
+                            {serviceDetails?.ecoOptions && (
+                              <div>
+                                <span className="font-semibold text-gray-900">Eco-friendly: </span>
+                                <span>{serviceDetails.ecoOptions}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Delivery Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🚚</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                All decorations and tableware delivered to your door the evening before your party - no need to pick anything up!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -846,7 +1415,7 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-gradient-to-br from-cyan-50 to-white rounded-2xl border border-cyan-100">
+                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
@@ -858,7 +1427,7 @@ export default function SupplierQuickViewModal({
                                     <ul className="space-y-1.5">
                                       {pkg.features.map((feature, fIndex) => (
                                         <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-cyan-500 mt-0.5">✓</span>
+                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                                           <span>{feature}</span>
                                         </li>
                                       ))}
@@ -870,18 +1439,52 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Delivery Info */}
-                        {deliveryInfo && (
-                          <div className="p-4 bg-blue-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">🎈</span>
-                              <div>
-                                <h4 className="font-bold text-lg text-gray-900">Delivery</h4>
-                                <p className="text-base text-gray-700 mt-1">{deliveryInfo}</p>
-                              </div>
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Delivery */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Delivery: </span>
+                              <span>{deliveryInfo || 'Balloons delivered and set up at your venue on the morning of your party'}</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7 days notice required'}</span>
+                            </div>
+
+                            {/* Customisation */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Customisation: </span>
+                              <span>Colours can be matched to your party theme - just let us know when booking</span>
+                            </div>
+
+                            {/* Duration */}
+                            <div>
+                              <span className="font-semibold text-gray-900">How long they last: </span>
+                              <span>Helium balloons stay inflated for 12-24 hours - perfect for your party day</span>
                             </div>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Delivery Info Card */}
+                        <div className="p-4 bg-primary-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">🎈</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">Setup Included</h4>
+                              <p className="text-base text-gray-700 mt-1">
+                                We deliver and set up your balloon display at your venue - you don't need to do a thing!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -977,7 +1580,7 @@ export default function SupplierQuickViewModal({
                           </h2>
                           <div className="space-y-4">
                             {offersDelivery && (
-                              <div className="p-4 bg-blue-50 rounded-xl">
+                              <div className="p-4 bg-primary-50 rounded-xl">
                                 <div className="flex items-start gap-3">
                                   <span className="text-2xl">🚚</span>
                                   <div>
@@ -991,7 +1594,7 @@ export default function SupplierQuickViewModal({
                                       </p>
                                     )}
                                     {deliveryFee === 0 && (
-                                      <p className="text-base font-semibold text-green-600 mt-2">
+                                      <p className="text-base font-semibold text-[hsl(var(--primary-600))] mt-2">
                                         Free delivery
                                       </p>
                                     )}
@@ -1015,6 +1618,40 @@ export default function SupplierQuickViewModal({
                                 </div>
                               </div>
                             )}
+                          </div>
+                        </div>
+
+                        {/* What You Need to Know */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          <div className="space-y-4 text-base text-gray-700">
+                            {/* Delivery timing */}
+                            <div>
+                              <span className="font-semibold text-gray-900">When you'll get it: </span>
+                              <span>Cakes are delivered/ready for collection on the Friday before your party weekend</span>
+                            </div>
+
+                            {/* Lead Time */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Lead time: </span>
+                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7-14 days notice required for custom cakes'}</span>
+                            </div>
+
+                            {/* Storage tip */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Storage: </span>
+                              <span>Keep in a cool place (not the fridge!) until party time for best results</span>
+                            </div>
+
+                            {/* Customisation */}
+                            <div>
+                              <span className="font-semibold text-gray-900">Customisation: </span>
+                              <span>Name, age, and theme can be added - just let us know when booking!</span>
+                            </div>
                           </div>
                         </div>
                       </div>

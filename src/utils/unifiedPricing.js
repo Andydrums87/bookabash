@@ -203,6 +203,38 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     return total;
   }
 
+  // Special handling for decorations (per-set pricing with pack sizes)
+  if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
+    // Check if we have decorationsMetadata with totalPrice (from customization modal)
+    if (supplier.decorationsMetadata?.totalPrice) {
+      return supplier.decorationsMetadata.totalPrice;
+    }
+
+    // Check if packageData has totalPrice
+    if (supplier.packageData?.totalPrice) {
+      return supplier.packageData.totalPrice;
+    }
+
+    // Check if packageData has decorationsMetadata
+    if (supplier.packageData?.decorationsMetadata?.totalPrice) {
+      return supplier.packageData.decorationsMetadata.totalPrice;
+    }
+
+    // Calculate from packageData if available (pricePerSet × packSize)
+    if (supplier.packageData?.price && supplier.decorationsMetadata?.packSize) {
+      const total = supplier.packageData.price * supplier.decorationsMetadata.packSize;
+      return total;
+    }
+
+    // Fall back to calculation using pack size
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const packSize = supplier.decorationsMetadata?.packSize ||
+                    supplier.packageData?.packSize ||
+                    getGuestCount(partyDetails);
+    const total = pricePerSet * packSize;
+    return total;
+  }
+
   // Special handling for cakes - use originalPrice (base price without delivery)
   const isCake = supplier.category?.toLowerCase().includes('cake') ||
                  supplier.serviceType?.toLowerCase().includes('cake')
@@ -487,6 +519,20 @@ export const getDisplayPrice = (supplier, partyDetails = {}, addons = []) => {
     return `£${pricePerChild} per child (${quantity} children = £${pricing.finalPrice} total)`;
   }
 
+  // Special display for decorations (per-set with pack sizes)
+  if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const packSize = supplier.decorationsMetadata?.packSize ||
+                    supplier.packageData?.packSize ||
+                    getGuestCount(partyDetails);
+    const guestCount = supplier.decorationsMetadata?.guestCount || getGuestCount(partyDetails);
+    const buffer = packSize - guestCount;
+    if (buffer > 0) {
+      return `£${pricePerSet}/set × ${packSize} sets = £${pricing.finalPrice} (includes ${buffer} spare)`;
+    }
+    return `£${pricePerSet}/set × ${packSize} sets = £${pricing.finalPrice}`;
+  }
+
   return `£${pricing.finalPrice}`;
 };
 
@@ -516,6 +562,13 @@ export const getPriceBreakdownText = (supplier, partyDetails = {}, addons = []) 
                     supplier.packageData?.quantity ||
                     getGuestCount(partyDetails);
     parts.push(`${quantity} children × £${pricePerChild}`);
+  } else if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
+    // Special handling for decorations (per-set with pack sizes)
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    const packSize = supplier.decorationsMetadata?.packSize ||
+                    supplier.packageData?.packSize ||
+                    getGuestCount(partyDetails);
+    parts.push(`${packSize} sets × £${pricePerSet}`);
   } else {
     parts.push(`Base £${pricing.basePrice}`);
   }

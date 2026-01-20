@@ -406,67 +406,193 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
     'partyBags': [
       {
-        id: "partybags-basic",
-        name: "Classic Party Bags",
-        price: 5,
+        id: "partybags-classic",
+        name: "Classic Party Bag",
+        price: 5.50,
         duration: "Per bag",
         priceType: "per_bag",
+        pricingModel: "perBag",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg"
+        },
+        contents: [
+          "1x Themed party bag",
+          "1x Small toy",
+          "1x Puzzle or game",
+          "1x Sticker sheet",
+          "1x Pencil set",
+          "1x Sweet bag"
+        ],
         features: [
           "Themed party bag",
-          "Small toys and treats",
+          "Quality small toy",
+          "Puzzle or brain teaser",
           "Stickers and pencils",
           "Sweet treats"
         ],
-        description: "Traditional party bags filled with fun treats and small toys for party guests."
+        allergenInfo: {
+          containsNuts: false,
+          nutFreeOption: true
+        },
+        description: "Our classic bag with quality toys and treats. Perfect for any party!"
       },
       {
-        id: "partybags-premium",
-        name: "Deluxe Party Bags",
-        price: 12,
+        id: "partybags-standard",
+        name: "Standard Party Bag",
+        price: 7.50,
         duration: "Per bag",
         priceType: "per_bag",
-        features: [
-          "Premium themed bags",
-          "Quality toys and games",
-          "Personalized items",
-          "Healthy snack options",
-          "Activity sheets",
-          "Special keepsake item"
+        pricingModel: "perBag",
+        popular: true,
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg"
+        },
+        contents: [
+          "1x Premium themed bag",
+          "1x Quality action figure or toy",
+          "1x Fidget toy",
+          "1x Puzzle game",
+          "1x Holographic sticker sheet",
+          "1x Coloured pencil set",
+          "1x Notebook",
+          "1x Premium sweet selection"
         ],
-        description: "Premium party bags with high-quality items and personalized touches that guests will treasure."
+        features: [
+          "Premium themed bag",
+          "Quality toy or figure",
+          "Fidget toy",
+          "Stationery set",
+          "Premium sweets"
+        ],
+        allergenInfo: {
+          containsNuts: false,
+          nutFreeOption: true
+        },
+        description: "Our most popular bag! Extra toys and premium treats that kids love."
+      },
+      {
+        id: "partybags-deluxe",
+        name: "Deluxe Party Bag",
+        price: 10.50,
+        duration: "Per bag",
+        priceType: "per_bag",
+        pricingModel: "perBag",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg"
+        },
+        contents: [
+          "1x Luxury themed gift bag",
+          "1x Collectible figurine",
+          "1x Premium game or craft kit",
+          "1x Light-up or special gadget",
+          "1x Art supplies set",
+          "1x Journal or activity book",
+          "1x Gourmet chocolate bar",
+          "1x Premium sweet selection",
+          "1x Special keepsake item"
+        ],
+        features: [
+          "Luxury themed gift bag",
+          "Collectible figurine",
+          "Premium craft or game kit",
+          "Light-up gadget",
+          "Gourmet treats",
+          "Special keepsake"
+        ],
+        allergenInfo: {
+          containsNuts: false,
+          nutFreeOption: true
+        },
+        description: "The ultimate party bag! Premium collectibles, gadgets, and gourmet treats."
       }
     ],
 
     'decorations': [
       {
-        id: "decorations-basic",
-        name: "Party Decoration Package",
-        price: 80,
-        duration: "Setup included",
-        priceType: "flat",
+        id: "decorations-essential",
+        name: "Essential Tableware",
+        price: 1.50,
+        duration: "Delivered to venue",
+        priceType: "per_child",
+        pricingModel: "perChildWithBuffer",
+        packSizes: [8, 16, 24, 32, 40, 48],
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768902805/ChatGPT_Image_Jan_20_2026_09_53_01_AM_dm2ubg.png",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768902805/ChatGPT_Image_Jan_20_2026_09_53_01_AM_dm2ubg.png",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903890/ChatGPT_Image_Jan_20_2026_10_05_24_AM_zs6eqw.png",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768904480/ChatGPT_Image_Jan_20_2026_10_21_11_AM_wp8nqd.png"
+        },
         features: [
-          "Themed banners and signs",
-          "Table decorations",
-          "Basic balloon arrangements",
-          "Party streamers"
+          "Themed plates (dinner size)",
+          "Matching cups",
+          "Coordinated napkins",
+          "Table cover"
         ],
-        description: "Beautiful themed decorations to transform your party space with color and excitement."
+        fixedItems: ["1x themed table cover"],
+        description: "Quality themed tableware essentials for your party guests. Automatically rounds up to pack sizes to ensure you have enough."
+      },
+      {
+        id: "decorations-standard",
+        name: "Standard Party Pack",
+        price: 2.50,
+        duration: "Delivered to venue",
+        priceType: "per_child",
+        pricingModel: "perChildWithBuffer",
+        packSizes: [8, 16, 24, 32, 40, 48],
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903144/ChatGPT_Image_Jan_20_2026_09_58_52_AM_yodzbl.png",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903144/ChatGPT_Image_Jan_20_2026_09_58_52_AM_yodzbl.png",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903894/ChatGPT_Image_Jan_20_2026_10_11_18_AM_codzyf.png",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768904659/ChatGPT_Image_Jan_20_2026_10_22_31_AM_wlbhfx.png"
+        },
+        popular: true,
+        features: [
+          "Themed plates (dinner & dessert)",
+          "Matching cups",
+          "Coordinated napkins",
+          "Themed table cover",
+          "Happy Birthday banner",
+          "Basic table confetti"
+        ],
+        fixedItems: ["1x themed table cover", "1x birthday banner", "1x confetti pack"],
+        description: "Complete tableware set plus festive decorations to create a cohesive party look."
       },
       {
         id: "decorations-premium",
-        name: "Complete Party Transformation",
-        price: 180,
-        duration: "Setup & takedown",
-        priceType: "flat",
+        name: "Premium Party Pack",
+        price: 3.75,
+        duration: "Delivered to venue",
+        priceType: "per_child",
+        pricingModel: "perChildWithBuffer",
+        packSizes: [8, 16, 24, 32, 40, 48],
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903204/ChatGPT_Image_Jan_20_2026_09_59_43_AM_ryrqrf.png",
+        themeImages: {
+          pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903204/ChatGPT_Image_Jan_20_2026_09_59_43_AM_ryrqrf.png",
+          princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768903968/ChatGPT_Image_Jan_20_2026_10_12_42_AM_lqczru.png",
+          superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768904653/ChatGPT_Image_Jan_20_2026_10_24_03_AM_z361ok.png"
+        },
         features: [
-          "Premium themed decorations",
-          "Balloon arches and sculptures",
-          "Photo backdrop setup",
-          "Table centerpieces",
-          "Lighting effects",
-          "Setup and takedown service"
+          "Premium themed tableware set",
+          "Dinner & dessert plates",
+          "Cups with lids & straws",
+          "Quality napkins",
+          "Themed table cover",
+          "Personalised birthday banner",
+          "Centerpiece decoration",
+          "Table confetti & scatter",
+          "Cake stand (disposable)"
         ],
-        description: "Complete venue transformation with premium decorations and professional setup for a stunning party atmosphere."
+        fixedItems: ["1x premium table cover", "1x personalised banner", "1x centerpiece", "1x cake stand"],
+        description: "Premium tableware and decorations with personalised touches for a picture-perfect party setting."
       }
     ],
 

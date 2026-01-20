@@ -431,7 +431,7 @@ export default function MissingSuppliersSuggestions({
               <EmptySupplierCard
                 type={type}
                 recommendedSupplier={suppliers[0]}
-                partyDetails={partyPlan}
+                partyDetails={partyDetails}
                 onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
                 isCompact={true}
                 isAlreadyAdded={!disableConfetti && (isAdded || isJustAdded)}

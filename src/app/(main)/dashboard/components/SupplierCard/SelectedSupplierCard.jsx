@@ -128,9 +128,51 @@ export default function SelectedSupplierCard({
   const isBalloonSupplier = type === 'balloons'
   const isFacePaintingSupplier = type === 'facePainting'
   const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
+  const isDecorationsSupplier = type === 'decorations'
+  const isPartyBagsSupplier = type === 'partyBags'
   const balloonPackageData = supplier?.packageData
   const facePaintingPackageData = supplier?.packageData
   const activitiesPackageData = supplier?.packageData
+  const decorationsPackageData = supplier?.packageData
+  const partyBagsPackageData = supplier?.packageData
+
+  // Get themed image for decorations based on party theme
+  const getDecorationsThemedImage = () => {
+    if (!isDecorationsSupplier || !decorationsPackageData) return null
+    const partyTheme = partyDetails?.theme
+    // Check if package has theme-specific images
+    if (decorationsPackageData.themeImages && partyTheme) {
+      const themedImage = decorationsPackageData.themeImages[partyTheme]
+      if (themedImage) return themedImage
+    }
+    // Fall back to package image
+    if (decorationsPackageData.image) {
+      return typeof decorationsPackageData.image === 'object'
+        ? decorationsPackageData.image.src
+        : decorationsPackageData.image
+    }
+    return null
+  }
+  const decorationsThemedImage = getDecorationsThemedImage()
+
+  // Get themed image for party bags based on party theme
+  const getPartyBagsThemedImage = () => {
+    if (!isPartyBagsSupplier || !partyBagsPackageData) return null
+    const partyTheme = partyDetails?.theme
+    // Check if package has theme-specific images
+    if (partyBagsPackageData.themeImages && partyTheme) {
+      const themedImage = partyBagsPackageData.themeImages[partyTheme]
+      if (themedImage) return themedImage
+    }
+    // Fall back to package image
+    if (partyBagsPackageData.image) {
+      return typeof partyBagsPackageData.image === 'object'
+        ? partyBagsPackageData.image.src
+        : partyBagsPackageData.image
+    }
+    return null
+  }
+  const partyBagsThemedImage = getPartyBagsThemedImage()
 
   const showDurationInfo = !!(
     (supplier?.extraHourRate || supplier?.serviceDetails?.extraHourRate) &&
@@ -179,13 +221,17 @@ export default function SelectedSupplierCard({
                 <div className="absolute inset-0">
                   <Image
                     src={
-                      (isBalloonSupplier && balloonPackageData?.image)
-                        ? (typeof balloonPackageData.image === 'object' ? balloonPackageData.image.src : balloonPackageData.image)
-                        : (isFacePaintingSupplier && facePaintingPackageData?.image)
-                          ? (typeof facePaintingPackageData.image === 'object' ? facePaintingPackageData.image.src : facePaintingPackageData.image)
-                          : (isActivitiesSupplier && activitiesPackageData?.image)
-                            ? (typeof activitiesPackageData.image === 'object' ? activitiesPackageData.image.src : activitiesPackageData.image)
-                            : (supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png')
+                      (isDecorationsSupplier && decorationsThemedImage)
+                        ? decorationsThemedImage
+                        : (isPartyBagsSupplier && partyBagsThemedImage)
+                          ? partyBagsThemedImage
+                          : (isBalloonSupplier && balloonPackageData?.image)
+                            ? (typeof balloonPackageData.image === 'object' ? balloonPackageData.image.src : balloonPackageData.image)
+                            : (isFacePaintingSupplier && facePaintingPackageData?.image)
+                              ? (typeof facePaintingPackageData.image === 'object' ? facePaintingPackageData.image.src : facePaintingPackageData.image)
+                              : (isActivitiesSupplier && activitiesPackageData?.image)
+                                ? (typeof activitiesPackageData.image === 'object' ? activitiesPackageData.image.src : activitiesPackageData.image)
+                                : (supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png')
                     }
                     alt={supplier.name}
                     fill

@@ -150,6 +150,13 @@ const detectCategory = (supplier) => {
     return 'party_bags';
   }
 
+  // Sweet Treats - modal handles all content
+  if (indicators.some(i =>
+    ['sweet treats', 'sweettreats', 'candy', 'sweets', 'treat'].some(k => i.includes(k))
+  )) {
+    return 'sweet_treats';
+  }
+
   return 'basic';
 };
 
@@ -158,8 +165,10 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) 
 
   const detectedCategory = detectCategory(supplier);
 
-  // Party bags, cakes, and balloons return null - modal handles all their content
-  if (detectedCategory === 'party_bags' || detectedCategory === 'cakes' || detectedCategory === 'balloons') {
+  // SupplierQuickViewModal now handles all category-specific content
+  // Only venues need the router's display component
+  // Return null for everything except venues
+  if (detectedCategory !== 'venues') {
     return null;
   }
 

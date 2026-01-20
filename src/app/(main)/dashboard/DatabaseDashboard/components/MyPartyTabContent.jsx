@@ -464,13 +464,15 @@ export default function MyPartyTabContent({
             setSelectedSupplierForQuickView(supplier)
           }}
         >
-          {/* Use package image for balloons, face painting, activities, and sweet treats if available */}
+          {/* Use package image for balloons, face painting, activities, sweet treats, and decorations if available */}
           {(() => {
             const isBalloons = type === 'balloons'
             const isFacePainting = type === 'facePainting'
             const isActivities = type === 'activities' || type === 'softPlay'
             const isSweetTreats = type === 'sweetTreats'
+            const isDecorations = type === 'decorations'
             const packageImage = supplier?.packageData?.image
+            const packageThemeImages = supplier?.packageData?.themeImages
             // For multi-select (sweet treats), get first selected item's image
             const selectedItems = supplier?.packageData?.selectedItems || []
             const firstSelectedItemImage = selectedItems[0]?.image
@@ -485,6 +487,31 @@ export default function MyPartyTabContent({
             if (isSweetTreats && (firstSelectedItemImage || packageImage)) {
               const sweetTreatsImage = firstSelectedItemImage || packageImage
               imageSrc = typeof sweetTreatsImage === 'object' ? sweetTreatsImage.src : sweetTreatsImage
+            }
+
+            // Decorations: use theme-specific image based on party theme
+            if (isDecorations) {
+              const partyTheme = partyDetails?.theme
+              // Check if package has theme-specific images
+              if (packageThemeImages && partyTheme && packageThemeImages[partyTheme]) {
+                imageSrc = packageThemeImages[partyTheme]
+              } else if (packageImage) {
+                // Fall back to package image
+                imageSrc = typeof packageImage === 'object' ? packageImage.src : packageImage
+              }
+            }
+
+            // Party Bags: use theme-specific image based on party theme
+            const isPartyBagsType = type === 'partyBags'
+            if (isPartyBagsType) {
+              const partyTheme = partyDetails?.theme
+              // Check if package has theme-specific images
+              if (packageThemeImages && partyTheme && packageThemeImages[partyTheme]) {
+                imageSrc = packageThemeImages[partyTheme]
+              } else if (packageImage) {
+                // Fall back to package image
+                imageSrc = typeof packageImage === 'object' ? packageImage.src : packageImage
+              }
             }
 
             return (
@@ -544,6 +571,20 @@ export default function MyPartyTabContent({
                     {supplier.packageData.selectedItems.length > 1 && (
                       <span className="ml-1 text-white/70">
                         +{supplier.packageData.selectedItems.length - 1} more
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Decorations pack size display */}
+              {type === 'decorations' && supplier?.packageData?.decorationsMetadata && (
+                <div className="mb-2">
+                  <p className="text-sm text-white/90 font-medium">
+                    {supplier.packageData.name}
+                    {supplier.packageData.decorationsMetadata.bufferCount > 0 && (
+                      <span className="ml-1 text-white/70">
+                        ({supplier.packageData.decorationsMetadata.packSize} sets incl. {supplier.packageData.decorationsMetadata.bufferCount} spare)
                       </span>
                     )}
                   </p>
