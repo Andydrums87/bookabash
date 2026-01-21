@@ -173,13 +173,12 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-html {
-  scroll-behavior: smooth;
-}
+/* Note: scroll-behavior: smooth was removed - causes issues with modal scroll restoration on mobile */
 
 body {
   font-family: 'Poppins' !important;
   overflow-x: hidden;
+  overflow-anchor: none; /* Prevent browser scroll anchoring which causes jumps */
 }
 
 .hero-padding {
@@ -450,22 +449,18 @@ body {
 }
 
 
-/* Ensure mobile browsers start at top */
+/* Ensure mobile browsers don't have smooth scroll (can cause jumps) */
 @media (max-width: 768px) {
   html, body {
     scroll-behavior: auto;
     overflow-x: hidden;
   }
-
-  /* Reset scroll position for mobile navigation */
-  body {
-    scroll-restoration: manual;
-  }
 }
 
 /* Prevent automatic scroll jumps - user can still scroll manually */
 body.prevent-auto-scroll {
-  /* No restrictions - just a marker class for the scroll management logic */
+  overflow-anchor: none !important;
+  /* Prevent any automatic scroll adjustments while adding suppliers */
 }
 /* Mobile-first approach - 12px for mobile */
 input[type="text"],

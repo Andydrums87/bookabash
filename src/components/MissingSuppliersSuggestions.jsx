@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react"
 import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
-import confetti from 'canvas-confetti'
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
 
@@ -292,15 +291,6 @@ export default function MissingSuppliersSuggestions({
         const result = await onAddSupplier(supplier, supplierType)
 
         if (result && preventNavigation) {
-          // Trigger confetti only if not disabled
-          if (!disableConfetti) {
-            confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-            })
-          }
-
           // After 2 seconds, start fade out, then hide after animation
           setTimeout(() => {
             setHiddenTypes(prev => new Set([...prev, supplierType]))
@@ -415,10 +405,15 @@ export default function MissingSuppliersSuggestions({
       )}
 
       {/* Compact grid or horizontal scroll */}
-      <div className={horizontalScroll
-        ? "flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-      }>
+      <div
+        className={horizontalScroll
+          ? "flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        }
+        style={{
+          minHeight: horizontalScroll ? '200px' : undefined
+        }}
+      >
         {missingSuppliers.map(({ type, config, suppliers }) => {
           const isAdded = addedSupplierIds.has(suppliers[0]?.id);
           const isJustAdded = !disableConfetti && justAddedTypes.has(type);

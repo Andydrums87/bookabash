@@ -168,9 +168,9 @@ function SnappyToast({ toast, onRemove }) {
   return (
     <div className={`
       bg-white border border-gray-200 rounded-2xl p-4 shadow-xl
-      animate-in slide-in-from-right-full duration-300 ease-out
-      hover:shadow-2xl transition-all duration-200
-      max-w-sm min-w-[320px] relative overflow-hidden
+      animate-in slide-in-from-bottom sm:slide-in-from-right-full duration-300 ease-out
+      hover:shadow-2xl transition-shadow
+      w-full sm:w-auto sm:min-w-[320px] max-w-sm relative overflow-hidden
     `}>
       {/* Colored top border */}
       <div className={`absolute top-0 left-0 right-0 h-1 ${
@@ -231,7 +231,7 @@ function ToastContainer({ toasts, removeToast }) {
           from { width: 100%; }
           to { width: 0%; }
         }
-        
+
         .toast-container {
           position: fixed;
           top: 1rem;
@@ -243,12 +243,14 @@ function ToastContainer({ toasts, removeToast }) {
           max-height: calc(100vh - 2rem);
           overflow: hidden;
         }
-        
+
         @media (max-width: 640px) {
           .toast-container {
+            top: auto;
+            bottom: 5rem;
             left: 1rem;
             right: 1rem;
-            top: 1rem;
+            align-items: center;
           }
         }
       `}</style>

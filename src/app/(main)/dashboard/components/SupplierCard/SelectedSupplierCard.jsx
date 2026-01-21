@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Plus, X, Clock, Users, Star, ChevronDown, ChevronUp, Info, Eye, Trash2, Wand2 } from "lucide-react"
+import { CheckCircle, Plus, X, Clock, Users, Star, ChevronDown, ChevronUp, Info, Eye, Trash2, Wand2, RefreshCw } from "lucide-react"
 import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
@@ -205,14 +205,20 @@ export default function SelectedSupplierCard({
       <MicroConfettiWrapper 
         isNewlyAdded={isNewlyAdded}
         onAnimationComplete={handleAnimationComplete}>
-        <Card onClick={onClick} className={`overflow-hidden rounded-2xl border-2 shadow-2xl transition-all duration-300 relative ring-2 ring-offset-2 ${isDeleting ? "opacity-50 scale-95" : "hover:scale-[1.02]"}`} style={{
+        <Card className={`overflow-hidden rounded-2xl border-2 shadow-2xl transition-all duration-300 relative ring-2 ring-offset-2 ${isDeleting ? "opacity-50 scale-95" : "hover:scale-[1.02]"}`} style={{
           borderColor: 'hsl(var(--primary-400))',
           '--tw-ring-color': 'hsl(var(--primary-300) / 0.5)',
           boxShadow: isDeleting ? undefined : '0 25px 50px -12px hsl(var(--primary-200) / 0.3)'
         }}>
           
-          {/* Image Section - Static Image Only */}
-          <div className="relative h-64 w-full">
+          {/* Image Section - Clickable to open quick view */}
+          <div
+            className="relative h-64 w-full cursor-pointer group/image"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowQuickViewModal(true)
+            }}
+          >
             {isLoading ? (
               <Skeleton className="w-full h-full" />
             ) : (
@@ -235,14 +241,14 @@ export default function SelectedSupplierCard({
                     }
                     alt={supplier.name}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover/image:scale-105"
                     sizes="(max-width: 1024px) 50vw, 33vw"
                     priority={type === 'venue'}
                   />
                 </div>
 
                 {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-80" />
 
                 {/* Remove Button Only */}
                 <div className="absolute top-4 right-4 z-20">
@@ -416,7 +422,7 @@ export default function SelectedSupplierCard({
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">
-              {/* Top row - View Details and Customize (consistent across all cards) */}
+              {/* Top row - View Details and Customize/Change (consistent across all cards) */}
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={(e) => {
@@ -431,17 +437,33 @@ export default function SelectedSupplierCard({
                   <Eye className="w-4 h-4 mr-1.5" />
                   <span className="truncate">View</span>
                 </Button>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    fetchFullSupplierData()
-                  }}
-                  className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
-                  disabled={isDeleting}
-                >
-                  <Wand2 className="w-4 h-4 mr-1.5" />
-                  <span className="truncate">Customize</span>
-                </Button>
+                {type === 'venue' ? (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (onBrowseVenues) {
+                        onBrowseVenues()
+                      }
+                    }}
+                    className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
+                    disabled={isDeleting}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1.5" />
+                    <span className="truncate">Change</span>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchFullSupplierData()
+                    }}
+                    className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
+                    disabled={isDeleting}
+                  >
+                    <Wand2 className="w-4 h-4 mr-1.5" />
+                    <span className="truncate">Customize</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

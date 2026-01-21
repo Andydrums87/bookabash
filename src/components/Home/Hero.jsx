@@ -129,7 +129,13 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                           }
                         }}
                         initialFocus
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          const minDate = new Date(today)
+                          minDate.setDate(minDate.getDate() + 7) // 7-day lead time
+                          return date < minDate
+                        }}
                         className="rounded-t-lg"
                       />
 

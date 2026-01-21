@@ -1,7 +1,7 @@
 // Enhanced SupplierCustomizationModal with unified pricing system integration
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -72,7 +72,8 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
         document.body.style.top = ''
         document.body.style.width = ''
         document.body.style.overflow = ''
-        window.scrollTo(0, scrollY)
+        // Use instant behavior to avoid smooth scroll causing visible jump
+        window.scrollTo({ top: scrollY, behavior: 'instant' })
       }
     }
   }, [isOpen])
@@ -351,12 +352,15 @@ export default function SupplierCustomizationModal({
   // Special requests for entertainment suppliers
   const [specialRequests, setSpecialRequests] = useState("")
 
+  // Store scroll position in ref to avoid stale closure issues
+  const scrollPositionRef = useRef(0)
+
   // Disable body scroll when main modal is open (iOS Safari compatible)
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY
+      scrollPositionRef.current = window.scrollY
       document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
+      document.body.style.top = `-${scrollPositionRef.current}px`
       document.body.style.width = '100%'
       document.body.style.overflow = 'hidden'
 
@@ -365,7 +369,8 @@ export default function SupplierCustomizationModal({
         document.body.style.top = ''
         document.body.style.width = ''
         document.body.style.overflow = ''
-        window.scrollTo(0, scrollY)
+        // Use instant behavior to avoid smooth scroll causing visible jump
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
       }
     }
   }, [isOpen])

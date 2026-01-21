@@ -1,7 +1,7 @@
 // components/SupplierQuickViewModal.jsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,9 @@ export default function SupplierQuickViewModal({
   supplier,
   isOpen,
   onClose,
-  onCustomize, // NEW: Callback to open customization modal
+  onCustomize, // Callback to open customization modal
+  onBookPackage, // NEW: Callback to directly book a package (bypasses customization)
+  bookingPackageId, // NEW: ID of package currently being booked (for loading state)
   partyDetails,
   type
 }) {
@@ -26,6 +28,7 @@ export default function SupplierQuickViewModal({
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
+  const scrollPositionRef = useRef(0) // Store scroll position in ref to avoid stale closure
 
   // Detect theme from supplier name/description
   const getSupplierTheme = (supplier) => {
@@ -152,9 +155,10 @@ export default function SupplierQuickViewModal({
   // Disable body scroll when modal is open - Enhanced for mobile
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY
+      // Store in ref to avoid stale closure issues
+      scrollPositionRef.current = window.scrollY
       document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
+      document.body.style.top = `-${scrollPositionRef.current}px`
       document.body.style.left = '0'
       document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
@@ -165,7 +169,8 @@ export default function SupplierQuickViewModal({
         document.body.style.left = ''
         document.body.style.right = ''
         document.body.style.overflow = ''
-        window.scrollTo(0, scrollY)
+        // Use instant behavior to avoid smooth scroll causing visible jump
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
       }
     }
   }, [isOpen])
@@ -717,12 +722,23 @@ export default function SupplierQuickViewModal({
                                     </ul>
                                   )}
                                   {/* Book button */}
-                                  {onCustomize && (
+                                  {(onBookPackage || onCustomize) && (
                                     <button
-                                      onClick={() => onCustomize()}
-                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                        bookingPackageId === (pkg.id || pkg.name)
+                                          ? 'opacity-70 cursor-not-allowed'
+                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                      }`}
                                     >
-                                      Book
+                                      {bookingPackageId === (pkg.id || pkg.name) ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </span>
+                                      ) : 'Book'}
                                     </button>
                                   )}
                                 </div>
@@ -812,13 +828,16 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <p className="text-sm text-gray-500 mb-4">Price per bag - order one for each guest</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => (
+                              {packages.map((pkg, index) => {
+                                const guestCount = partyDetails?.guestCount || 10
+                                const totalPrice = (pkg.price * guestCount).toFixed(2)
+                                return (
                                 <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                      <p className="text-xs text-gray-500">per bag</p>
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <p className="text-xs text-gray-500">£{pkg.price} per bag</p>
                                     </div>
                                   </div>
                                   {pkg.description && (
@@ -845,16 +864,27 @@ export default function SupplierQuickViewModal({
                                     </ul>
                                   )}
                                   {/* Book button */}
-                                  {onCustomize && (
+                                  {(onBookPackage || onCustomize) && (
                                     <button
-                                      onClick={() => onCustomize()}
-                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                        bookingPackageId === (pkg.id || pkg.name)
+                                          ? 'opacity-70 cursor-not-allowed'
+                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                      }`}
                                     >
-                                      Book
+                                      {bookingPackageId === (pkg.id || pkg.name) ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </span>
+                                      ) : 'Book'}
                                     </button>
                                   )}
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           </div>
                         )}
@@ -1066,12 +1096,23 @@ export default function SupplierQuickViewModal({
                                         <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
                                       )}
                                       {/* Book button */}
-                                      {onCustomize && (
+                                      {(onBookPackage || onCustomize) && (
                                         <button
-                                          onClick={() => onCustomize()}
-                                          className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                          onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                          disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                          className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                            bookingPackageId === (pkg.id || pkg.name)
+                                              ? 'opacity-70 cursor-not-allowed'
+                                              : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                          }`}
                                         >
-                                          Book
+                                          {bookingPackageId === (pkg.id || pkg.name) ? (
+                                            <span className="flex items-center justify-center gap-1">
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                            </span>
+                                          ) : 'Book'}
                                         </button>
                                       )}
                                     </div>
@@ -1215,12 +1256,23 @@ export default function SupplierQuickViewModal({
                                         <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
                                       )}
                                       {/* Book button */}
-                                      {onCustomize && (
+                                      {(onBookPackage || onCustomize) && (
                                         <button
-                                          onClick={() => onCustomize()}
-                                          className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                          onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                          disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                          className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                            bookingPackageId === (pkg.id || pkg.name)
+                                              ? 'opacity-70 cursor-not-allowed'
+                                              : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                          }`}
                                         >
-                                          Book
+                                          {bookingPackageId === (pkg.id || pkg.name) ? (
+                                            <span className="flex items-center justify-center gap-1">
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                            </span>
+                                          ) : 'Book'}
                                         </button>
                                       )}
                                     </div>
@@ -1313,13 +1365,16 @@ export default function SupplierQuickViewModal({
                             </h2>
                             <p className="text-sm text-gray-500 mb-4">Price per child - order for each guest</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => (
+                              {packages.map((pkg, index) => {
+                                const guestCount = partyDetails?.guestCount || 10
+                                const totalPrice = (pkg.price * guestCount).toFixed(2)
+                                return (
                                 <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                      <p className="text-xs text-gray-500">per child</p>
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <p className="text-xs text-gray-500">£{pkg.price} per child</p>
                                     </div>
                                   </div>
                                   {pkg.description && (
@@ -1336,16 +1391,27 @@ export default function SupplierQuickViewModal({
                                     </ul>
                                   )}
                                   {/* Book button */}
-                                  {onCustomize && (
+                                  {(onBookPackage || onCustomize) && (
                                     <button
-                                      onClick={() => onCustomize()}
-                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                        bookingPackageId === (pkg.id || pkg.name)
+                                          ? 'opacity-70 cursor-not-allowed'
+                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                      }`}
                                     >
-                                      Book
+                                      {bookingPackageId === (pkg.id || pkg.name) ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </span>
+                                      ) : 'Book'}
                                     </button>
                                   )}
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           </div>
                         )}
@@ -1509,15 +1575,21 @@ export default function SupplierQuickViewModal({
                               Packages
                               <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                             </h2>
-                            <p className="text-sm text-gray-500 mb-4">Priced per guest - we round up to pack sizes to ensure you have enough</p>
+                            <p className="text-sm text-gray-500 mb-4">Priced per set - we round up to pack sizes to ensure you have enough</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => (
+                              {packages.map((pkg, index) => {
+                                const guestCount = partyDetails?.guestCount || 10
+                                const packSizes = pkg.packSizes || [8, 16, 24, 32, 40, 48]
+                                // Find smallest pack size that covers guest count
+                                const packSize = packSizes.find(size => size >= guestCount) || packSizes[packSizes.length - 1]
+                                const totalPrice = (pkg.price * packSize).toFixed(2)
+                                return (
                                 <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                      <p className="text-xs text-gray-500">per guest</p>
+                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <p className="text-xs text-gray-500">£{pkg.price}/set × {packSize} sets</p>
                                     </div>
                                   </div>
                                   {pkg.description && (
@@ -1534,16 +1606,27 @@ export default function SupplierQuickViewModal({
                                     </ul>
                                   )}
                                   {/* Book button */}
-                                  {onCustomize && (
+                                  {(onBookPackage || onCustomize) && (
                                     <button
-                                      onClick={() => onCustomize()}
-                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                        bookingPackageId === (pkg.id || pkg.name)
+                                          ? 'opacity-70 cursor-not-allowed'
+                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                      }`}
                                     >
-                                      Book
+                                      {bookingPackageId === (pkg.id || pkg.name) ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </span>
+                                      ) : 'Book'}
                                     </button>
                                   )}
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           </div>
                         )}
@@ -1649,12 +1732,23 @@ export default function SupplierQuickViewModal({
                                     </ul>
                                   )}
                                   {/* Book button */}
-                                  {onCustomize && (
+                                  {(onBookPackage || onCustomize) && (
                                     <button
-                                      onClick={() => onCustomize()}
-                                      className="mt-3 w-full py-2 px-4 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold rounded-xl transition-colors text-sm"
+                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                        bookingPackageId === (pkg.id || pkg.name)
+                                          ? 'opacity-70 cursor-not-allowed'
+                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                      }`}
                                     >
-                                      Book
+                                      {bookingPackageId === (pkg.id || pkg.name) ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </span>
+                                      ) : 'Book'}
                                     </button>
                                   )}
                                 </div>

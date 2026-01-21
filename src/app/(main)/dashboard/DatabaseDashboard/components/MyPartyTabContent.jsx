@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin, Camera } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin, Camera, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -613,23 +613,39 @@ export default function MyPartyTabContent({
             onClick={(e) => {
               e.stopPropagation()
               setSelectedSupplierForQuickView(supplier)
+              setSelectedSupplierType(type)
             }}
             variant="outline"
             className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             <Eye className="w-4 h-4 mr-2" />
-            View Details
+            View
           </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation()
-              fetchFullSupplierData(supplier, type)
-            }}
-            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
-          >
-            <Wand2 className="w-4 h-4 mr-2" />
-            Customize
-          </Button>
+          {type === 'venue' ? (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onBrowseVenues) {
+                  onBrowseVenues()
+                }
+              }}
+              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Change
+            </Button>
+          ) : (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                fetchFullSupplierData(supplier, type)
+              }}
+              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Customize
+            </Button>
+          )}
         </div>
       </Card>
     )
@@ -760,23 +776,19 @@ export default function MyPartyTabContent({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" style={{ overflowAnchor: 'none' }}>
 
-      {/* Original Header Section */}
+      {/* Header Section */}
       <div>
         <div>
-          {/* <div className="flex items-start gap-3 mb-4">
-            <h2 className="text-3xl font-black text-gray-900 leading-tight animate-fade-in flex-1">
-              Snappy's built the perfect party for {childFirstName}!
+          <div className="mb-4">
+            <h2 className="text-2xl font-extrabold text-gray-700 leading-tight">
+              Here's Your Party Plan
             </h2>
-            <button
-              onClick={() => setShowPlanInfo(!showPlanInfo)}
-              className="flex-shrink-0 w-8 h-8 bg-primary-100 hover:bg-primary-200 rounded-full flex items-center justify-center transition-colors"
-              aria-label="Why this plan?"
-            >
-              <Info className="w-4 h-4 text-primary-600" />
-            </button>
-          </div> */}
+            <p className="text-sm text-gray-600 mt-1">
+              We've matched you with top suppliers for your date & location. Customize it however you like.
+            </p>
+          </div>
 
           {showPlanInfo && (
             <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
@@ -801,34 +813,14 @@ export default function MyPartyTabContent({
               </div>
             </div>
           )}
-
-          <div className="mb-4 bg-[#FAFAFA] border border-gray-200 rounded-lg p-3 w-full">
-            <p className="text-sm text-gray-700 font-medium leading-relaxed">
-              💡 <span className="font-semibold">Top tip:</span> You can {' '}
-              <span className="inline-block relative font-bold text-gray-900">
-                swap
-                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-              </span>
-              , {' '}
-              <span className="inline-block relative font-bold text-gray-900">
-                tweak
-                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-              </span>
-              , or {' '}
-              <span className="inline-block relative font-bold text-gray-900">
-                add your own touches
-                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-              </span>
-              {' '} anytime.
-            </p>
-          </div>
         </div>
       </div>
 
 
       {/* All Suppliers Section with Category Headings */}
+      {/* overflow-anchor: none prevents scroll jump when new cards are added */}
       {allSuppliers.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4" style={{ overflowAnchor: 'none' }}>
           {allSuppliers.map(([type, supplier]) => {
             const categoryName = getCategoryName(type)
             const categoryTagline = getCategoryTagline(type)
@@ -865,18 +857,6 @@ export default function MyPartyTabContent({
 
                 {/* Supplier Card */}
                 {renderSupplierCard([type, supplier])}
-
-                {/* Venue Change Option */}
-                {type === 'venue' && onBrowseVenues && (
-                  <div className="mt-3 text-center">
-                    <button
-                      onClick={onBrowseVenues}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
-                    >
-                      Want to change venue? Browse other options
-                    </button>
-                  </div>
-                )}
               </div>
             )
           })}
@@ -931,18 +911,7 @@ export default function MyPartyTabContent({
                   await onAddSupplier(supplier, supplierType, false) // false = don't navigate
                 }
 
-                // After confetti animation (2 seconds), scroll to the newly added supplier card
-                setTimeout(() => {
-                  const cardElement = document.getElementById(`supplier-card-${supplierType}`)
-                  if (cardElement) {
-                    cardElement.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'center'
-                    })
-                  }
-                }, 2000) // Wait for confetti animation to finish
-
-                // Return true to trigger confetti
+                // Return true to indicate success (toast notification handled by EmptySupplierCard)
                 return true
               }}
               addedSupplierIds={new Set()}

@@ -63,11 +63,11 @@ const MicroConfettiWrapper = ({
   return (
     <div className={`relative ${showEffect ? 'animate-card-shake' : ''}`}>
       {children}
-      
+
       {showEffect && (
-        <div className="absolute -top-3 -right-3 z-20 animate-snappy-slide-in">
+        <div className="absolute top-2 right-2 z-20 animate-snappy-slide-in pointer-events-none">
           <div className="bg-teal-500 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2 border-2 border-white">
-            <img 
+            <img
               src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
               alt="Snappy"
               className="w-10 h-10 rounded-full bg-white p-0.5"

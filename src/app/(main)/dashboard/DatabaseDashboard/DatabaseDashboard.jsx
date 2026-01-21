@@ -2361,10 +2361,10 @@ const addSuppliersSection = (
             <div className="mt-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Level Up Your Party
+                  Anything Else to Add?
                   <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                 </h2>
-                <p className="text-sm text-gray-600 mt-3">Complete your party with these recommendations</p>
+                <p className="text-sm text-gray-600 mt-3">Complete your party with these popular additions</p>
               </div>
               <MissingSuppliersSuggestions
                 partyPlan={visibleSuppliers}

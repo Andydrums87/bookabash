@@ -1405,21 +1405,10 @@ const handleNameSubmit = (nameData) => {
     }
   }
 
-  // In your dashboard's handleAddRecommendedSupplier:
+  // Handle adding a recommended supplier from the missing extras section
 
   const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
     try {
-      // Save scroll position AND document height BEFORE any state changes
-      const savedScrollY = !shouldNavigate ? window.scrollY : null
-      const savedDocHeight = !shouldNavigate ? document.documentElement.scrollHeight : null
-
-      // Set prevent scroll flag and save position in ref
-      if (!shouldNavigate && savedScrollY !== null) {
-        scrollLockPositionRef.current = savedScrollY
-        setPreventScrollFlag(true)
-        document.body.classList.add('prevent-auto-scroll')
-      }
-
       setLoadingCards(prev => [...prev, categoryType])
 
       // Auto-select cake defaults if it's a cake supplier without packageData
@@ -1436,29 +1425,8 @@ const handleNameSubmit = (nameData) => {
       const result = await addSupplier(supplier, packageData)
 
       if (result.success) {
-        // Toast notification removed - confetti animation provides visual feedback
-        // when adding suppliers from the missing suppliers section
-
-        // CRITICAL FIX: Compensate for document height change
-        if (!shouldNavigate && savedScrollY !== null && savedDocHeight !== null) {
-          // Wait for DOM to update fully
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const newDocHeight = document.documentElement.scrollHeight
-              const heightDelta = newDocHeight - savedDocHeight
-
-              if (heightDelta > 10) {
-                // Document got taller - adjust scroll to compensate
-                const compensatedPosition = savedScrollY + heightDelta
-                window.scrollTo({ top: compensatedPosition, behavior: 'instant' })
-              }
-            })
-          })
-        }
-
-        // ✅ Only update URL and trigger navigation if shouldNavigate is true
+        // Only update URL and trigger navigation if shouldNavigate is true
         if (shouldNavigate) {
-          // ✅ Create a unique timestamp for this addition
           const addTimestamp = Date.now()
 
           // Update URL with timestamp
@@ -1478,31 +1446,10 @@ const handleNameSubmit = (nameData) => {
               window.history.replaceState({}, '', cleanUrl)
             }
           }, 2500)
-        } else {
-          // Clear prevent scroll flag after card disappears (3 seconds)
-          setTimeout(() => {
-            scrollLockPositionRef.current = null
-            setPreventScrollFlag(false)
-            document.body.classList.remove('prevent-auto-scroll')
-          }, 3500)
-        }
-      } else {
-        // Clear everything if operation failed (error is now shown on button)
-        if (!shouldNavigate) {
-          scrollLockPositionRef.current = null
-          setPreventScrollFlag(false)
-          document.body.classList.remove('prevent-auto-scroll')
         }
       }
     } catch (error) {
       console.error('Error adding supplier:', error)
-
-      // Clear flag on error (error is now shown on button)
-      if (!shouldNavigate) {
-        scrollLockPositionRef.current = null
-        setPreventScrollFlag(false)
-        document.body.classList.remove('prevent-auto-scroll')
-      }
     } finally {
       setLoadingCards(prev => prev.filter(c => c !== categoryType))
     }
@@ -1824,28 +1771,11 @@ const handleChildPhotoUpload = async (file) => {
                   />
                   <div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
-                      Meet Your Party Team!
+                      Here's Your Party Plan
                     </h2>
-                    <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 w-full">
-                      <p className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed">
-                        💡 <span className="font-semibold">Top tip:</span> You can {' '}
-                        <span className="inline-block relative font-bold text-gray-900">
-                          swap
-                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-                        </span>
-                        , {' '}
-                        <span className="inline-block relative font-bold text-gray-900">
-                          tweak
-                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-                        </span>
-                        , or {' '}
-                        <span className="inline-block relative font-bold text-gray-900">
-                          add your own touches
-                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
-                        </span>
-                        {' '} anytime.
-                      </p>
-                    </div>
+                    <p className="text-sm md:text-base text-gray-600 mt-1">
+                      We've matched you with top suppliers for your date & location. Customize it however you like.
+                    </p>
                   </div>
                  
                 </div>
@@ -2089,19 +2019,9 @@ const handleChildPhotoUpload = async (file) => {
                                 enhancedPricing={isDeleting ? null : (supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null)}
                                 onCustomizationComplete={handleCustomizationComplete}
                                 selectedVenue={suppliers.venue}
+                                onBrowseVenues={() => setShowVenueBrowserModal(true)}
                               />
 
-                              {/* Browse Venues button underneath venue card */}
-                              {type === 'venue' && supplier && !isDeleting && venueCarouselOptions && venueCarouselOptions.length > 0 && (
-                                <div className="mt-3 text-center">
-                                  <button
-                                    onClick={() => setShowVenueBrowserModal(true)}
-                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
-                                  >
-                                    Want to change venue? Browse other options
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           );
                         };
@@ -2116,7 +2036,7 @@ const handleChildPhotoUpload = async (file) => {
                               <div className="col-span-full flex items-center gap-4 my-6">
                                 <div className="flex-1 h-px bg-gray-200"></div>
                                 <div className="px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
-                                  <span className="text-sm font-medium text-primary-600">Level Up Your Party</span>
+                                  <span className="text-sm font-medium text-primary-600">Anything Else to Add?</span>
                                 </div>
                                 <div className="flex-1 h-px bg-gray-200"></div>
                               </div>
