@@ -2399,8 +2399,10 @@ const addSuppliersSection = (
                 {(() => {
                   const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
                   const venueExists = !!visibleSuppliers.venue
-                  const isVenueConfirmed = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false
-                  const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
+                  // QA bypass: set NEXT_PUBLIC_BYPASS_VENUE_LOCK=true to unlock e-invites without venue confirmation
+                  const bypassVenueLock = process.env.NEXT_PUBLIC_BYPASS_VENUE_LOCK === 'true'
+                  const isVenueConfirmed = bypassVenueLock || (venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false)
+                  const venueAwaitingConfirmation = !bypassVenueLock && venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
                   const hasPaidSuppliers = enquiries.some(e => ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) || e.is_paid === true)
 
                   const einvitesData = partyToolsData?.einvites
