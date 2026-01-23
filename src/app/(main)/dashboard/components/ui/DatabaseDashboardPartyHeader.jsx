@@ -210,20 +210,20 @@ export default function DatabasePartyHeader({
     if (!themeSource) return null
 
     const themeImages = {
-      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296152/iStock-1433142692_ukadz6.jpg",
-      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296218/iStock-1150984736_evfnwn.jpg",
-      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761295969/iStock-1126856615_wg9qil.jpg",
-      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296364/iStock-1202380918_flcyof.jpg",
-      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
-      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761209443/iStock-1165735224_ayrkw1.jpg",
-      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
+      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791480/1paNDhEPzRXugvgrEmX9l_ubbhj1.jpg",
+      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791428/nNAor0prdHfwXYCj44qtf_gukhjg.jpg",
+      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791380/9fpzmYZwz3Q0V7y4eCatN_q1tglx.jpg",
+      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791323/NIvB0Qp0gLZh_t2dRVagW_ioijc9.jpg",
+      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790720/-4ekVLuxH1k-NRC5127zk_u0giw9.jpg",
+      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790933/DYYZJyytsfTnK1lItjaDg_vlzski.jpg",
+      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791231/UoiwdGcwxYcJL17kXfL4M_j3gbsv.jpg",
       cars: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
-      pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296485/iStock-1283573104_bzl4zs.jpg",
-      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296596/iStock-2221104953_mhafl2.jpg",
+      pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767788504/sEGDLFceS0EXSbhZPGIMT_1_tfmfyp.jpg",
+      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791142/mLmRQAtoQdVyJEbqFxmQk_awaj82.jpg",
       football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
-      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296848/iStock-1474868329_hxmo8u.jpg",
-      mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297169/iStock-1434335578_h3dzbb.jpg",
-      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg"
+      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
+      mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
+      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg"
     }
 
     return themeImages[themeSource.toLowerCase()] || null
@@ -338,24 +338,15 @@ export default function DatabasePartyHeader({
   };
 
   return (
-    <div className="relative shadow-2xl overflow-hidden mb-8 transition-all duration-300">
+    <div className="relative shadow-2xl overflow-hidden transition-all duration-300" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))' }}>
       {/* Theme Image Background */}
       {getThemeImage() && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" style={{ top: 'calc(-1 * env(safe-area-inset-top, 0px))' }}>
           <img
             src={getThemeImage()}
             alt={currentTheme}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-bottom"
           />
-          {/* Coral/Primary tint overlay for brand consistency */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(to right, hsla(14, 100%, 64%, 0.45), hsla(14, 100%, 64%, 0.35), hsla(14, 100%, 64%, 0.45))'
-            }}
-          ></div>
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/25 to-black/40"></div>
         </div>
       )}
 
@@ -365,7 +356,8 @@ export default function DatabasePartyHeader({
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: getThemeGradient()
+              backgroundImage: getThemeGradient(),
+              top: 'calc(-1 * env(safe-area-inset-top, 0px))'
             }}
           ></div>
           {/* Optional: Add party pattern overlay */}
@@ -375,13 +367,20 @@ export default function DatabasePartyHeader({
               backgroundImage: `url('/party-pattern.svg')`,
               backgroundRepeat: "repeat",
               backgroundSize: "100px",
+              top: 'calc(-1 * env(safe-area-inset-top, 0px))'
             }}
           ></div>
         </>
       )}
 
       {/* Compact Content */}
-      <div className="relative px-4 py-8 md:px-10 md:py-12 text-white">
+      <div
+        className="relative pl-6 pr-2 md:px-10 text-white"
+        style={{
+          paddingTop: 'calc(3rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: '3rem'
+        }}
+      >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           {/* Party Name & Theme with Photo */}
           <div className="flex items-center gap-3">

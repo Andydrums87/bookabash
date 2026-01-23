@@ -117,23 +117,30 @@ export default function AdminDashboard() {
   }
 
   const reviewDocument = async (supplierId, documentType, decision, feedback = '') => {
+    console.log('🔍 reviewDocument called:', { supplierId, documentType, decision, feedback })
     try {
       const headers = await getAuthHeaders()
+      console.log('📤 Making API request to /api/admin/verification/review')
       const response = await fetch('/api/admin/verification/review', {
         method: 'POST',
         headers,
         body: JSON.stringify({ supplierId, documentType, decision, feedback })
       })
+      console.log('📥 Response status:', response.status)
       const result = await response.json()
+      console.log('📥 Response data:', result)
       if (result.success) {
         alert(`Document ${decision}!`)
         fetchSuppliers()
         if (selectedSupplier?.id === supplierId) {
           viewSupplierDetails(supplierId)
         }
+      } else {
+        alert(`Review failed: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
-      alert('Review failed')
+      console.error('❌ Review error:', error)
+      alert(`Review failed: ${error.message}`)
     }
   }
 
@@ -409,10 +416,13 @@ export default function AdminDashboard() {
                               View
                             </button>
                           )}
-                          {docData.status === 'submitted' && (
+                          {(docData.status === 'submitted' || docData.status === 'pending') && (
                             <>
                               <button
-                                onClick={() => reviewDocument(selectedSupplier.id, docType, 'approved')}
+                                onClick={() => {
+                                  console.log('Approve clicked for:', docType, selectedSupplier.id)
+                                  reviewDocument(selectedSupplier.id, docType, 'approved')
+                                }}
                                 className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                               >
                                 Approve
@@ -427,6 +437,9 @@ export default function AdminDashboard() {
                                 Reject
                               </button>
                             </>
+                          )}
+                          {docData.status !== 'submitted' && docData.status !== 'pending' && docData.status !== 'approved' && docData.status !== 'rejected' && (
+                            <span className="text-xs text-gray-500">Status: {docData.status}</span>
                           )}
                         </div>
                       </div>

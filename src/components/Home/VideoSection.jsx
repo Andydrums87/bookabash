@@ -1,15 +1,34 @@
 "use client"
 
-import { Play } from "lucide-react"
-import { useState } from "react"
+import { Play, Pause, Volume2, VolumeX } from "lucide-react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 
 export default function VideoSection() {
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+  const videoRef = useRef(null)
 
-  // Replace this with your actual video URL when ready
-  const videoUrl = null // e.g., "https://www.youtube.com/embed/YOUR_VIDEO_ID"
-  const thumbnailUrl = "/userdashboard2.png" // Placeholder - use a nice preview image
+  const videoUrl = "/videos/homepage-hero.mp4"
+  const thumbnailUrl = "/videos/homepage-hero-thumbnail.png"
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const handleMuteToggle = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted
+      setIsMuted(!isMuted)
+    }
+  }
 
   return (
     <section className="py-16 md:py-24 px-4 md:px-6 bg-white">
@@ -25,17 +44,19 @@ export default function VideoSection() {
 
         {/* Video Container */}
         <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-gray-200">
-          {isPlaying && videoUrl ? (
-            <iframe
-              src={`${videoUrl}?autoplay=1`}
-              title="PartySnap Demo"
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
+          {/* Video Element */}
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'block' : 'hidden'}`}
+            muted={isMuted}
+            playsInline
+            onEnded={() => setIsPlaying(false)}
+          />
+
+          {/* Thumbnail (shown when not playing) */}
+          {!isPlaying && (
             <>
-              {/* Thumbnail */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600">
                 <Image
                   src={thumbnailUrl}
@@ -44,13 +65,12 @@ export default function VideoSection() {
                   className="object-cover opacity-90"
                   sizes="(max-width: 768px) 100vw, 1024px"
                 />
-                {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
               </div>
 
               {/* Play Button */}
               <button
-                onClick={() => videoUrl && setIsPlaying(true)}
+                onClick={handlePlayPause}
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
                 aria-label="Play video"
               >
@@ -58,14 +78,31 @@ export default function VideoSection() {
                   <Play className="w-8 h-8 md:w-10 md:h-10 text-primary-600 ml-1" fill="currentColor" />
                 </div>
               </button>
-
-              {/* Coming Soon Badge - remove when video is ready */}
-              {!videoUrl && (
-                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <span className="text-sm font-medium text-gray-700">Video coming soon</span>
-                </div>
-              )}
             </>
+          )}
+
+          {/* Video Controls (shown when playing) */}
+          {isPlaying && (
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+              <button
+                onClick={handlePlayPause}
+                className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                aria-label="Pause video"
+              >
+                <Pause className="w-5 h-5 text-gray-800" fill="currentColor" />
+              </button>
+              <button
+                onClick={handleMuteToggle}
+                className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                aria-label={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-gray-800" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-gray-800" />
+                )}
+              </button>
+            </div>
           )}
         </div>
 

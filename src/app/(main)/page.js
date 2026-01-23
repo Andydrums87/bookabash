@@ -415,10 +415,10 @@ export default function HomePage() {
         onCancel={handleCancelOverride}
         existingPartyDetails={existingPartyDetails}
       />
-
+      <VideoSection />
       <CategoryGrid />
       <FeaturesGrid />
-      <VideoSection />
+
       <CustomerStories />
       <FinalCTA />
    

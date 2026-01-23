@@ -1,15 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, Play, Pause, Volume2, VolumeX } from "lucide-react"
 import Image from "next/image"
 
 export default function ComingSoon() {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+  const videoRef = useRef(null)
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("idle") // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState("")
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const handleMuteToggle = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted
+      setIsMuted(!isMuted)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -81,6 +102,69 @@ export default function ComingSoon() {
         <p className="text-primary-600 font-semibold text-sm tracking-wide uppercase">
           Launching soon in St Albans
         </p>
+
+        {/* Video Section */}
+        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100">
+          <video
+            ref={videoRef}
+            src="/videos/homepage-hero.mp4"
+            className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'block' : 'hidden'}`}
+            muted={isMuted}
+            playsInline
+            onEnded={() => setIsPlaying(false)}
+          />
+
+          {/* Thumbnail (shown when not playing) */}
+          {!isPlaying && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600">
+                <Image
+                  src="/videos/homepage-hero-thumbnail.png"
+                  alt="PartySnap demo video"
+                  fill
+                  className="object-cover opacity-90"
+                  sizes="(max-width: 768px) 100vw, 448px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+              </div>
+
+              {/* Play Button */}
+              <button
+                onClick={handlePlayPause}
+                className="absolute inset-0 flex items-center justify-center group cursor-pointer"
+                aria-label="Play video"
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Play className="w-6 h-6 md:w-8 md:h-8 text-primary-600 ml-1" fill="currentColor" />
+                </div>
+              </button>
+            </>
+          )}
+
+          {/* Video Controls (shown when playing) */}
+          {isPlaying && (
+            <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+              <button
+                onClick={handlePlayPause}
+                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                aria-label="Pause video"
+              >
+                <Pause className="w-4 h-4 text-gray-800" fill="currentColor" />
+              </button>
+              <button
+                onClick={handleMuteToggle}
+                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                aria-label={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4 text-gray-800" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-gray-800" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Email capture */}
         {status === "success" ? (
