@@ -6,6 +6,131 @@ import { supabase } from "@/lib/supabase"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 import Link from "next/link"
 
+// Helper to calculate party times for calendar events
+function calculatePartyTimes(party) {
+  const partyDate = new Date(party.party_date)
+  const timeStr = party.party_time || '14:00'
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  partyDate.setHours(hours, minutes, 0, 0)
+  const duration = party.duration || 2
+  const endDate = new Date(partyDate.getTime() + duration * 60 * 60 * 1000)
+  return { startDateTime: partyDate.toISOString(), endDateTime: endDate.toISOString() }
+}
+
+// Sync booking to supplier's connected calendars (Google/Outlook)
+async function syncBookingToCalendar(enquiry, party, customer) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      console.warn('No valid session for calendar sync')
+      return { success: false, error: 'No session' }
+    }
+
+    const { startDateTime, endDateTime } = calculatePartyTimes(party)
+    const eventData = {
+      title: `${party.theme || 'Party'} - ${party.child_name}`,
+      description: `Party Booking - ${customer?.first_name || 'Customer'} ${customer?.last_name || ''}\nChild: ${party.child_name}, Age ${party.child_age || ''}\nGuests: ${party.guest_count || ''}\nPrice: £${enquiry.final_price || enquiry.quoted_price}`,
+      location: `${party.location || ''}${party.postcode ? `, ${party.postcode}` : ''}`,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      timeZone: 'Europe/London',
+      attendees: customer?.email ? [customer.email] : [],
+    }
+
+    const response = await fetch('/api/calendar/booking-sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        supplierId: enquiry.supplier_id,
+        enquiryId: enquiry.id,
+        eventData
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('Calendar sync failed:', errorData)
+      return { success: false, error: errorData.error || 'Sync failed' }
+    }
+
+    const result = await response.json()
+    console.log('✅ Calendar sync successful:', result)
+    return { success: true, ...result }
+  } catch (error) {
+    console.error('Calendar sync error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Update supplier's unavailable dates to include the booked party date
+async function markDateAsUnavailable(supplierId, partyDate) {
+  try {
+    // Format the date as YYYY-MM-DD
+    const dateStr = new Date(partyDate).toISOString().split('T')[0]
+
+    // Fetch current supplier data
+    const { data: supplier, error: fetchError } = await supabase
+      .from('suppliers')
+      .select('data')
+      .eq('id', supplierId)
+      .single()
+
+    if (fetchError) {
+      console.error('Failed to fetch supplier for unavailable dates:', fetchError)
+      return { success: false, error: fetchError.message }
+    }
+
+    const currentData = supplier.data || {}
+    const currentUnavailable = currentData.unavailableDates || []
+
+    // Check if date already exists
+    const dateExists = currentUnavailable.some(d => {
+      const existingDate = typeof d === 'string' ? d : d.date
+      return existingDate === dateStr
+    })
+
+    if (dateExists) {
+      console.log('Date already marked as unavailable:', dateStr)
+      return { success: true, alreadyExists: true }
+    }
+
+    // Add the new unavailable date with source tracking
+    const newUnavailableDate = {
+      date: dateStr,
+      timeSlots: ['morning', 'afternoon'], // Block full day
+      source: 'booking-accepted',
+      addedAt: new Date().toISOString()
+    }
+
+    const updatedUnavailable = [...currentUnavailable, newUnavailableDate]
+
+    // Update supplier data
+    const { error: updateError } = await supabase
+      .from('suppliers')
+      .update({
+        data: {
+          ...currentData,
+          unavailableDates: updatedUnavailable
+        }
+      })
+      .eq('id', supplierId)
+
+    if (updateError) {
+      console.error('Failed to update unavailable dates:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    console.log('✅ Date marked as unavailable:', dateStr)
+    return { success: true, date: dateStr }
+  } catch (error) {
+    console.error('Error marking date as unavailable:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 const shortcodes = [
   { code: '{customer_name}', label: 'Customer name' },
   { code: '{child_name}', label: 'Child name' },
@@ -328,7 +453,26 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
           }),
         })
         emailSent = emailResponse.ok
-      } catch {}
+      } catch (emailErr) {
+        console.error('Email sending failed:', emailErr)
+      }
+
+      // If accepted, sync to calendar and mark date as unavailable
+      let calendarSynced = false
+      if (response === 'accepted' && party?.party_date) {
+        // Sync to supplier's connected calendars (Google/Outlook)
+        const calendarResult = await syncBookingToCalendar(enquiry, party, customer)
+        calendarSynced = calendarResult.success
+        if (!calendarResult.success) {
+          console.warn('Calendar sync failed:', calendarResult.error)
+        }
+
+        // Mark the party date as unavailable for this supplier
+        const unavailableResult = await markDateAsUnavailable(enquiry.supplier_id, party.party_date)
+        if (!unavailableResult.success) {
+          console.warn('Failed to mark date as unavailable:', unavailableResult.error)
+        }
+      }
 
       // Store success data and show success state
       const successInfo = {
@@ -338,6 +482,7 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
         partyDate: party?.party_date,
         price: finalPrice || enquiry.quoted_price,
         emailSent,
+        calendarSynced,
         enquiryId: enquiry.id,
       }
       setSuccessData(successInfo)
