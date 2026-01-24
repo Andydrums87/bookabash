@@ -90,10 +90,10 @@ export async function POST(req) {
           event: eventData
         })
 
-        // Save Google event ID to enquiry
+        // Save Google event ID to enquiry (column is lowercase in database)
         const { error: updateError } = await supabase
           .from('enquiries')
-          .update({ googleEventId: googleEvent.id })
+          .update({ googleeventid: googleEvent.id })
           .eq('id', enquiryId)
 
         if (updateError) {
@@ -137,10 +137,10 @@ export async function POST(req) {
           event: eventData
         })
 
-        // Save Outlook event ID to enquiry
+        // Save Outlook event ID to enquiry (column is lowercase in database)
         const { error: updateError } = await supabase
           .from('enquiries')
-          .update({ outlookEventId: outlookEvent.id })
+          .update({ outlookeventid: outlookEvent.id })
           .eq('id', enquiryId)
 
         if (updateError) {
