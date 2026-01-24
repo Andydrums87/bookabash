@@ -14,6 +14,7 @@ import { AppDemo } from "./videos/AppDemo";
 import { AppDemoVertical } from "./videos/AppDemoVertical";
 import { InstagramGrid } from "./videos/InstagramGrid";
 import { HomepageHero } from "./videos/HomepageHero";
+import { HomepageHeroMobile } from "./videos/HomepageHeroMobile";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -166,6 +167,16 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1920}
         height={1080}
+      />
+
+      {/* Homepage Hero Mobile - 77 seconds (Vertical/Mobile) */}
+      <Composition
+        id="HomepageHeroMobile"
+        component={HomepageHeroMobile}
+        durationInFrames={2322}
+        fps={30}
+        width={1080}
+        height={1920}
       />
     </>
   );

@@ -1,16 +1,29 @@
 "use client"
 
-import { Play, Pause, Volume2, VolumeX } from "lucide-react"
-import { useState, useRef } from "react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 
 export default function VideoSection() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const videoRef = useRef(null)
+  const containerRef = useRef(null)
 
-  const videoUrl = "/videos/homepage-hero.mp4"
-  const thumbnailUrl = "/videos/homepage-hero-thumbnail.png"
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  const videoUrl = isMobile ? "/videos/homepage-hero-mobile.mp4" : "/videos/homepage-hero.mp4"
+  const thumbnailUrl = isMobile ? "/videos/homepage-hero-mobile-thumbnail.png" : "/videos/homepage-hero-thumbnail.png"
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -30,6 +43,35 @@ export default function VideoSection() {
     }
   }
 
+  const handleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Try video element first (better for mobile)
+        if (videoRef.current?.requestFullscreen) {
+          await videoRef.current.requestFullscreen()
+        } else if (videoRef.current?.webkitEnterFullscreen) {
+          // iOS Safari
+          await videoRef.current.webkitEnterFullscreen()
+        } else if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen()
+        }
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (err) {
+      console.log("Fullscreen not supported:", err)
+    }
+  }
+
+  // Listen for fullscreen changes
+  if (typeof document !== "undefined") {
+    document.onfullscreenchange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+  }
+
   return (
     <section className="py-16 md:py-24 px-4 md:px-6 bg-white">
       <div className="max-w-5xl mx-auto">
@@ -42,8 +84,13 @@ export default function VideoSection() {
           </p>
         </div>
 
-        {/* Video Container */}
-        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-gray-200">
+        {/* Video Container - aspect-video for desktop, 9:16 for mobile */}
+        <div
+          ref={containerRef}
+          className={`relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 ${
+            isMobile ? "aspect-[9/16] max-w-[320px] mx-auto" : "aspect-video"
+          }`}
+        >
           {/* Video Element */}
           <video
             ref={videoRef}
@@ -74,8 +121,8 @@ export default function VideoSection() {
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
                 aria-label="Play video"
               >
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-                  <Play className="w-8 h-8 md:w-10 md:h-10 text-primary-600 ml-1" fill="currentColor" />
+                <div className="w-16 h-16 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Play className="w-6 h-6 md:w-10 md:h-10 text-primary-600 ml-1" fill="currentColor" />
                 </div>
               </button>
             </>
@@ -83,25 +130,38 @@ export default function VideoSection() {
 
           {/* Video Controls (shown when playing) */}
           {isPlaying && (
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+            <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center">
               <button
                 onClick={handlePlayPause}
-                className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                className="w-9 h-9 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                 aria-label="Pause video"
               >
-                <Pause className="w-5 h-5 text-gray-800" fill="currentColor" />
+                <Pause className="w-4 h-4 md:w-5 md:h-5 text-gray-800" fill="currentColor" />
               </button>
-              <button
-                onClick={handleMuteToggle}
-                className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-                aria-label={isMuted ? "Unmute" : "Mute"}
-              >
-                {isMuted ? (
-                  <VolumeX className="w-5 h-5 text-gray-800" />
-                ) : (
-                  <Volume2 className="w-5 h-5 text-gray-800" />
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMuteToggle}
+                  className="w-9 h-9 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                  aria-label={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 md:w-5 md:h-5 text-gray-800" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 md:w-5 md:h-5 text-gray-800" />
+                  )}
+                </button>
+                <button
+                  onClick={handleFullscreen}
+                  className="w-9 h-9 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-4 h-4 md:w-5 md:h-5 text-gray-800" />
+                  ) : (
+                    <Maximize className="w-4 h-4 md:w-5 md:h-5 text-gray-800" />
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>

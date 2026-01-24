@@ -1,18 +1,31 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, CheckCircle, AlertCircle, Play, Pause, Volume2, VolumeX } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
 import Image from "next/image"
 
 export default function ComingSoon() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const videoRef = useRef(null)
+  const containerRef = useRef(null)
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("idle") // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState("")
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -29,6 +42,32 @@ export default function ComingSoon() {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted
       setIsMuted(!isMuted)
+    }
+  }
+
+  const handleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (videoRef.current?.requestFullscreen) {
+          await videoRef.current.requestFullscreen()
+        } else if (videoRef.current?.webkitEnterFullscreen) {
+          await videoRef.current.webkitEnterFullscreen()
+        } else if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen()
+        }
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (err) {
+      console.log("Fullscreen not supported:", err)
+    }
+  }
+
+  if (typeof document !== "undefined") {
+    document.onfullscreenchange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
     }
   }
 
@@ -103,11 +142,16 @@ export default function ComingSoon() {
           Launching soon in St Albans
         </p>
 
-        {/* Video Section */}
-        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100">
+        {/* Video Section - responsive aspect ratio */}
+        <div
+          ref={containerRef}
+          className={`relative rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100 ${
+            isMobile ? "aspect-[9/16]" : "aspect-video"
+          }`}
+        >
           <video
             ref={videoRef}
-            src="/videos/homepage-hero.mp4"
+            src={isMobile ? "/videos/homepage-hero-mobile.mp4" : "/videos/homepage-hero.mp4"}
             className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'block' : 'hidden'}`}
             muted={isMuted}
             playsInline
@@ -119,7 +163,7 @@ export default function ComingSoon() {
             <>
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600">
                 <Image
-                  src="/videos/homepage-hero-thumbnail.png"
+                  src={isMobile ? "/videos/homepage-hero-mobile-thumbnail.png" : "/videos/homepage-hero-thumbnail.png"}
                   alt="PartySnap demo video"
                   fill
                   className="object-cover opacity-90"
@@ -134,8 +178,8 @@ export default function ComingSoon() {
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
                 aria-label="Play video"
               >
-                <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-                  <Play className="w-6 h-6 md:w-8 md:h-8 text-primary-600 ml-1" fill="currentColor" />
+                <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <Play className="w-5 h-5 md:w-8 md:h-8 text-primary-600 ml-0.5" fill="currentColor" />
                 </div>
               </button>
             </>
@@ -143,25 +187,38 @@ export default function ComingSoon() {
 
           {/* Video Controls (shown when playing) */}
           {isPlaying && (
-            <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
               <button
                 onClick={handlePlayPause}
-                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                className="w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                 aria-label="Pause video"
               >
-                <Pause className="w-4 h-4 text-gray-800" fill="currentColor" />
+                <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-800" fill="currentColor" />
               </button>
-              <button
-                onClick={handleMuteToggle}
-                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-                aria-label={isMuted ? "Unmute" : "Mute"}
-              >
-                {isMuted ? (
-                  <VolumeX className="w-4 h-4 text-gray-800" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-gray-800" />
-                )}
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleMuteToggle}
+                  className="w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                  aria-label={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-800" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-800" />
+                  )}
+                </button>
+                <button
+                  onClick={handleFullscreen}
+                  className="w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-800" />
+                  ) : (
+                    <Maximize className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-800" />
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>

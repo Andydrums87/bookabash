@@ -181,13 +181,16 @@ async function processPaymentSuccess(paymentIntent) {
     enquiries = updatedEnquiries || []
   }
 
-  // Step 7: Send emails asynchronously (don't block webhook response)
-  console.log('📧 Queueing emails to send...')
+  // Step 7: Send emails (must await to ensure completion on serverless)
+  console.log('📧 Sending emails...')
 
-  // Send emails in background without blocking
-  sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id, paymentIntent.metadata).catch(error => {
-    console.error('Error in async email sending:', error)
-  })
+  try {
+    await sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id, paymentIntent.metadata)
+    console.log('📧 All emails sent successfully')
+  } catch (error) {
+    console.error('Error in email sending:', error)
+    // Don't throw - payment was successful, just log the email error
+  }
 
   console.log(`✅ Payment processing complete for party ${partyId}`)
   return { success: true, duplicate: false }
