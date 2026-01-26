@@ -15,15 +15,15 @@ export default function VideoSection() {
   // Detect mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+         setIsMobile(window.innerWidth < 768)
     }
     checkMobile()
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  const videoUrl = isMobile ? "/videos/homepage-hero-mobile.mp4" : "/videos/homepage-hero.mp4"
-  const thumbnailUrl = isMobile ? "/videos/homepage-hero-mobile-thumbnail.png" : "/videos/homepage-hero-thumbnail.png"
+  const videoUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426688/homepage-hero-mobile-thumbnail_w7qcbi.png" : "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769426671/homepage-hero_d0r45o.mp4"
+  const thumbnailUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426688/homepage-hero-mobile-thumbnail_w7qcbi.png" : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
   const handlePlayPause = () => {
     if (videoRef.current) {
