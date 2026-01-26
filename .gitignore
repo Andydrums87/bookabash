@@ -55,3 +55,14 @@ copy-*.js
 fetch-*.js
 migrate-*.js
 replace-*.js
+
+# Large video/media files (use CDN instead)
+public/hompagedemo/
+public/demo-video/
+public/videos/
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.mkv
