@@ -39,8 +39,22 @@ export async function GET(request) {
     console.log('Exchanging authorization code for tokens...')
     const { tokens } = await oauth2Client.getToken(code)
     oauth2Client.setCredentials(tokens)
-    
+
     console.log('Tokens received successfully')
+    console.log('Granted scopes:', tokens.scope)
+
+    // Check if calendar scope was granted
+    const grantedScopes = tokens.scope || ''
+    const hasCalendarScope = grantedScopes.includes('https://www.googleapis.com/auth/calendar')
+
+    if (!hasCalendarScope) {
+      console.error('❌ Calendar scope not granted. User only granted:', grantedScopes)
+      const isWizard = state?.startsWith('wizard-')
+      const redirectPath = isWizard ? '/suppliers/onboarding/new-supplier' : '/suppliers/availability'
+      return NextResponse.redirect(
+        new URL(`${redirectPath}?calendar_error=missing_calendar_scope`, request.url)
+      )
+    }
 
     // Get user info
     let userEmail = 'unknown'

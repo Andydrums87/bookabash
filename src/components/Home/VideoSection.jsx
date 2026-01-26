@@ -22,7 +22,7 @@ export default function VideoSection() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  const videoUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426688/homepage-hero-mobile-thumbnail_w7qcbi.png" : "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769426671/homepage-hero_d0r45o.mp4"
+  const videoUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769426686/homepage-hero-mobile_fge0de.mp4" : "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769426671/homepage-hero_d0r45o.mp4"
   const thumbnailUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426688/homepage-hero-mobile-thumbnail_w7qcbi.png" : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
   const handlePlayPause = () => {

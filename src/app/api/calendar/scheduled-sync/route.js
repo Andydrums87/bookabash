@@ -9,22 +9,22 @@ export async function GET(request) {
   console.log('🕒 Scheduled calendar sync started:', new Date().toISOString())
   
   try {
-    // Find all suppliers with Google Calendar connected
-    const { data: suppliers, error: fetchError } = await supabaseAdmin 
+    // Find all suppliers with Google Calendar connected (not just primary - each business can have its own calendar)
+    const { data: suppliers, error: fetchError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
-      .eq('is_primary', true)
-    
+
     if (fetchError) {
       console.error('Error fetching suppliers:', fetchError)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
-    
-    // Filter for suppliers with Google Calendar enabled
-    const connectedSuppliers = suppliers?.filter(s => 
-      s.data?.googleCalendarSync?.connected && 
+
+    // Filter for suppliers with their own Google Calendar connection (not inherited)
+    const connectedSuppliers = suppliers?.filter(s =>
+      s.data?.googleCalendarSync?.connected &&
       s.data?.googleCalendarSync?.enabled &&
-      s.data?.googleCalendarSync?.accessToken
+      s.data?.googleCalendarSync?.accessToken &&
+      !s.data?.googleCalendarSync?.inherited  // Skip inherited connections - they sync via their primary
     ) || []
     
     console.log(`Found ${connectedSuppliers.length} suppliers with Google Calendar connected`)

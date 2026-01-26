@@ -539,7 +539,15 @@ export default function VenueOnboardingWizard() {
     // Handle calendar connection error
     if (calendarError) {
       console.error('Calendar connection error:', calendarError, errorDetails)
-      alert(`Calendar connection failed: ${calendarError}\n${errorDetails || ''}`)
+
+      let errorMessage = `Calendar connection failed: ${calendarError}`
+      if (calendarError === 'missing_calendar_scope') {
+        errorMessage = 'Calendar permission not granted.\n\nPlease reconnect and make sure to allow access to your Google Calendar when prompted. You may have unchecked the calendar permission on the consent screen.'
+      } else if (errorDetails) {
+        errorMessage += `\n${errorDetails}`
+      }
+
+      alert(errorMessage)
 
       // Restore wizard state
       const savedWizardState = localStorage.getItem('wizardBeforeOAuth')

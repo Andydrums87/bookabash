@@ -54,13 +54,31 @@ const GoogleCalendarSync = ({ onSyncToggle, currentSupplier }) => {
   // Check for successful OAuth callback and refresh data
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
+    const calendarError = urlParams.get('calendar_error')
+
+    // Handle calendar connection error
+    if (calendarError) {
+      console.error('Calendar connection error:', calendarError)
+
+      let errorMessage = `Calendar connection failed: ${calendarError}`
+      if (calendarError === 'missing_calendar_scope') {
+        errorMessage = 'Calendar permission not granted.\n\nPlease reconnect and make sure to allow access to your Google Calendar when prompted. You may have unchecked the calendar permission on the consent screen.'
+      }
+
+      alert(errorMessage)
+
+      // Clear URL parameters
+      window.history.replaceState({}, '', window.location.pathname)
+      return
+    }
+
     if (urlParams.get('calendar_connected') === 'true') {
       console.log('OAuth callback detected - forcing page refresh...')
-      
+
       // Clear the URL parameters
       const newUrl = window.location.pathname
       window.history.replaceState({}, '', newUrl)
-      
+
       // Force a hard refresh to reload data
       setTimeout(() => {
         window.location.reload()
