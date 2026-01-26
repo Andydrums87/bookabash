@@ -9,6 +9,39 @@ import { Badge } from "@/components/ui/badge"
 import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
 
+// Helper function to calculate venue price
+// minimumBookingHours = TOTAL venue hours (includes setup/cleanup)
+// Price = hourlyRate × minimumBookingHours
+const calculateVenuePrice = (venue) => {
+  // If venue already has calculated price, use it
+  if (venue.price && venue.price > 0) {
+    return venue.price;
+  }
+
+  // Get hourly rate from various locations
+  const hourlyRate = venue.serviceDetails?.pricing?.hourlyRate ||
+                     venue.data?.serviceDetails?.pricing?.hourlyRate ||
+                     0;
+
+  // Get total venue hours (minimumBookingHours = TOTAL hours including setup/cleanup)
+  const totalVenueHours = venue.serviceDetails?.pricing?.minimumBookingHours ||
+                          venue.serviceDetails?.availability?.minimumBookingHours ||
+                          venue.data?.serviceDetails?.pricing?.minimumBookingHours ||
+                          venue.data?.serviceDetails?.availability?.minimumBookingHours ||
+                          4;
+
+  // Calculate total price: hourlyRate × total hours
+  const totalPrice = hourlyRate * totalVenueHours;
+
+  // If we have a valid calculated price, return it
+  if (totalPrice > 0) {
+    return totalPrice;
+  }
+
+  // Fall back to package price or priceFrom only if we couldn't calculate
+  return venue.packages?.[0]?.price || venue.priceFrom || venue.data?.priceFrom || 0;
+};
+
 export default function VenueBrowserModal({
   venues = [],
   selectedVenue,
@@ -116,12 +149,8 @@ export default function VenueBrowserModal({
                 // Get venue name with fallbacks
                 const venueName = venue.name || venue.businessName || venue.data?.name || 'Unnamed Venue'
 
-                // Get price with multiple fallbacks
-                const venuePrice = venue.price ||
-                                  venuePackage.price ||
-                                  venue.priceFrom ||
-                                  venue.data?.priceFrom ||
-                                  0
+                // Calculate venue price using the new model (party hours + setup + cleanup)
+                const venuePrice = calculateVenuePrice(venue)
 
                 return (
                   <div

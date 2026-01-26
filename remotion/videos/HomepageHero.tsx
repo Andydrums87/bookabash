@@ -151,7 +151,7 @@ export const HomepageHero: React.FC = () => {
         <AnimatedDemoScene
           frame={frame - 430}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/partyformfill.mp4")}
+          videoSrc={staticFile("hompagedemo/Area2.mp4")}
           stepNumber={1}
           title="Tell us about your party"
           subtitle="Date, guests, theme & location"
@@ -164,7 +164,7 @@ export const HomepageHero: React.FC = () => {
         <AnimatedDemoScene
           frame={frame - 580}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/view and customize your plan.mp4")}
+          videoSrc={staticFile("hompagedemo/ViewPlan.mp4")}
           stepNumber={2}
           title="We build your perfect plan"
           subtitle="View, tweak & customize"
@@ -177,7 +177,7 @@ export const HomepageHero: React.FC = () => {
         <AnimatedDemoScene
           frame={frame - 730}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/dashboard.mp4")}
+          videoSrc={staticFile("hompagedemo/AddSuppliers.mp4")}
           stepNumber={3}
           title="Add suppliers to your plan"
           subtitle="Build your plan with a click"
@@ -1077,7 +1077,7 @@ const AnimatedDemoScene: React.FC<{
 const ThreeFeaturesScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const features = [
     {
-      videoSrc: staticFile("hompagedemo/creat e invites.mp4"),
+      videoSrc: staticFile("hompagedemo/createinvites.mp4"),
       title: "Create Invites",
       subtitle: "Beautiful invites, sent in seconds",
       icon: "✉️",
@@ -1089,7 +1089,7 @@ const ThreeFeaturesScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
       icon: "✓",
     },
     {
-      videoSrc: staticFile("hompagedemo/make gift registry.mp4"),
+      videoSrc: staticFile("hompagedemo/manage gift reg.mp4"),
       title: "Gift Registry",
       subtitle: "One link, endless gift ideas",
       icon: "🎁",

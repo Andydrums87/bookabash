@@ -88,6 +88,153 @@ const PhoneMockup: React.FC<{
   );
 };
 
+// Screen Studio style scene - floating 3D video without phone frame
+const ScreenStudioScene: React.FC<{
+  frame: number;
+  fps: number;
+  videoSrc: string;
+  stepNumber: number;
+  accentColor: string;
+  sceneDuration?: number;
+}> = ({ frame, fps, videoSrc, stepNumber, accentColor, sceneDuration = 450 }) => {
+  // Scene fade in/out
+  const sceneOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const exitStart = sceneDuration - 25;
+  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Floating entrance animation - comes from bottom with spring
+  const floatSpring = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 30, stiffness: 80, mass: 1.2 },
+  });
+
+  // Start from below and float up
+  const translateY = interpolate(floatSpring, [0, 1], [150, 0]);
+  const videoScale = interpolate(floatSpring, [0, 1], [0.85, 1]);
+  const videoOpacity = interpolate(floatSpring, [0, 1], [0, 1]);
+
+  // Subtle 3D rotation for that dynamic floating feel
+  const rotateX = interpolate(floatSpring, [0, 1], [8, 2]);
+  const rotateY = interpolate(frame, [0, sceneDuration], [-1, 1]);
+
+  // Subtle floating motion once settled
+  const floatY = Math.sin(frame * 0.05) * 8;
+  const floatRotate = Math.sin(frame * 0.03) * 0.5;
+
+  // Progress dots
+  const dotsOpacity = interpolate(frame, [30, 50], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        perspective: 1200,
+      }}
+    >
+      {/* Subtle gradient overlay for depth */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at center, transparent 0%, ${COLORS.coralLight} 70%)`,
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Screen Studio video - centered with 3D transforms */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: `
+            translate(-50%, -50%)
+            translateY(${translateY + floatY}px)
+            scale(${videoScale})
+            rotateX(${rotateX}deg)
+            rotateY(${rotateY + floatRotate}deg)
+          `,
+          opacity: videoOpacity,
+          transformStyle: "preserve-3d",
+          // The video container - sized to fit nicely in vertical frame
+          width: "95%",
+          maxWidth: 1000,
+        }}
+      >
+        {/* Shadow layer for 3D depth */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            left: "5%",
+            right: "5%",
+            bottom: -20,
+            background: "rgba(0,0,0,0.3)",
+            filter: "blur(40px)",
+            borderRadius: 30,
+            transform: "translateZ(-50px)",
+          }}
+        />
+
+        {/* The actual video */}
+        <OffthreadVideo
+          src={videoSrc}
+          volume={0}
+          style={{
+            width: "100%",
+            height: "auto",
+            borderRadius: 20,
+            boxShadow: `
+              0 25px 50px rgba(0,0,0,0.15),
+              0 10px 20px rgba(0,0,0,0.1)
+            `,
+          }}
+        />
+      </div>
+
+      {/* Progress dots at bottom */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 80,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          gap: 12,
+          opacity: dotsOpacity,
+        }}
+      >
+        {[1, 2, 3].map((num) => (
+          <div
+            key={num}
+            style={{
+              width: num === stepNumber ? 36 : 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: num === stepNumber ? accentColor : "#ddd",
+            }}
+          />
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // Underlined text component with coral highlight
 const UnderlinedText: React.FC<{
   children: React.ReactNode;

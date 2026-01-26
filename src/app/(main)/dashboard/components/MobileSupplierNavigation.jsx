@@ -444,6 +444,7 @@ export default function MobileSupplierNavigation({
         childPhoto={childPhoto}
         uploadingPhoto={uploadingPhoto}
         onImHappy={onPaymentReady}
+        getSupplierDisplayPricing={getSupplierDisplayPricing}
       />
     )
   }

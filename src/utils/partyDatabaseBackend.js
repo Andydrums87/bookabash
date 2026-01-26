@@ -928,14 +928,29 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
 
     // ✅ NEW: Extract party bags metadata if present
     const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
-    const partyBagsMetadata = selectedPackage?.partyBagsMetadata || null
-    const partyBagsQuantity = selectedPackage?.partyBagsQuantity || null
+    const partyBagsMetadata = selectedPackage?.partyBagsMetadata || supplier.partyBagsMetadata || null
+    const partyBagsQuantity = selectedPackage?.partyBagsQuantity || supplier.partyBagsQuantity || null
 
+    // ✅ NEW: Extract decorations metadata if present
+    const isDecorations = supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration')
+    const decorationsMetadata = selectedPackage?.decorationsMetadata || supplier.decorationsMetadata || null
+
+    console.log('🎈 DECORATIONS DEBUG in addSupplierToParty:', {
+      isDecorations,
+      decorationsMetadata,
+      selectedPackageTotalPrice: selectedPackage?.totalPrice,
+      supplierPackageDataTotalPrice: supplier.packageData?.totalPrice,
+      supplierDecorationsMetadataTotalPrice: supplier.decorationsMetadata?.totalPrice
+    });
 
     // ✅ ENHANCED: Create supplier data with cake customization and party bags metadata
     // ✅ FIX: Use totalPrice from package (includes add-ons, delivery) when available
     const basePrice = selectedPackage ? selectedPackage.price : supplier.priceFrom
-    const totalPrice = selectedPackage?.totalPrice || basePrice
+    // For decorations, also check decorationsMetadata.totalPrice
+    const totalPrice = selectedPackage?.totalPrice ||
+                       decorationsMetadata?.totalPrice ||
+                       supplier.packageData?.totalPrice ||
+                       basePrice
 
     const supplierData = {
       id: supplier.id,
@@ -961,13 +976,20 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
         partyBagsQuantity: partyBagsQuantity,
       }),
 
+      // ✅ NEW: Add decorations metadata at top level for easy access
+      ...(decorationsMetadata && {
+        decorationsMetadata: decorationsMetadata,
+      }),
+
       // ✅ ENHANCED: Package details with customization
       packageData: selectedPackage ? {
         ...selectedPackage,
         // Preserve all cake customization in package data too
         cakeCustomization: cakeCustomization,
         packageType: packageType,
-        supplierType: supplierTypeEnhanced
+        supplierType: supplierTypeEnhanced,
+        // Preserve decorations metadata in package data too
+        decorationsMetadata: decorationsMetadata
       } : null,
 
       originalSupplier: {

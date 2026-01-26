@@ -716,20 +716,23 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
  const generateVenuePackages = (venueServiceDetails, supplierData = null) => {
   const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0
-  const totalVenueHours = venueServiceDetails.availability?.minimumBookingHours || 4
-  const setupTime = 1 // Always 1 hour
-  const cleanupTime = 1 // Always 1 hour
-  // Party time is total venue hours minus setup and cleanup
-  const partyTime = Math.max(totalVenueHours - setupTime - cleanupTime, 1)
+  // minimumBookingHours = TOTAL venue hours (what venues set as "4 hour minimum")
+  // This INCLUDES setup and cleanup time
+  const totalVenueHours = venueServiceDetails.pricing?.minimumBookingHours ||
+                          venueServiceDetails.availability?.minimumBookingHours || 4
+  const setupTime = 1 // 1 hour setup included
+  const cleanupTime = 1 // 1 hour cleanup included
+  // Party time = total hours minus setup and cleanup
+  const partyHours = Math.max(totalVenueHours - setupTime - cleanupTime, 1)
   const capacity = venueServiceDetails.capacity?.max || 50
-  const venueType = venueServiceDetails.venueType || 'Venue'
 
-  console.log('🏢 Generating venue packages with:', {
+  console.log('🏢 Generating venue packages:', {
     hourlyRate,
     totalVenueHours,
+    partyHours,
     setupTime,
     cleanupTime,
-    partyTime
+    calculation: `£${hourlyRate} × ${totalVenueHours} = £${hourlyRate * totalVenueHours}`
   })
 
   if (hourlyRate <= 0) {
@@ -737,6 +740,7 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
     return []
   }
 
+  // Price = hourlyRate × total venue hours (what's in the database)
   const packagePrice = hourlyRate * totalVenueHours
 
   // Use portfolio image if available, fallback to default venue image
@@ -746,38 +750,38 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
   const venuePackage = {
     id: "venue-standard",
-    name: `${partyTime}-Hour Party Package`,
+    name: `${partyHours}-Hour Party Package`,
     price: packagePrice,
-    duration: `${partyTime} hours party time`,
+    duration: `${partyHours} hours party time`,
     priceType: "flat",
     features: [
-      `${partyTime} hour${partyTime > 1 ? 's' : ''} party time`,
-      "1 hour setup time included",
-      "1 hour cleanup time included",
-      `Total venue access: ${totalVenueHours} hours`,
+      `${partyHours} hour${partyHours > 1 ? 's' : ''} party time`,
+      "✓ 1 hour setup time included",
+      "✓ 1 hour cleanup time included",
+      `Total venue booking: ${totalVenueHours} hours`,
       `Accommodates up to ${capacity} guests`,
       "Tables and chairs included",
       `Additional hours: £${hourlyRate}/hour`
     ],
-    description: `Perfect for children's birthday parties. ${partyTime}-hour celebration with setup and cleanup time included.`,
+    description: `Perfect for children's birthday parties. ${partyHours}-hour celebration with setup and cleanup time included.`,
     image: packageImage,
     popular: true,
     venueSpecific: true,
     isGenerated: true,
-    
-    // Enhanced pricing breakdown for transparency
+
+    // Pricing breakdown for transparency
     pricing: {
       hourlyRate: hourlyRate,
-      partyHours: partyTime,
+      partyHours: partyHours,
       setupHours: setupTime,
       cleanupHours: cleanupTime,
       totalHours: totalVenueHours,
       calculation: `£${hourlyRate} × ${totalVenueHours} hours = £${packagePrice}`,
       breakdown: {
-        partyTime: `${partyTime} hours × £${hourlyRate} = £${partyTime * hourlyRate}`,
-        setupTime: `${setupTime} hour × £${hourlyRate} = £${setupTime * hourlyRate}`,
-        cleanupTime: `${cleanupTime} hour × £${hourlyRate} = £${cleanupTime * hourlyRate}`,
-        total: `Total: £${packagePrice}`
+        partyTime: `${partyHours} hour${partyHours > 1 ? 's' : ''} party time`,
+        setupTime: `+ ${setupTime} hour setup included`,
+        cleanupTime: `+ ${cleanupTime} hour cleanup included`,
+        total: `= ${totalVenueHours} hours total @ £${hourlyRate}/hr = £${packagePrice}`
       }
     }
   }
@@ -785,7 +789,7 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
   console.log('✅ Generated venue package:', {
     name: venuePackage.name,
     price: venuePackage.price,
-    duration: venuePackage.duration,
+    partyHours: partyHours,
     totalHours: totalVenueHours
   })
 

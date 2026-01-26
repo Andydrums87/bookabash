@@ -16,7 +16,7 @@ const eventTypes = [
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },
   { value: "mermaid", label: "Mermaid", category: "Popular" },
-  { value: "taylor-swift", label: "Taylor Swift", category: "Popular" },
+
 
   // Adventure themes
   { value: "jungle", label: "Jungle Safari", category: "Adventure" },
@@ -26,47 +26,47 @@ const eventTypes = [
   { value: "explorer", label: "Explorer Adventure", category: "Adventure" },
 
   // Fantasy themes
-  { value: "fairy", label: "Fairy Tale", category: "Fantasy" },
-  { value: "wizard", label: "Wizard & Magic", category: "Fantasy" },
-  { value: "dragon", label: "Dragons & Knights", category: "Fantasy" },
+  // { value: "fairy", label: "Fairy Tale", category: "Fantasy" },
+  // { value: "wizard", label: "Wizard & Magic", category: "Fantasy" },
+  // { value: "dragon", label: "Dragons & Knights", category: "Fantasy" },
   { value: "mermaid", label: "Mermaid & Ocean", category: "Fantasy" },
-  { value: "enchanted-forest", label: "Enchanted Forest", category: "Fantasy" },
+  // { value: "enchanted-forest", label: "Enchanted Forest", category: "Fantasy" },
 
   // Sports & Activities
-  { value: "football", label: "Football Party", category: "Sports" },
-  { value: "dance", label: "Dance Party", category: "Sports" },
-  { value: "gymnastics", label: "Gymnastics Fun", category: "Sports" },
-  { value: "martial-arts", label: "Martial Arts", category: "Sports" },
-  { value: "swimming", label: "Swimming Party", category: "Sports" },
+  // { value: "football", label: "Football Party", category: "Sports" },
+  // { value: "dance", label: "Dance Party", category: "Sports" },
+  // { value: "gymnastics", label: "Gymnastics Fun", category: "Sports" },
+  // { value: "martial-arts", label: "Martial Arts", category: "Sports" },
+  // { value: "swimming", label: "Swimming Party", category: "Sports" },
 
   // Creative themes
-  { value: "art-craft", label: "Art & Craft", category: "Creative" },
-  { value: "cooking", label: "Cooking Party", category: "Creative" },
+  // { value: "art-craft", label: "Art & Craft", category: "Creative" },
+  // { value: "cooking", label: "Cooking Party", category: "Creative" },
   { value: "science", label: "Science Lab", category: "Creative" },
-  { value: "music", label: "Music & Karaoke", category: "Creative" },
-  { value: "photography", label: "Photography Fun", category: "Creative" },
+  // { value: "music", label: "Music & Karaoke", category: "Creative" },
+  // { value: "photography", label: "Photography Fun", category: "Creative" },
 
   // Seasonal themes
-  { value: "halloween", label: "Halloween Spooky", category: "Seasonal" },
-  { value: "christmas", label: "Christmas Magic", category: "Seasonal" },
-  { value: "easter", label: "Easter Celebration", category: "Seasonal" },
-  { value: "summer", label: "Summer Beach", category: "Seasonal" },
-  { value: "winter", label: "Winter Wonderland", category: "Seasonal" },
+  // { value: "halloween", label: "Halloween Spooky", category: "Seasonal" },
+  // { value: "christmas", label: "Christmas Magic", category: "Seasonal" },
+  // { value: "easter", label: "Easter Celebration", category: "Seasonal" },
+  // { value: "summer", label: "Summer Beach", category: "Seasonal" },
+  // { value: "winter", label: "Winter Wonderland", category: "Seasonal" },
 
   // Character themes
-  { value: "paw-patrol", label: "Paw Patrol", category: "Characters" },
+  // { value: "paw-patrol", label: "Paw Patrol", category: "Characters" },
   { value: "frozen", label: "Frozen", category: "Characters" },
-  { value: "peppa-pig", label: "Peppa Pig", category: "Characters" },
-  { value: "minecraft", label: "Minecraft", category: "Characters" },
-  { value: "pokemon", label: "Pokemon", category: "Characters" },
-  { value: "disney", label: "Disney Magic", category: "Characters" },
+  // { value: "peppa-pig", label: "Peppa Pig", category: "Characters" },
+  // { value: "minecraft", label: "Minecraft", category: "Characters" },
+  // { value: "pokemon", label: "Pokemon", category: "Characters" },
+  // { value: "disney", label: "Disney Magic", category: "Characters" },
 
   // Classic themes
-  { value: "circus", label: "Circus Fun", category: "Classic" },
-  { value: "carnival", label: "Carnival", category: "Classic" },
-  { value: "tea-party", label: "Tea Party", category: "Classic" },
-  { value: "garden-party", label: "Garden Party", category: "Classic" },
-  { value: "movie-night", label: "Movie Night", category: "Classic" }
+  // { value: "circus", label: "Circus Fun", category: "Classic" },
+  // { value: "carnival", label: "Carnival", category: "Classic" },
+  // { value: "tea-party", label: "Tea Party", category: "Classic" },
+  // { value: "garden-party", label: "Garden Party", category: "Classic" },
+  // { value: "movie-night", label: "Movie Night", category: "Classic" }
 ]
 
 export default function SearchableEventTypeSelect({

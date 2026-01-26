@@ -204,10 +204,20 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
   }
 
   // Special handling for decorations (per-set pricing with pack sizes)
-  if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
+  const isDecorations = supplier.category === 'Decorations' ||
+                        supplier.category?.toLowerCase().includes('decoration') ||
+                        supplier.category?.toLowerCase().includes('tableware') ||
+                        supplier.type === 'decorations';  // Also check type prop
+
+  if (isDecorations) {
     // Check if we have decorationsMetadata with totalPrice (from customization modal)
     if (supplier.decorationsMetadata?.totalPrice) {
       return supplier.decorationsMetadata.totalPrice;
+    }
+
+    // Check supplier.totalPrice directly (stored in database)
+    if (supplier.totalPrice && supplier.totalPrice > 0) {
+      return supplier.totalPrice;
     }
 
     // Check if packageData has totalPrice
@@ -230,6 +240,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
     const packSize = supplier.decorationsMetadata?.packSize ||
                     supplier.packageData?.packSize ||
+                    supplier.packageData?.quantity ||
                     getGuestCount(partyDetails);
     const total = pricePerSet * packSize;
     return total;
@@ -247,6 +258,49 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                           supplier.price ||
                           supplier.priceFrom || 0
     return cakeBasePrice
+  }
+
+  // Special handling for venues - calculate full booking price
+  // minimumBookingHours = TOTAL venue hours (includes setup/cleanup)
+  // Price = hourlyRate × minimumBookingHours
+  const isVenue = supplier.category === 'Venues' ||
+                  supplier.serviceType === 'venue' ||
+                  supplier.category?.toLowerCase() === 'venue'
+
+  if (isVenue) {
+    // If venue already has a calculated price set, use it
+    if (supplier.price && supplier.price > 0 && supplier.price !== supplier.priceFrom) {
+      return supplier.price;
+    }
+    if (supplier.originalPrice && supplier.originalPrice > 0) {
+      return supplier.originalPrice;
+    }
+
+    // Calculate venue price from hourly rate × total hours
+    const hourlyRate = supplier.serviceDetails?.pricing?.hourlyRate || 0;
+    const totalVenueHours = supplier.serviceDetails?.pricing?.minimumBookingHours ||
+                            supplier.serviceDetails?.availability?.minimumBookingHours || 4;
+    const calculatedPrice = hourlyRate * totalVenueHours;
+
+    if (calculatedPrice > 0) {
+      return calculatedPrice;
+    }
+
+    // Fall back to package price if available
+    if (supplier.packageData?.price) {
+      return supplier.packageData.price;
+    }
+
+    // Last resort: use priceFrom (but this might be hourly rate, so multiply)
+    if (supplier.priceFrom && supplier.priceFrom > 0) {
+      // If priceFrom looks like an hourly rate (< 100), calculate full price
+      if (supplier.priceFrom < 100) {
+        return supplier.priceFrom * totalVenueHours;
+      }
+      return supplier.priceFrom;
+    }
+
+    return 0;
   }
 
   // Use the price we explicitly set (package-specific), don't fall back to priceFrom

@@ -399,16 +399,26 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
   const scoredVenues = venueSuppliers.map(venue => {
     const availabilityCheck = this.checkSupplierAvailability(venue, new Date(date), timeSlot);
     const locationCheck = this.checkSupplierLocation(venue, location);
-    
+
     // Set up basic package
     const basicPackage = this.getBasicPackageForSupplier(venue, theme);
-    
+
+    // VENUE PRICING MODEL:
+    // - minimumBookingHours = TOTAL venue hours (what venues set as "4 hour minimum")
+    // - This INCLUDES setup and cleanup time
+    // - Price = hourlyRate × minimumBookingHours
+    const hourlyRate = venue.serviceDetails?.pricing?.hourlyRate || 0;
+    const totalVenueHours = venue.serviceDetails?.pricing?.minimumBookingHours ||
+                            venue.serviceDetails?.availability?.minimumBookingHours || 4;
+    const venuePrice = hourlyRate * totalVenueHours;
+
     const enhancedVenue = {
       ...venue,
       packageData: basicPackage,
-      originalPrice: venue.priceFrom || venue.price || 0
+      originalPrice: venuePrice,
+      price: venuePrice
     };
-    
+
     // Calculate pricing
     const pricingResult = calculateFinalPrice(enhancedVenue, partyDetails, []);
     enhancedVenue.enhancedPrice = pricingResult.finalPrice;
@@ -887,12 +897,23 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
 
   // Store venue carousel options
   if (selectedSuppliers.venueCarouselOptions && selectedSuppliers.venueCarouselOptions.length > 0) {
-    partyPlan.venueCarouselOptions = selectedSuppliers.venueCarouselOptions.map(venue => ({
+    partyPlan.venueCarouselOptions = selectedSuppliers.venueCarouselOptions.map(venue => {
+      // VENUE PRICING MODEL:
+      // - minimumBookingHours = TOTAL venue hours (what venues set as "4 hour minimum")
+      // - This INCLUDES setup and cleanup time
+      // - Price = hourlyRate × minimumBookingHours
+      const hourlyRate = venue.serviceDetails?.pricing?.hourlyRate || 0;
+      const totalVenueHours = venue.serviceDetails?.pricing?.minimumBookingHours ||
+                              venue.serviceDetails?.availability?.minimumBookingHours || 4;
+      const fullBookingPrice = hourlyRate * totalVenueHours;
+
+      return {
       id: venue.id,
       name: venue.name,
       description: venue.description || '',
-      price: venue.enhancedPrice || venue.priceFrom || 0,
-      originalPrice: venue.originalPrice || venue.priceFrom || 0,
+      // Use calculated full booking price (hourly rate × total hours)
+      price: venue.enhancedPrice || fullBookingPrice || 0,
+      originalPrice: venue.originalPrice || fullBookingPrice || 0,
       status: "carousel_option",
       image: venue.image || '',
       category: venue.category || 'Venues',
@@ -920,8 +941,8 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
       compositeScore: venue.compositeScore,
       isAvailable: venue.isAvailable,
       canServeLocation: venue.canServeLocation
-    }));
-    
+    }});
+
   }
 
   // Process all other suppliers (including main venue)

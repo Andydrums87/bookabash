@@ -1726,7 +1726,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
     // Prepare the supplier data for the confirmation modal
     const supplierData = {
       supplier: supplier,
-      package: packageData
+      selectedPackage: packageData  // Must be 'selectedPackage' to match SupplierAddedConfirmationModal prop
     }
 
     // Show the confirmation modal (same as regular supplier selection)
