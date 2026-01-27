@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Clock, ArrowRight, Sparkles, CheckCircle, FileText, CreditCard, Zap } from "lucide-react"
+import { Sparkles, CheckCircle, CreditCard } from "lucide-react"
 
 export default function SnappysPresentParty({
   suppliers = {},
@@ -87,153 +87,106 @@ export default function SnappysPresentParty({
     return `Secure Your Party - £${totalOutstandingCost}`
   }
 
-  const CircularProgress = ({ percentage, size = 80, strokeWidth = 8 }) => {
+  // Semi-circular progress arc component (like reference image)
+  const SemiCircularProgress = ({ percentage }) => {
+    const size = 140
+    const strokeWidth = 10
     const radius = (size - strokeWidth) / 2
-    const circumference = radius * 2 * Math.PI
-    const strokeDasharray = circumference
-    const strokeDashoffset = circumference - (percentage / 100) * circumference
-  
+    const halfCircumference = radius * Math.PI
+    const strokeDashoffset = halfCircumference - (percentage / 100) * halfCircumference
+
     return (
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg className="transform -rotate-90" width={size} height={size}>
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="rgba(255, 255, 255, 0.2)"
+      <div className="relative flex flex-col items-center">
+        <svg width={size} height={size / 2 + 10} className="overflow-visible">
+          {/* Background arc */}
+          <path
+            d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+            stroke="#e5e7eb"
             strokeWidth={strokeWidth}
             fill="transparent"
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#14b8a6" // teal color
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
+          />
+          {/* Progress arc - orange like reference */}
+          <path
+            d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+            stroke="#f97316"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeLinecap="round"
+            strokeDasharray={halfCircumference}
+            strokeDashoffset={strokeDashoffset}
             className="transition-all duration-1000 ease-out"
           />
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-white text-lg font-bold">
-            {confirmedCount}/{totalSuppliers}
-          </div>
-          <div className="text-white text-xs">
-            {Math.round(progressPercentage)}%
-          </div>
+        {/* Percentage badge */}
+        <div className="absolute top-0 right-2 bg-primary-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          {Math.round(percentage)}%
+        </div>
+        {/* Center text */}
+        <div className="text-center -mt-6">
+          <div className="text-2xl font-bold text-gray-900">{confirmedCount}/{totalSuppliers}</div>
         </div>
       </div>
     )
   }
-  
 
   return (
-    <div className="relative w-full bg-primary-400 rounded-xl shadow-sm overflow-hidden p-6">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-4 left-6 w-2 h-2 bg-white/20 rounded-full"></div>
-        <div className="absolute top-6 right-8 w-1 h-1 bg-white/30 rounded-full"></div>
-        <div className="absolute bottom-4 left-8 w-1.5 h-1.5 bg-white/20 rounded-full"></div>
-        <div className="absolute bottom-6 right-6 w-1 h-1 bg-white/30 rounded-full"></div>
+    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+      {/* Header with arrow icon */}
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-bold text-gray-900">Party Progress</h3>
+        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
       </div>
 
-      <div className="relative z-10 text-white">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="bg-primary-500 p-3 rounded-xl shadow-lg">
-            <FileText className="w-6 h-6 text-white" />
-          </div>
-          <h3 className="text-3xl font-extrabold">Party Progress</h3>
-          {!allConfirmed && timeRemaining > 0 && (
-            <div className="flex items-center gap-2 text-sm bg-white/20 px-3 py-1 rounded-full">
-              <Clock className="w-4 h-4" />
-              <span>{formatTime(timeRemaining)} left</span>
-            </div>
-          )}
+      {/* Progress Arc and Supplier List */}
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0">
+          <SemiCircularProgress percentage={animatedProgress} />
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex-shrink-0">
-            <CircularProgress percentage={animatedProgress} />
-          </div>
-
-          {/* Status message */}
-          <div className="flex-1">
-            <div className="text-lg font-semibold mb-1">{getSnappyMessage()}</div>
-            <div className="text-white/80 text-sm">
-              {totalSuppliers > 0 ? (
-                <div className="space-y-1">
-                  {supplierStates.map((supplier, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      {supplier.status === "accepted" ? (
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      ) : (
-                        <div className="w-3 h-3 border border-white/40 rounded-full" />
-                      )}
-                      <span className="capitalize text-xs">{supplier.category}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                "No suppliers to track"
-              )}
-            </div>
+        {/* Supplier checklist */}
+        <div className="flex-1 pt-2">
+          <div className="space-y-2">
+            {supplierStates.map((supplier, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                {supplier.status === "accepted" ? (
+                  <CheckCircle className="w-4 h-4 text-primary-500" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                )}
+                <span className={`capitalize ${supplier.status === "accepted" ? "text-gray-900" : "text-gray-400"}`}>
+                  {supplier.category}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Enhanced payment section */}
+      {/* Status and Payment Section */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <p className="text-sm text-gray-600 mb-3">{getSnappyMessage()}</p>
+
         {allConfirmed && (
-          <div className="mt-6">
+          <div>
             {isPaymentComplete ? (
-              <div className="w-full bg-teal-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2">
+              <div className="w-full bg-green-50 border border-green-200 text-green-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 Party Secured & Paid
                 <Sparkles className="w-4 h-4" />
               </div>
             ) : showPaymentCTA ? (
-              <div className="space-y-3">
-                {/* Outstanding suppliers summary */}
-                {outstandingSuppliers.length > 1 && (
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                    <div className="text-sm text-white/90 mb-2 text-center font-medium">
-                      Ready to secure {outstandingSuppliers.length} suppliers:
-                    </div>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {outstandingSuppliers.map((supplier, index) => (
-                        <span key={index} className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                          {supplier}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Main payment button - enhanced for multiple suppliers */}
-                <Button
-                  onClick={onPaymentReady}
-                  className={`w-full h-14 animate-pulse bg-teal-400 text-white hover:bg-teal-500 font-bold text-lg rounded-xl shadow-xl transform hover:scale-105 transition-all duration-200 ${
-                    pulsePayment ? 'animate-pulse' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {outstandingSuppliers.length > 1 ? (
-                      <Zap className="w-6 h-6 text-amber-500" />
-                    ) : (
-                      <CreditCard className="w-5 h-5" />
-                    )}
-                    <span>{getPaymentButtonText()}</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-                </Button>
-                
-                {/* Payment explanation */}
-                <div className="text-center">
-                  <p className="text-xs text-white/70">
-                    One payment secures all your confirmed suppliers
-                  </p>
+              <Button
+                onClick={onPaymentReady}
+                className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  <span>{getPaymentButtonText()}</span>
                 </div>
-              </div>
+              </Button>
             ) : null}
           </div>
         )}

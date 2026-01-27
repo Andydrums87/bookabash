@@ -73,6 +73,14 @@ export default function VenueAmenitiesStep({ selectedAmenities, onChange }) {
       <div className="mt-8 text-center text-sm text-gray-600">
         {selectedAmenities.length} amenities selected
       </div>
+
+      {selectedAmenities.length === 0 && (
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-800">
+            <strong>Tip:</strong> Venues with amenities listed are more likely to appear in filtered searches. We recommend selecting at least a few amenities to help parents find your venue.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

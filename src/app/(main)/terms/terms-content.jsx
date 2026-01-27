@@ -95,7 +95,7 @@ function CustomerTermsBody() {
       <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">Data & Contact</h2>
         <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>Your data is processed under our <a href="/privacy" className="text-primary-600 hover:underline">Privacy Policy</a>.</li>
+          <li>Your data is processed under our <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a>.</li>
           <li>Booking details are shared only with your selected suppliers.</li>
           <li>For support: bookings@partysnap.co.uk · [YOUR PHONE]</li>
         </ul>

@@ -690,9 +690,9 @@ export default function PrivacyPolicy() {
                 >
                   Contact Privacy Team
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-primary-600 font-bold"
+                  className="border-white border-2 bg-transparent text-white hover:bg-white hover:text-primary-600 font-bold"
                   onClick={() => window.location.href = '/contact'}
                 >
                   General Support

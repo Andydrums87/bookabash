@@ -30,11 +30,12 @@ import { usePartyPlan } from '@/utils/partyPlanBackend'
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
 import { BookingTermsAcceptance } from '@/components/booking-terms-modal'
 import { supabase } from '@/lib/supabase'
+import { getAvailableCredit, applyReferralCredit, getPendingReferralDiscount } from '@/utils/referralUtils'
 
-import { 
+import {
   calculateFinalPrice,
   isLeadBasedSupplier,
-  getPriceBreakdownText 
+  getPriceBreakdownText
 } from '@/utils/unifiedPricing'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
@@ -426,17 +427,18 @@ const calculatePaymentBreakdown = (suppliers, partyDetails, addons = []) => {
 // ========================================
 // PAYMENT FORM COMPONENT
 // ========================================
-function PaymentForm({ 
-  partyDetails, 
-  confirmedSuppliers, 
-  addons, 
+function PaymentForm({
+  partyDetails,
+  confirmedSuppliers,
+  addons,
   paymentBreakdown,
   onPaymentSuccess,
   onPaymentError,
   isRedirecting,
   setIsRedirecting,
   timerExpired,
-  clientSecret
+  clientSecret,
+  creditApplied = 0
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -700,7 +702,7 @@ function PaymentForm({
           ) : (
             <div className="flex items-center justify-center space-x-2">
               <Lock className="w-4 h-4" />
-              <span>Pay £{paymentBreakdown.totalPaymentToday} Securely</span>
+              <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)} Securely</span>
             </div>
           )}
         </button>
@@ -711,6 +713,91 @@ function PaymentForm({
           Secure payment powered by Stripe. Your payment details are encrypted and never stored.
         </p>
       </div>
+    </div>
+  )
+}
+
+// ========================================
+// CREDIT ONLY BOOKING COMPONENT
+// ========================================
+function CreditOnlyBooking({ partyDetails, creditApplied, onSuccess, isRedirecting, setIsRedirecting }) {
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
+
+  // Auto-accept terms if already accepted
+  useEffect(() => {
+    if (partyDetails?.termsAccepted && !bookingTermsAccepted) {
+      setBookingTermsAccepted(true)
+    }
+  }, [partyDetails, bookingTermsAccepted])
+
+  const handleCreditBooking = async () => {
+    if (!bookingTermsAccepted) return
+
+    setIsProcessing(true)
+    try {
+      // Simulate payment intent for credit-only booking
+      const creditPaymentIntent = {
+        id: `credit_${Date.now()}`,
+        status: 'succeeded',
+        amount: 0,
+        creditUsed: creditApplied
+      }
+      setIsRedirecting(true)
+      onSuccess(creditPaymentIntent)
+    } catch (error) {
+      console.error('Credit booking error:', error)
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-center space-x-3">
+          <CheckCircle className="w-6 h-6 text-green-600" />
+          <div>
+            <h3 className="text-sm font-bold text-green-800">Free booking with referral credit!</h3>
+            <p className="text-sm text-green-600">Your £{creditApplied.toFixed(2)} referral credit covers this entire booking.</p>
+          </div>
+        </div>
+      </div>
+
+      {!partyDetails?.termsAccepted && (
+        <BookingTermsAcceptance
+          onAcceptChange={setBookingTermsAccepted}
+          accepted={bookingTermsAccepted}
+          partyDetails={partyDetails}
+          required={true}
+        />
+      )}
+
+      <button
+        onClick={handleCreditBooking}
+        disabled={!bookingTermsAccepted || isProcessing || isRedirecting}
+        className="cursor-pointer w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isRedirecting ? (
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-white" />
+            <span>Redirecting to confirmation...</span>
+          </div>
+        ) : isProcessing ? (
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Processing...</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>Confirm Free Booking</span>
+          </div>
+        )}
+      </button>
+
+      <p className="text-xs text-gray-500 text-center">
+        No payment required. Your referral credit will be applied automatically.
+      </p>
     </div>
   )
 }
@@ -741,6 +828,8 @@ export default function PaymentPageContent() {
     hasFullPayments: false,
     paymentDetails: []
   })
+  const [referralCredit, setReferralCredit] = useState(0)
+  const [creditApplied, setCreditApplied] = useState(0)
 
   const { partyPlan, addons } = usePartyPlan()
 
@@ -925,7 +1014,36 @@ export default function PaymentPageContent() {
           termsAcceptedAt: partyResult.party.terms_accepted_at || null
         })
 
-        const paymentAmount = Math.round(breakdown.totalPaymentToday * 100)
+        // Fetch available referral credit for user
+        // IMPORTANT: Use auth_user_id since referral system uses auth.users IDs
+        let availableCredit = 0
+        const authUserId = userResult.user.auth_user_id
+        try {
+          // First check for existing credits
+          availableCredit = await getAvailableCredit(authUserId)
+
+          // Also check for pending referral (first-order discount)
+          if (availableCredit === 0) {
+            const pendingReferralDiscount = await getPendingReferralDiscount(authUserId)
+            if (pendingReferralDiscount > 0) {
+              availableCredit = pendingReferralDiscount
+              console.log('🎁 First-order referral discount:', pendingReferralDiscount)
+            }
+          }
+
+          setReferralCredit(availableCredit)
+          console.log('💰 Available referral credit:', availableCredit)
+        } catch (creditError) {
+          console.warn('Could not fetch referral credit:', creditError)
+        }
+
+        // Calculate how much credit to apply (can't exceed total)
+        const creditToApply = Math.min(availableCredit, breakdown.totalPaymentToday)
+        setCreditApplied(creditToApply)
+
+        // Calculate final payment amount after credit
+        const finalPaymentAmount = breakdown.totalPaymentToday - creditToApply
+        const paymentAmount = Math.round(finalPaymentAmount * 100)
 
         // Only enable Klarna for orders £600+ (60000 pence) due to high fees
         const KLARNA_MINIMUM_AMOUNT = 60000 // £600 in pence
@@ -942,17 +1060,22 @@ export default function PaymentPageContent() {
               suppliers: supplierList,
               addons: partyResult.party.party_plan?.addons || [],
               paymentType: 'unified',
-              enableKlarna: shouldEnableKlarna
+              enableKlarna: shouldEnableKlarna,
+              referralCreditApplied: creditToApply
             }),
           })
 
           const { clientSecret: secret, error: backendError } = await response.json()
-          
+
           if (backendError) {
             console.error('❌ Payment intent creation failed:', backendError)
           } else if (secret) {
             setClientSecret(secret)
           }
+        } else if (creditToApply > 0 && finalPaymentAmount === 0) {
+          // Credit covers entire payment - no Stripe needed
+          console.log('🎉 Referral credit covers entire payment!')
+          setClientSecret('credit_only')
         }
   
       } catch (error) {
@@ -973,6 +1096,16 @@ export default function PaymentPageContent() {
     try {
       console.log('✅ Payment confirmed by Stripe:', paymentIntent.id)
       console.log('🔄 Redirecting to processing page - webhook will complete the booking')
+
+      // Apply referral credit if any was used
+      if (creditApplied > 0 && user) {
+        try {
+          await applyReferralCredit(user.id, partyId, creditApplied)
+          console.log('🎉 Referral credit applied:', creditApplied)
+        } catch (creditError) {
+          console.warn('Failed to apply referral credit:', creditError)
+        }
+      }
 
       // Clear timers and localStorage
       localStorage.removeItem(`booking_timer_${partyId}`)
@@ -1106,12 +1239,32 @@ export default function PaymentPageContent() {
                 ))}
               </div>
 
-              <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between text-base font-medium text-gray-900">
-                  <span>Total</span>
+              <div className="border-t border-gray-200 pt-4 mb-6 space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
                   <span>£{paymentBreakdown.totalPaymentToday}</span>
                 </div>
+
+                {creditApplied > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Referral Credit</span>
+                    <span>-£{creditApplied.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-base font-medium text-gray-900 pt-2 border-t border-gray-100">
+                  <span>Total to Pay</span>
+                  <span>£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
+                </div>
               </div>
+
+              {creditApplied > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-green-800">
+                    <span className="font-medium">Referral credit applied!</span> You're saving £{creditApplied.toFixed(2)} from your friend referrals.
+                  </p>
+                </div>
+              )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start space-x-3">
@@ -1127,8 +1280,16 @@ export default function PaymentPageContent() {
                 </div>
               </div>
 
-              {clientSecret ? (
-                <Elements 
+              {clientSecret === 'credit_only' ? (
+                <CreditOnlyBooking
+                  partyDetails={partyDetails}
+                  creditApplied={creditApplied}
+                  onSuccess={handlePaymentSuccess}
+                  isRedirecting={isRedirecting}
+                  setIsRedirecting={setIsRedirecting}
+                />
+              ) : clientSecret ? (
+                <Elements
                   stripe={stripePromise}
                   options={{
                     clientSecret: clientSecret,
@@ -1157,6 +1318,7 @@ export default function PaymentPageContent() {
                     setIsRedirecting={setIsRedirecting}
                     timerExpired={timerExpired}
                     clientSecret={clientSecret}
+                    creditApplied={creditApplied}
                   />
                 </Elements>
               ) : (

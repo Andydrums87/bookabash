@@ -55,62 +55,45 @@ export default function CountdownWidget({ partyDate = "2025-06-14T14:00:00" }) {
 
   return (
     <Card className="relative bg-primary-400 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-      <CardContent className="p-8">
-        <div className="text-center space-y-6">
+      <CardContent className="p-4 sm:p-6 md:p-8">
+        <div className="text-center space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="space-y-3 flex items-center gap-2">
-              <div className="bg-primary-500 p-3 rounded-xl shadow-lg">
-              <Watch className="w- h-6 text-white" />
+          <div className="flex items-center gap-2 relative z-20">
+              <div className="bg-primary-500 p-2 sm:p-3 rounded-xl shadow-lg flex-shrink-0">
+              <Watch className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-      
-              <h3 className="text-3xl font-bold text-white">Party Countdown</h3>
-  
 
-          <img src="/Vector3.svg" alt="" className="absolute bottom-[-12px] left-0 z-10 w-[50%]" />
-          <img src="/Group.svg" alt="" className="absolute top-[-25px] right-0 z-10" />
-            <div className="flex items-center justify-center gap-3">
-       
-         
-
-            </div>
-
-            {/* <div className="flex items-center justify-center gap-2 text-primary-600">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {new Date(partyDate).toLocaleDateString("en-GB", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div> */}
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Party Countdown</h3>
           </div>
 
+          {/* Decorative images */}
+          <img src="/Vector3.svg" alt="" className="absolute bottom-[-12px] left-0 z-10 w-[40%] sm:w-[50%]" />
+          <img src="/Group.svg" alt="" className="absolute top-[-25px] right-0 z-10 w-[30%] sm:w-auto" />
+
           {/* Countdown Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 ">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             {/* Days */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-200))] hover:border-[hsl(var(--primary-300))] transition-colors z-20">
-              <div className="text-3xl font-bold text-primary-600">{timeUntilParty.days}</div>
-              <div className="text-sm text-gray-600 font-medium">Days</div>
+            <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border-2 border-[hsl(var(--primary-200))] hover:border-[hsl(var(--primary-300))] transition-colors z-20 text-center">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-primary-600">{timeUntilParty.days}</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 font-medium">Days</div>
             </div>
 
             {/* Hours */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] transition-colors z-20">
-              <div className="text-3xl font-bold text-primary-700">{timeUntilParty.hours}</div>
-              <div className="text-sm text-gray-600 font-medium">Hours</div>
+            <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border-2 border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] transition-colors z-20 text-center">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-primary-700">{timeUntilParty.hours}</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 font-medium">Hours</div>
             </div>
 
             {/* Minutes */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-400))] hover:border-[hsl(var(--primary-500))] transition-colors z-20">
-              <div className="text-3xl font-bold text-primary-800">{timeUntilParty.minutes}</div>
-              <div className="text-sm text-gray-600 font-medium">Minutes</div>
+            <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border-2 border-[hsl(var(--primary-400))] hover:border-[hsl(var(--primary-500))] transition-colors z-20 text-center">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-primary-800">{timeUntilParty.minutes}</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 font-medium">Mins</div>
             </div>
 
             {/* Seconds */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-500))] hover:border-[hsl(var(--primary-600))] transition-colors z-20">
-              <div className="text-3xl font-bold text-primary-900">{timeUntilParty.seconds}</div>
-              <div className="text-sm text-gray-600 font-medium">Seconds</div>
+            <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border-2 border-[hsl(var(--primary-500))] hover:border-[hsl(var(--primary-600))] transition-colors z-20 text-center">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-primary-900">{timeUntilParty.seconds}</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 font-medium">Secs</div>
             </div>
           </div>
 

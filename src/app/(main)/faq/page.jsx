@@ -168,13 +168,13 @@ export default function FAQ() {
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto relative">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white w-5 h-5" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search questions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 placeholder:text-white py-4 border border-white rounded-2xl focus:ring-2 focus:ring-white focus:border-white text-lg"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg text-gray-900 placeholder:text-gray-400 shadow-lg"
                 />
               </div>
             </div>
@@ -196,14 +196,16 @@ export default function FAQ() {
                       <button
                         key={category.id}
                         onClick={() => setActiveCategory(category.id)}
-                        className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center space-x-3 ${
+                        className={`w-full px-4 py-3 rounded-lg transition-colors flex items-start ${
                           activeCategory === category.id
                             ? 'bg-primary-100 text-primary-700 font-semibold'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
-                        <category.icon className="w-5 h-5" />
-                        <span>{category.label}</span>
+                        <span className="w-6 flex-shrink-0 flex justify-center mt-0.5">
+                          <category.icon className="w-5 h-5" />
+                        </span>
+                        <span className="text-left ml-3">{category.label}</span>
                       </button>
                     ))}
                   </div>

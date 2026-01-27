@@ -192,8 +192,103 @@ async function processPaymentSuccess(paymentIntent) {
     // Don't throw - payment was successful, just log the email error
   }
 
+  // Step 8: Complete referral if this is user's first booking (awards credit to referrer)
+  // IMPORTANT: Use auth_user_id (from auth.users) not user.id (from users table)
+  // because referrals table stores auth user IDs
+  try {
+    const authUserId = user?.auth_user_id || party.user_id
+    await completeReferralOnFirstBooking(authUserId, partyId)
+  } catch (referralError) {
+    console.warn('Referral completion error (non-critical):', referralError)
+  }
+
   console.log(`✅ Payment processing complete for party ${partyId}`)
   return { success: true, duplicate: false }
+}
+
+// Complete referral when user makes their first booking - awards credit to referrer
+async function completeReferralOnFirstBooking(userId, bookingId) {
+  try {
+    // Check if user was referred and if referral is still pending
+    const { data: referral, error: referralError } = await supabaseAdmin
+      .from('referrals')
+      .select('*')
+      .eq('referred_user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (referralError) {
+      console.warn('Error checking referral:', referralError)
+      return
+    }
+
+    if (!referral) {
+      console.log('📎 No pending referral found for user')
+      return
+    }
+
+    // Check if this is the user's first completed booking
+    const { count, error: countError } = await supabaseAdmin
+      .from('parties')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('payment_status', 'paid')
+
+    if (countError) {
+      console.warn('Error checking booking count:', countError)
+      return
+    }
+
+    // Only complete referral on first booking
+    if (count > 1) {
+      console.log('📎 Not first booking, skipping referral completion')
+      return
+    }
+
+    console.log('🎉 Completing referral - first booking for referred user!')
+
+    // Update referral status to completed
+    await supabaseAdmin
+      .from('referrals')
+      .update({
+        status: 'completed',
+        converted_at: new Date().toISOString(),
+        first_booking_id: bookingId
+      })
+      .eq('id', referral.id)
+
+    // Award credit to BOTH users
+    const REFERRAL_CREDIT_AMOUNT = 20.00 // £20 credit
+
+    // Credit for the referrer
+    await supabaseAdmin
+      .from('referral_credits')
+      .insert({
+        user_id: referral.referrer_user_id,
+        referral_id: referral.id,
+        amount: REFERRAL_CREDIT_AMOUNT,
+        type: 'referrer_bonus',
+        status: 'available',
+        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year expiry
+      })
+
+    // Credit for the referred user (for their next booking)
+    await supabaseAdmin
+      .from('referral_credits')
+      .insert({
+        user_id: userId,
+        referral_id: referral.id,
+        amount: REFERRAL_CREDIT_AMOUNT,
+        type: 'referred_bonus',
+        status: 'available',
+        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year expiry
+      })
+
+    console.log(`✅ Awarded £${REFERRAL_CREDIT_AMOUNT} credit to BOTH referrer ${referral.referrer_user_id} and referred user ${userId}`)
+
+  } catch (error) {
+    console.error('Error completing referral:', error)
+  }
 }
 
 // Send emails asynchronously without blocking webhook response

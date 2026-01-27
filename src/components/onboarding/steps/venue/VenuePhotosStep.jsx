@@ -1,7 +1,11 @@
 "use client"
 
-import { Camera, Upload, X } from "lucide-react"
+import { Camera, Upload, X, AlertCircle } from "lucide-react"
 import { useState } from "react"
+
+const MAX_FILE_SIZE_MB = 5
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
 export default function VenuePhotosStep({
   photos,
@@ -12,17 +16,53 @@ export default function VenuePhotosStep({
 }) {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
+  const [uploadError, setUploadError] = useState('')
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const validateFile = (file) => {
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      return `"${file.name}" is not a supported format. Please use JPG, PNG, or WebP.`
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `"${file.name}" is too large (${formatFileSize(file.size)}). Maximum file size is ${MAX_FILE_SIZE_MB}MB.`
+    }
+    return null
+  }
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
+    setUploadError('')
+
+    // Validate all files first
+    const validationErrors = []
+    const validFiles = []
+    for (const file of files) {
+      const error = validateFile(file)
+      if (error) {
+        validationErrors.push(error)
+      } else {
+        validFiles.push(file)
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      setUploadError(validationErrors.join('\n'))
+      if (validFiles.length === 0) return
+    }
+
     setUploading(true)
     const uploadedPhotos = []
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      setUploadProgress(`Uploading ${i + 1} of ${files.length}...`)
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i]
+      setUploadProgress(`Uploading ${i + 1} of ${validFiles.length}...`)
 
       try {
         // Upload to Cloudinary via API
@@ -50,11 +90,11 @@ export default function VenuePhotosStep({
           })
         } else {
           console.error('Upload failed:', data.error)
-          alert(`Failed to upload ${file.name}: ${data.error}`)
+          setUploadError(`Failed to upload "${file.name}": ${data.error}`)
         }
       } catch (error) {
         console.error('Upload error:', error)
-        alert(`Failed to upload ${file.name}`)
+        setUploadError(`Failed to upload "${file.name}". Please check your connection and try again.`)
       }
     }
 
@@ -84,12 +124,28 @@ export default function VenuePhotosStep({
       </p>
 
       {photosNeeded > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-12">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-blue-900">
             <strong>{photosNeeded} more {photosNeeded === 1 ? 'photo' : 'photos'} needed</strong> to continue
           </p>
         </div>
       )}
+
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-red-800 font-medium">Upload failed</p>
+              <p className="text-sm text-red-700 mt-1 whitespace-pre-line">{uploadError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="text-sm text-gray-500 mb-6">
+        Accepted formats: JPG, PNG, WebP. Maximum file size: {MAX_FILE_SIZE_MB}MB per image.
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Existing photos */}

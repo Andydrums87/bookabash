@@ -61,7 +61,7 @@ export default function MobileSearchForm({
   };
 
   return (
-    <div className="lg:hidden px-4 pt-2 pb-4 relative z-30 bg-primary-50 " id="search-form">
+    <div className="lg:hidden px-4 pt-2 pb-4 relative z-30 bg-white " id="search-form">
       <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-4 shadow-2xl border-[hsl(var(--primary-500))] border-2">
         <div className="space-y-4">
     
@@ -77,7 +77,7 @@ export default function MobileSearchForm({
                     type="button"
                     variant="outline"
                     className={`
-                      w-full font-normal h-12
+                      w-full font-normal h-12 overflow-hidden
                       bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
                       hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
                       ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
@@ -85,11 +85,11 @@ export default function MobileSearchForm({
                   >
                     <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
                     {formData.date && !isNaN(new Date(formData.date)) ? (
-                      <span className="ml-5 text-sm text-gray-900">
+                      <span className="ml-5 text-sm text-gray-900 truncate block">
                         {format(new Date(formData.date), "EEE, MMM d, yyyy")}
                       </span>
                     ) : (
-                      <span className="ml-5 text-sm text-gray-500">Select event date</span>
+                      <span className="ml-5 text-sm text-gray-500 truncate block">Select event date</span>
                     )}
                   </Button>
                 </PopoverTrigger>

@@ -15,30 +15,31 @@ export default function BudgetControls({
   const displayTotal = isHydrated ? totalSpent : 0
 
   return (
-    <div className="relative overflow-hidden bg-[hsl(var(--primary-400))] shadow-xl rounded-2xl">
-      {/* Decorative background elements */}
-      <img src="/Union.png" alt="" className="absolute top-[-50px]" />
-      <img src="/Union3.png" alt="" className="absolute bottom-0 right-0" />
-
-      <div className="p-6 relative z-10">
-        {/* Total Amount - Compact */}
-        <div className="text-center py-4">
-          <p className="text-white/70 text-sm mb-2">Party Total</p>
-          <p className="text-5xl font-bold text-white">
-            £{displayTotal}
-          </p>
-        </div>
-
-        {/* CTA Button */}
-        {onContinueToBook && (
-          <button
-            onClick={onContinueToBook}
-            className="bg-white cursor-pointer w-full py-4 rounded-full hover:bg-[hsl(var(--primary-100))] font-semibold text-gray-900"
-          >
-            Continue to Book
-          </button>
-        )}
+    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+      {/* Header with arrow icon */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-900">Party Total</h3>
+        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
       </div>
+
+      {/* Total Amount */}
+      <div className="text-center py-6">
+        <p className="text-4xl font-bold text-gray-900">
+          £{displayTotal}
+        </p>
+      </div>
+
+      {/* CTA Button */}
+      {onContinueToBook && (
+        <button
+          onClick={onContinueToBook}
+          className="bg-gray-900 hover:bg-gray-800 cursor-pointer w-full py-3 rounded-xl font-semibold text-white transition-colors"
+        >
+          Continue to Book
+        </button>
+      )}
     </div>
   )
 }

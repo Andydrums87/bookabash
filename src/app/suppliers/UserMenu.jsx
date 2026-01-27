@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { UserCircle, Settings, HelpCircle, LogOut, Loader2, Menu } from "lucide-react"
+import { UserCircle, Settings, HelpCircle, LogOut, Loader2, Menu, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSupplier } from "@/hooks/useSupplier"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 export function UserMenu({ secondaryNavItems = [] }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [user, setUser] = useState(null)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const { supplierData } = useSupplier()
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -87,13 +89,11 @@ export function UserMenu({ secondaryNavItems = [] }) {
   }
 
   const handleLogoutClick = () => {
-    const confirmed = window.confirm('Are you sure you want to logout?')
-    if (confirmed) {
-      handleLogout()
-    }
+    setShowLogoutDialog(true)
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -175,6 +175,19 @@ export function UserMenu({ secondaryNavItems = [] }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <ConfirmDialog
+      open={showLogoutDialog}
+      onOpenChange={setShowLogoutDialog}
+      title="Log out"
+      description="Are you sure you want to log out of your account?"
+      confirmText="Log out"
+      cancelText="Cancel"
+      variant="destructive"
+      isLoading={isLoggingOut}
+      onConfirm={handleLogout}
+    />
+    </>
   )
 }
 
@@ -182,6 +195,7 @@ export function UserMenu({ secondaryNavItems = [] }) {
 export function CompactUserMenu() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [ownerName, setOwnerName] = useState(null)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
 
@@ -225,10 +239,12 @@ export function CompactUserMenu() {
       alert('Error logging out. Please try again.')
     } finally {
       setIsLoggingOut(false)
+      setShowLogoutDialog(false)
     }
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
@@ -240,21 +256,21 @@ export function CompactUserMenu() {
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>{ownerName || 'User'}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={() => router.push('/suppliers/settings')}>
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={() => router.push('/support')}>
           <HelpCircle className="mr-2 h-4 w-4" />
           Support
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem 
-          onClick={handleLogout}
+
+        <DropdownMenuItem
+          onClick={() => setShowLogoutDialog(true)}
           disabled={isLoggingOut}
           className="text-red-600 focus:text-red-600 focus:bg-red-50"
         >
@@ -267,5 +283,18 @@ export function CompactUserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <ConfirmDialog
+      open={showLogoutDialog}
+      onOpenChange={setShowLogoutDialog}
+      title="Log out"
+      description="Are you sure you want to log out of your account?"
+      confirmText="Log out"
+      cancelText="Cancel"
+      variant="destructive"
+      isLoading={isLoggingOut}
+      onConfirm={handleLogout}
+    />
+    </>
   )
 }

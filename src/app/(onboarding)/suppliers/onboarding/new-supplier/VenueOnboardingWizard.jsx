@@ -230,11 +230,24 @@ export default function VenueOnboardingWizard() {
 
           // Map supplier data to wizard format
           const supplierData = supplier.data || {}
-          const isVenue = supplierData.serviceType === 'venues' || supplierData.category === 'venues'
+          // Check for serviceType in multiple places and normalize to lowercase
+          const rawServiceType = supplier.serviceType || supplier.service_type || supplierData.serviceType || supplierData.category || ''
+          const serviceType = rawServiceType.toLowerCase()
+          const isVenue = serviceType === 'venues'
+
+          console.log('🔍 Resume business - serviceType detection:', {
+            'supplier.serviceType': supplier.serviceType,
+            'supplier.service_type': supplier.service_type,
+            'supplierData.serviceType': supplierData.serviceType,
+            'supplierData.category': supplierData.category,
+            'rawServiceType': rawServiceType,
+            'normalized serviceType': serviceType,
+            'isVenue': isVenue
+          })
 
           setWizardData(prev => ({
             ...prev,
-            supplierType: supplierData.serviceType || supplierData.category || '',
+            supplierType: serviceType,
             account: {
               fullName: supplierData.owner?.name || '',
               email: supplierData.owner?.email || user.email || '',
@@ -282,9 +295,37 @@ export default function VenueOnboardingWizard() {
 
           // Determine which step to resume from based on completed data
           let resumeStep = 3 // Default to step 3 (after account creation)
-          if (!supplierData.serviceType && !supplierData.category) resumeStep = 1
-          else if (isVenue && !supplierData.venueType) resumeStep = 3
-          else if (isVenue && !supplierData.venueAddress?.addressLine1) resumeStep = 4
+          const isEntertainer = serviceType === 'entertainment'
+          const isCakeSupplier = serviceType === 'cakes'
+
+          if (!serviceType) {
+            resumeStep = 1
+          } else if (isVenue) {
+            // Venue flow: steps 3-11
+            if (!supplierData.venueType) resumeStep = 3
+            else if (!supplierData.venueAddress?.addressLine1) resumeStep = 4
+            else if (!supplierData.serviceDetails?.capacity?.max) resumeStep = 5
+            else if (!supplierData.serviceDetails?.facilities?.length) resumeStep = 6
+            else if (!supplierData.portfolioImages?.length || supplierData.portfolioImages.length < 2) resumeStep = 8
+            else if (!supplierData.serviceDetails?.pricing?.hourlyRate) resumeStep = 9
+            else resumeStep = 10 // Calendar step
+          } else if (isEntertainer) {
+            // Entertainer flow: steps 3-11
+            if (!supplierData.entertainerType && !supplierData.serviceDetails?.entertainerType) resumeStep = 3
+            else if (!supplierData.businessName && !supplierData.serviceDetails?.businessName) resumeStep = 4
+            else if (!supplierData.description && !supplierData.serviceDetails?.description) resumeStep = 5
+            else if (!supplierData.serviceDetails?.serviceArea?.postcode) resumeStep = 6
+            else if (!supplierData.portfolioImages?.length || supplierData.portfolioImages.length < 3) resumeStep = 7
+            else if (!supplierData.serviceDetails?.pricing?.basePrice) resumeStep = 8
+            else if (!supplierData.serviceDetails?.verificationDocuments?.dbs?.uploaded) resumeStep = 9
+            else resumeStep = 10 // Calendar step
+          } else if (isCakeSupplier) {
+            // Cake supplier flow: steps 3-8
+            if (!supplierData.businessName && !supplierData.serviceDetails?.businessName) resumeStep = 3
+            else if (!supplierData.serviceDetails?.cakeBusinessDetails?.postcode) resumeStep = 4
+            else if (!supplierData.serviceDetails?.cakeFulfilment?.offersPickup && !supplierData.serviceDetails?.cakeFulfilment?.offersDelivery) resumeStep = 5
+            else resumeStep = 7 // Lead time step
+          }
 
           setCurrentStep(resumeStep)
           setResumeBusinessLoaded(true)
@@ -435,12 +476,15 @@ export default function VenueOnboardingWizard() {
 
           // Map supplier data to wizard format
           const supplierData = supplier.data || {}
-          const isVenue = supplierData.serviceType === 'venues' || supplierData.category === 'venues'
-          const isEntertainer = supplierData.serviceType === 'entertainment' || supplierData.category === 'entertainment'
+          // Check for serviceType in multiple places and normalize to lowercase
+          const rawServiceType = supplier.serviceType || supplier.service_type || supplierData.serviceType || supplierData.category || ''
+          const serviceType = rawServiceType.toLowerCase()
+          const isVenue = serviceType === 'venues'
+          const isEntertainer = serviceType === 'entertainment'
 
           setWizardData(prev => ({
             ...prev,
-            supplierType: supplierData.serviceType || supplierData.category || '',
+            supplierType: serviceType,
             account: {
               fullName: supplierData.owner?.name || '',
               email: supplierData.owner?.email || user.email || '',
@@ -1682,6 +1726,8 @@ export default function VenueOnboardingWizard() {
         provider: null
       }
     })
+    // Advance to the next step
+    setCurrentStep(currentStep + 1)
   }
 
   const isStepValid = () => {
@@ -1771,6 +1817,7 @@ export default function VenueOnboardingWizard() {
         case 4: // Venue Address
           return (
             wizardData.venueAddress.businessName &&
+            wizardData.venueAddress.businessName.trim().length > 0 &&
             wizardData.venueAddress.addressLine1 &&
             wizardData.venueAddress.city &&
             wizardData.venueAddress.postcode

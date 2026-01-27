@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Heart, Users, Sparkles, Target } from "lucide-react"
 
@@ -118,12 +119,16 @@ export default function AboutUs() {
                 Join the families who've discovered a better way to plan unforgettable parties. Let's make your next celebration magical.
               </p>
               <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
-                <Button size="lg" className="bg-primary-500 hover:bg-primary-600 text-white font-bold text-lg px-8 py-4">
-                  Start Planning Your Party
-                </Button>
-                <Button size="lg" variant="outline" className="border-[hsl(var(--primary-500))] text-primary-500 hover:bg-primary-50 font-bold text-lg px-8 py-4">
-                  Contact Us
-                </Button>
+                <Link href="/">
+                  <Button size="lg" className="bg-primary-500 hover:bg-primary-600 text-white font-bold text-lg px-8 py-4">
+                    Start Planning Your Party
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button size="lg" variant="outline" className="border-[hsl(var(--primary-500))] text-primary-500 hover:bg-primary-50 font-bold text-lg px-8 py-4">
+                    Contact Us
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

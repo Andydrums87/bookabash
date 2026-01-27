@@ -14,6 +14,7 @@ export default function ContactUs() {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' })
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -25,12 +26,61 @@ export default function ContactUs() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitStatus({ type: '', message: '' })
+
+    // Client-side validation - check for whitespace-only values
+    const trimmedName = formData.name.trim()
+    const trimmedEmail = formData.email.trim()
+    const trimmedSubject = formData.subject.trim()
+    const trimmedMessage = formData.message.trim()
+
+    if (!trimmedName) {
+      setSubmitStatus({ type: 'error', message: 'Please enter your name.' })
+      return
+    }
+
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setSubmitStatus({ type: 'error', message: 'Please enter a valid email address.' })
+      return
+    }
+
+    if (!trimmedSubject) {
+      setSubmitStatus({ type: 'error', message: 'Please enter a subject.' })
+      return
+    }
+
+    if (!trimmedMessage) {
+      setSubmitStatus({ type: 'error', message: 'Please enter a message.' })
+      return
+    }
+
     setIsSubmitting(true)
-    
-    // Here you would typically send the form data to your API
-    // For now, we'll just simulate a submission
-    setTimeout(() => {
-      alert('Thank you for your message! We\'ll get back to you within 24 hours.')
+
+    try {
+      const response = await fetch('/api/email/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          email: trimmedEmail,
+          inquiryType: formData.inquiryType,
+          subject: trimmedSubject,
+          message: trimmedMessage,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message')
+      }
+
+      setSubmitStatus({
+        type: 'success',
+        message: 'Thank you for your message! We\'ll get back to you within 24 hours.'
+      })
       setFormData({
         name: '',
         email: '',
@@ -38,8 +88,14 @@ export default function ContactUs() {
         message: '',
         inquiryType: 'general'
       })
+    } catch (error) {
+      setSubmitStatus({
+        type: 'error',
+        message: error.message || 'Something went wrong. Please try again.'
+      })
+    } finally {
       setIsSubmitting(false)
-    }, 1000)
+    }
   }
 
   const contactMethods = [
@@ -47,8 +103,8 @@ export default function ContactUs() {
       icon: Mail,
       title: "Email Us",
       description: "Get in touch via email",
-      contact: "hello@partysnap.com",
-      action: "mailto:hello@partysnap.com",
+      contact: "hello@partysnap.co.uk",
+      action: "mailto:hello@partysnap.co.uk",
       color: "from-blue-400 to-blue-500"
     },
     {
@@ -71,8 +127,8 @@ export default function ContactUs() {
       icon: Users,
       title: "For Suppliers",
       description: "Join our network",
-      contact: "suppliers@partysnap.com",
-      action: "mailto:suppliers@partysnap.com",
+      contact: "andrew@partysnap.co.uk",
+      action: "mailto:andrew@partysnap.co.uk",
       color: "from-orange-400 to-orange-500"
     }
   ]
@@ -122,6 +178,17 @@ export default function ContactUs() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Status Message */}
+                  {submitStatus.message && (
+                    <div className={`p-4 rounded-lg ${
+                      submitStatus.type === 'success'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                      {submitStatus.message}
+                    </div>
+                  )}
+
                   {/* Name & Email Row */}
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
@@ -304,13 +371,18 @@ export default function ContactUs() {
           </div>
         </div>
       </section>
-          {/* Contact Methods Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto mb-16">
+
+      {/* Contact Methods Grid */}
+      <section className="pb-20">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {contactMethods.map((method, index) => (
               <a
                 key={index}
                 href={method.action}
-                className="group bg-white rounded-3xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 text-center"
+                target={method.action.startsWith('mailto:') || method.action.startsWith('tel:') ? '_self' : '_blank'}
+                rel={method.action.startsWith('mailto:') || method.action.startsWith('tel:') ? undefined : 'noopener noreferrer'}
+                className="group bg-white rounded-3xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 text-center cursor-pointer"
               >
                 <div className={`w-16 h-16 bg-gradient-to-br ${method.color} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <method.icon className="w-8 h-8 text-white" />
@@ -321,6 +393,8 @@ export default function ContactUs() {
               </a>
             ))}
           </div>
+        </div>
+      </section>
     </div>
   )
 }

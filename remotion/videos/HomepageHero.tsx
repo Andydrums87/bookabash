@@ -28,12 +28,11 @@ const LaptopMockup: React.FC<{
   screenWidth?: number;
   screenHeight?: number;
 }> = ({ children, screenWidth = 950, screenHeight = 595 }) => {
-  const baseWidth = screenWidth + 24; // Add bezel padding
+  const baseWidth = screenWidth + 24;
   const lipWidth = baseWidth + 120;
 
   return (
     <div>
-      {/* Laptop screen */}
       <div
         style={{
           width: baseWidth,
@@ -43,7 +42,6 @@ const LaptopMockup: React.FC<{
           position: "relative",
         }}
       >
-        {/* Camera notch */}
         <div
           style={{
             position: "absolute",
@@ -57,8 +55,6 @@ const LaptopMockup: React.FC<{
             border: "1px solid #3a3a3a",
           }}
         />
-
-        {/* Screen bezel */}
         <div
           style={{
             backgroundColor: "#000",
@@ -67,7 +63,6 @@ const LaptopMockup: React.FC<{
             paddingBottom: 0,
           }}
         >
-          {/* Screen content */}
           <div
             style={{
               backgroundColor: "#fff",
@@ -81,8 +76,6 @@ const LaptopMockup: React.FC<{
           </div>
         </div>
       </div>
-
-      {/* Laptop base / keyboard area */}
       <div
         style={{
           width: baseWidth,
@@ -92,7 +85,6 @@ const LaptopMockup: React.FC<{
           position: "relative",
         }}
       >
-        {/* Notch/hinge indent */}
         <div
           style={{
             position: "absolute",
@@ -106,8 +98,6 @@ const LaptopMockup: React.FC<{
           }}
         />
       </div>
-
-      {/* Bottom lip of laptop */}
       <div
         style={{
           width: lipWidth,
@@ -127,7 +117,7 @@ export const HomepageHero: React.FC = () => {
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: COLORS.white }}>
+    <AbsoluteFill style={{ backgroundColor: COLORS.coralLight }}>
       {/* Background music */}
       <Audio src={staticFile("demo-video/promo-448817.mp3")} volume={0.5} />
 
@@ -146,67 +136,1697 @@ export const HomepageHero: React.FC = () => {
         <LogoAnimationScene frame={frame - 310} fps={fps} />
       </Sequence>
 
-      {/* Scene 3a: Step 1 - Party Form (430-580 frames / 14.3-19.3 sec) */}
-      <Sequence from={430} durationInFrames={150}>
-        <AnimatedDemoScene
+      {/* Step 1 Demo - Party Form with storytelling (430-670 frames / 14.3-22.3 sec) */}
+      <Sequence from={430} durationInFrames={240}>
+        <FormStoryScene
           frame={frame - 430}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/Area2.mp4")}
-          stepNumber={1}
-          title="Tell us about your party"
-          subtitle="Date, guests, theme & location"
-          accentColor={COLORS.coral}
+          videoSrc="https://res.cloudinary.com/dghzq6xtd/video/upload/v1769550738/main_form_fill_rt5mrh.mp4"
+          sceneDuration={240}
         />
       </Sequence>
 
-      {/* Scene 3b: Step 2 - AI Builds Plan (580-730 frames / 19.3-24.3 sec) */}
-      <Sequence from={580} durationInFrames={150}>
-        <AnimatedDemoScene
-          frame={frame - 580}
+      {/* Step 2 - Dashboard overview + card showcases (670-1090 frames / 22.3-36.3 sec) */}
+      <Sequence from={670} durationInFrames={420}>
+        <Step2StoryScene
+          frame={frame - 670}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/ViewPlan.mp4")}
-          stepNumber={2}
-          title="We build your perfect plan"
-          subtitle="View, tweak & customize"
+          sceneDuration={420}
+        />
+      </Sequence>
+
+      {/* Dashboard video overlay - separate Sequence so video starts from frame 0 when visible */}
+      {/* Starts at 670 (scene start) + 60 (dashboardStart) = 730, ends at 670 + 190 = 860 */}
+      <Sequence from={730} durationInFrames={130}>
+        <DashboardVideoOverlay sceneFrame={frame - 670} fps={fps} />
+      </Sequence>
+
+      {/* Step 3 Demo - Plan Actions Showcase: View, Add, Customize, Remove (1090-1765 frames / 36.3-58.8 sec) */}
+      {/* Each action: 25 frame intro card + ~144 frame video = ~169 frames × 4 = 675 frames total (cut 1.5s) */}
+      <Sequence from={1090} durationInFrames={675}>
+        <PlanActionsShowcase
+          frame={frame - 1090}
+          fps={fps}
+          sceneDuration={675}
+        />
+      </Sequence>
+
+      {/* Features Intro - "And there's even more" (1765-1855 frames / 58.8-61.8 sec) */}
+      <Sequence from={1765} durationInFrames={90}>
+        <FeaturesIntroScene frame={frame - 1765} fps={fps} />
+      </Sequence>
+
+      {/* Create Invites (1855-2005 frames / 61.8-66.8 sec) */}
+      <Sequence from={1855} durationInFrames={150}>
+        <FeatureShowcaseScene
+          frame={frame - 1855}
+          fps={fps}
+          videoSrc="https://res.cloudinary.com/dghzq6xtd/video/upload/v1769556182/invites_v8nonk.mp4"
+          leadText="Create beautiful"
+          slotWords={["invites", "designs", "memories"]}
+          accentColor={COLORS.coral}
+          sceneDuration={150}
+        />
+      </Sequence>
+
+      {/* Gift Registry (2005-2155 frames / 66.8-71.8 sec) */}
+      <Sequence from={2005} durationInFrames={150}>
+        <FeatureShowcaseScene
+          frame={frame - 2005}
+          fps={fps}
+          videoSrc={staticFile("hompagedemo/manage gift reg.mp4")}
+          leadText="Build the perfect"
+          slotWords={["wishlist", "registry", "gifts"]}
           accentColor={COLORS.teal}
+          sceneDuration={150}
         />
       </Sequence>
 
-      {/* Scene 3c: Step 3 - Dashboard (730-1000 frames / 24.3-33.3 sec) */}
-      <Sequence from={730} durationInFrames={270}>
-        <AnimatedDemoScene
-          frame={frame - 730}
+      {/* Guest Management (2155-2305 frames / 71.8-76.8 sec) */}
+      <Sequence from={2155} durationInFrames={150}>
+        <FeatureShowcaseScene
+          frame={frame - 2155}
           fps={fps}
-          videoSrc={staticFile("hompagedemo/AddSuppliers.mp4")}
-          stepNumber={3}
-          title="Add suppliers to your plan"
-          subtitle="Build your plan with a click"
-          accentColor={COLORS.coral}
-          sceneDuration={270}
-          videoStartDelay={60}
+          videoSrc="https://res.cloudinary.com/dghzq6xtd/video/upload/v1769555707/rsvp_adding_dqsksd.mp4"
+          leadText="Track your"
+          slotWords={["guests", "RSVPs", "responses"]}
+          accentColor="#8B5CF6"
+          sceneDuration={150}
         />
       </Sequence>
 
-      {/* Scene 4a: Features Intro - "And there's even more" (1000-1090 frames / 33.3-36.3 sec) */}
-      <Sequence from={1000} durationInFrames={90}>
-        <FeaturesIntroScene frame={frame - 1000} fps={fps} />
-      </Sequence>
-
-      {/* Scene 4b: Features Carousel - Invites, RSVPs, Gifts (1090-1390 frames / 36.3-46.3 sec) */}
-      <Sequence from={1090} durationInFrames={300}>
-        <ThreeFeaturesScene frame={frame - 1090} fps={fps} />
-      </Sequence>
-
-      {/* Scene 5: CTA (1390-1540 frames / 46.3-51.3 sec) */}
-      <Sequence from={1390} durationInFrames={150}>
-        <CTAScene frame={frame - 1390} fps={fps} />
+      {/* CTA (2305-2425 frames / 76.8-80.8 sec) */}
+      <Sequence from={2305} durationInFrames={120}>
+        <CTAScene frame={frame - 2305} fps={fps} />
       </Sequence>
     </AbsoluteFill>
   );
 };
 
+// Step Intro Card - Big animated step number with title
+const StepIntroScene: React.FC<{
+  frame: number;
+  fps: number;
+  stepNumber: number;
+  title: string;
+  accentColor: string;
+}> = ({ frame, fps, stepNumber, title, accentColor }) => {
+  // Scene fade
+  const sceneOpacity = interpolate(frame, [0, 10], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const sceneExit = interpolate(frame, [45, 60], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Step number animation - bounces in big
+  const numberSpring = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 12, stiffness: 100, mass: 1 },
+  });
+  const numberScale = interpolate(numberSpring, [0, 1], [0, 1]);
+  const numberY = interpolate(numberSpring, [0, 1], [100, 0]);
+
+  // Title slides up
+  const titleSpring = spring({
+    frame: frame - 15,
+    fps,
+    config: { damping: 40, stiffness: 120 },
+  });
+  const titleY = interpolate(titleSpring, [0, 1], [50, 0]);
+  const titleOpacity = interpolate(frame, [15, 30], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Decorative circles pulse
+  const pulse = 1 + Math.sin(frame * 0.15) * 0.05;
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: sceneOpacity * sceneExit,
+      }}
+    >
+      {/* Decorative background circles */}
+      <div
+        style={{
+          position: "absolute",
+          width: 500,
+          height: 500,
+          borderRadius: "50%",
+          border: `4px solid ${accentColor}20`,
+          transform: `scale(${pulse})`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 350,
+          height: 350,
+          borderRadius: "50%",
+          border: `4px solid ${accentColor}15`,
+          transform: `scale(${pulse * 1.1})`,
+        }}
+      />
+
+      {/* Big step number */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 30,
+        }}
+      >
+        <div
+          style={{
+            width: 180,
+            height: 180,
+            borderRadius: "50%",
+            backgroundColor: accentColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `scale(${numberScale}) translateY(${numberY}px)`,
+            boxShadow: `0 20px 60px ${accentColor}50`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 100,
+              fontWeight: 900,
+              color: COLORS.white,
+              fontFamily,
+            }}
+          >
+            {stepNumber}
+          </span>
+        </div>
+
+        {/* Title */}
+        <div
+          style={{
+            fontSize: 52,
+            fontWeight: 900,
+            color: COLORS.dark,
+            fontFamily,
+            textAlign: "center",
+            opacity: titleOpacity,
+            transform: `translateY(${titleY}px)`,
+            maxWidth: 800,
+          }}
+        >
+          {title}
+        </div>
+      </div>
+
+      {/* Logo watermark */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 40,
+          right: 60,
+          width: 140,
+          height: "auto",
+          opacity: 0.5,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// Step 1 Storytelling Scene - Form filling with narrative text
+const FormStoryScene: React.FC<{
+  frame: number;
+  fps: number;
+  videoSrc: string;
+  sceneDuration?: number;
+}> = ({ frame, fps, videoSrc, sceneDuration = 240 }) => {
+  // Scene fade in/out
+  const sceneOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const exitStart = sceneDuration - 20;
+  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Text animations - "Tell us the..." appears first
+  const text1Spring = spring({
+    frame: frame - 10,
+    fps,
+    config: { damping: 40, stiffness: 120 },
+  });
+  const text1Y = interpolate(text1Spring, [0, 1], [60, 0]);
+  const text1Opacity = interpolate(frame, [10, 30], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  // Text fades out after all slot words have shown
+  // Words: date(30), time(70), theme(110), guests(150), location(190)
+  // Wait until location has shown for ~0.5s before fading
+  const text1Exit = interpolate(frame, [205, 235], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Slot machine words - cycle through these
+  const slotWords = ["date", "time", "theme", "guests", "location"];
+  const wordDuration = 40; // frames per word (~1.3s each, slower to match video)
+  const slotStartFrame = 30;
+
+  // Calculate which word is showing and its animation
+  const slotFrame = frame - slotStartFrame;
+  const currentWordIndex = Math.min(
+    Math.floor(slotFrame / wordDuration),
+    slotWords.length - 1
+  );
+  const wordProgress = (slotFrame % wordDuration) / wordDuration;
+
+  // Each word slides up and out, next word slides in from below
+  const getWordTransform = (index: number) => {
+    if (index < currentWordIndex) {
+      // Already passed - off screen above
+      return { y: -160, opacity: 0 };
+    } else if (index === currentWordIndex) {
+      // Current word - animate out at the end of its duration
+      const exitProgress = Math.max(0, (wordProgress - 0.7) / 0.3);
+      return {
+        y: interpolate(exitProgress, [0, 1], [0, -160]),
+        opacity: interpolate(exitProgress, [0, 1], [1, 0]),
+      };
+    } else if (index === currentWordIndex + 1) {
+      // Next word - animate in at the end of current word's duration
+      const enterProgress = Math.max(0, (wordProgress - 0.7) / 0.3);
+      return {
+        y: interpolate(enterProgress, [0, 1], [160, 0]),
+        opacity: interpolate(enterProgress, [0, 1], [0, 1]),
+      };
+    } else {
+      // Future words - hidden below
+      return { y: 160, opacity: 0 };
+    }
+  };
+
+  // Video slides in from right
+  const videoSpring = spring({
+    frame: frame - 25,
+    fps,
+    config: { damping: 35, stiffness: 80, mass: 1 },
+  });
+  const videoX = interpolate(videoSpring, [0, 1], [200, 0]);
+  const videoOpacity = interpolate(videoSpring, [0, 1], [0, 1]);
+  const videoScale = interpolate(videoSpring, [0, 1], [0.9, 1]);
+
+  // Subtle 3D rotation
+  const rotateY = interpolate(frame, [25, sceneDuration], [8, 2]);
+  const floatY = Math.sin(frame * 0.04) * 6;
+
+  // Final text - "Then one click" appears after slot words fade out
+  const text3Spring = spring({
+    frame: frame - 210,
+    fps,
+    config: { damping: 30, stiffness: 100 },
+  });
+  const text3Scale = interpolate(text3Spring, [0, 1], [0.8, 1]);
+  const text3Opacity = interpolate(frame, [210, 230], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Pulse effect on final text
+  const pulse = 1 + Math.sin((frame - 180) * 0.15) * 0.03;
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        perspective: 1200,
+      }}
+    >
+      {/* Gradient background */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at 70% 50%, ${COLORS.coral}12 0%, transparent 50%)`,
+        }}
+      />
+
+      {/* Left side - Narrative text */}
+      <div
+        style={{
+          position: "absolute",
+          left: 80,
+          top: 0,
+          bottom: 0,
+          width: "45%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 20,
+        }}
+      >
+        {/* "Tell us the [slot]" - with slot machine word cycling */}
+        <div
+          style={{
+            opacity: text1Opacity * text1Exit,
+            transform: `translateY(${text1Y}px)`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 140,
+              fontWeight: 900,
+              color: COLORS.dark,
+              fontFamily,
+              lineHeight: 1.05,
+              letterSpacing: -4,
+            }}
+          >
+            Tell us the
+          </div>
+          {/* Slot machine container */}
+          <div
+            style={{
+              height: 160,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {slotWords.map((word, index) => {
+              const transform = getWordTransform(index);
+              return (
+                <div
+                  key={word}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    fontSize: 140,
+                    fontWeight: 900,
+                    color: COLORS.coral,
+                    fontFamily,
+                    lineHeight: 1.05,
+                    letterSpacing: -4,
+                    transform: `translateY(${transform.y}px)`,
+                    opacity: transform.opacity,
+                  }}
+                >
+                  {word}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* "Then one click..." */}
+        <div
+          style={{
+            opacity: text3Opacity,
+            transform: `scale(${text3Scale * pulse})`,
+            marginTop: 40,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 90,
+              fontWeight: 800,
+              color: COLORS.teal,
+              fontFamily,
+              textShadow: `0 0 40px ${COLORS.teal}30`,
+            }}
+          >
+            Then one click...
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Video */}
+      <div
+        style={{
+          position: "absolute",
+          right: 60,
+          top: "50%",
+          transform: `
+            translateY(-50%)
+            translateX(${videoX}px)
+            translateY(${floatY}px)
+            scale(${videoScale})
+            rotateY(${-rotateY}deg)
+          `,
+          opacity: videoOpacity,
+          transformStyle: "preserve-3d",
+          height: "88%",
+          maxHeight: 950,
+        }}
+      >
+        {/* Shadow */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            left: "5%",
+            right: "5%",
+            bottom: -20,
+            background: "rgba(0,0,0,0.2)",
+            filter: "blur(40px)",
+            borderRadius: 24,
+            transform: "translateZ(-50px)",
+          }}
+        />
+
+        {/* Video */}
+        <OffthreadVideo
+          src={videoSrc}
+          volume={0}
+          style={{
+            height: "100%",
+            width: "auto",
+            borderRadius: 20,
+            boxShadow: `
+              0 30px 60px rgba(0,0,0,0.15),
+              0 15px 30px rgba(0,0,0,0.1),
+              0 0 0 1px rgba(0,0,0,0.05)
+            `,
+          }}
+        />
+      </div>
+
+      {/* Step indicator */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 50,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          gap: 12,
+          opacity: interpolate(frame, [40, 60], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
+        }}
+      >
+        {[1, 2, 3].map((num) => (
+          <div
+            key={num}
+            style={{
+              width: num === 1 ? 40 : 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: num === 1 ? COLORS.coral : "#ddd",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Logo watermark */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 40,
+          left: 80,
+          width: 120,
+          height: "auto",
+          opacity: 0.4,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// Dashboard Video Overlay - renders the video in a separate Sequence so it starts from frame 0
+const DashboardVideoOverlay: React.FC<{
+  sceneFrame: number;
+  fps: number;
+}> = ({ sceneFrame, fps }) => {
+  // sceneFrame is the frame relative to Step2StoryScene start (670)
+  // This component renders in a Sequence starting at frame 730 (scene frame 60)
+  // So when this renders, sceneFrame will be 60+
+
+  const dashboardStart = 60;
+
+  // Calculate animations based on scene frame
+  const easedZoom = spring({
+    frame: sceneFrame - dashboardStart,
+    fps,
+    config: { damping: 25, stiffness: 50, mass: 1.5 },
+  });
+
+  const dashboardScale = interpolate(easedZoom, [0, 1], [0.15, 1.15]);
+  const dashboardY = interpolate(easedZoom, [0, 1], [400, -20]);
+  const dashboardRotateX = interpolate(easedZoom, [0, 1], [35, 0]);
+  const dashboardFloat = easedZoom > 0.9 ? Math.sin(sceneFrame * 0.04) * 5 : 0;
+  const dashboardBlur = interpolate(easedZoom, [0, 0.7, 1], [8, 2, 0]);
+
+  const dashboardOpacity = interpolate(
+    sceneFrame,
+    [dashboardStart, dashboardStart + 15, 160, 180],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  return (
+    <AbsoluteFill
+      style={{
+        perspective: 1500,
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: `
+            translate(-50%, -50%)
+            translateY(${dashboardY + dashboardFloat}px)
+            scale(${dashboardScale})
+            rotateX(${dashboardRotateX}deg)
+          `,
+          opacity: dashboardOpacity,
+          transformStyle: "preserve-3d",
+          width: "95%",
+          maxWidth: 1600,
+          filter: dashboardBlur > 0.5 ? `blur(${dashboardBlur}px)` : "none",
+        }}
+      >
+        {/* Dramatic shadow that grows with scale */}
+        <div
+          style={{
+            position: "absolute",
+            top: 80,
+            left: "5%",
+            right: "5%",
+            bottom: -40,
+            background: `rgba(0,0,0,${0.1 + easedZoom * 0.2})`,
+            filter: `blur(${40 + easedZoom * 30}px)`,
+            borderRadius: 30,
+            transform: "translateZ(-100px)",
+          }}
+        />
+
+        {/* Glow effect behind video */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: "120%",
+            height: "120%",
+            background: `radial-gradient(ellipse, ${COLORS.coral}30 0%, transparent 60%)`,
+            transform: "translate(-50%, -50%) translateZ(-150px)",
+            opacity: easedZoom * 0.6,
+          }}
+        />
+
+        {/* Video - starts from frame 0 because it's in its own Sequence */}
+        <OffthreadVideo
+          src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1769551889/dashboard_look_gs6dnx.mp4"
+          volume={0}
+          style={{
+            width: "100%",
+            height: "auto",
+            borderRadius: 20,
+            boxShadow: `
+              0 ${40 + easedZoom * 40}px ${80 + easedZoom * 40}px rgba(0,0,0,0.2),
+              0 ${20 + easedZoom * 20}px ${40 + easedZoom * 20}px rgba(0,0,0,0.15),
+              0 0 0 1px rgba(0,0,0,0.05)
+            `,
+          }}
+        />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Step 2 Story Scene - Dashboard overview + individual card showcases
+const Step2StoryScene: React.FC<{
+  frame: number;
+  fps: number;
+  sceneDuration?: number;
+}> = ({ frame, fps, sceneDuration = 500 }) => {
+  // Scene fade in/out
+  const sceneOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const exitStart = sceneDuration - 25;
+  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Phase 1: "We build your perfect plan" headline (0-60 frames)
+  const headlineOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const headlineExit = interpolate(frame, [50, 70], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const headlineSpring = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 40, stiffness: 100 },
+  });
+  const headlineY = interpolate(headlineSpring, [0, 1], [60, 0]);
+  const headlineScale = interpolate(headlineSpring, [0, 1], [0.9, 1]);
+
+  // Phase 2: Dashboard video is rendered in DashboardVideoOverlay (separate Sequence)
+  // This ensures video starts from frame 0 when visible (at scene frame 60)
+
+  // Phase 3: Individual card showcases (180-480 frames) - ~75 frames per card
+  // Using full UI card screenshots from the dashboard
+  const cards = [
+    {
+      name: "The Place",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769551860/Screenshot_2026-01-27_at_22.07.31_tj5uyj.png",
+      color: COLORS.coral,
+    },
+    {
+      name: "The Entertainment",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769551860/Screenshot_2026-01-27_at_22.07.35_jjewoz.png",
+      color: COLORS.teal,
+    },
+    {
+      name: "The Cake",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769551860/Screenshot_2026-01-27_at_22.07.43_l1yewy.png",
+      color: "#FF9F43",
+    },
+    {
+      name: "Party Bags",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769551859/Screenshot_2026-01-27_at_22.07.50_ivqeib.png",
+      color: "#A855F7",
+    },
+  ];
+
+  const cardStartFrame = 180;
+  const cardDuration = 55; // frames per card (~1.8 sec each)
+
+  // Calculate which card is currently showing
+  const cardFrame = frame - cardStartFrame;
+  const currentCardIndex = Math.floor(cardFrame / cardDuration);
+  const localCardFrame = cardFrame % cardDuration;
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        perspective: 1500,
+        overflow: "hidden",
+      }}
+    >
+      {/* Background gradient */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at 50% 30%, ${COLORS.coral}15 0%, transparent 60%)`,
+        }}
+      />
+
+      {/* Phase 1: Headline */}
+      {frame < 80 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            opacity: headlineOpacity * headlineExit,
+            transform: `translateY(${headlineY}px) scale(${headlineScale})`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 72,
+              fontWeight: 900,
+              color: COLORS.dark,
+              fontFamily,
+              textAlign: "center",
+              lineHeight: 1.1,
+            }}
+          >
+            We build your
+          </div>
+          <div
+            style={{
+              fontSize: 80,
+              fontWeight: 900,
+              color: COLORS.coral,
+              fontFamily,
+              textAlign: "center",
+              textShadow: `0 0 60px ${COLORS.coral}40`,
+            }}
+          >
+            perfect plan
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2: Dashboard video is rendered in DashboardVideoOverlay (separate Sequence layer) */}
+      {/* This ensures the video starts from frame 0 when it becomes visible */}
+
+      {/* Phase 3: Individual card showcases */}
+      {frame >= cardStartFrame && currentCardIndex < cards.length && (
+        <CardShowcase
+          card={cards[currentCardIndex]}
+          localFrame={localCardFrame}
+          fps={fps}
+          cardIndex={currentCardIndex}
+        />
+      )}
+
+      {/* Logo watermark */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 40,
+          right: 60,
+          width: 120,
+          height: "auto",
+          opacity: 0.5,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// Individual card showcase with fancy animations - shows full UI card screenshot
+const CardShowcase: React.FC<{
+  card: {
+    name: string;
+    image: string;
+    color: string;
+  };
+  localFrame: number;
+  fps: number;
+  cardIndex: number;
+}> = ({ card, localFrame, fps }) => {
+  // Card entrance - 3D flip and scale
+  const entranceSpring = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 20, stiffness: 80, mass: 1 },
+  });
+  const cardScale = interpolate(entranceSpring, [0, 1], [0.3, 1]);
+  const cardRotateY = interpolate(entranceSpring, [0, 1], [-90, 0]);
+  const cardOpacity = interpolate(localFrame, [0, 15], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Card exit - adjusted for shorter 55 frame duration
+  const cardExit = interpolate(localFrame, [40, 55], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cardExitScale = interpolate(localFrame, [40, 55], [1, 0.8], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Floating motion
+  const floatY = Math.sin(localFrame * 0.1) * 10;
+  const floatRotate = Math.sin(localFrame * 0.08) * 2;
+
+  // Decorative elements
+  const ringScale = interpolate(entranceSpring, [0, 1], [0.5, 1.2]);
+  const ringOpacity = interpolate(entranceSpring, [0, 0.5, 1], [0, 0.4, 0.15]);
+
+  // Particle effects
+  const particles = Array.from({ length: 8 }, (_, i) => ({
+    angle: (i * 45) * (Math.PI / 180),
+    delay: i * 3,
+    size: 8 + (i % 3) * 4,
+  }));
+
+  return (
+    <AbsoluteFill
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        perspective: 1200,
+      }}
+    >
+      {/* Decorative background ring */}
+      <div
+        style={{
+          position: "absolute",
+          width: 700,
+          height: 700,
+          borderRadius: "50%",
+          border: `4px solid ${card.color}`,
+          transform: `scale(${ringScale})`,
+          opacity: ringOpacity,
+        }}
+      />
+
+      {/* Floating particles */}
+      {particles.map((p, i) => {
+        const particleProgress = interpolate(
+          localFrame,
+          [p.delay, p.delay + 30],
+          [0, 1],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+        );
+        const px = Math.cos(p.angle) * (200 + particleProgress * 250);
+        const py = Math.sin(p.angle) * (200 + particleProgress * 250);
+        const pOpacity = interpolate(particleProgress, [0, 0.3, 1], [0, 1, 0]);
+
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: p.size,
+              height: p.size,
+              borderRadius: "50%",
+              backgroundColor: card.color,
+              transform: `translate(${px}px, ${py}px)`,
+              opacity: pOpacity * 0.6,
+            }}
+          />
+        );
+      })}
+
+      {/* Main card container - centered */}
+      <div
+        style={{
+          opacity: cardOpacity * cardExit,
+          transform: `
+            scale(${cardScale * cardExitScale})
+            translateY(${floatY}px)
+            rotateY(${cardRotateY}deg)
+            rotate(${floatRotate}deg)
+          `,
+          transformStyle: "preserve-3d",
+        }}
+      >
+        {/* Card shadow */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            left: 30,
+            right: -30,
+            bottom: -40,
+            background: "rgba(0,0,0,0.25)",
+            filter: "blur(40px)",
+            borderRadius: 30,
+            transform: "translateZ(-50px)",
+          }}
+        />
+
+        {/* Card image - full UI screenshot */}
+        <Img
+          src={card.image}
+          style={{
+            height: 750,
+            width: "auto",
+            borderRadius: 24,
+            boxShadow: `
+              0 40px 80px rgba(0,0,0,0.2),
+              0 20px 40px rgba(0,0,0,0.15),
+              0 0 0 1px rgba(0,0,0,0.05)
+            `,
+          }}
+        />
+
+        {/* Glow effect behind card */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 400,
+            height: 400,
+            background: `radial-gradient(circle, ${card.color}50 0%, transparent 70%)`,
+            transform: "translate(-50%, -50%) translateZ(-100px)",
+            filter: "blur(50px)",
+          }}
+        />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Plan Actions Showcase - Quick intro cards + full-screen videos
+const PlanActionsShowcase: React.FC<{
+  frame: number;
+  fps: number;
+  sceneDuration?: number;
+}> = ({ frame, fps, sceneDuration = 720 }) => {
+  // Each action: 25 frame intro card + video duration
+  const introCardFrames = 25; // ~0.8 seconds for intro card
+  const actions = [
+    {
+      verb: "VIEW",
+      subtitle: "your suppliers",
+      video: "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769553836/view_supplier_uxkzps.mp4",
+      color: COLORS.teal,
+      videoDuration: 155, // actual video frames
+    },
+    {
+      verb: "ADD",
+      subtitle: "new suppliers",
+      video: "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769553633/short_add_suppliers_r3z2xd.mp4",
+      color: COLORS.coral,
+      videoDuration: 155,
+    },
+    {
+      verb: "CUSTOMIZE",
+      subtitle: "your selections",
+      video: "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769553950/customise_supplier_ewbg68.mp4",
+      color: "#8B5CF6",
+      videoDuration: 155,
+    },
+    {
+      verb: "REMOVE",
+      subtitle: "what you don't need",
+      video: "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769553776/remove_supplier_qawmac.mp4",
+      color: "#EF4444",
+      videoDuration: 155,
+    },
+  ];
+
+  // Calculate total duration for each action (intro + video)
+  const getActionTotalDuration = (action: typeof actions[0]) => introCardFrames + action.videoDuration;
+
+  // Calculate cumulative start frames for each action
+  const actionStartFrames = actions.reduce((acc, action, i) => {
+    if (i === 0) return [0];
+    return [...acc, acc[i - 1] + getActionTotalDuration(actions[i - 1])];
+  }, [] as number[]);
+
+  // Find current action based on frame
+  let currentActionIndex = 0;
+  for (let i = 0; i < actions.length; i++) {
+    if (frame >= actionStartFrames[i]) {
+      currentActionIndex = i;
+    }
+  }
+  currentActionIndex = Math.min(currentActionIndex, actions.length - 1);
+
+  const currentAction = actions[currentActionIndex];
+  const actionStartFrame = actionStartFrames[currentActionIndex];
+  const localFrame = frame - actionStartFrame;
+  const isShowingIntro = localFrame < introCardFrames;
+  const videoLocalFrame = localFrame - introCardFrames;
+  const actionTotalDuration = getActionTotalDuration(currentAction);
+
+  // Scene fade in/out
+  const sceneOpacity = interpolate(frame, [0, 10], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const sceneExit = interpolate(frame, [sceneDuration - 15, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // ===== INTRO CARD ANIMATIONS =====
+  // Explosive scale-in for the verb
+  const introVerbSpring = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 12, stiffness: 300, mass: 0.5 },
+  });
+  const introVerbScale = interpolate(introVerbSpring, [0, 1], [3, 1]);
+  const introVerbOpacity = interpolate(localFrame, [0, 5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Subtitle slides up from below
+  const introSubtitleSpring = spring({
+    frame: localFrame - 5,
+    fps,
+    config: { damping: 15, stiffness: 200, mass: 0.6 },
+  });
+  const introSubtitleY = interpolate(introSubtitleSpring, [0, 1], [40, 0]);
+  const introSubtitleOpacity = interpolate(localFrame, [5, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Card exit - quick zoom out
+  const introExit = interpolate(localFrame, [introCardFrames - 8, introCardFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const introExitScale = interpolate(localFrame, [introCardFrames - 8, introCardFrames], [1, 0.8], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // ===== VIDEO ANIMATIONS =====
+  // Video entrance - zooms in from slightly scaled down
+  const videoEntranceSpring = spring({
+    frame: videoLocalFrame,
+    fps,
+    config: { damping: 20, stiffness: 150, mass: 0.8 },
+  });
+  const videoScale = interpolate(videoEntranceSpring, [0, 1], [0.95, 1]);
+  const videoOpacity = interpolate(videoLocalFrame, [0, 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Video exit
+  const videoExitStart = currentAction.videoDuration - 15;
+  const videoExit = interpolate(videoLocalFrame, [videoExitStart, currentAction.videoDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Background color transitions with action
+  const bgColor = currentAction.color + "15";
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: isShowingIntro ? currentAction.color : COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        overflow: "hidden",
+      }}
+    >
+      {/* ===== INTRO CARD ===== */}
+      {isShowingIntro && (
+        <AbsoluteFill
+          style={{
+            opacity: introExit,
+            transform: `scale(${introExitScale})`,
+          }}
+        >
+          {/* Radial burst lines */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: 4,
+                height: interpolate(introVerbSpring, [0, 1], [0, 600]),
+                background: `linear-gradient(to bottom, transparent, ${COLORS.white}30, transparent)`,
+                transform: `translate(-50%, -50%) rotate(${i * 30}deg)`,
+                opacity: interpolate(introVerbSpring, [0, 0.5, 1], [0, 0.6, 0]),
+              }}
+            />
+          ))}
+
+          {/* Giant verb */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50%, -60%) scale(${introVerbScale})`,
+              fontSize: 180,
+              fontWeight: 900,
+              color: COLORS.white,
+              fontFamily,
+              letterSpacing: -8,
+              opacity: introVerbOpacity,
+              textShadow: `0 0 100px ${COLORS.white}50`,
+            }}
+          >
+            {currentAction.verb}
+          </div>
+
+          {/* Subtitle */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50%, 80px) translateY(${introSubtitleY}px)`,
+              fontSize: 48,
+              fontWeight: 600,
+              color: COLORS.white,
+              fontFamily,
+              opacity: introSubtitleOpacity * 0.9,
+              letterSpacing: 2,
+            }}
+          >
+            {currentAction.subtitle}
+          </div>
+
+          {/* Step indicator */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 60,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 12,
+            }}
+          >
+            {actions.map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: i === currentActionIndex ? 40 : 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: i === currentActionIndex ? COLORS.white : `${COLORS.white}40`,
+                  transition: "width 0.2s",
+                }}
+              />
+            ))}
+          </div>
+        </AbsoluteFill>
+      )}
+
+      {/* ===== VIDEO ===== */}
+      {!isShowingIntro && (
+        <AbsoluteFill
+          style={{
+            opacity: videoOpacity * videoExit,
+          }}
+        >
+          {/* Subtle background glow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 1400,
+              height: 1400,
+              borderRadius: "50%",
+              background: `radial-gradient(circle, ${currentAction.color}20 0%, transparent 50%)`,
+              filter: "blur(60px)",
+            }}
+          />
+
+          {/* Full-width video container */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50%, -50%) scale(${videoScale})`,
+              width: "95%",
+              maxWidth: 1700,
+            }}
+          >
+            {/* Shadow */}
+            <div
+              style={{
+                position: "absolute",
+                top: 50,
+                left: "5%",
+                right: "5%",
+                bottom: -40,
+                background: "rgba(0,0,0,0.2)",
+                filter: "blur(50px)",
+                borderRadius: 30,
+              }}
+            />
+
+            {/* Video container */}
+            <div
+              style={{
+                position: "relative",
+                borderRadius: 20,
+                overflow: "hidden",
+                boxShadow: `
+                  0 40px 80px rgba(0,0,0,0.15),
+                  0 20px 40px rgba(0,0,0,0.1),
+                  0 0 0 3px ${currentAction.color}30
+                `,
+              }}
+            >
+              {/* Render all videos but only show current one */}
+              {actions.map((action, i) => (
+                <div
+                  key={action.verb}
+                  style={{
+                    display: i === currentActionIndex ? "block" : "none",
+                  }}
+                >
+                  <Sequence from={actionStartFrames[i] + introCardFrames} layout="none">
+                    <OffthreadVideo
+                      src={action.video}
+                      volume={0}
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                      }}
+                    />
+                  </Sequence>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress dots at bottom */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 40,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 12,
+            }}
+          >
+            {actions.map((action, i) => (
+              <div
+                key={action.verb}
+                style={{
+                  width: i === currentActionIndex ? 40 : 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: i === currentActionIndex ? action.color : "#ddd",
+                  boxShadow: i === currentActionIndex ? `0 4px 15px ${action.color}50` : "none",
+                }}
+              />
+            ))}
+          </div>
+        </AbsoluteFill>
+      )}
+
+      {/* Logo watermark */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 30,
+          right: 50,
+          width: 100,
+          height: "auto",
+          opacity: isShowingIntro ? 0.6 : 0.3,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// Screen Studio-style floating 3D demo scene - warm background (for steps 2 & 3)
+const ScreenStudioDemoScene: React.FC<{
+  frame: number;
+  fps: number;
+  videoSrc: string;
+  stepNumber: number;
+  accentColor: string;
+  sceneDuration?: number;
+}> = ({ frame, fps, videoSrc, stepNumber, accentColor, sceneDuration = 240 }) => {
+  // Scene fade in/out
+  const sceneOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const exitStart = sceneDuration - 25;
+  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Floating entrance animation
+  const floatSpring = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 30, stiffness: 80, mass: 1.2 },
+  });
+
+  const translateY = interpolate(floatSpring, [0, 1], [120, 0]);
+  const videoScale = interpolate(floatSpring, [0, 1], [0.85, 1]);
+  const videoOpacity = interpolate(floatSpring, [0, 1], [0, 1]);
+
+  // Subtle 3D rotation
+  const rotateX = interpolate(floatSpring, [0, 1], [12, 4]);
+  const rotateY = interpolate(frame, [0, sceneDuration], [-2, 2]);
+
+  // Subtle floating motion
+  const floatY = Math.sin(frame * 0.04) * 10;
+  const floatRotate = Math.sin(frame * 0.025) * 0.8;
+
+  // Progress dots
+  const dotsOpacity = interpolate(frame, [40, 60], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        perspective: 1500,
+      }}
+    >
+      {/* Subtle gradient background */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at center 30%, ${accentColor}10 0%, transparent 60%)`,
+        }}
+      />
+
+      {/* Floating video - centered with 3D transforms */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: `
+            translate(-50%, -50%)
+            translateY(${translateY + floatY}px)
+            scale(${videoScale})
+            rotateX(${rotateX}deg)
+            rotateY(${rotateY + floatRotate}deg)
+          `,
+          opacity: videoOpacity,
+          transformStyle: "preserve-3d",
+          width: "85%",
+          maxWidth: 1400,
+        }}
+      >
+        {/* Deep shadow for 3D depth */}
+        <div
+          style={{
+            position: "absolute",
+            top: 60,
+            left: "8%",
+            right: "8%",
+            bottom: -30,
+            background: "rgba(0,0,0,0.2)",
+            filter: "blur(50px)",
+            borderRadius: 30,
+            transform: "translateZ(-80px)",
+          }}
+        />
+
+        {/* Video with rounded corners and shadow */}
+        <OffthreadVideo
+          src={videoSrc}
+          volume={0}
+          style={{
+            width: "100%",
+            height: "auto",
+            borderRadius: 16,
+            boxShadow: `
+              0 30px 60px rgba(0,0,0,0.12),
+              0 15px 30px rgba(0,0,0,0.08),
+              0 0 0 1px rgba(0,0,0,0.05)
+            `,
+          }}
+        />
+      </div>
+
+      {/* Progress dots at bottom */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 50,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          gap: 12,
+          opacity: dotsOpacity,
+        }}
+      >
+        {[1, 2, 3].map((num) => (
+          <div
+            key={num}
+            style={{
+              width: num === stepNumber ? 40 : 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: num === stepNumber ? accentColor : "#ddd",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Logo watermark */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 40,
+          right: 60,
+          width: 120,
+          height: "auto",
+          opacity: 0.5,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// Feature showcase scene - for invites, gift registry etc (slot machine style like Step 1)
+const FeatureShowcaseScene: React.FC<{
+  frame: number;
+  fps: number;
+  videoSrc: string;
+  leadText: string;
+  slotWords: string[];
+  accentColor: string;
+  sceneDuration?: number;
+}> = ({ frame, fps, videoSrc, leadText, slotWords, accentColor, sceneDuration = 150 }) => {
+  // Scene fade
+  const sceneOpacity = interpolate(frame, [0, 15], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const exitStart = sceneDuration - 20;
+  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Video animation
+  const videoSpring = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 35, stiffness: 80 },
+  });
+  const videoScale = interpolate(videoSpring, [0, 1], [0.9, 1]);
+  const videoY = interpolate(videoSpring, [0, 1], [40, 0]);
+
+  // Text animation - lead text fades in first
+  const leadTextSpring = spring({
+    frame: frame - 10,
+    fps,
+    config: { damping: 40, stiffness: 120 },
+  });
+  const leadTextY = interpolate(leadTextSpring, [0, 1], [60, 0]);
+  const leadTextOpacity = interpolate(frame, [10, 30], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Slot machine animation for single changing word (like FormStoryScene)
+  const slotStartFrame = 30;
+  const wordDuration = 30; // frames per word
+  const slotFrame = Math.max(0, frame - slotStartFrame);
+  const currentWordIndex = Math.min(
+    Math.floor(slotFrame / wordDuration),
+    slotWords.length - 1
+  );
+  const wordProgress = (slotFrame % wordDuration) / wordDuration;
+
+  // Each word slides up and out, next word slides in from below
+  const getWordTransform = (index: number) => {
+    if (index < currentWordIndex) {
+      // Already passed - off screen above
+      return { y: -140, opacity: 0 };
+    } else if (index === currentWordIndex) {
+      // Current word - animate out at the end of its duration (unless it's the last word)
+      if (index === slotWords.length - 1) {
+        // Last word stays visible
+        return { y: 0, opacity: 1 };
+      }
+      const exitProgress = Math.max(0, (wordProgress - 0.7) / 0.3);
+      return {
+        y: interpolate(exitProgress, [0, 1], [0, -140]),
+        opacity: interpolate(exitProgress, [0, 1], [1, 0]),
+      };
+    } else if (index === currentWordIndex + 1) {
+      // Next word - animate in at the end of current word's duration
+      const enterProgress = Math.max(0, (wordProgress - 0.7) / 0.3);
+      return {
+        y: interpolate(enterProgress, [0, 1], [140, 0]),
+        opacity: interpolate(enterProgress, [0, 1], [0, 1]),
+      };
+    } else {
+      // Future words - hidden below
+      return { y: 140, opacity: 0 };
+    }
+  };
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: COLORS.coralLight,
+        opacity: sceneOpacity * sceneExit,
+        overflow: "hidden",
+      }}
+    >
+      {/* Gradient background */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at 30% 50%, ${accentColor}12 0%, transparent 50%)`,
+        }}
+      />
+
+      {/* Left side - Lead text + slot machine word */}
+      <div
+        style={{
+          position: "absolute",
+          left: 80,
+          top: 0,
+          bottom: 0,
+          width: "40%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 10,
+        }}
+      >
+        {/* Lead text (static) */}
+        <div
+          style={{
+            opacity: leadTextOpacity,
+            transform: `translateY(${leadTextY}px)`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 120,
+              fontWeight: 900,
+              color: COLORS.dark,
+              fontFamily,
+              lineHeight: 1.05,
+              letterSpacing: -4,
+            }}
+          >
+            {leadText}
+          </div>
+        </div>
+
+        {/* Slot machine container - single word cycles through */}
+        <div
+          style={{
+            height: 140,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {slotWords.map((word, index) => {
+            const transform = getWordTransform(index);
+            return (
+              <div
+                key={word}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  fontSize: 120,
+                  fontWeight: 900,
+                  color: accentColor,
+                  fontFamily,
+                  lineHeight: 1.05,
+                  letterSpacing: -4,
+                  transform: `translateY(${transform.y}px)`,
+                  opacity: transform.opacity,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {word}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Right side - Video in laptop */}
+      <div
+        style={{
+          position: "absolute",
+          right: 50,
+          top: "50%",
+          width: "55%",
+          maxWidth: 950,
+          transform: `translateY(-50%) translateY(${videoY}px) scale(${videoScale})`,
+        }}
+      >
+        <LaptopMockup screenWidth={950} screenHeight={534}>
+          <OffthreadVideo
+            src={videoSrc}
+            volume={0}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "fill",
+            }}
+          />
+        </LaptopMockup>
+      </div>
+
+      {/* Logo */}
+      <Img
+        src={staticFile("demo-video/Transparent With Text (5).png")}
+        style={{
+          position: "absolute",
+          bottom: 30,
+          left: 80,
+          width: 120,
+          height: "auto",
+          opacity: 0.5,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
 const StressedParentScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  // Text overlays appear sequentially
   const text1Opacity = interpolate(frame, [30, 50], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -222,7 +1842,6 @@ const StressedParentScene: React.FC<{ frame: number; fps: number }> = ({ frame, 
     extrapolateRight: "clamp",
   });
 
-  // Fade out at the end
   const sceneOpacity = interpolate(frame, [210, 240], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -230,7 +1849,6 @@ const StressedParentScene: React.FC<{ frame: number; fps: number }> = ({ frame, 
 
   return (
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
-      {/* AI Video background */}
       <OffthreadVideo
         src={staticFile("hompagedemo/output (15).mp4")}
         volume={0}
@@ -241,7 +1859,6 @@ const StressedParentScene: React.FC<{ frame: number; fps: number }> = ({ frame, 
         }}
       />
 
-      {/* Dark overlay for text readability */}
       <div
         style={{
           position: "absolute",
@@ -253,7 +1870,6 @@ const StressedParentScene: React.FC<{ frame: number; fps: number }> = ({ frame, 
         }}
       />
 
-      {/* Text overlays on the left */}
       <div
         style={{
           position: "absolute",
@@ -331,7 +1947,7 @@ const TransitionScene: React.FC<{ frame: number; fps: number }> = ({ frame }) =>
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.white,
+        backgroundColor: COLORS.coralLight,
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -354,7 +1970,6 @@ const TransitionScene: React.FC<{ frame: number; fps: number }> = ({ frame }) =>
 };
 
 const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  // === PHASE 1: CINEMATIC LIGHT BURST (frames 0-15) ===
   const burstProgress = interpolate(frame, [0, 15], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -362,12 +1977,9 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
   const burstScale = interpolate(burstProgress, [0, 0.5, 1], [0, 3, 0]);
   const burstOpacity = interpolate(burstProgress, [0, 0.3, 1], [0, 0.8, 0]);
 
-  // === PHASE 2: "INTRODUCING" TEXT (frames 5-35) ===
-  // Letter-by-letter reveal
   const introducingText = "INTRODUCING";
-  const letterDelay = 2; // frames between each letter
+  const letterDelay = 2;
 
-  // Text scale with overshoot
   const textScaleSpring = spring({
     frame: frame - 5,
     fps,
@@ -375,61 +1987,32 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
   });
   const textScale = interpolate(textScaleSpring, [0, 1], [0.3, 1]);
 
-  // Text opacity
   const introducingOpacity = interpolate(frame, [5, 12, 28, 38], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Glitch effect on text
   const glitchOffset = frame > 8 && frame < 15 ? Math.sin(frame * 50) * 3 : 0;
 
-  // Text gradient sweep
   const gradientPosition = interpolate(frame, [5, 25], [-100, 200], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // === PHASE 3: EXPANDING RINGS (frames 20-50) ===
   const rings = [
     { delay: 20, color: COLORS.coral },
     { delay: 25, color: COLORS.teal },
     { delay: 30, color: COLORS.coral },
   ];
 
-  // === PHASE 4: PARTICLE EXPLOSION (frames 25-60) ===
-  const explosionParticles = Array.from({ length: 24 }, (_, i) => {
-    const angle = (i / 24) * Math.PI * 2;
-    const distance = 200 + (i % 3) * 100;
-    const delay = 25 + (i % 6) * 2;
-    const size = 4 + (i % 4) * 3;
-    return {
-      angle,
-      distance,
-      delay,
-      size,
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance,
-    };
-  });
-
-  // === PHASE 5: LOGO REVEAL (frames 35-60) ===
   const logoDelay = 35;
 
-  // Logo mask/reveal animation
-  const logoRevealProgress = interpolate(frame, [logoDelay, logoDelay + 20], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Logo scale with bounce
   const logoScaleSpring = spring({
     frame: frame - logoDelay,
     fps,
     config: { damping: 12, stiffness: 80, mass: 1.5 },
   });
 
-  // Logo rotation for dramatic entrance
   const logoRotation = interpolate(frame, [logoDelay, logoDelay + 15], [-5, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -440,21 +2023,12 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
     extrapolateRight: "clamp",
   });
 
-  // === PHASE 6: GLOW & SHIMMER (continuous) ===
   const glowPulse = 0.5 + Math.sin(frame * 0.12) * 0.3;
   const shimmerOffset = (frame * 8) % 400;
 
-  // === PHASE 7: SUBHEADING (frames 50-70) ===
   const subheadingDelay = 50;
   const subheadingWords = ["Book", "your", "party", "in", "a", "snap"];
 
-  const subheadingSpring = spring({
-    frame: frame - subheadingDelay,
-    fps,
-    config: { damping: 40, stiffness: 100 },
-  });
-
-  // === PHASE 8: SCENE EXIT (frames 105-120) ===
   const exitProgress = interpolate(frame, [105, 120], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -462,7 +2036,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
   const exitScale = interpolate(exitProgress, [0, 1], [1, 1.1]);
   const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0]);
 
-  // === BACKGROUND ANIMATIONS ===
   const bgGradientRotation = frame * 0.5;
   const bgPulse = 0.4 + Math.sin(frame * 0.08) * 0.15;
 
@@ -477,7 +2050,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         opacity: exitOpacity,
       }}
     >
-      {/* Animated warm gradient background */}
       <div
         style={{
           position: "absolute",
@@ -496,7 +2068,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Radial light from center */}
       <div
         style={{
           position: "absolute",
@@ -512,7 +2083,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Initial light burst */}
       <div
         style={{
           position: "absolute",
@@ -526,7 +2096,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Horizontal light flare */}
       <div
         style={{
           position: "absolute",
@@ -545,7 +2114,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Expanding rings */}
       {rings.map((ring, i) => {
         const ringProgress = interpolate(frame, [ring.delay, ring.delay + 30], [0, 1], {
           extrapolateLeft: "clamp",
@@ -570,7 +2138,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         );
       })}
 
-      {/* "INTRODUCING" text with effects */}
       <div
         style={{
           position: "absolute",
@@ -614,62 +2181,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         })}
       </div>
 
-      {/* Particle explosion */}
-      {explosionParticles.map((particle, i) => {
-        const particleProgress = interpolate(
-          frame,
-          [particle.delay, particle.delay + 25],
-          [0, 1],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        );
-        const particleX = interpolate(particleProgress, [0, 1], [0, particle.x]);
-        const particleY = interpolate(particleProgress, [0, 1], [0, particle.y]);
-        const particleOpacity = interpolate(particleProgress, [0, 0.2, 0.8, 1], [0, 1, 0.8, 0]);
-        const particleScale = interpolate(particleProgress, [0, 0.3, 1], [0, 1.5, 0.3]);
-
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              width: particle.size,
-              height: particle.size,
-              borderRadius: "50%",
-              backgroundColor: i % 2 === 0 ? COLORS.coral : COLORS.teal,
-              transform: `translate(${particleX}px, ${particleY}px) scale(${particleScale})`,
-              opacity: particleOpacity,
-              boxShadow: `0 0 ${particle.size * 2}px ${i % 2 === 0 ? COLORS.coral : COLORS.teal}`,
-            }}
-          />
-        );
-      })}
-
-      {/* Floating ambient particles */}
-      {Array.from({ length: 15 }, (_, i) => {
-        const floatX = Math.sin(frame * 0.02 + i * 2) * 100 + (i - 7) * 120;
-        const floatY = Math.cos(frame * 0.015 + i * 1.5) * 80 + (i % 3 - 1) * 200;
-        const floatOpacity = 0.4 + Math.sin(frame * 0.05 + i) * 0.2;
-        return (
-          <div
-            key={`float-${i}`}
-            style={{
-              position: "absolute",
-              width: 3 + (i % 3) * 2,
-              height: 3 + (i % 3) * 2,
-              borderRadius: "50%",
-              backgroundColor: i % 2 === 0 ? COLORS.coral : COLORS.teal,
-              transform: `translate(${floatX}px, ${floatY}px)`,
-              opacity: floatOpacity * interpolate(frame, [20, 40], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
-              filter: "blur(1px)",
-            }}
-          />
-        );
-      })}
-
-      {/* Logo glow layers */}
       <div
         style={{
           position: "absolute",
@@ -682,20 +2193,7 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           filter: "blur(40px)",
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${COLORS.teal}30 0%, transparent 50%)`,
-          opacity: logoOpacity * 0.5,
-          transform: `scale(${logoScaleSpring * 0.8})`,
-          filter: "blur(30px)",
-        }}
-      />
 
-      {/* Main logo with shimmer */}
       <div
         style={{
           display: "flex",
@@ -715,7 +2213,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
               filter: `drop-shadow(0 0 25px ${COLORS.coral}70) drop-shadow(0 0 50px ${COLORS.coral}30)`,
             }}
           />
-          {/* Shimmer overlay */}
           <div
             style={{
               position: "absolute",
@@ -729,7 +2226,6 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           />
         </div>
 
-        {/* Subheading with word-by-word animation */}
         <div
           style={{
             display: "flex",
@@ -773,548 +2269,21 @@ const LogoAnimationScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           })}
         </div>
       </div>
-
-      {/* Corner accent lines */}
-      {[0, 1, 2, 3].map((corner) => {
-        const lineProgress = interpolate(frame, [35 + corner * 3, 50 + corner * 3], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
-        const isHorizontal = corner % 2 === 0;
-        const positions = [
-          { top: 80, left: 80 },
-          { top: 80, right: 80 },
-          { bottom: 80, left: 80 },
-          { bottom: 80, right: 80 },
-        ];
-        return (
-          <div
-            key={corner}
-            style={{
-              position: "absolute",
-              ...positions[corner],
-              width: isHorizontal ? 100 : 3,
-              height: isHorizontal ? 3 : 100,
-              backgroundColor: corner % 2 === 0 ? COLORS.coral : COLORS.teal,
-              opacity: lineProgress * 0.7,
-              transform: `scale${isHorizontal ? "X" : "Y"}(${lineProgress})`,
-              transformOrigin: corner < 2 ? "left" : "right",
-              boxShadow: `0 0 8px ${corner % 2 === 0 ? COLORS.coral : COLORS.teal}80`,
-            }}
-          />
-        );
-      })}
     </AbsoluteFill>
   );
 };
 
-const AnimatedDemoScene: React.FC<{
-  frame: number;
-  fps: number;
-  videoSrc: string;
-  stepNumber: number;
-  title: string;
-  subtitle: string;
-  accentColor: string;
-  sceneDuration?: number;
-  videoStartDelay?: number;
-}> = ({ frame, fps, videoSrc, stepNumber, title, subtitle, accentColor, sceneDuration = 150, videoStartDelay = 0 }) => {
-  // Scene entrance
-  const sceneOpacity = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Scene exit - dynamic based on scene duration
-  const exitStart = sceneDuration - 20;
-  const sceneExit = interpolate(frame, [exitStart, sceneDuration], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Step number animation - bounces in
-  const stepSpring = spring({
-    frame: frame - 5,
-    fps,
-    config: { damping: 40, stiffness: 300, mass: 0.8 },
-  });
-
-  const stepScale = interpolate(stepSpring, [0, 1], [0, 1]);
-  const stepRotate = interpolate(stepSpring, [0, 1], [-180, 0]);
-
-  // Title typewriter effect
-  const titleProgress = interpolate(frame, [15, 45], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const visibleTitleLength = Math.floor(titleProgress * title.length);
-  const visibleTitle = title.slice(0, visibleTitleLength);
-  const showCursor = frame > 15 && frame < 50 && Math.floor(frame / 4) % 2 === 0;
-
-  // Subtitle slide up
-  const subtitleSpring = spring({
-    frame: frame - 40,
-    fps,
-    config: { damping: 60, stiffness: 150 },
-  });
-  const subtitleY = interpolate(subtitleSpring, [0, 1], [30, 0]);
-  const subtitleOpacity = interpolate(frame, [40, 55], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Browser window animation
-  const browserSpring = spring({
-    frame: frame - 10,
-    fps,
-    config: { damping: 50, stiffness: 120 },
-  });
-  const browserScale = interpolate(browserSpring, [0, 1], [0.8, 1]);
-  const browserY = interpolate(browserSpring, [0, 1], [60, 0]);
-
-  // Animated underline under title
-  const underlineWidth = interpolate(frame, [45, 65], [0, 100], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Floating particles animation
-  const particleY1 = Math.sin(frame * 0.08) * 15;
-  const particleY2 = Math.sin(frame * 0.1 + 1) * 12;
-  const particleY3 = Math.sin(frame * 0.06 + 2) * 18;
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: COLORS.coralLight,
-        opacity: sceneOpacity * sceneExit,
-      }}
-    >
-      {/* Floating decorative particles */}
-      <div
-        style={{
-          position: "absolute",
-          top: 150 + particleY1,
-          left: 80,
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          backgroundColor: accentColor,
-          opacity: 0.3,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: 300 + particleY2,
-          right: 120,
-          width: 14,
-          height: 14,
-          borderRadius: "50%",
-          backgroundColor: COLORS.teal,
-          opacity: 0.25,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: 200 + particleY3,
-          left: 150,
-          width: 24,
-          height: 24,
-          borderRadius: "50%",
-          backgroundColor: COLORS.coral,
-          opacity: 0.2,
-        }}
-      />
-
-      {/* Left side - Text content */}
-      <div
-        style={{
-          position: "absolute",
-          left: 60,
-          top: 0,
-          bottom: 0,
-          width: "32%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 16,
-        }}
-      >
-        {/* Step number badge */}
-        <div
-          style={{
-            width: 70,
-            height: 70,
-            borderRadius: "50%",
-            backgroundColor: accentColor,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transform: `scale(${stepScale}) rotate(${stepRotate}deg)`,
-            boxShadow: `0 10px 40px ${accentColor}50`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 36,
-              fontWeight: 900,
-              color: COLORS.white,
-              fontFamily,
-            }}
-          >
-            {stepNumber}
-          </span>
-        </div>
-
-        {/* Title with typewriter */}
-        <div style={{ position: "relative" }}>
-          <div
-            style={{
-              fontSize: 44,
-              fontWeight: 900,
-              color: COLORS.dark,
-              fontFamily,
-              lineHeight: 1.1,
-            }}
-          >
-            {visibleTitle}
-            {showCursor && (
-              <span style={{ color: accentColor }}>|</span>
-            )}
-          </div>
-          {/* Animated underline */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: -8,
-              left: 0,
-              width: `${underlineWidth}%`,
-              height: 6,
-              backgroundColor: accentColor,
-              borderRadius: 3,
-            }}
-          />
-        </div>
-
-        {/* Subtitle */}
-        <div
-          style={{
-            fontSize: 24,
-            fontWeight: 600,
-            color: COLORS.dark,
-            fontFamily,
-            opacity: subtitleOpacity,
-            transform: `translateY(${subtitleY}px)`,
-          }}
-        >
-          {subtitle}
-        </div>
-
-        {/* Progress dots */}
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            marginTop: 20,
-          }}
-        >
-          {[1, 2, 3].map((num) => (
-            <div
-              key={num}
-              style={{
-                width: num === stepNumber ? 40 : 12,
-                height: 12,
-                borderRadius: 6,
-                backgroundColor: num === stepNumber ? accentColor : "#ddd",
-                transition: "all 0.3s",
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Right side - Laptop mockup */}
-      <div
-        style={{
-          position: "absolute",
-          right: 30,
-          top: "50%",
-          transform: `translateY(-50%) translateY(${browserY}px) scale(${browserScale})`,
-        }}
-      >
-        <LaptopMockup screenWidth={1100} screenHeight={619}>
-          <OffthreadVideo
-            src={videoSrc}
-            volume={0}
-            startFrom={videoStartDelay}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "fill",
-            }}
-          />
-        </LaptopMockup>
-      </div>
-
-      {/* Logo watermark */}
-      <Img
-        src={staticFile("demo-video/Transparent With Text (5).png")}
-        style={{
-          position: "absolute",
-          bottom: 30,
-          left: 80,
-          width: 140,
-          height: "auto",
-          opacity: 0.8,
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-const ThreeFeaturesScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  const features = [
-    {
-      videoSrc: staticFile("hompagedemo/createinvites.mp4"),
-      title: "Create Invites",
-      subtitle: "Beautiful invites, sent in seconds",
-      icon: "✉️",
-    },
-    {
-      videoSrc: staticFile("hompagedemo/manage rsvp.mp4"),
-      title: "Manage RSVPs",
-      subtitle: "Track responses effortlessly",
-      icon: "✓",
-    },
-    {
-      videoSrc: staticFile("hompagedemo/manage gift reg.mp4"),
-      title: "Gift Registry",
-      subtitle: "One link, endless gift ideas",
-      icon: "🎁",
-    },
-  ];
-
-  // Each feature shows for ~100 frames (3.3 sec), total ~300 frames for all 3
-  const featureDuration = 100;
-  const currentFeatureIndex = Math.min(
-    Math.floor(frame / featureDuration),
-    features.length - 1
-  );
-  const featureFrame = frame % featureDuration;
-
-  const currentFeature = features[currentFeatureIndex];
-  const accentColor = currentFeatureIndex === 1 ? COLORS.teal : COLORS.coral;
-
-  // Scene entrance
-  const sceneOpacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Scene exit (at end of all features)
-  const totalDuration = featureDuration * features.length;
-  const sceneExit = interpolate(frame, [totalDuration - 20, totalDuration], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Feature transition animations
-  const featureOpacity = interpolate(
-    featureFrame,
-    [0, 15, featureDuration - 15, featureDuration],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
-  // Laptop slide in animation
-  const laptopSpring = spring({
-    frame: featureFrame,
-    fps,
-    config: { damping: 50, stiffness: 120 },
-  });
-  const laptopX = interpolate(laptopSpring, [0, 1], [100, 0]);
-
-  // Title animations
-  const titleSpring = spring({
-    frame: featureFrame - 5,
-    fps,
-    config: { damping: 60, stiffness: 150 },
-  });
-
-  // Progress indicators
-  const progressDots = features.map((_, index) => {
-    const isActive = index === currentFeatureIndex;
-    const isPast = index < currentFeatureIndex;
-    return { isActive, isPast };
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: COLORS.coralLight,
-        opacity: sceneOpacity * sceneExit,
-      }}
-    >
-      {/* Main content - vertically centered */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "40px 80px",
-        }}
-      >
-        {/* Content row - laptop and feature info */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 80,
-            width: "100%",
-          }}
-        >
-          {/* Left side - Feature info */}
-          <div
-            style={{
-              width: 320,
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              opacity: featureOpacity,
-              transform: `translateX(${interpolate(titleSpring, [0, 1], [-30, 0])}px)`,
-            }}
-          >
-            {/* Icon badge */}
-            <div
-              style={{
-                width: 70,
-                height: 70,
-                borderRadius: "50%",
-                backgroundColor: accentColor,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 10px 40px ${accentColor}50`,
-              }}
-            >
-              <span style={{ fontSize: 36 }}>{currentFeature.icon}</span>
-            </div>
-
-            {/* Title */}
-            <div
-              style={{
-                fontSize: 38,
-                fontWeight: 900,
-                color: COLORS.dark,
-                fontFamily,
-                lineHeight: 1.1,
-              }}
-            >
-              {currentFeature.title}
-            </div>
-
-          {/* Subtitle */}
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 600,
-              color: COLORS.dark,
-              fontFamily,
-              opacity: 0.7,
-            }}
-          >
-            {currentFeature.subtitle}
-          </div>
-
-          {/* Progress dots */}
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 20,
-            }}
-          >
-            {progressDots.map((dot, index) => (
-              <div
-                key={index}
-                style={{
-                  width: dot.isActive ? 40 : 12,
-                  height: 12,
-                  borderRadius: 6,
-                  backgroundColor: dot.isActive || dot.isPast ? accentColor : "#ddd",
-                  transition: "all 0.3s",
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Right side - Laptop with video */}
-        <div
-          style={{
-            opacity: featureOpacity,
-            transform: `translateX(${laptopX}px)`,
-          }}
-        >
-          <LaptopMockup screenWidth={950} screenHeight={534}>
-            {features.map((feature, index) => (
-              <OffthreadVideo
-                key={feature.videoSrc}
-                src={feature.videoSrc}
-                volume={0}
-                startFrom={0}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "fill",
-                  display: index === currentFeatureIndex ? "block" : "none",
-                }}
-              />
-            ))}
-          </LaptopMockup>
-        </div>
-      </div>
-      </div>
-
-      {/* Logo watermark */}
-      <Img
-        src={staticFile("demo-video/Transparent With Text (5).png")}
-        style={{
-          position: "absolute",
-          bottom: 20,
-          left: 60,
-          width: 120,
-          height: "auto",
-          opacity: 0.8,
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-// Fancy intro scene before features - "And there's even more..."
 const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  // Scene entrance
   const sceneOpacity = interpolate(frame, [0, 15], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Scene exit
   const sceneExit = interpolate(frame, [70, 90], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // "And there's" text animation
   const text1Spring = spring({
     frame: frame - 10,
     fps,
@@ -1326,7 +2295,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
     extrapolateRight: "clamp",
   });
 
-  // "even more" text animation with emphasis
   const text2Spring = spring({
     frame: frame - 25,
     fps,
@@ -1339,7 +2307,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
   });
   const text2Scale = interpolate(text2Spring, [0, 0.7, 1], [0.8, 1.1, 1]);
 
-  // Sparkle/star animations
   const sparkles = [
     { x: -350, y: -80, delay: 30, size: 24 },
     { x: 380, y: -60, delay: 35, size: 20 },
@@ -1349,7 +2316,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
     { x: 180, y: 130, delay: 42, size: 20 },
   ];
 
-  // Animated decorative circles
   const circle1Scale = spring({
     frame: frame - 20,
     fps,
@@ -1361,7 +2327,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
     config: { damping: 50, stiffness: 80 },
   });
 
-  // Floating particles
   const particleY1 = Math.sin(frame * 0.1) * 20;
   const particleY2 = Math.cos(frame * 0.08) * 25;
 
@@ -1375,7 +2340,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         overflow: "hidden",
       }}
     >
-      {/* Decorative background circles */}
       <div
         style={{
           position: "absolute",
@@ -1399,7 +2363,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Floating particles */}
       <div
         style={{
           position: "absolute",
@@ -1425,7 +2388,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         }}
       />
 
-      {/* Main text content */}
       <div
         style={{
           display: "flex",
@@ -1434,10 +2396,9 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           gap: 10,
         }}
       >
-        {/* "And there's" */}
         <div
           style={{
-            fontSize: 48,
+            fontSize: 72,
             fontWeight: 600,
             color: COLORS.dark,
             fontFamily,
@@ -1448,10 +2409,9 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           And there's
         </div>
 
-        {/* "even more" with emphasis */}
         <div
           style={{
-            fontSize: 72,
+            fontSize: 100,
             fontWeight: 900,
             color: COLORS.teal,
             fontFamily,
@@ -1464,7 +2424,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         </div>
       </div>
 
-      {/* Sparkle stars */}
       {sparkles.map((sparkle, i) => {
         const sparkleProgress = interpolate(
           frame,
@@ -1496,7 +2455,6 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
         );
       })}
 
-      {/* Logo watermark */}
       <Img
         src={staticFile("demo-video/Transparent With Text (5).png")}
         style={{
@@ -1505,7 +2463,7 @@ const FeaturesIntroScene: React.FC<{ frame: number; fps: number }> = ({ frame, f
           left: 60,
           width: 120,
           height: "auto",
-          opacity: 0.7,
+          opacity: 0.5,
         }}
       />
     </AbsoluteFill>
@@ -1544,7 +2502,7 @@ const CTAScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.white,
+        backgroundColor: COLORS.coralLight,
         justifyContent: "center",
         alignItems: "center",
         flexDirection: "column",

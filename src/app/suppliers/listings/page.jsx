@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, LayoutGrid, Building2, Loader2, Trash2, X, Settings, Cake, Filter } from "lucide-react"
+import { Plus, Building2, Loader2, Trash2, X, Settings, Cake, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useBusiness } from "@/contexts/BusinessContext"
 import Image from "next/image"
@@ -446,12 +446,12 @@ export default function ListingsPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Category filter - only show if not cake supplier and has multiple categories */}
             {!isCake && uniqueCategories.length > 1 && (
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[160px] border-[hsl(var(--primary-200))] rounded-xl">
-                  <Filter className="w-4 h-4 mr-2 text-gray-500" />
+                <SelectTrigger className="h-11 w-auto min-w-[160px] border-[hsl(var(--primary-200))] rounded-xl px-4">
+                  <Filter className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -468,23 +468,18 @@ export default function ListingsPage() {
             {isCake && (
               <button
                 onClick={handleOpenSettings}
-                className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors"
+                className="h-11 px-4 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors flex items-center justify-center"
                 title="Business Settings"
               >
                 <Settings className="w-5 h-5 text-gray-600" />
               </button>
             )}
 
-            {/* View toggle - future feature */}
-            <button className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] hidden sm:flex transition-colors">
-              <LayoutGrid className="w-5 h-5 text-gray-600" />
-            </button>
-
             {/* Add button */}
             {isCake ? (
               <button
                 onClick={handleCreateNewListing}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                className="h-11 flex items-center gap-2 px-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Cake
@@ -492,9 +487,10 @@ export default function ListingsPage() {
             ) : (
               <button
                 onClick={handleCreateNewListing}
-                className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors"
+                className="h-11 flex items-center gap-2 px-4 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors font-medium text-gray-700"
               >
-                <Plus className="w-5 h-5 text-gray-600" />
+                <Plus className="w-4 h-4" />
+                Create new listing
               </button>
             )}
           </div>

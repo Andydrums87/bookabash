@@ -1,41 +1,30 @@
-// components/Sidebar.jsx - WITH MODAL
+// components/Sidebar.jsx - Dashboard widgets sidebar
 "use client"
 
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import BudgetControls from "@/components/budget-controls"
-import CountdownWidget from "../../components/ui/CountdownWidget"
-import WeatherWidget from "./WeatherWidget"
 import ReferFriend from "@/components/ReferFriend"
 import { Button } from "@/components/ui/button"
-import { FileText, Plus, Sparkles, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Plus, Sparkles, X } from "lucide-react"
 import SnappysPresentParty from "./SnappysPresentParty"
 
 export default function Sidebar({
   partyData,
-  totalCost,
   isPaymentConfirmed,
-  partyDate,
   budgetControlProps,
   suppliers,
   enquiries,
-  timeRemaining,
   onPaymentReady,
-  showPaymentCTA,
   totalOutstandingCost,
   outstandingSuppliers,
   AddSuppliersSection,
-  TimelineAssistant, // ✅ NEW: Timeline Assistant
-  partyDetails, // ✅ NEW: For weather widget
-  venueLocation // ✅ NEW: For weather widget
 }) {
-  const router = useRouter()
   const [showAddSuppliersModal, setShowAddSuppliersModal] = useState(false)
-  
+
   if (!partyData) return null
 
-  const hasUnpaidAcceptedSuppliers = enquiries.some(e => 
+  const hasUnpaidAcceptedSuppliers = enquiries.some(e =>
     e.status === 'accepted' && e.payment_status === 'unpaid'
   )
 
@@ -48,7 +37,8 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className="lg:block hidden space-y-6">
+      <div className="space-y-6">
+        {/* Party Progress Widget */}
         <SnappysPresentParty
           suppliers={suppliers}
           enquiries={enquiries}
@@ -60,9 +50,9 @@ export default function Sidebar({
           outstandingSuppliers={outstandingSuppliers}
         />
 
-        {/* ✅ ADD SUPPLIERS CARD - OPENS MODAL */}
+        {/* Add Suppliers Card */}
         {emptySlots > 0 && (
-          <Card 
+          <Card
             className="w-full bg-primary-400 rounded-xl shadow-md border-2 border-[hsl(var(--primary-200))] overflow-hidden cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
             onClick={() => setShowAddSuppliersModal(true)}
           >
@@ -70,7 +60,7 @@ export default function Sidebar({
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-200 rounded-full -translate-y-16 translate-x-16 opacity-50" />
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary-300 rounded-full translate-y-12 -translate-x-12 opacity-30" />
-              
+
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
@@ -82,44 +72,35 @@ export default function Sidebar({
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full bg-white hover:bg-gray-200 text-primary-500 font-bold rounded-xl h-12 shadow-lg transition-all text-primary-600  text-xl"
+                <Button
+                  className="w-full bg-white hover:bg-gray-200 text-primary-500 font-bold rounded-xl h-12 shadow-lg transition-all text-primary-600 text-xl"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   View Available Suppliers
                 </Button>
-
-                {/* <p className="text-xs text-center text-gray-600 mt-3">
-                  Complete your party team for the best experience ✨
-                </p> */}
               </div>
             </div>
           </Card>
         )}
 
+        {/* Budget Controls (if applicable) */}
         {!isPaymentConfirmed && budgetControlProps && (
           <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
             <BudgetControls {...budgetControlProps} />
           </Card>
         )}
 
-        <CountdownWidget partyDate={partyDate}/>
-
-        <WeatherWidget
-          partyDate={partyDate}
-          venueLocation={venueLocation}
-        />
-
+        {/* Refer Friend */}
         <ReferFriend />
-      </aside>
+      </div>
 
-      {/* ✅ MODAL - DESKTOP VERSION */}
+      {/* Add Suppliers Modal */}
       {showAddSuppliersModal && (
-        <div 
-          className="hidden lg:block fixed inset-0 bg-black/50 z-[9999] animate-in fade-in duration-200"
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] animate-in fade-in duration-200"
           onClick={() => setShowAddSuppliersModal(false)}
         >
-          <div 
+          <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >

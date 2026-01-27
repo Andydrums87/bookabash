@@ -377,22 +377,25 @@ export default function Settings() {
     }
   }
 
-  const handleSave = async (overrides = {}) => {
+  const handleSave = async (overrides = {}, updatedPersonal = null, updatedBusiness = null) => {
     setSaving(true)
+    // Use passed-in values if provided, otherwise use current state
+    const personal = updatedPersonal || personalInfo
+    const business = updatedBusiness || businessInfo
     try {
       const updatedData = {
         ...supplierData,
-        name: businessInfo.businessName,
-        serviceType: businessInfo.businessType,
-        location: businessInfo.operatingPostcode,
+        name: business.businessName,
+        serviceType: business.businessType,
+        location: business.operatingPostcode,
         owner: {
           ...supplierData?.owner,
-          name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim(),
-          firstName: personalInfo.firstName,
-          lastName: personalInfo.lastName,
-          email: personalInfo.email,
-          phone: personalInfo.phone,
-          profilePhoto: overrides.profilePhoto || personalInfo.profilePhoto,
+          name: `${personal.firstName} ${personal.lastName}`.trim(),
+          firstName: personal.firstName,
+          lastName: personal.lastName,
+          email: personal.email,
+          phone: personal.phone,
+          profilePhoto: overrides.profilePhoto || personal.profilePhoto,
         },
         notifications,
       }
@@ -440,21 +443,30 @@ export default function Settings() {
   }
 
   const handleEditSave = async () => {
+    // Build updated values to pass to handleSave
+    let updatedPersonalInfo = { ...personalInfo }
+    let updatedBusinessInfo = { ...businessInfo }
+
     // Update the appropriate state based on field
     if (editField === 'name') {
-      setPersonalInfo(prev => ({
-        ...prev,
+      updatedPersonalInfo = {
+        ...personalInfo,
         firstName: editValue.firstName || '',
         lastName: editValue.lastName || ''
-      }))
+      }
+      setPersonalInfo(updatedPersonalInfo)
     } else if (editField === 'email') {
-      setPersonalInfo(prev => ({ ...prev, email: editValue.email || '' }))
+      updatedPersonalInfo = { ...personalInfo, email: editValue.email || '' }
+      setPersonalInfo(updatedPersonalInfo)
     } else if (editField === 'phone') {
-      setPersonalInfo(prev => ({ ...prev, phone: editValue.phone || '' }))
+      updatedPersonalInfo = { ...personalInfo, phone: editValue.phone || '' }
+      setPersonalInfo(updatedPersonalInfo)
     } else if (editField === 'businessName') {
-      setBusinessInfo(prev => ({ ...prev, businessName: editValue.businessName || '' }))
+      updatedBusinessInfo = { ...businessInfo, businessName: editValue.businessName || '' }
+      setBusinessInfo(updatedBusinessInfo)
     } else if (editField === 'postcode') {
-      setBusinessInfo(prev => ({ ...prev, operatingPostcode: editValue.postcode || '' }))
+      updatedBusinessInfo = { ...businessInfo, operatingPostcode: editValue.postcode || '' }
+      setBusinessInfo(updatedBusinessInfo)
     } else if (editField === 'bankDetails') {
       // Save to dedicated payout_details table
       try {
@@ -517,7 +529,7 @@ export default function Settings() {
       return // Don't call regular handleSave
     }
 
-    await handleSave()
+    await handleSave({}, updatedPersonalInfo, updatedBusinessInfo)
   }
 
   // Save cake settings to the primary business AND propagate to all child products

@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react"
 import { User, LogOut, Settings, Calendar, Briefcase, PartyPopper } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 export function UserMenu({ initialUser }) {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState(initialUser)
   const [isSupplier, setIsSupplier] = useState(false)
   const [hasDatabaseParties, setHasDatabaseParties] = useState(false)
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false)
   const menuRef = useRef(null)
 
   // Check if user is a supplier and if they have database parties
@@ -213,7 +215,7 @@ export function UserMenu({ initialUser }) {
             <button
               onClick={() => {
                 setIsOpen(false)
-                handleSignOut()
+                setShowSignOutDialog(true)
               }}
               className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
             >
@@ -223,6 +225,17 @@ export function UserMenu({ initialUser }) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showSignOutDialog}
+        onOpenChange={setShowSignOutDialog}
+        title="Sign out"
+        description="Are you sure you want to sign out of your account?"
+        confirmText="Sign out"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={handleSignOut}
+      />
     </div>
   )
 }

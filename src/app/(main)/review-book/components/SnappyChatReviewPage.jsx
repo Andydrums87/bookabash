@@ -16,6 +16,7 @@ import { useContextualNavigation } from '@/hooks/useContextualNavigation';
 import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions';
 import { usePartyPlan } from "@/utils/partyPlanBackend";
 import { useToast } from '@/components/ui/toast';
+import { processReferralSignup } from '@/utils/referralUtils';
 import SnappyLoader from '@/components/ui/SnappyLoader';
 import PartyReadinessModal from '@/components/party-readiness-modal';
 import Image from 'next/image';
@@ -96,6 +97,7 @@ export default function SnappyChatReviewPage() {
   const [phoneError, setPhoneError] = useState('');
   const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [signupFieldErrors, setSignupFieldErrors] = useState({});
 
   // Signup form state
   const [signupFormData, setSignupFormData] = useState({
@@ -807,7 +809,15 @@ export default function SnappyChatReviewPage() {
         throw new Error("Failed to create customer profile");
       }
 
-
+      // Process referral if user came via referral link
+      try {
+        const referralResult = await processReferralSignup(authenticatedUser.id);
+        if (referralResult.referralRecorded) {
+          console.log("🎉 Referral recorded for new user!");
+        }
+      } catch (referralError) {
+        console.warn("Referral processing error (non-critical):", referralError);
+      }
 
       // Set the user and proceed to next step
       setUser(authenticatedUser);
@@ -927,25 +937,85 @@ export default function SnappyChatReviewPage() {
     const step = currentStepData;
     if (step.id === 'main-form') {
       const phoneValid = phoneError === '' && formData.phoneNumber.length > 0;
-      const addressValid = formData.addressLine1.length > 0 &&
-                          formData.city.length > 0 &&
-                          formData.postcode.length > 0;
-      return formData.parentName.length > 0 && phoneValid && formData.email.length > 0 && addressValid;
+      const addressValid = formData.addressLine1.trim().length > 0 &&
+                          formData.city.trim().length > 0 &&
+                          formData.postcode.trim().length > 0;
+      return formData.parentName.trim().length > 0 && phoneValid && formData.email.trim().length > 0 && addressValid;
     }
     if (step.id === 'create-account') {
       if (authMode === "signin") {
         // Signin only needs email and password
-        return formData.email.length > 0 && signupFormData.password.length > 0;
+        return formData.email.trim().length > 0 && signupFormData.password.length > 0;
       } else {
         // Signup needs name, email, passwords match, and terms accepted
-        return formData.parentName.length > 0 &&
-               formData.email.length > 0 &&
+        return formData.parentName.trim().length > 0 &&
+               formData.email.trim().length > 0 &&
                signupFormData.password.length > 0 &&
                signupFormData.confirmPassword.length > 0 &&
                termsAccepted;
       }
     }
     return true;
+  };
+
+  // Validate signup fields and return error messages
+  const validateSignupFields = () => {
+    const errors = {};
+
+    if (authMode === "signup") {
+      const trimmedName = formData.parentName.trim();
+      if (!trimmedName) {
+        errors.name = "Please enter your name";
+      } else if (/^\d+$/.test(trimmedName)) {
+        errors.name = "Name cannot be only numbers";
+      }
+    }
+
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail) {
+      errors.email = "Please enter your email address";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!signupFormData.password || !signupFormData.password.trim()) {
+      errors.password = "Please enter a password";
+    } else if (/^\s+$/.test(signupFormData.password)) {
+      errors.password = "Password cannot contain only spaces";
+    }
+
+    if (authMode === "signup") {
+      if (!signupFormData.confirmPassword || !signupFormData.confirmPassword.trim()) {
+        errors.confirmPassword = "Please confirm your password";
+      } else if (/^\s+$/.test(signupFormData.confirmPassword)) {
+        errors.confirmPassword = "Password cannot contain only spaces";
+      }
+
+      if (!termsAccepted) {
+        errors.terms = "Please accept the Terms & Conditions";
+      }
+    }
+
+    return errors;
+  };
+
+  // Handle clicking the submit button when fields are incomplete
+  const handleSignupButtonClick = () => {
+    const errors = validateSignupFields();
+
+    if (Object.keys(errors).length > 0) {
+      setSignupFieldErrors(errors);
+      // Don't proceed, just show errors
+      return;
+    }
+
+    // Clear errors and proceed
+    setSignupFieldErrors({});
+    if (authMode === "signin") {
+      handleSigninSubmit();
+    } else {
+      handleSignupSubmit();
+    }
   };
 
   const currentStepData = chatSteps[currentStep];
@@ -1329,10 +1399,16 @@ export default function SnappyChatReviewPage() {
                                 type="text"
                                 placeholder="John Smith"
                                 value={formData.parentName}
-                                onChange={(e) => updateFormData('parentName', e.target.value)}
+                                onChange={(e) => {
+                                  updateFormData('parentName', e.target.value);
+                                  setSignupFieldErrors(prev => ({ ...prev, name: '' }));
+                                }}
                                 disabled={isSubmitting}
-                                className="mt-1"
+                                className={`mt-1 ${signupFieldErrors.name ? 'border-red-500' : ''}`}
                               />
+                              {signupFieldErrors.name && (
+                                <p className="text-xs text-red-600 mt-1">{signupFieldErrors.name}</p>
+                              )}
                             </div>
                           )}
 
@@ -1346,10 +1422,16 @@ export default function SnappyChatReviewPage() {
                               type="email"
                               placeholder="your.email@example.com"
                               value={formData.email}
-                              onChange={(e) => updateFormData('email', e.target.value)}
+                              onChange={(e) => {
+                                updateFormData('email', e.target.value);
+                                setSignupFieldErrors(prev => ({ ...prev, email: '' }));
+                              }}
                               disabled={isSubmitting}
-                              className="mt-1"
+                              className={`mt-1 ${signupFieldErrors.email ? 'border-red-500' : ''}`}
                             />
+                            {signupFieldErrors.email && (
+                              <p className="text-xs text-red-600 mt-1">{signupFieldErrors.email}</p>
+                            )}
                           </div>
 
                           {/* Password */}
@@ -1367,12 +1449,13 @@ export default function SnappyChatReviewPage() {
                                   const newPassword = e.target.value;
                                   setSignupFormData(prev => ({ ...prev, password: newPassword }));
                                   setSignupError("");
+                                  setSignupFieldErrors(prev => ({ ...prev, password: '' }));
                                   if (authMode === "signup") {
                                     checkPasswordRequirements(newPassword);
                                   }
                                 }}
                                 disabled={isSubmitting}
-                                className="pr-20"
+                                className={`pr-20 ${signupFieldErrors.password ? 'border-red-500' : ''}`}
                                 required
                               />
                               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -1408,6 +1491,9 @@ export default function SnappyChatReviewPage() {
                                 </div>
                               </div>
                             )}
+                            {signupFieldErrors.password && !signupFormData.password && (
+                              <p className="text-xs text-red-600 mt-1">{signupFieldErrors.password}</p>
+                            )}
                           </div>
 
                           {/* Confirm Password (signup only) */}
@@ -1425,9 +1511,10 @@ export default function SnappyChatReviewPage() {
                                 onChange={(e) => {
                                   setSignupFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
                                   setSignupError("");
+                                  setSignupFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
                                 }}
                                 disabled={isSubmitting}
-                                className="pr-10"
+                                className={`pr-10 ${signupFieldErrors.confirmPassword ? 'border-red-500' : ''}`}
                                 required
                               />
                               <button
@@ -1438,6 +1525,9 @@ export default function SnappyChatReviewPage() {
                                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             </div>
+                            {signupFieldErrors.confirmPassword && (
+                              <p className="text-xs text-red-600 mt-1">{signupFieldErrors.confirmPassword}</p>
+                            )}
                           </div>
                           )}
 
@@ -1445,23 +1535,31 @@ export default function SnappyChatReviewPage() {
                           {authMode === "signup" && (
                             <div className="space-y-3 pt-4">
                               {/* Booking Terms */}
-                              <div className="flex items-start gap-2">
-                                <Checkbox
-                                  id="booking-terms"
-                                  checked={termsAccepted}
-                                  onCheckedChange={setTermsAccepted}
-                                  className="mt-0.5 rounded-full data-[state=checked]:bg-[hsl(var(--primary-500))]"
-                                  required
-                                />
-                                <label htmlFor="booking-terms" className="text-sm cursor-pointer text-gray-700">
-                                  I accept PartySnap's{" "}
-                                  <BookingTermsModal partyDetails={partyDetails}>
-                                    <button type="button" className="text-[hsl(var(--primary-600))] hover:underline font-medium">
-                                      Terms & Conditions
-                                    </button>
-                                  </BookingTermsModal>
-                                  {" "}<span className="text-red-500">*</span>
-                                </label>
+                              <div>
+                                <div className="flex items-start gap-2">
+                                  <Checkbox
+                                    id="booking-terms"
+                                    checked={termsAccepted}
+                                    onCheckedChange={(checked) => {
+                                      setTermsAccepted(checked);
+                                      setSignupFieldErrors(prev => ({ ...prev, terms: '' }));
+                                    }}
+                                    className={`mt-0.5 rounded-full data-[state=checked]:bg-[hsl(var(--primary-500))] ${signupFieldErrors.terms ? 'border-red-500' : ''}`}
+                                    required
+                                  />
+                                  <label htmlFor="booking-terms" className="text-sm cursor-pointer text-gray-700">
+                                    I accept PartySnap's{" "}
+                                    <BookingTermsModal partyDetails={partyDetails}>
+                                      <button type="button" className="text-[hsl(var(--primary-600))] hover:underline font-medium">
+                                        Terms & Conditions
+                                      </button>
+                                    </BookingTermsModal>
+                                    {" "}<span className="text-red-500">*</span>
+                                  </label>
+                                </div>
+                                {signupFieldErrors.terms && (
+                                  <p className="text-xs text-red-600 mt-1 ml-6">{signupFieldErrors.terms}</p>
+                                )}
                               </div>
 
                               {/* Marketing Preferences */}
@@ -1497,6 +1595,7 @@ export default function SnappyChatReviewPage() {
                                     onClick={() => {
                                       setAuthMode("signin");
                                       setSignupError("");
+                                      setSignupFieldErrors({});
                                       setSignupFormData({ password: "", confirmPassword: "" });
                                     }}
                                     className="text-[hsl(var(--primary-600))] hover:underline font-semibold"
@@ -1512,6 +1611,7 @@ export default function SnappyChatReviewPage() {
                                     onClick={() => {
                                       setAuthMode("signup");
                                       setSignupError("");
+                                      setSignupFieldErrors({});
                                       setSignupFormData({ password: "", confirmPassword: "" });
                                     }}
                                     className="text-[hsl(var(--primary-600))] hover:underline font-semibold"
@@ -1542,9 +1642,9 @@ export default function SnappyChatReviewPage() {
                     <div className={currentStep === 0 && !user ? "w-full" : "ml-auto"}>
                     <Button
                         onClick={currentStepData.showSignupForm
-                          ? (authMode === "signin" ? handleSigninSubmit : handleSignupSubmit)
+                          ? handleSignupButtonClick
                           : handleNext}
-                        disabled={!canProceed() || isSubmitting}
+                        disabled={isSubmitting}
                         className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-5 py-2 text-sm font-semibold rounded-md shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
                         {isSubmitting ? (
@@ -1555,7 +1655,7 @@ export default function SnappyChatReviewPage() {
                         ) : (
                           <>
                             {currentStepData.showSignupForm
-                              ? (authMode === "signin" ? 'Sign In & Continue' : 'Create Account & Continue')
+                              ? (authMode === "signin" ? 'Sign In & Continue' : 'Sign Up & Continue')
                               : currentStep === chatSteps.length - 1
                                 ? 'Proceed to Payment'
                                 : getButtonText(currentStepData)}

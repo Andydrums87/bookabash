@@ -573,7 +573,7 @@ export default function EnquiryDetailsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     onClick={() => handleResponse("accepted")}
-                    className="bg-gray-900 hover:bg-gray-800 text-white py-6 rounded-xl"
+                    className="bg-green-600 hover:bg-green-700 text-white py-6 rounded-xl"
                   >
                     <CheckCircle className="w-5 h-5 mr-2" />
                     Accept
@@ -581,7 +581,7 @@ export default function EnquiryDetailsPage() {
                   <Button
                     onClick={() => handleResponse("declined")}
                     variant="outline"
-                    className="border-gray-300 py-6 rounded-xl"
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 py-6 rounded-xl"
                   >
                     <XCircle className="w-5 h-5 mr-2" />
                     Decline

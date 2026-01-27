@@ -770,14 +770,14 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
               <div className="space-y-3">
                 <button
                   onClick={() => handleResponse("accepted")}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
                 >
                   <CheckCircle className="w-5 h-5" />
                   Accept booking
                 </button>
                 <button
                   onClick={() => handleResponse("declined")}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-white border border-red-300 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-400 transition-colors"
                 >
                   <XCircle className="w-5 h-5" />
                   Decline

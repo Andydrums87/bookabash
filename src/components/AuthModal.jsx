@@ -7,6 +7,7 @@ import { Eye, EyeOff, LogIn, UserPlus, Loader2, Sparkles, CheckCircle } from "lu
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { useToast } from "@/components/ui/toast"
+import { processReferralSignup } from "@/utils/referralUtils"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 
 export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, selectedSuppliersCount = 0, defaultEmail = "" }) {
@@ -16,6 +17,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
   const [success, setSuccess] = useState("")
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false)
@@ -39,10 +41,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError("")
+    setFieldErrors((prev) => ({ ...prev, [field]: "" }))
     setSuccess("")
   }
 
   const validatePassword = (pwd) => {
+    if (!pwd || !pwd.trim()) {
+      return "Password is required"
+    }
+    if (/^\s+$/.test(pwd)) {
+      return "Password cannot contain only spaces"
+    }
     if (pwd.length < 8) {
       return "Password must be at least 8 characters long"
     }
@@ -59,31 +68,49 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   }
 
   const validateSignUp = () => {
-    if (!formData.firstName.trim()) {
-      setError("First name is required")
-      return false
-    }
-    if (!formData.email.trim()) {
-      setError("Email is required")
-      return false
-    }
-    if (!formData.password) {
-      setError("Password is required")
-      return false
-    }
+    const newFieldErrors = {}
+    let hasError = false
 
-    // Check password strength
+    const trimmedFirstName = formData.firstName.trim()
+    const trimmedLastName = formData.lastName.trim()
+
+    if (!trimmedFirstName) {
+      newFieldErrors.firstName = "First name is required"
+      hasError = true
+    } else if (/^\d+$/.test(trimmedFirstName)) {
+      newFieldErrors.firstName = "First name cannot be only numbers"
+      hasError = true
+    }
+    if (trimmedLastName && /^\d+$/.test(trimmedLastName)) {
+      newFieldErrors.lastName = "Last name cannot be only numbers"
+      hasError = true
+    }
+    const trimmedEmail = formData.email.trim()
+    if (!trimmedEmail) {
+      newFieldErrors.email = "Email is required"
+      hasError = true
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      newFieldErrors.email = "Please enter a valid email address"
+      hasError = true
+    }
+    // Check password - validatePassword handles empty/whitespace checks
     const passwordError = validatePassword(formData.password)
     if (passwordError) {
-      setError(passwordError)
-      return false
+      newFieldErrors.password = passwordError
+      hasError = true
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match")
-      return false
+    // Check confirm password
+    if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
+      newFieldErrors.confirmPassword = "Please confirm your password"
+      hasError = true
+    } else if (formData.password !== formData.confirmPassword) {
+      newFieldErrors.confirmPassword = "Passwords don't match"
+      hasError = true
     }
-    return true
+
+    setFieldErrors(newFieldErrors)
+    return !hasError
   }
 
   const handleEmailAuth = async () => {
@@ -134,6 +161,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
         }
 
         console.log("✅ Customer profile created:", userResult.user.id)
+
+        // Process referral if user came via referral link
+        const referralResult = await processReferralSignup(user.id)
+        if (referralResult.referralRecorded) {
+          console.log("🎉 Referral recorded for new user!")
+        }
 
         // Show success animation
         setShowSuccessAnimation(true)
@@ -340,6 +373,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const switchMode = () => {
     setIsSignUp(!isSignUp)
     setError("")
+    setFieldErrors({})
     setSuccess("")
     setShowSuccessAnimation(false)
     setIsEmailVerificationRequired(false)
@@ -447,9 +481,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-9"
+                  className={`h-9 ${fieldErrors.firstName ? 'border-red-500' : ''}`}
                   required={isSignUp}
                 />
+                {fieldErrors.firstName && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="lastName" className="text-sm font-semibold text-gray-700">
@@ -462,8 +499,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-9"
+                  className={`h-9 ${fieldErrors.lastName ? 'border-red-500' : ''}`}
                 />
+                {fieldErrors.lastName && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.lastName}</p>
+                )}
               </div>
             </div>
           )}
@@ -480,9 +520,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
               disabled={loading || oauthLoading}
-              className="h-9"
+              className={`h-9 ${fieldErrors.email ? 'border-red-500' : ''}`}
               required
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>
+            )}
           </div>
 
           {/* Password fields */}
@@ -499,7 +542,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-9 pr-10"
+                  className={`h-9 pr-10 ${fieldErrors.password ? 'border-red-500' : ''}`}
                   required
                 />
                 <Button
@@ -536,6 +579,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   </div>
                 </div>
               )}
+              {fieldErrors.password && !formData.password && (
+                <p className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>
+              )}
             </div>
 
             {isSignUp && (
@@ -551,7 +597,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     disabled={loading || oauthLoading}
-                    className="h-9 pr-10"
+                    className={`h-9 pr-10 ${fieldErrors.confirmPassword ? 'border-red-500' : ''}`}
                     required={isSignUp}
                   />
                   <Button
@@ -565,6 +611,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
             )}
           </div>

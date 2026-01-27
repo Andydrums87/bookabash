@@ -66,6 +66,18 @@ import PartyTimeline from "./components/PartyTimeline"
 import EmergencyContacts from "./components/EmergencyContacts"
 import PriceDifferencePaymentModal from "@/components/PriceDifferencePaymentModal"
 
+// Tab-based dashboard layout
+import DashboardTabs from "./components/DashboardTabs"
+
+// Tab content components
+import JourneyTabContent from "./components/tabs/JourneyTabContent"
+import MyPlanTabContent from "./components/tabs/MyPlanTabContent"
+import AddTabContent from "./components/tabs/AddTabContent"
+import GuestsTabContent from "./components/tabs/GuestsTabContent"
+import TimelineTabContent from "./components/tabs/TimelineTabContent"
+import MoreTabContent from "./components/tabs/MoreTabContent"
+import SimplifiedSidebar from "./components/SimplifiedSidebar"
+
 
 
 
@@ -110,6 +122,7 @@ export default function DatabaseDashboard() {
   const [addedSupplierData, setAddedSupplierData] = useState(null)
   const [notification, setNotification] = useState(null)
   const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
+  const [activeDashboardTab, setActiveDashboardTab] = useState('journey')
   const [isClient, setIsClient] = useState(false)
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [modalConfig, setModalConfig] = useState({
@@ -189,6 +202,7 @@ const childPhotoRef = useRef(null)
     enquiries,
     isPaymentConfirmed,
     paymentDetails,
+    refreshEnquiries,
   } = usePartyPhase(partyData, partyId)
 
   // Scroll to top when component mounts/navigates to this page
@@ -1747,6 +1761,109 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
   }
 }
 
+// Handler for Add tab - adds supplier directly without showing confirmation modal
+// After customization modal completes, supplier is added directly to cart
+// Note: MissingSuppliersSuggestions swaps the parameter order, so we receive (supplier, categoryType)
+const handleAddSupplierDirect = async (supplier, categoryType) => {
+  console.log('🛒 Adding supplier directly to cart...', supplier?.name, 'category:', categoryType)
+
+  try {
+    // Get package data from supplier (set by customization modal)
+    const selectedPackage = supplier.packageData || supplier.selectedPackage || null
+
+    // Add supplier to party database
+    const addResult = await partyDatabaseBackend.addSupplierToParty(
+      partyId,
+      supplier,
+      selectedPackage
+    )
+
+    if (!addResult.success) {
+      throw new Error(addResult.error)
+    }
+
+    // Send enquiry/booking
+    const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+      partyId,
+      supplier,
+      selectedPackage,
+      `Booking confirmed for ${supplier.name}`
+    )
+
+    if (!enquiryResult.success) {
+      console.error('Booking notification failed but supplier was added:', enquiryResult.error)
+    } else if (enquiryResult.enquiry?.id) {
+      // Auto-accept the enquiry so it shows in cart immediately
+      // Use the proper function which sets status, payment_status, and other fields
+      console.log('🎯 Auto-accepting enquiry:', enquiryResult.enquiry.id)
+      const acceptResult = await partyDatabaseBackend.autoAcceptSpecificEnquiry(enquiryResult.enquiry.id)
+
+      if (!acceptResult.success) {
+        console.error('Failed to auto-accept enquiry:', acceptResult.error)
+      } else {
+        console.log('✅ Enquiry auto-accepted:', acceptResult.enquiry)
+      }
+    } else {
+      console.warn('⚠️ No enquiry ID returned from sendIndividualEnquiry:', enquiryResult)
+    }
+
+    // Refresh party data AND enquiries (enquiries are separate from party data)
+    await refreshPartyData()
+    await refreshEnquiries()
+
+    // Manually update sessionStorage cart data immediately
+    // This ensures the cart icon appears right away without waiting for React re-render
+    const price = selectedPackage?.totalPrice || selectedPackage?.price || supplier.price || 0
+    const depositAmount = Math.max(50, Math.round(price * 0.3))
+
+    // Get existing cart data and add the new supplier
+    let existingCart = { suppliers: [], totalDeposit: 0 }
+    try {
+      const stored = sessionStorage.getItem('cartData')
+      if (stored) {
+        existingCart = JSON.parse(stored)
+      }
+    } catch (e) {
+      console.error('Error reading cart data:', e)
+    }
+
+    // Add new supplier to cart
+    const newSupplier = {
+      type: categoryType,
+      name: supplier.name,
+      totalAmount: price,
+      depositAmount: depositAmount,
+      enquiryId: enquiryResult?.enquiry?.id
+    }
+
+    const updatedSuppliers = [...(existingCart.suppliers || []), newSupplier]
+    const updatedTotalDeposit = updatedSuppliers.reduce((sum, s) => sum + (s.depositAmount || 0), 0)
+
+    sessionStorage.setItem('cartData', JSON.stringify({
+      suppliers: updatedSuppliers,
+      totalDeposit: updatedTotalDeposit,
+      supplierCount: updatedSuppliers.length,
+      timestamp: Date.now()
+    }))
+
+    // Show success toast
+    const categoryName = categoryType.charAt(0).toUpperCase() + categoryType.slice(1)
+    toast.success(`${supplier.name} added to your party! Check the cart to complete payment.`, {
+      title: `${categoryName} Added`,
+      duration: 4000
+    })
+
+    return true
+  } catch (error) {
+    console.error('💥 Error adding supplier directly:', error)
+    toast.error(`Failed to add ${supplier.name}. Please try again.`, {
+      title: 'Error',
+      duration: 4000
+    })
+    return false
+  }
+}
+
 const handleChildPhotoUpload = async (file) => {
   if (!file) return;
 
@@ -2000,787 +2117,139 @@ const addSuppliersSection = (
           />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
-          <main className="lg:col-span-2 space-y-8">
-            {/* <SupplierGrid
-              suppliers={suppliers}
-              enquiries={enquiries}
-              addons={addons}
-              onRemoveAddon={handleRemoveAddon}
-              hasEnquiriesPending={hasEnquiriesPending}
-              isPaymentConfirmed={isPaymentConfirmed}
-              onAddSupplier={handleAddSupplier}
-              partyId={partyId}
-              isSignedIn={true}
-              currentPhase={currentPhase}
-              openSupplierModal={openSupplierModal}
-              renderKey={renderKey}
-              onPaymentReady={handlePaymentReady}
-              paymentDetails={paymentDetails}
-              handleCancelEnquiry={handleCancelEnquiry}
-              activeSupplierType={activeMobileSupplierType}
-              onSupplierTabChange={handleMobileSupplierTabChange}
-              partyDetails={partyDetails} // ADD: Pass partyDetails for unified pricing
-              getSupplierDisplayPricing={getSupplierDisplayPricing} // ADD: Pass pricing function
-              getRecommendedSupplierForType={getRecommendedSupplierForType}
-              onAddRecommendedSupplier={handleAddRecommendedSupplier}
-              recommendationsLoaded={recommendationsLoaded}
-              loadingCards={loadingCards}
-            /> */}
-
-           {/* NEW: Journey takes center stage */}
-  <div className="mb-8 px-4">
-    <div className="mb-6">
-      <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-        Your Party Journey
-        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-      </h2>
-      <p className="text-sm text-gray-600 mt-3">Track your planning progress</p>
-    </div>
-  </div>
-
-  <PartyPhaseContent
-    key={`party-phase-${partyId || 'default'}`}
-    phase={partyPhase}
-    suppliers={visibleSuppliers}
-    enquiries={enquiries}
-    partyData={partyData}
-    paymentDetails={paymentDetails}
-    partyDetails={partyDetails}
-    hasCreatedInvites={partyData?.einvites?.status === 'completed'}
-    onPaymentReady={handlePaymentReady}
-    onCreateInvites={handleCreateInvites}
-    onAddSupplier={openSupplierModal}
-    onRemoveSupplier={handleDeleteSupplier}
-    loadingCards={loadingCards}
-    getSupplierDisplayName={getSupplierDisplayName}
-     // ✅ ADD THESE
-  addons={addons}
-  handleRemoveAddon={handleRemoveAddon}
-  isPaymentConfirmed={isPaymentConfirmed}
-  currentPhase={currentPhase}
-  handleCancelEnquiry={handleCancelEnquiry}
-  getSupplierDisplayPricing={getSupplierDisplayPricing}
-  getRecommendedSupplierForType={getRecommendedSupplierForType}
-  onAddRecommendedSupplier={handleAddRecommendedSupplier}
-  recommendationsLoaded={recommendationsLoaded}
-  onDataUpdate={setPartyToolsData}
-  onEditSupplier={handleEditSupplier}
-  partyDate={partyDetails?.date}
-  />
-
-            {/* Mobile: Total Cost Summary Card */}
-            <div className="mt-8 px-4">
-              <div className="bg-primary-500 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white/80 text-xs font-medium mb-1">Total Party Cost</p>
-                    <p className="text-white text-2xl font-bold">
-                      £{enhancedTotalCost.toFixed(2)}
-                    </p>
-                  </div>
-                  {outstandingData.totalCost > 0 && (
-                    <div className="text-right">
-                      <p className="text-white/80 text-xs font-medium mb-1">Due Now</p>
-                      <p className="text-white text-xl font-bold">
-                        £{outstandingData.totalCost.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile: My Party Plan Section - Horizontal Scroll with Remove Option */}
-            <div className="mt-8 mb-8">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  My Party Plan
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">All suppliers in your plan</p>
-              </div>
-
-              {(() => {
-                // Get ALL suppliers (both paid and unpaid)
-                const allPlanSuppliers = Object.entries(visibleSuppliers).filter(([type, supplier]) => {
-                  return supplier && type !== "einvites"
-                })
-
-                // Sort suppliers: pending first, then paid
-                const sortedSuppliers = allPlanSuppliers.sort(([typeA, supplierA], [typeB, supplierB]) => {
-                  const enquiryA = enquiries.find((e) => e.supplier_category === typeA)
-                  const enquiryB = enquiries.find((e) => e.supplier_category === typeB)
-                  const isPaidA = ['paid', 'fully_paid', 'partial_paid'].includes(enquiryA?.payment_status) || enquiryA?.is_paid === true
-                  const isPaidB = ['paid', 'fully_paid', 'partial_paid'].includes(enquiryB?.payment_status) || enquiryB?.is_paid === true
-
-                  // Pending (not paid) comes first
-                  if (!isPaidA && isPaidB) return -1
-                  if (isPaidA && !isPaidB) return 1
-                  return 0
-                })
-
-                // Category name mapping
-                const categoryNames = {
-                  venue: 'Venue',
-                  entertainment: 'Entertainment',
-                  catering: 'Catering',
-                  cakes: 'Cakes',
-                  facePainting: 'Face Painting',
-                  activities: 'Activities',
-                  partyBags: 'Party Bags',
-                  decorations: 'Decorations',
-                  balloons: 'Balloons',
-                  photography: 'Photography',
-                  bouncyCastle: 'Bouncy Castle'
-                }
-
-                if (sortedSuppliers.length === 0) {
-                  return (
-                    <div className="px-4">
-                      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 text-center">
-                        <div className="text-4xl mb-3">🎯</div>
-                        <h3 className="font-bold text-gray-900 mb-2">No suppliers in your plan yet</h3>
-                        <p className="text-sm text-gray-600">Start building your party by adding suppliers</p>
-                      </div>
-                    </div>
-                  )
-                }
-
-                return (
-                  <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
-                    {sortedSuppliers.map(([type, supplier]) => {
-                      const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
-                        addon.supplierId === supplier.id ||
-                        addon.supplierType === type ||
-                        addon.attachedToSupplier === type
-                      ) : []
-
-                      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-
-                      // Calculate base price - handle party bags differently
-                      const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
-                      let basePrice = 0
-
-                      if (isPartyBags) {
-                        // Get quantity - check multiple sources
-                        const quantity = supplier.partyBagsQuantity ||
-                                         supplier.partyBagsMetadata?.quantity ||
-                                         supplier.packageData?.partyBagsQuantity ||
-                                         10 // fallback
-
-                        // Get price per bag
-                        const pricePerBag = supplier.partyBagsMetadata?.pricePerBag ||
-                                            supplier.packageData?.pricePerBag ||
-                                            supplier.packageData?.price ||
-                                            supplier.price ||
-                                            supplier.priceFrom ||
-                                            0
-
-                        // Calculate total price
-                        basePrice = pricePerBag * quantity
-
-                        console.log('🎒 MY PLAN - Party Bags Price:', {
-                          supplierName: supplier.name,
-                          pricePerBag,
-                          quantity,
-                          totalPrice: basePrice,
-                          supplier
-                        })
-                      } else {
-                        basePrice = supplier.packageData?.price || supplier.price || 0
-                      }
-
-                      // ✅ FIX: Use supplier.totalPrice first (includes add-ons, delivery)
-                      // Only fall back to calculation if totalPrice not available
-                      let totalPrice
-                      if (supplier.totalPrice) {
-                        // Use pre-calculated totalPrice which includes everything
-                        totalPrice = supplier.totalPrice
-                      } else {
-                        // Fall back to calculating: base + global addons + selected addons + delivery
-                        const selectedAddonsCost = (supplier.selectedAddons || []).reduce(
-                          (sum, addon) => sum + (addon.price || 0), 0
-                        )
-                        const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0
-                        totalPrice = basePrice + addonsCost + selectedAddonsCost + cakeDeliveryFee
-                      }
-                      const supplierName = supplier.name || supplier.data?.name || 'Unknown Supplier'
-                      const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
-
-                      // Check if supplier is paid
-                      const enquiry = enquiries.find((e) => e.supplier_category === type)
-                      const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
-                      const canRemove = !isPaid // Can only remove if not paid
-
-                      return (
-                        <div
-                          key={type}
-                          className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all"
-                        >
-                          {/* Supplier Image */}
-                          {supplier.image && (
-                            <div className="relative h-32 overflow-hidden">
-                              <img
-                                src={supplier.image}
-                                alt={supplierName}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                              <div className="absolute top-3 right-3">
-                                {isPaid ? (
-                                  <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                                    ✓ Paid
-                                  </span>
-                                ) : (
-                                  <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                                    Pending
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Supplier Details */}
-                          <div className="p-4">
-                            <p className="text-xs text-primary-600 uppercase tracking-wide mb-1 font-semibold">
-                              {categoryName}
-                            </p>
-                            <h4 className="font-bold text-gray-900 text-base mb-2 line-clamp-1">
-                              {supplierName}
-                            </h4>
-
-                            <div className="mt-2">
-                              <p className="text-lg font-bold text-primary-600">
-                                £{totalPrice.toFixed(2)}
-                              </p>
-                              {supplierAddons.length > 0 && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Remove Button for Unpaid Suppliers */}
-                            {canRemove && (
-                              <button
-                                onClick={async () => {
-                                  if (window.confirm(`Remove ${supplierName} from your plan?`)) {
-                                    await handleCancelEnquiry(type)
-                                  }
-                                }}
-                                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-semibold border border-red-200 hover:border-red-300"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Remove from Plan
-                              </button>
-                            )}
-
-                            {/* Edit Button for Paid Suppliers */}
-                            {isPaid && (
-                              <button
-                                onClick={() => {
-                                  const canEdit = canEditBooking(partyDetails?.date)
-                                  if (canEdit) {
-                                    handleEditSupplier(type, supplier)
-                                  }
-                                }}
-                                disabled={!canEditBooking(partyDetails?.date)}
-                                className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-semibold border ${
-                                  canEditBooking(partyDetails?.date)
-                                    ? "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300"
-                                    : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                }`}
-                              >
-                                {canEditBooking(partyDetails?.date) ? (
-                                  <>
-                                    <Pencil className="w-4 h-4" />
-                                    Edit Booking
-                                  </>
-                                ) : (
-                                  <>
-                                    <Lock className="w-4 h-4" />
-                                    Edits Locked
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
+        {/* NEW TABBED LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
+          {/* Main content with tabs - takes 3 columns */}
+          <main className="lg:col-span-3">
+            <DashboardTabs
+              completedSteps={(() => {
+                let completed = 0
+                // Step 1: Has at least one supplier
+                if (Object.values(visibleSuppliers).some(s => s)) completed++
+                // Step 2: All suppliers confirmed
+                const allConfirmed = enquiries.length > 0 && enquiries.every(e => e.status === 'accepted')
+                if (allConfirmed) completed++
+                // Step 3: Payment made
+                if (isPaymentConfirmed) completed++
+                // Step 4: Guest list created
+                if (partyToolsData?.guestList?.length > 0) completed++
+                // Step 5: E-invites created
+                if (partyToolsData?.einvites) completed++
+                // Step 6: Registry created
+                if (partyToolsData?.giftRegistry) completed++
+                // Step 7: Day of party
+                const partyDate = new Date(partyDetails?.date)
+                if (partyDate <= new Date()) completed++
+                return completed
               })()}
+              totalSteps={7}
+              isPaymentConfirmed={isPaymentConfirmed}
 
-              <style jsx>{`
-                .scrollbar-hide {
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                }
-                .scrollbar-hide::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-            </div>
-
-            {/* Mobile: Party Checklist Button */}
-            <div className="mt-8 px-4">
-              <button
-                onClick={() => setShowChecklistModal(true)}
-                className="w-full bg-primary-50 border-2 border-[hsl(var(--primary-200))] rounded-lg p-6 hover:shadow-lg transition-all active:scale-[0.98] relative overflow-hidden"
-                style={{
-                  transform: 'rotate(-0.5deg)',
-                  boxShadow: '3px 3px 8px rgba(0,0,0,0.1)'
-                }}
-              >
-                {/* Tape effect at top */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-6 bg-white/60 border border-[hsl(var(--primary-200))]/40 rotate-0"
-                  style={{
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
-                  }}
-                />
-
-                <div className="text-left relative">
-                  <h3 className="text-primary-800 text-3xl mb-2" style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 700 }}>
-                    Party Checklist ✓
-                  </h3>
-                  <p className="text-primary-700 text-xl leading-tight" style={{ fontFamily: 'Indie Flower, cursive' }}>
-                    Don't forget anything for the big day!
-                  </p>
-
-                  {/* Hand-drawn arrow */}
-                  <div className="absolute -right-2 top-1/2 -translate-y-1/2 text-primary-400 text-4xl" style={{ fontFamily: 'Indie Flower, cursive', transform: 'translateY(-50%) rotate(-5deg)' }}>
-                    →
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {/* Mobile: Add More Suppliers Section - Horizontal Scroll */}
-            <div className="mt-8">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Anything Else to Add?
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Complete your party with these popular additions</p>
-              </div>
-              <MissingSuppliersSuggestions
-                partyPlan={visibleSuppliers}
-                partyDetails={partyDetails}
-                onAddSupplier={async (supplier, supplierType) => {
-                  // Use the same logic as AddSuppliersSection (from bottom bar)
-                  await handleAddRecommendedSupplier(supplierType, supplier, false)
-                  return true
-                }}
-                onCustomize={(supplier, supplierType) => {
-                  // Open customization modal when clicking on supplier card
-                  handleAddRecommendedSupplier(supplierType, supplier, false)
-                }}
-                showTitle={false}
-                horizontalScroll={true}
-                preventNavigation={true}
-                disableConfetti={true}
-              />
-            </div>
-
-            {/* Mobile: Party Tools Horizontal Scroll - RSVP, E-Invites, Registry */}
-            <div className="mt-8 mb-8">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Guests & Gifts
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Manage invitations, RSVPs, and gift registry</p>
-              </div>
-
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
-                {(() => {
-                  const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
-                  const venueExists = !!visibleSuppliers.venue
-                  // QA bypass: set NEXT_PUBLIC_BYPASS_VENUE_LOCK=true to unlock e-invites without venue confirmation
-                  const bypassVenueLock = process.env.NEXT_PUBLIC_BYPASS_VENUE_LOCK === 'true'
-                  const isVenueConfirmed = bypassVenueLock || (venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false)
-                  const venueAwaitingConfirmation = !bypassVenueLock && venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
-                  const hasPaidSuppliers = enquiries.some(e => ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) || e.is_paid === true)
-
-                  const einvitesData = partyToolsData?.einvites
-                  const einvitesCreated = !!einvitesData && (einvitesData.inviteId || einvitesData.shareableLink || einvitesData.friendlySlug)
-                  const inviteId = einvitesData?.inviteId || einvitesData?.shareableLink?.split('/e-invites/')[1] || einvitesData?.friendlySlug
-                  const invitesSent = einvitesData?.guestList?.some(g => g.status === 'sent') || false
-                  const sentCount = einvitesData?.guestList?.filter(g => g.status === 'sent').length || 0
-
-                  const guestListData = partyToolsData?.guestList || []
-                  const giftRegistryData = partyToolsData?.giftRegistry
-                  const registryItemCountData = partyToolsData?.registryItemCount || 0
-
-                  const partyTools = [
-                    {
-                      id: 'guests',
-                      label: guestListData.length > 0 ? 'Manage Guest List' : 'Create Guest List',
-                      icon: Users,
-                      href: `/rsvps/${partyDetails?.id || ''}`,
-                      hasContent: guestListData.length > 0,
-                      count: guestListData.length,
-                      isLocked: false,
-                      status: guestListData.length > 0 ? `${guestListData.length} guest${guestListData.length !== 1 ? 's' : ''}` : 'Not created',
-                      description: guestListData.length > 0 ? 'View and manage your guest list' : 'Add guests for invites and RSVPs',
-                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg'
-                    },
-                    {
-                      id: 'einvites',
-                      label: einvitesCreated ? (invitesSent ? 'Manage Invites' : 'Send Invites') : 'Create E-Invites',
-                      icon: Mail,
-                      href: inviteId ? `/e-invites/${inviteId}/manage` : '/e-invites/create',
-                      hasContent: einvitesCreated,
-                      isLocked: !isVenueConfirmed,
-                      lockMessage: venueAwaitingConfirmation ? 'Waiting for venue to confirm your booking' : !venueExists ? 'Add a venue to your party first' : 'Venue must confirm your booking first',
-                      status: !isVenueConfirmed ? '🔒 Locked' : einvitesCreated ? invitesSent ? `${sentCount} sent` : '✓ Created' : 'Not created',
-                      description: !isVenueConfirmed ? (venueAwaitingConfirmation ? 'Waiting for venue confirmation' : 'Add and confirm venue first') : einvitesCreated ? (invitesSent ? 'Manage and track your invitations' : 'Share with guests') : 'Create beautiful digital invitations',
-                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754388320/party-invites/seo3b2joo1omjdkdmjtw.png'
-                    },
-                    {
-                      id: 'registry',
-                      label: giftRegistryData ? 'Manage Registry' : 'Create Registry',
-                      icon: Gift,
-                      href: '/gift-registry',
-                      hasContent: !!giftRegistryData,
-                      count: registryItemCountData,
-                      isLocked: !hasPaidSuppliers,
-                      lockMessage: 'Secure at least one supplier to create registry',
-                      status: !hasPaidSuppliers ? '🔒 Locked' : giftRegistryData ? registryItemCountData > 0 ? `${registryItemCountData} item${registryItemCountData !== 1 ? 's' : ''}` : 'Registry created' : 'Not created',
-                      description: !hasPaidSuppliers ? 'Confirm suppliers first' : giftRegistryData ? registryItemCountData > 0 ? 'Manage your gift registry' : 'Add items to your registry' : 'Help guests know what to bring',
-                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970180/iStock-2000435412-removebg_ewfzxs.png'
-                    }
-                  ]
-
-                  return partyTools.map((tool) => {
-                    const Icon = tool.icon
-                    const isLocked = tool.isLocked
-
-                    if (isLocked) {
-                      return (
-                        <div
-                          key={`${partyToolsKey}-${partyId}-${tool.id}`}
-                          className="flex-shrink-0 w-[280px] snap-start bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed overflow-hidden"
-                        >
-                          <div className="relative h-32 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
-                            <img src={tool.image} alt={tool.label} className="w-full h-full object-cover grayscale" />
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                              <div className="bg-white/90 rounded-full p-3">
-                                <Lock className="w-6 h-6 text-gray-500" />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-gray-400">{tool.label}</h4>
-                              <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">🔒 Locked</span>
-                            </div>
-                            <p className="text-xs text-gray-400">{tool.lockMessage}</p>
-                          </div>
-                        </div>
-                      )
-                    }
-
-                    return (
-                      <Link
-                        key={`${partyToolsKey}-${partyId}-${tool.id}`}
-                        href={tool.href}
-                        className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
-                      >
-                        <div className="relative h-32 overflow-hidden">
-                          <img src={tool.image} alt={tool.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                          <div className="absolute top-3 right-3">
-                            {tool.hasContent ? (
-                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1">✓ {tool.status}</span>
-                            ) : (
-                              <span className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded-full font-semibold">New</span>
-                            )}
-                          </div>
-                          {tool.count > 0 && (
-                            <div className="absolute bottom-3 right-3 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">{tool.count}</div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-bold text-gray-900 mb-1 text-base">{tool.label}</h4>
-                          <p className="text-xs text-gray-600 leading-relaxed">{tool.description}</p>
-                        </div>
-                      </Link>
-                    )
-                  })
-                })()}
-              </div>
-
-              <style jsx>{`
-                .scrollbar-hide {
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                }
-                .scrollbar-hide::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-            </div>
-
-            {/* Mobile: Party Day Timeline */}
-            <div className="mt-8">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Party Timeline
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Your suggested schedule for the big day</p>
-              </div>
-              <div className="px-4">
-                <PartyTimeline
+              journeyContent={
+                <JourneyTabContent
+                  partyPhase={partyPhase}
+                  visibleSuppliers={visibleSuppliers}
+                  enquiries={enquiries}
+                  partyData={partyData}
+                  paymentDetails={paymentDetails}
                   partyDetails={partyDetails}
-                  suppliers={visibleSuppliers}
+                  partyId={partyId}
+                  hasCreatedInvites={partyData?.einvites?.status === 'completed'}
+                  onPaymentReady={handlePaymentReady}
+                  onCreateInvites={handleCreateInvites}
+                  onAddSupplier={openSupplierModal}
+                  onRemoveSupplier={handleDeleteSupplier}
+                  loadingCards={loadingCards}
+                  getSupplierDisplayName={getSupplierDisplayName}
+                  addons={addons}
+                  handleRemoveAddon={handleRemoveAddon}
+                  isPaymentConfirmed={isPaymentConfirmed}
+                  currentPhase={currentPhase}
+                  handleCancelEnquiry={handleCancelEnquiry}
+                  getSupplierDisplayPricing={getSupplierDisplayPricing}
+                  getRecommendedSupplierForType={getRecommendedSupplierForType}
+                  onAddRecommendedSupplier={handleAddRecommendedSupplier}
+                  recommendationsLoaded={recommendationsLoaded}
+                  onDataUpdate={setPartyToolsData}
+                  onEditSupplier={handleEditSupplier}
+                  partyDate={partyDetails?.date}
                 />
-              </div>
-            </div>
+              }
 
-            {/* Mobile: Party Tips & Blog Recommendations Horizontal Scroll */}
-            <div className="mt-8 mb-8">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Snappy's Tips
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Helpful guides & inspiration</p>
-              </div>
+              myPlanContent={
+                <MyPlanTabContent
+                  visibleSuppliers={visibleSuppliers}
+                  enquiries={enquiries}
+                  addons={addons}
+                  partyDetails={partyDetails}
+                  handleCancelEnquiry={handleCancelEnquiry}
+                  handleEditSupplier={handleEditSupplier}
+                />
+              }
 
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
-                {(() => {
-                  // Calculate days until party
-                  const calculateDaysUntil = () => {
-                    if (!partyDetails?.date) return 60
-                    const partyDate = new Date(partyDetails.date)
-                    const now = new Date()
-                    const diffInDays = Math.ceil((partyDate - now) / (1000 * 60 * 60 * 24))
-                    return Math.max(0, diffInDays)
-                  }
-
-                  const daysUntil = calculateDaysUntil()
-
-                  // Determine phase
-                  const getTimelinePhase = (days) => {
-                    if (days > 90) return "planning"
-                    if (days > 60) return "organizing"
-                    if (days > 30) return "booking"
-                    if (days > 14) return "confirming"
-                    if (days > 7) return "finalizing"
-                    if (days > 0) return "final-week"
-                    return "party-day"
-                  }
-
-                  const phase = getTimelinePhase(daysUntil)
-
-                  // Blog posts
-                  const slugify = (text) => text
-                    .toString()
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[\s\W-]+/g, "-")
-
-                  const allBlogPosts = [
-                    {
-                      id: 1,
-                      title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
-                      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
-                      excerpt: "Everything you need to know about planning the perfect children's party in London this year",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
-                      category: "Planning",
-                      readTime: "8 min read",
-                      phases: ["planning", "organizing", "booking"]
-                    },
-                    {
-                      id: 2,
-                      title: "How Much Does a Children's Party Cost in London?",
-                      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
-                      excerpt: "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
-                      category: "Budget",
-                      readTime: "6 min read",
-                      phases: ["planning", "organizing"]
-                    },
-                    {
-                      id: 3,
-                      title: "15 Trending Children's Party Themes in London for 2025",
-                      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
-                      excerpt: "Discover the hottest party themes that London kids are loving this year",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
-                      category: "Themes",
-                      readTime: "7 min read",
-                      phases: ["planning"]
-                    },
-                    {
-                      id: 4,
-                      title: "10 Outdoor Party Games That London Kids Can't Get Enough Of",
-                      slug: slugify("10 Outdoor Party Games That London Kids Can't Get Enough Of"),
-                      excerpt: "Get kids moving with these popular outdoor party games perfect for London parks",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595136/blog-post-4_d2bv5i.png",
-                      category: "Activities",
-                      readTime: "5 min read",
-                      phases: ["booking", "finalizing", "final-week"]
-                    },
-                    {
-                      id: 5,
-                      title: "DIY Party Decorations That Will Wow Your Guests",
-                      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
-                      excerpt: "Create stunning party decorations on a budget with these simple DIY ideas",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
-                      category: "Planning",
-                      readTime: "4 min read",
-                      phases: ["booking", "confirming", "finalizing"]
-                    },
-                    {
-                      id: 6,
-                      title: "Healthy Party Food Options That Kids Actually Love",
-                      slug: slugify("Healthy Party Food Options That Kids Actually Love"),
-                      excerpt: "Nutritious and delicious party food ideas that will keep both kids and parents happy",
-                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
-                      category: "Food",
-                      readTime: "5 min read",
-                      phases: ["organizing", "booking", "confirming"]
-                    }
-                  ]
-
-                  // Filter posts by phase
-                  const relevantPosts = allBlogPosts.filter(post => post.phases.includes(phase))
-                  const blogPosts = relevantPosts.length > 0 ? relevantPosts.slice(0, 3) : [allBlogPosts[0]]
-
-                  return blogPosts.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={`/blog/${post.slug}`}
-                      className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
-                    >
-                      <div className="relative h-32 overflow-hidden">
-                        <img
-                          src={post.image}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-primary-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            {post.category}
-                          </span>
-                        </div>
-                        <div className="absolute bottom-3 right-3">
-                          <span className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded-full font-semibold">
-                            {post.readTime}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-bold text-gray-900 mb-1 text-sm leading-tight line-clamp-2">{post.title}</h4>
-                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{post.excerpt}</p>
-                      </div>
-                    </Link>
-                  ))
-                })()}
-              </div>
-            </div>
-
-            {/* Mobile: Party Countdown Section */}
-            <div className="md:hidden mt-8 px-4">
-              <div className="mb-6">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Party Countdown
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">How long until the big day?</p>
-              </div>
-
-              <CountdownWidget partyDate={partyDetails?.date} />
-            </div>
-
-            {/* Mobile: Weather Forecast Widget */}
-            <div className="md:hidden mt-8 px-4">
-              <div className="mb-6">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Weather Forecast
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Check the forecast for your party day</p>
-              </div>
-
-              <WeatherWidget
-                partyDate={partyDetails?.date}
-                venueLocation={
-                  visibleSuppliers?.venue?.location ||
-                  visibleSuppliers?.venue?.venueAddress?.postcode ||
-                  visibleSuppliers?.venue?.serviceDetails?.venueAddress?.postcode ||
-                  visibleSuppliers?.venue?.data?.location ||
-                  partyDetails?.venue?.location ||
-                  partyDetails?.venue?.venueAddress?.postcode ||
-                  partyDetails?.party_plan?.venue?.location ||
-                  partyDetails?.location
-                }
-              />
-            </div>
-
-            {/* Mobile: Emergency Contacts */}
-            <div className="mt-8 mb-12">
-              <div className="mb-6 px-4">
-                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Emergency Contacts
-                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                </h2>
-                <p className="text-sm text-gray-600 mt-3">Quick access to all your supplier contacts</p>
-              </div>
-              <div className="px-4">
-                <EmergencyContacts
+              addContent={
+                <AddTabContent
                   suppliers={visibleSuppliers}
+                  partyDetails={partyDetails}
+                  onAddSupplier={handleAddSupplierDirect}
+                />
+              }
+
+              guestsContent={
+                <GuestsTabContent
+                  partyToolsData={partyToolsData}
+                  partyToolsKey={partyToolsKey}
+                  partyId={partyId}
+                  partyDetails={partyDetails}
+                  enquiries={enquiries}
+                  visibleSuppliers={visibleSuppliers}
+                />
+              }
+
+              timelineContent={
+                <TimelineTabContent
+                  partyDetails={partyDetails}
+                  visibleSuppliers={visibleSuppliers}
+                />
+              }
+
+              moreContent={
+                <MoreTabContent
+                  setShowChecklistModal={setShowChecklistModal}
+                  visibleSuppliers={visibleSuppliers}
                   enquiries={enquiries}
                   partyDetails={partyDetails}
                 />
-              </div>
-            </div>
+              }
+
+              notifications={{
+                guests: partyToolsData?.guestList?.length || 0,
+              }}
+
+              defaultTab="journey"
+              controlledActiveTab={activeDashboardTab}
+              onTabChange={setActiveDashboardTab}
+            />
           </main>
 
-          <Sidebar
-            partyData={partyData}
-            partyDate={partyDetails?.date}
-            totalCost={enhancedTotalCost}
-            isPaymentConfirmed={isPaymentConfirmed}
-            suppliers={visibleSuppliers}
-            enquiries={enquiries}
-            timeRemaining={24}
-            onPaymentReady={handlePaymentReady}
-            showPaymentCTA={true}
-            totalOutstandingCost={outstandingData.totalDeposit}
-            outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-            AddSuppliersSection={addSuppliersSection}
-            partyDetails={partyDetails}
-            venueLocation={
-              visibleSuppliers?.venue?.location ||
-              visibleSuppliers?.venue?.venueAddress?.postcode ||
-              visibleSuppliers?.venue?.serviceDetails?.venueAddress?.postcode ||
-              visibleSuppliers?.venue?.data?.location ||
-              partyDetails?.venue?.location ||
-              partyDetails?.venue?.venueAddress?.postcode ||
-              partyDetails?.party_plan?.venue?.location ||
-              partyDetails?.location
-            }
-            // ✅ Timeline Assistant Data
-            TimelineAssistant={
-              <SnappyTimelineAssistant
-                partyDetails={partyDetails}
-                suppliers={visibleSuppliers}
-                guestList={partyToolsData?.guestList || []}
-                giftRegistry={partyToolsData?.giftRegistry}
-                einvites={partyToolsData?.einvites}
-                onSupplierClick={openSupplierModal}
-              />
-            }
-          />
+          {/* Simplified Sidebar - 1 column, desktop only */}
+          <aside className="hidden lg:block">
+            <SimplifiedSidebar
+              partyData={partyData}
+              suppliers={visibleSuppliers}
+              enquiries={enquiries}
+              onPaymentReady={handlePaymentReady}
+              totalOutstandingCost={outstandingData.totalDeposit}
+              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
+              isPaymentConfirmed={isPaymentConfirmed}
+              budgetControlProps={{
+                totalSpent: enhancedTotalCost,
+              }}
+            />
+          </aside>
         </div>
       </div>
+
 
       <WelcomeDashboardPopup
         isOpen={showWelcomePopup}

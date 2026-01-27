@@ -159,11 +159,11 @@ export const RemotionRoot: React.FC = () => {
         height={1080}
       />
 
-      {/* Homepage Hero - 74 seconds (Desktop) */}
+      {/* Homepage Hero - 80.8 seconds (Desktop) */}
       <Composition
         id="HomepageHero"
         component={HomepageHero}
-        durationInFrames={2230}
+        durationInFrames={2425}
         fps={30}
         width={1920}
         height={1080}

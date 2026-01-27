@@ -181,6 +181,14 @@ body {
   overflow-anchor: none; /* Prevent browser scroll anchoring which causes jumps */
 }
 
+/* Sticky sidebar for dashboard */
+.sticky-sidebar {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 1rem;
+  height: fit-content;
+}
+
 .hero-padding {
   padding-top: 2rem;
   padding-bottom: 2rem;

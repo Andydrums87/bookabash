@@ -33,8 +33,8 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
   }
 
   return (
-    <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen">
-      <div className="container mx-auto">
+    <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen overflow-visible">
+      <div className="container mx-auto overflow-visible">
         
         {/* Desktop Layout - Original */}
         <div className="hidden lg:block">
@@ -75,7 +75,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             style={{
               boxShadow: '0 10px 40px rgba(255, 107, 107, 0.1), 0 4px 20px rgba(0, 0, 0, 0.05)'
             }}>
-            <div className="h-40 w-40 absolute bottom-[-70px] left-[-100px] z-10">
+            <div className="h-40 w-40 absolute bottom-[-70px] left-[-50px] z-10">
               <Image
                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
                 alt="Snappy the crocodile"
@@ -98,7 +98,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       <Button
                         variant="outline"
                         className={`
-                          w-full justify-start text-left font-normal h-12 pl-10 pr-4
+                          w-full justify-start text-left font-normal h-12 pl-10 pr-4 overflow-hidden
                           bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl
                           hover:bg-gray-50 hover:border-[hsl(var(--primary-300))] transition-colors
                           ${!formData.date && "text-gray-500"}
@@ -107,9 +107,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       >
                         <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-primary-400" />
                         {formData.date && !isNaN(new Date(formData.date)) ? (
-                          <p className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</p>
+                          <span className="ml-5 truncate block">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</span>
                         ) : (
-                          <span className="ml-5">Select event date</span>
+                          <span className="ml-5 truncate block">Select event date</span>
                         )}
                       </Button>
                     </PopoverTrigger>

@@ -13,6 +13,7 @@ import { Eye, EyeOff, UserPlus, Loader2, LogIn } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { getBaseUrl } from "@/utils/env"
+import { processReferralSignup } from "@/utils/referralUtils"
 
 export default function SignUpPageContent() {
   const router = useRouter()
@@ -26,6 +27,7 @@ export default function SignUpPageContent() {
     confirmPassword: ''
   })
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
   const [success, setSuccess] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -45,9 +47,16 @@ export default function SignUpPageContent() {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     setError("") // Clear errors when user types
+    setFieldErrors(prev => ({ ...prev, [field]: "" })) // Clear field-specific error
   }
 
   const validatePassword = (pwd) => {
+    if (!pwd || !pwd.trim()) {
+      return "Password is required"
+    }
+    if (/^\s+$/.test(pwd)) {
+      return "Password cannot contain only spaces"
+    }
     if (pwd.length < 8) {
       return "Password must be at least 8 characters long"
     }
@@ -64,31 +73,52 @@ export default function SignUpPageContent() {
   }
 
   const validateForm = () => {
-    if (!formData.firstName.trim()) {
-      setError("First name is required")
-      return false
-    }
-    if (!formData.email.trim()) {
-      setError("Email is required")
-      return false
-    }
-    if (!formData.password) {
-      setError("Password is required")
-      return false
-    }
+    const newFieldErrors = {}
+    let hasError = false
 
-    // Check password strength
+    const trimmedFirstName = formData.firstName.trim()
+    const trimmedLastName = formData.lastName.trim()
+
+    if (!trimmedFirstName) {
+      newFieldErrors.firstName = "First name is required"
+      hasError = true
+    } else if (/^\d+$/.test(trimmedFirstName)) {
+      newFieldErrors.firstName = "First name cannot be only numbers"
+      hasError = true
+    }
+    if (!trimmedLastName) {
+      newFieldErrors.lastName = "Last name is required"
+      hasError = true
+    } else if (/^\d+$/.test(trimmedLastName)) {
+      newFieldErrors.lastName = "Last name cannot be only numbers"
+      hasError = true
+    }
+    const trimmedEmail = formData.email.trim()
+    if (!trimmedEmail) {
+      newFieldErrors.email = "Email is required"
+      hasError = true
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      newFieldErrors.email = "Please enter a valid email address"
+      hasError = true
+    }
+    // Check password - validatePassword handles empty/whitespace checks
     const passwordError = validatePassword(formData.password)
     if (passwordError) {
-      setError(passwordError)
-      return false
+      newFieldErrors.password = passwordError
+      hasError = true
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match")
-      return false
+    // Check confirm password
+    if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
+      newFieldErrors.confirmPassword = "Please confirm your password"
+      hasError = true
+    } else if (formData.password !== formData.confirmPassword) {
+      newFieldErrors.confirmPassword = "Passwords don't match"
+      hasError = true
     }
-    return true
+
+    setFieldErrors(newFieldErrors)
+    return !hasError
   }
 
   const handleSubmit = async (e) => {
@@ -139,7 +169,13 @@ export default function SignUpPageContent() {
       }
   
       console.log("✅ Customer profile created:", userResult.user.id)
-  
+
+      // Process referral if user came via referral link
+      const referralResult = await processReferralSignup(user.id)
+      if (referralResult.referralRecorded) {
+        console.log("🎉 Referral recorded for new user!")
+      }
+
       // Check if email confirmation is required
       if (authData.user && !authData.session) {
         setSuccess("Account created! Please check your email to verify your account, then sign in.")
@@ -220,7 +256,7 @@ export default function SignUpPageContent() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstName" className="text-gray-700 text-sm">
-                    First Name
+                    First Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="firstName"
@@ -230,12 +266,15 @@ export default function SignUpPageContent() {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500"
+                    className={`focus:ring-primary-500 focus:border-primary-500 ${fieldErrors.firstName ? 'border-red-500' : ''}`}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="lastName" className="text-gray-700 text-sm">
-                    Last Name
+                    Last Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="lastName"
@@ -243,15 +282,19 @@ export default function SignUpPageContent() {
                     placeholder="Smith"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500"
+                    className={`focus:ring-primary-500 focus:border-primary-500 ${fieldErrors.lastName ? 'border-red-500' : ''}`}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.lastName}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-gray-700">
-                  Email Address
+                  Email Address <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -261,13 +304,16 @@ export default function SignUpPageContent() {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
                   disabled={isLoading || oauthLoading}
-                  className="focus:ring-primary-500 focus:border-primary-500"
+                  className={`focus:ring-primary-500 focus:border-primary-500 ${fieldErrors.email ? 'border-red-500' : ''}`}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-gray-700">
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -278,7 +324,7 @@ export default function SignUpPageContent() {
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500"
+                    className={`focus:ring-primary-500 focus:border-primary-500 ${fieldErrors.password ? 'border-red-500' : ''}`}
                   />
                   <Button
                     type="button"
@@ -313,11 +359,14 @@ export default function SignUpPageContent() {
                     </div>
                   </div>
                 )}
+                {fieldErrors.password && !formData.password && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword" className="text-gray-700">
-                  Confirm Password
+                  Confirm Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -328,7 +377,7 @@ export default function SignUpPageContent() {
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500"
+                    className={`focus:ring-primary-500 focus:border-primary-500 ${fieldErrors.confirmPassword ? 'border-red-500' : ''}`}
                   />
                   <Button
                     type="button"
@@ -341,6 +390,9 @@ export default function SignUpPageContent() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
               
               {error && (

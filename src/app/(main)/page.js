@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
@@ -18,9 +18,11 @@ import Image from "next/image"
 import FeaturesGrid from "@/components/Home/FeaturesGrid"
 import VideoSection from "@/components/Home/VideoSection"
 import { initTracking, trackStep } from '@/utils/partyTracking'
+import { storeReferralCode } from '@/utils/referralUtils'
 
 export default function HomePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Confirmation dialog state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
@@ -49,10 +51,17 @@ export default function HomePage() {
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
-  // Initialize tracking on mount
+  // Initialize tracking on mount and capture referral code from URL
   useEffect(() => {
     initTracking();
-  }, []);
+
+    // Capture referral code if present in URL
+    const refCode = searchParams.get('ref')
+    if (refCode) {
+      storeReferralCode(refCode)
+      console.log('📎 Referral code captured from URL:', refCode)
+    }
+  }, [searchParams]);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {

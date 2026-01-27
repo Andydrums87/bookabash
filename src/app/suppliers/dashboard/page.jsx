@@ -162,13 +162,13 @@ function EnquiryCard({ enquiry, onAccept, onDecline }) {
       <div className="flex border-t border-gray-200">
         <button
           onClick={() => onDecline(enquiry)}
-          className="flex-1 py-3.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors border-r border-gray-200"
+          className="flex-1 py-3.5 text-center text-sm font-medium text-red-600 hover:bg-red-50 transition-colors border-r border-gray-200"
         >
           Decline
         </button>
         <button
           onClick={() => onAccept(enquiry)}
-          className="flex-1 py-3.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+          className="flex-1 py-3.5 text-center text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
         >
           Accept
         </button>
@@ -222,13 +222,13 @@ function EnquiryListItem({ enquiry, onAccept, onDecline }) {
       <div className="flex-shrink-0 flex items-center gap-2">
         <button
           onClick={() => onDecline(enquiry)}
-          className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 hover:border-red-400 transition-colors"
         >
           Decline
         </button>
         <button
           onClick={() => onAccept(enquiry)}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
         >
           Accept
         </button>
