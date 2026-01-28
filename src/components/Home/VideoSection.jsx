@@ -6,13 +6,13 @@ import Image from "next/image"
 
 export default function VideoSection() {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const videoRef = useRef(null)
   const containerRef = useRef(null)
 
   // Use desktop video for all devices - mobile will show it in a contained view
-  const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769557716/homepage-hero_kvpzgv.mp4"
+  const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769608355/r_foe1fc.mp4"
   const thumbnailUrl = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
   const handlePlayPause = () => {
@@ -85,6 +85,7 @@ export default function VideoSection() {
             src={videoUrl}
             className={`absolute inset-0 w-full h-full object-contain ${isPlaying ? 'block' : 'hidden'}`}
             muted={isMuted}
+            volume={1}
             playsInline
             onEnded={() => setIsPlaying(false)}
           />

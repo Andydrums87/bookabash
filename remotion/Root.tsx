@@ -15,6 +15,7 @@ import { AppDemoVertical } from "./videos/AppDemoVertical";
 import { InstagramGrid } from "./videos/InstagramGrid";
 import { HomepageHero } from "./videos/HomepageHero";
 import { HomepageHeroMobile } from "./videos/HomepageHeroMobile";
+import { BlankScreen, CTAClip } from "./videos/BlankScreen";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -177,6 +178,24 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+      />
+      {/* Blank Screen - 2 seconds (for Canva editing) */}
+      <Composition
+        id="BlankScreen"
+        component={BlankScreen}
+        durationInFrames={60}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      {/* CTA Clip - 4 seconds (for Canva editing) */}
+      <Composition
+        id="CTAClip"
+        component={CTAClip}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
       />
     </>
   );

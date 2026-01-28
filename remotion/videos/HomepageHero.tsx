@@ -2528,7 +2528,7 @@ const CTAScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             opacity: line1Opacity,
           }}
         >
-          Less faff.
+          Kids' parties.
         </div>
         <div
           style={{
@@ -2539,7 +2539,7 @@ const CTAScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             opacity: line2Opacity,
           }}
         >
-          More <span style={{ color: COLORS.teal }}>celebrating.</span>
+          <span style={{ color: COLORS.teal }}>Sorted.</span>
         </div>
       </div>
 
