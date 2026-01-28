@@ -1,75 +1,15 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, CheckCircle, AlertCircle, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import Image from "next/image"
 
 export default function ComingSoon() {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-  const videoRef = useRef(null)
-  const containerRef = useRef(null)
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("idle") // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState("")
-
-  // Detect mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
-
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-      setIsPlaying(!isPlaying)
-    }
-  }
-
-  const handleMuteToggle = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
-  }
-
-  const handleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        if (videoRef.current?.requestFullscreen) {
-          await videoRef.current.requestFullscreen()
-        } else if (videoRef.current?.webkitEnterFullscreen) {
-          await videoRef.current.webkitEnterFullscreen()
-        } else if (containerRef.current?.requestFullscreen) {
-          await containerRef.current.requestFullscreen()
-        }
-        setIsFullscreen(true)
-      } else {
-        await document.exitFullscreen()
-        setIsFullscreen(false)
-      }
-    } catch (err) {
-      console.log("Fullscreen not supported:", err)
-    }
-  }
-
-  if (typeof document !== "undefined") {
-    document.onfullscreenchange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -142,7 +82,7 @@ export default function ComingSoon() {
           Launching soon in St Albans
         </p>
 
-        {/* Video Section - responsive aspect ratio */}
+        {/* Video Section - commented out for now
         <div
           ref={containerRef}
           className={`relative rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100 ${
@@ -157,8 +97,6 @@ export default function ComingSoon() {
             playsInline
             onEnded={() => setIsPlaying(false)}
           />
-
-          {/* Thumbnail (shown when not playing) */}
           {!isPlaying && (
             <>
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600">
@@ -171,8 +109,6 @@ export default function ComingSoon() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
               </div>
-
-              {/* Play Button */}
               <button
                 onClick={handlePlayPause}
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
@@ -184,8 +120,6 @@ export default function ComingSoon() {
               </button>
             </>
           )}
-
-          {/* Video Controls (shown when playing) */}
           {isPlaying && (
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
               <button
@@ -222,6 +156,7 @@ export default function ComingSoon() {
             </div>
           )}
         </div>
+        */}
 
         {/* Email capture */}
         {status === "success" ? (

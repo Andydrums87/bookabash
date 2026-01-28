@@ -1,29 +1,19 @@
 "use client"
 
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 
 export default function VideoSection() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const videoRef = useRef(null)
   const containerRef = useRef(null)
 
-  // Detect mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => {
-         setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
-
-  const videoUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769426686/homepage-hero-mobile_fge0de.mp4" : "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769557716/homepage-hero_kvpzgv.mp4"
-  const thumbnailUrl = isMobile ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426688/homepage-hero-mobile-thumbnail_w7qcbi.png" : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
+  // Use desktop video for all devices - mobile will show it in a contained view
+  const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769557716/homepage-hero_kvpzgv.mp4"
+  const thumbnailUrl = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -84,18 +74,16 @@ export default function VideoSection() {
           </p>
         </div>
 
-        {/* Video Container - aspect-video for desktop, 9:16 for mobile */}
+        {/* Video Container - aspect-video for all, full width on mobile */}
         <div
           ref={containerRef}
-          className={`relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 ${
-            isMobile ? "aspect-[9/16] max-w-[320px] mx-auto" : "aspect-video"
-          }`}
+          className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 aspect-video bg-black"
         >
           {/* Video Element */}
           <video
             ref={videoRef}
             src={videoUrl}
-            className={`absolute inset-0 w-full h-full object-cover ${isPlaying ? 'block' : 'hidden'}`}
+            className={`absolute inset-0 w-full h-full object-contain ${isPlaying ? 'block' : 'hidden'}`}
             muted={isMuted}
             playsInline
             onEnded={() => setIsPlaying(false)}
@@ -109,7 +97,7 @@ export default function VideoSection() {
                   src={thumbnailUrl}
                   alt="PartySnap demo video thumbnail"
                   fill
-                  className="object-cover opacity-90"
+                  className="object-contain md:object-cover opacity-90"
                   sizes="(max-width: 768px) 100vw, 1024px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
