@@ -25,6 +25,8 @@ import {
   Loader2,
   Building2,
   Cake,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
@@ -130,175 +132,219 @@ export default function SupplierEnquiriesPage() {
     const isAutoAccepted = enquiry?.auto_accepted || false
     const isDepositPaid = isAutoAccepted && enquiry?.status === "accepted"
     const businessName = enquiry.supplier?.businessName
+    const [isExpanded, setIsExpanded] = useState(false)
 
     return (
       <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 sm:p-6">
-          <div className="space-y-3 sm:space-y-4">
-            {/* Business indicator */}
-            {businessName && (
-              <div className="flex items-center gap-2 text-sm">
-                <Building2 className="w-4 h-4 text-primary-500" />
-                <span className="font-medium text-primary-600">{businessName}</span>
-              </div>
-            )}
+          {/* Compact Header - Always Visible */}
+          <div
+            className="cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                {/* Party Name - Main Title */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
+                    {party?.child_name}'s {party?.theme} Party
+                  </h3>
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                  )}
+                </div>
 
-            {/* Header - Mobile Optimized */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">
-                  {party?.child_name}'s {party?.theme} Party
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {customer?.first_name} {customer?.last_name}
-                </p>
+                {/* Compact Info Row */}
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="font-medium">{new Date(party?.party_date).toLocaleDateString("en-GB", { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    <span>{party?.guest_count} kids</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Package className="w-4 h-4" />
+                    <span className="capitalize">{enquiry.supplier_category}</span>
+                  </div>
+                  <div className="font-bold text-primary-600 text-base">
+                    £{enquiry.quoted_price}
+                  </div>
+                </div>
+
+                {/* Business Name */}
+                {businessName && (
+                  <div className="flex items-center gap-1 text-xs text-primary-600">
+                    <Building2 className="w-3 h-3" />
+                    <span>{businessName}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Status badges - Mobile optimized */}
+
+              {/* Status Badge */}
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 {isDepositPaid ? (
-                  <Badge className="bg-red-100 text-red-800 border-red-200 text-xs sm:text-sm">
+                  <Badge className="bg-red-100 text-red-800 border-red-200 text-xs whitespace-nowrap">
                     <span className="text-red-600 font-bold mr-1">🚨</span>
-                    DEPOSIT PAID - URGENT
+                    URGENT
                   </Badge>
                 ) : (
-                  <Badge className={`text-xs sm:text-sm ${getStatusColor(enquiry.status)}`}>
+                  <Badge className={`text-xs whitespace-nowrap ${getStatusColor(enquiry.status)}`}>
                     {getStatusIcon(enquiry.status)}
                     <span className="ml-1 capitalize">{enquiry.status}</span>
                   </Badge>
                 )}
 
                 {/* Pulsing indicators */}
-                {isDepositPaid && <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse" />}
-                {enquiry.status === "pending" && !isDepositPaid && (
+                {(isDepositPaid || enquiry.status === "pending") && (
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 )}
               </div>
             </div>
-
-            {/* Special alert for auto-accepted - Mobile optimized */}
-            {isDepositPaid && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-xs sm:text-sm text-red-800 font-medium">
-                  🚨 PRIORITY: Customer paid £{Math.round(enquiry.quoted_price * 0.2)} deposit. Confirm availability
-                  within 2 hours or PartySnap will find replacement.
-                </p>
-              </div>
-            )}
-
-            {/* Party Details - Mobile optimized grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center space-x-2 text-sm">
-                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span className="truncate">{formatDate(party?.party_date)}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span>{formatTime(party?.party_time)}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span>
-                    {party?.guest_count} children (Age {party?.child_age})
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-start space-x-2 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                  <span className="line-clamp-2">
-                    {party?.full_delivery_address ||
-                     (party?.delivery_address_line_1
-                       ? `${party.delivery_address_line_1}, ${party.delivery_postcode || party.postcode}`
-                       : party?.location)}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span className="truncate">{customer?.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span>{customer?.phone || "Not provided"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Service Details - Mobile optimized */}
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <h4 className="font-medium text-gray-900 text-sm sm:text-base">Service Requested</h4>
-                <span className="text-lg sm:text-xl font-bold text-primary-600">£{enquiry.quoted_price}</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-                <span className="capitalize">{enquiry.supplier_category}</span>
-                {enquiry.package_id && (
-                  <span className="flex items-center gap-1">
-                    <Package className="w-3 h-3 sm:w-4 sm:h-4" />
-                    Package Selected
-                  </span>
-                )}
-                {enquiry.addon_ids && enquiry.addon_ids.length > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {enquiry.addon_ids.length} Add-ons
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Message Preview - Mobile optimized */}
-            {enquiry.message && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs sm:text-sm text-blue-800">
-                  <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />"{enquiry.message.substring(0, 80)}
-                  {enquiry.message.length > 80 ? "..." : ""}"
-                </p>
-              </div>
-            )}
-
-            {/* Response Section - Mobile optimized */}
-            {enquiry.supplier_response && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <h5 className="font-medium text-green-900 mb-1 text-sm">Your Response:</h5>
-                <p className="text-xs sm:text-sm text-green-800">{enquiry.supplier_response}</p>
-                {enquiry.final_price && (
-                  <p className="text-xs sm:text-sm text-green-800 mt-1">
-                    <strong>Final Price: £{enquiry.final_price}</strong>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Actions - Mobile optimized */}
-            <div className="flex flex-col gap-3 pt-2 border-t border-gray-100">
-              <Button
-                asChild
-                className={`w-full h-10 sm:h-12 text-sm sm:text-base ${
-                  isDepositPaid
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-primary-500 hover:bg-primary-600 text-white"
-                }`}
-              >
-                <Link href={`/suppliers/enquiries/${enquiry.id}`}>
-                  {isDepositPaid ? "🚨 URGENT: Confirm or Decline" : "View Full Details & Respond"}
-                </Link>
-              </Button>
-
-              <div className="flex items-center justify-between">
-                {isDepositPaid ? (
-                  <Badge className="bg-red-100 text-red-800 text-xs">DEPOSIT PAID - RESPOND NOW</Badge>
-                ) : enquiry.status === "pending" ? (
-                  <Badge className="bg-yellow-100 text-yellow-800 text-xs">Awaiting Your Response</Badge>
-                ) : null}
-
-                <div className="text-xs text-gray-500">
-                  Received {new Date(enquiry.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
           </div>
+
+          {/* Expanded Details */}
+          {isExpanded && (
+            <div className="space-y-3 sm:space-y-4 mt-4 pt-4 border-t border-gray-200">
+
+              {/* Special alert for auto-accepted - Mobile optimized */}
+              {isDepositPaid && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-xs sm:text-sm text-red-800 font-medium">
+                    🚨 PRIORITY: Customer paid £{Math.round(enquiry.quoted_price * 0.2)} deposit. Confirm availability
+                    within 2 hours or PartySnap will find replacement.
+                  </p>
+                </div>
+              )}
+
+              {/* Customer Info */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="font-medium text-gray-900 text-sm mb-2">Customer Details</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span className="font-medium text-gray-700">{customer?.first_name} {customer?.last_name}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span className="truncate">{customer?.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span>{customer?.phone || "Not provided"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Party Details - Mobile optimized grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span className="truncate">{formatDate(party?.party_date)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span>{formatTime(party?.party_time)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span>
+                      {party?.guest_count} children (Age {party?.child_age})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-start space-x-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">
+                      {party?.full_delivery_address ||
+                       (party?.delivery_address_line_1
+                         ? `${party.delivery_address_line_1}, ${party.delivery_postcode || party.postcode}`
+                         : party?.location)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Details - Mobile optimized */}
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">What You Need To Provide</h4>
+                  <span className="text-lg sm:text-xl font-bold text-primary-600">£{enquiry.quoted_price}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                  <span className="capitalize font-medium">{enquiry.supplier_category}</span>
+                  {enquiry.package_id && (
+                    <span className="flex items-center gap-1">
+                      <Package className="w-3 h-3 sm:w-4 sm:h-4" />
+                      Package Selected
+                    </span>
+                  )}
+                  {enquiry.addon_ids && enquiry.addon_ids.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+                      {enquiry.addon_ids.length} Add-ons
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Message Preview - Mobile optimized */}
+              {enquiry.message && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h5 className="font-medium text-blue-900 mb-1 text-sm">Customer Message:</h5>
+                  <p className="text-xs sm:text-sm text-blue-800">
+                    "{enquiry.message}"
+                  </p>
+                </div>
+              )}
+
+              {/* Response Section - Mobile optimized */}
+              {enquiry.supplier_response && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <h5 className="font-medium text-green-900 mb-1 text-sm">Your Response:</h5>
+                  <p className="text-xs sm:text-sm text-green-800">{enquiry.supplier_response}</p>
+                  {enquiry.final_price && (
+                    <p className="text-xs sm:text-sm text-green-800 mt-1">
+                      <strong>Final Price: £{enquiry.final_price}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Actions - Mobile optimized */}
+              <div className="flex flex-col gap-3 pt-2 border-t border-gray-100">
+                <Button
+                  asChild
+                  className={`w-full h-10 sm:h-12 text-sm sm:text-base ${
+                    isDepositPaid
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-primary-500 hover:bg-primary-600 text-white"
+                  }`}
+                >
+                  <Link href={`/suppliers/enquiries/${enquiry.id}`}>
+                    {isDepositPaid ? "🚨 URGENT: Confirm or Decline" : "View Full Details & Respond"}
+                  </Link>
+                </Button>
+
+                <div className="flex items-center justify-between">
+                  {isDepositPaid ? (
+                    <Badge className="bg-red-100 text-red-800 text-xs">DEPOSIT PAID - RESPOND NOW</Badge>
+                  ) : enquiry.status === "pending" ? (
+                    <Badge className="bg-yellow-100 text-yellow-800 text-xs">Awaiting Your Response</Badge>
+                  ) : null}
+
+                  <div className="text-xs text-gray-500">
+                    Received {new Date(enquiry.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     )

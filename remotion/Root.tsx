@@ -16,6 +16,11 @@ import { InstagramGrid } from "./videos/InstagramGrid";
 import { HomepageHero } from "./videos/HomepageHero";
 import { HomepageHeroMobile } from "./videos/HomepageHeroMobile";
 import { BlankScreen, CTAClip } from "./videos/BlankScreen";
+import { LogoAnimationStory } from "./videos/LogoAnimationStory";
+import { LogoAnimationStory2 } from "./videos/LogoAnimationStory2";
+import { QuoteReel } from "./videos/QuoteReel";
+import { QuoteReel2 } from "./videos/QuoteReel2";
+import { ExpectationVsReality } from "./videos/ExpectationVsReality";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -196,6 +201,56 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1920}
         height={1080}
+      />
+
+      {/* Logo Animation Story - 10 seconds (Instagram Story vertical) */}
+      <Composition
+        id="LogoAnimationStory"
+        component={LogoAnimationStory}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* Logo Animation Story 2 - Croc gets knocked (Instagram Story vertical) */}
+      <Composition
+        id="LogoAnimationStory2"
+        component={LogoAnimationStory2}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* Quote Reel - Text-led Instagram Reel (~13 seconds, 4 pages) */}
+      <Composition
+        id="QuoteReel"
+        component={QuoteReel}
+        durationInFrames={390}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* Quote Reel 2 - Orange background "Parenting is already a lot" (~8.5 seconds) */}
+      <Composition
+        id="QuoteReel2"
+        component={QuoteReel2}
+        durationInFrames={255}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* Expectation vs Reality - Kids party planning (~17.5 seconds) */}
+      <Composition
+        id="ExpectationVsReality"
+        component={ExpectationVsReality}
+        durationInFrames={525}
+        fps={30}
+        width={1080}
+        height={1920}
       />
     </>
   );

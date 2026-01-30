@@ -112,6 +112,8 @@ export default function ReferFriendBanner() {
         setUser(freshUser)
       }
     }
+    // Reset credit to ensure fresh fetch
+    setAvailableCredit(0)
     setIsModalOpen(true)
     fetchReferralCode()
   }

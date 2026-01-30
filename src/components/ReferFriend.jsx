@@ -141,6 +141,8 @@ export default function ReferFriend() {
       alert('Please sign in to get your referral link!')
       return
     }
+    // Reset credit to ensure fresh fetch
+    setAvailableCredit(0)
     setIsModalOpen(true)
     fetchReferralCode()
   }

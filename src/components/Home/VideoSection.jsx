@@ -12,7 +12,7 @@ export default function VideoSection() {
   const containerRef = useRef(null)
 
   // Use desktop video for all devices - mobile will show it in a contained view
-  const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769608355/r_foe1fc.mp4"
+  const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769618757/Untitled_design_1_m9ejbg.mp4"
   const thumbnailUrl = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
   const handlePlayPause = () => {

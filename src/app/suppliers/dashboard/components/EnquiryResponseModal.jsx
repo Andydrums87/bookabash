@@ -173,7 +173,7 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
   const packageName = addonDetails?.packageName ||
                       addonDetails?.selectedPackage?.name ||
                       addonDetails?.packageData?.name ||
-                      null
+                      (enquiry?.package_id ? enquiry.package_id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null)
 
   const handleTextareaBlur = () => {
     const textarea = textareaRef.current
@@ -606,30 +606,42 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
                   <p className="font-medium text-gray-900">{party?.guest_count} children</p>
                 </div>
               </div>
-              {(enquiry?.package_id || packageName) && !isCakeOrder && (
+              {packageName && !isCakeOrder && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                     <Package className="w-5 h-5 text-gray-600" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Package</p>
-                    <p className="font-medium text-gray-900">{packageName || 'Selected package'}</p>
+                    <p className="font-medium text-gray-900">{packageName}</p>
                   </div>
                 </div>
               )}
-              {enquiry?.addon_ids && enquiry.addon_ids.length > 0 && !isCakeOrder && (
-                <div className="flex items-start gap-3 col-span-2">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-gray-600 text-sm font-medium">✨</span>
+              {(() => {
+                // Get add-ons from addon_details (with names) or fall back to addon_ids
+                const addonsFromDetails = Array.isArray(addonDetails) ? addonDetails :
+                                          (addonDetails?.addons || addonDetails?.selectedAddons || [])
+                const hasAddons = addonsFromDetails.length > 0 || (enquiry?.addon_ids && enquiry.addon_ids.length > 0)
+
+                if (!hasAddons || isCakeOrder) return null
+
+                return (
+                  <div className="flex items-start gap-3 col-span-2">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-gray-600 text-sm font-medium">✨</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Add-ons</p>
+                      <p className="font-medium text-gray-900">
+                        {addonsFromDetails.length > 0
+                          ? addonsFromDetails.map(addon => addon.name || addon).join(', ')
+                          : enquiry.addon_ids.map(id => id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
+                        }
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Add-ons</p>
-                    <p className="font-medium text-gray-900">
-                      {enquiry.addon_ids.map(id => id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
+                )
+              })()}
               {isCakeOrder && (party?.full_delivery_address || party?.delivery_address_line_1 || party?.location) && (
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">

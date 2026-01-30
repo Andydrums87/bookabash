@@ -226,7 +226,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               {/* Postcode */}
               <div className="col-span-1 md:col-span-1 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Event postcode  <span className="text-red-500">*</span>
+                  Your postcode  <span className="text-red-500">*</span>
                 </label>
 
                 <div className="relative">

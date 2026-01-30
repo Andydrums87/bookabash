@@ -10,6 +10,8 @@
     "analyze": "ANALYZE=true npm run build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "seed-suppliers": "node copy-suppliers.js",
+    "create-supplier-user": "node scripts/create-local-supplier-user.js",
+    "reset-supplier-password": "node scripts/reset-supplier-password.js",
     "email": "email dev --dir emails --port 3001",
     "remotion:studio": "remotion studio remotion/index.ts",
     "remotion:render": "remotion render remotion/index.ts PromoVideo out/promo.mp4"

@@ -13,6 +13,7 @@ import CustomerStories from "@/components/Home/CustomerStories"
 import FinalCTA from "@/components/Home/FinalCTA"
 import FloatingCTA from "@/components/Home/FloatingCTA"
 import PartyOverrideConfirmation from '@/components/party-override-confirmation'
+import PostcodeRestrictionModal from '@/components/PostcodeRestrictionModal'
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import FeaturesGrid from "@/components/Home/FeaturesGrid"
@@ -28,6 +29,10 @@ export default function HomePage() {
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
   const [pendingFormData, setPendingFormData] = useState(null)
   const [existingPartyDetails, setExistingPartyDetails] = useState(null)
+
+  // Postcode restriction modal state
+  const [showPostcodeRestrictionModal, setShowPostcodeRestrictionModal] = useState(false)
+  const [restrictedPostcode, setRestrictedPostcode] = useState("")
 
   const { buildParty, loading, error } = usePartyBuilder()
 
@@ -175,6 +180,15 @@ export default function HomePage() {
     }
     return { isValid, formatted }
   }
+
+  // Check if postcode is in allowed AL1-AL5 area
+  const isPostcodeInAllowedArea = (postcode) => {
+    if (!postcode) return false
+    const clean = postcode.replace(/\s/g, "").toUpperCase()
+    // Check if postcode starts with AL1, AL2, AL3, AL4, or AL5
+    const allowedAreas = ["AL1", "AL2", "AL3", "AL4", "AL5"]
+    return allowedAreas.some(area => clean.startsWith(area))
+  }
   
   // Main form submission handler - Allow multiple parties
   const handleSearch = async (e) => {
@@ -186,6 +200,13 @@ export default function HomePage() {
     if (!isFormValid()) {
       console.log('Form validation failed')
       return;
+    }
+
+    // Check if postcode is in allowed area (AL1-AL5)
+    if (!isPostcodeInAllowedArea(formData.postcode)) {
+      setRestrictedPostcode(formData.postcode)
+      setShowPostcodeRestrictionModal(true)
+      return
     }
 
     // ✅ NEW: Allow users to create multiple parties without warnings
@@ -423,6 +444,13 @@ export default function HomePage() {
         onConfirm={handleConfirmOverride}
         onCancel={handleCancelOverride}
         existingPartyDetails={existingPartyDetails}
+      />
+
+      {/* Postcode Restriction Modal */}
+      <PostcodeRestrictionModal
+        isOpen={showPostcodeRestrictionModal}
+        onClose={() => setShowPostcodeRestrictionModal(false)}
+        enteredPostcode={restrictedPostcode}
       />
       <VideoSection />
       <CategoryGrid />

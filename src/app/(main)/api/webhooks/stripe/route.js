@@ -181,11 +181,23 @@ async function processPaymentSuccess(paymentIntent) {
     enquiries = updatedEnquiries || []
   }
 
+  // Check if this is a single supplier addition (adding to existing party)
+  // In this case, only notify the newly added supplier, not all existing ones
+  const isSingleSupplierAddition = paymentIntent.metadata?.supplier_id && paymentIntent.metadata?.supplier_type
+  let enquiriesToNotify = enquiries
+
+  if (isSingleSupplierAddition) {
+    const targetSupplierId = paymentIntent.metadata.supplier_id
+    console.log(`📧 Single supplier addition detected - only notifying supplier: ${targetSupplierId}`)
+    enquiriesToNotify = enquiries.filter(e => e.supplier_id === targetSupplierId)
+    console.log(`📧 Filtered from ${enquiries.length} enquiries to ${enquiriesToNotify.length} for notification`)
+  }
+
   // Step 7: Send emails (must await to ensure completion on serverless)
   console.log('📧 Sending emails...')
 
   try {
-    await sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id, paymentIntent.metadata)
+    await sendEmailsAsync(enquiriesToNotify, party, user, totalAmount, paymentIntent.id, paymentIntent.metadata)
     console.log('📧 All emails sent successfully')
   } catch (error) {
     console.error('Error in email sending:', error)

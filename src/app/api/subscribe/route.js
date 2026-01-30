@@ -32,7 +32,7 @@ export async function POST(req) {
     try {
       const emailHtml = await render(EarlyAccessSignup());
       await client.sendEmail({
-        From: "hello@partysnap.uk",
+        From: "hello@partysnap.co.uk",
         To: email,
         Subject: "You're on the list - PartySnap",
         HtmlBody: emailHtml,

@@ -1098,9 +1098,11 @@ export default function PaymentPageContent() {
       console.log('🔄 Redirecting to processing page - webhook will complete the booking')
 
       // Apply referral credit if any was used
+      // Note: referral system uses auth.users IDs, so we need user.auth_user_id
       if (creditApplied > 0 && user) {
         try {
-          await applyReferralCredit(user.id, partyId, creditApplied)
+          const authUserId = user.auth_user_id || user.id
+          await applyReferralCredit(authUserId, partyId, creditApplied)
           console.log('🎉 Referral credit applied:', creditApplied)
         } catch (creditError) {
           console.warn('Failed to apply referral credit:', creditError)
