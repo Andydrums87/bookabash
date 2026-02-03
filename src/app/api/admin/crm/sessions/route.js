@@ -312,33 +312,90 @@ export async function GET(request) {
       traffic.new_visitors = newVisitorIds.size
       traffic.returning_visitors = traffic.unique_visitors - traffic.new_visitors
 
-      // Top pages
+      // All pages with visitor counts
       const pageCounts = {}
+      const pageVisitors = {}
       pageViews.forEach(pv => {
         pageCounts[pv.page_path] = (pageCounts[pv.page_path] || 0) + 1
+        if (!pageVisitors[pv.page_path]) {
+          pageVisitors[pv.page_path] = new Set()
+        }
+        pageVisitors[pv.page_path].add(pv.visitor_id)
       })
-      traffic.top_pages = Object.entries(pageCounts)
+      // Return ALL pages sorted by views (for modal), top 5 for quick view
+      const allPages = Object.entries(pageCounts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([path, count]) => ({ path, count }))
+        .map(([path, count]) => ({
+          path,
+          views: count,
+          visitors: pageVisitors[path]?.size || 0,
+          percentage: Math.round((count / traffic.total_views) * 100)
+        }))
+      traffic.top_pages = allPages.slice(0, 5)
+      traffic.all_pages = allPages
 
-      // Top referrers (excluding nulls)
+      // All referrers (excluding nulls)
       const referrerCounts = {}
+      const referrerVisitors = {}
       pageViews.forEach(pv => {
         if (pv.referrer_domain) {
           referrerCounts[pv.referrer_domain] = (referrerCounts[pv.referrer_domain] || 0) + 1
+          if (!referrerVisitors[pv.referrer_domain]) {
+            referrerVisitors[pv.referrer_domain] = new Set()
+          }
+          referrerVisitors[pv.referrer_domain].add(pv.visitor_id)
         }
       })
-      traffic.top_referrers = Object.entries(referrerCounts)
+      const allReferrers = Object.entries(referrerCounts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([domain, count]) => ({ domain, count }))
+        .map(([domain, count]) => ({
+          domain,
+          views: count,
+          visitors: referrerVisitors[domain]?.size || 0
+        }))
+      traffic.top_referrers = allReferrers.slice(0, 5)
+      traffic.all_referrers = allReferrers
 
       // Device breakdown
       pageViews.forEach(pv => {
         if (pv.device_type === 'desktop') traffic.devices.desktop++
         else if (pv.device_type === 'mobile') traffic.devices.mobile++
         else if (pv.device_type === 'tablet') traffic.devices.tablet++
+      })
+    }
+
+    // ============ TIME SERIES DATA FOR CHARTS ============
+    // Group page views by date for the line chart
+    const viewsByDate = {}
+    const visitorsByDate = {}
+
+    if (pageViews && pageViews.length > 0) {
+      pageViews.forEach(pv => {
+        const date = new Date(pv.created_at).toISOString().split('T')[0] // YYYY-MM-DD
+        viewsByDate[date] = (viewsByDate[date] || 0) + 1
+
+        // Track unique visitors per day
+        if (!visitorsByDate[date]) {
+          visitorsByDate[date] = new Set()
+        }
+        visitorsByDate[date].add(pv.visitor_id)
+      })
+    }
+
+    // Generate date range to fill in missing days with zeros
+    const daysNum = days === 'all' ? 90 : parseInt(days, 10)
+    const timeSeries = []
+    const today = new Date()
+
+    for (let i = daysNum - 1; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+
+      timeSeries.push({
+        date: dateStr,
+        views: viewsByDate[dateStr] || 0,
+        visitors: visitorsByDate[dateStr] ? visitorsByDate[dateStr].size : 0
       })
     }
 
@@ -353,7 +410,8 @@ export async function GET(request) {
       funnel,
       traffic: {
         ...traffic,
-        visitor_to_session_rate: visitorToSessionRate
+        visitor_to_session_rate: visitorToSessionRate,
+        timeSeries // Add time series data for charts
       }
     })
 

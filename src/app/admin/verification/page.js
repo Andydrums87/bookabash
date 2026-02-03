@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from "@/lib/supabase"
 import { Shield, FileText, CheckCircle, XCircle, Clock, Loader2, Lock, Eye, ExternalLink, PoundSterling, FileSearch, Search, Download, Users, Activity, ChevronRight, X, Globe, Monitor, Smartphone, Tablet } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Admin emails
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -34,10 +35,12 @@ export default function AdminDashboard() {
   const [crmSearch, setCrmSearch] = useState('')
   const [crmStats, setCrmStats] = useState({ total: 0, browsing: 0, checkout: 0, paid: 0, abandoned: 0, with_email: 0, conversion_rate: 0 })
   const [crmFunnel, setCrmFunnel] = useState({ started: 0, added_suppliers: 0, reached_checkout: 0, completed: 0 })
-  const [crmTraffic, setCrmTraffic] = useState({ total_views: 0, unique_visitors: 0, new_visitors: 0, returning_visitors: 0, top_pages: [], top_referrers: [], devices: { desktop: 0, mobile: 0, tablet: 0 }, visitor_to_session_rate: 0 })
+  const [crmTraffic, setCrmTraffic] = useState({ total_views: 0, unique_visitors: 0, new_visitors: 0, returning_visitors: 0, top_pages: [], all_pages: [], top_referrers: [], all_referrers: [], devices: { desktop: 0, mobile: 0, tablet: 0 }, visitor_to_session_rate: 0 })
   const [selectedSession, setSelectedSession] = useState(null)
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false)
   const [crmDisplayCount, setCrmDisplayCount] = useState(15) // Pagination: show 15 at a time
+  const [showPagesModal, setShowPagesModal] = useState(false)
+  const [showReferrersModal, setShowReferrersModal] = useState(false)
 
   // Check admin auth
   useEffect(() => {
@@ -707,275 +710,270 @@ export default function AdminDashboard() {
 
         {/* ============ CRM TAB ============ */}
         {activeTab === 'crm' && (
-          <div>
-            {/* Site Traffic Section */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                Site Traffic (Last {crmDaysFilter === 'all' ? 'All Time' : `${crmDaysFilter} Days`})
-              </h3>
-              <div className="grid grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-700">{crmTraffic.total_views}</div>
-                  <div className="text-xs text-gray-600">Page Views</div>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-700">{crmTraffic.unique_visitors}</div>
-                  <div className="text-xs text-gray-600">Unique Visitors</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-700">{crmTraffic.new_visitors}</div>
-                  <div className="text-xs text-gray-600">New Visitors</div>
-                </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-700">{crmTraffic.visitor_to_session_rate}%</div>
-                  <div className="text-xs text-gray-600">Started Planning</div>
-                </div>
+          <div className="space-y-6">
+            {/* Header with filters */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Analytics</h2>
+                <p className="text-sm text-gray-500">Last {crmDaysFilter === 'all' ? 'all time' : `${crmDaysFilter} days`}</p>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                {/* Device Breakdown */}
-                <div className="border rounded-lg p-3">
-                  <div className="text-sm font-medium mb-2">Devices</div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-gray-600"><Monitor className="h-3 w-3" /> Desktop</span>
-                      <span className="font-medium">{crmTraffic.devices?.desktop || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-gray-600"><Smartphone className="h-3 w-3" /> Mobile</span>
-                      <span className="font-medium">{crmTraffic.devices?.mobile || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-gray-600"><Tablet className="h-3 w-3" /> Tablet</span>
-                      <span className="font-medium">{crmTraffic.devices?.tablet || 0}</span>
-                    </div>
-                  </div>
-                </div>
-                {/* Top Pages */}
-                <div className="border rounded-lg p-3">
-                  <div className="text-sm font-medium mb-2">Top Pages</div>
-                  <div className="space-y-1 text-sm">
-                    {crmTraffic.top_pages?.length > 0 ? crmTraffic.top_pages.slice(0, 4).map((page, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span className="text-gray-600 truncate max-w-[120px]" title={page.path}>{page.path}</span>
-                        <span className="font-medium">{page.count}</span>
-                      </div>
-                    )) : <span className="text-gray-400">No data yet</span>}
-                  </div>
-                </div>
-                {/* Top Referrers */}
-                <div className="border rounded-lg p-3">
-                  <div className="text-sm font-medium mb-2">Top Referrers</div>
-                  <div className="space-y-1 text-sm">
-                    {crmTraffic.top_referrers?.length > 0 ? crmTraffic.top_referrers.slice(0, 4).map((ref, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span className="text-gray-600 truncate max-w-[120px]" title={ref.domain}>{ref.domain}</span>
-                        <span className="font-medium">{ref.count}</span>
-                      </div>
-                    )) : <span className="text-gray-400">Direct traffic</span>}
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={crmDaysFilter}
+                  onChange={(e) => setCrmDaysFilter(e.target.value)}
+                  className="text-sm border-gray-200 rounded-md px-3 py-1.5 bg-white border focus:ring-1 focus:ring-gray-300 focus:border-gray-300"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="all">All time</option>
+                </select>
               </div>
             </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              {/* Status Distribution Pie Chart */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-4">Session Status Distribution</h3>
-                <div className="flex items-center justify-center gap-8">
-                  <PieChart
-                    data={[
-                      { label: 'Browsing', value: crmStats.browsing || 0, color: '#9CA3AF' },
-                      { label: 'Review & Book', value: crmStats.review_book || 0, color: '#3B82F6' },
-                      { label: 'Payment Page', value: crmStats.payment_page || 0, color: '#F97316' },
-                      { label: 'Checkout', value: crmStats.checkout || 0, color: '#FBBF24' },
-                      { label: 'Completed', value: crmStats.paid || 0, color: '#10B981' },
-                      { label: 'Abandoned', value: crmStats.abandoned || 0, color: '#EF4444' },
-                    ]}
-                    size={160}
-                  />
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                      <span>Browsing ({crmStats.browsing || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span>Review & Book ({crmStats.review_book || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                      <span>Payment Page ({crmStats.payment_page || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                      <span>Checkout ({crmStats.checkout || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span>Completed ({crmStats.paid || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span>Abandoned ({crmStats.abandoned || 0})</span>
-                    </div>
-                  </div>
-                </div>
+            {/* Stats Row - Minimal */}
+            <div className="grid grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Visitors</p>
+                <p className="text-3xl font-semibold text-gray-900">{crmTraffic.unique_visitors.toLocaleString()}</p>
               </div>
-
-              {/* Device Distribution Pie Chart */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-4">Device Distribution</h3>
-                <div className="flex items-center justify-center gap-8">
-                  <PieChart
-                    data={[
-                      { label: 'Desktop', value: crmTraffic.devices?.desktop || 0, color: '#3B82F6' },
-                      { label: 'Mobile', value: crmTraffic.devices?.mobile || 0, color: '#8B5CF6' },
-                      { label: 'Tablet', value: crmTraffic.devices?.tablet || 0, color: '#EC4899' },
-                    ]}
-                    size={160}
-                  />
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span>Desktop ({crmTraffic.devices?.desktop || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                      <span>Mobile ({crmTraffic.devices?.mobile || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-                      <span>Tablet ({crmTraffic.devices?.tablet || 0})</span>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Page Views</p>
+                <p className="text-3xl font-semibold text-gray-900">{crmTraffic.total_views.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Sessions</p>
+                <p className="text-3xl font-semibold text-gray-900">{crmStats.total.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Conversions</p>
+                <p className="text-3xl font-semibold text-gray-900">{crmStats.paid || 0}</p>
               </div>
             </div>
 
-            {/* Party Planning Stats Cards */}
-            <div className="grid grid-cols-7 gap-3 mb-6">
-              <StatCard label="Total Sessions" value={crmStats.total || 0} color="gray" />
-              <StatCard label="Browsing" value={crmStats.browsing || 0} color="gray" />
-              <StatCard label="Review & Book" value={crmStats.review_book || 0} color="blue" />
-              <StatCard label="Payment Page" value={crmStats.payment_page || 0} color="orange" />
-              <StatCard label="Checkout" value={crmStats.checkout || 0} color="yellow" />
-              <StatCard label="Completed" value={crmStats.paid || 0} subtitle={`${crmStats.conversion_rate || 0}% conv`} color="green" />
-              <StatCard label="Abandoned" value={crmStats.abandoned || 0} color="red" />
-            </div>
-
-            {/* Conversion Funnel - Visual Bar Chart */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                Conversion Funnel (Last {crmDaysFilter === 'all' ? 'All Time' : `${crmDaysFilter} Days`})
-              </h3>
-              <FunnelChart funnel={crmFunnel} />
-            </div>
-
-            {/* Sessions List */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-4 border-b space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold">Customer Sessions</h2>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={crmFilter}
-                      onChange={(e) => setCrmFilter(e.target.value)}
-                      className="border rounded px-3 py-1.5 text-sm"
+            {/* Traffic Chart - Clean */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-medium text-gray-900">Visitors</h3>
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-gray-900"></span>
+                    Visitors
+                  </span>
+                </div>
+              </div>
+              <div className="h-[280px]">
+                {crmTraffic.timeSeries && crmTraffic.timeSeries.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={crmTraffic.timeSeries}
+                      margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
                     >
-                      <option value="all">All Status</option>
-                      <option value="browsing">Browsing</option>
-                      <option value="review_book">Review & Book</option>
-                      <option value="payment_page">Payment Page</option>
-                      <option value="checkout">In Checkout</option>
-                      <option value="paid">Completed</option>
-                      <option value="abandoned">Abandoned</option>
-                    </select>
-                    <select
-                      value={crmDaysFilter}
-                      onChange={(e) => setCrmDaysFilter(e.target.value)}
-                      className="border rounded px-3 py-1.5 text-sm"
-                    >
-                      <option value="7">Last 7 days</option>
-                      <option value="30">Last 30 days</option>
-                      <option value="90">Last 90 days</option>
-                      <option value="all">All time</option>
-                    </select>
+                      <defs>
+                        <linearGradient id="colorVisitorsMin" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#000" stopOpacity={0.1}/>
+                          <stop offset="100%" stopColor="#000" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="#f0f0f0" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                        tickFormatter={(value) => {
+                          const date = new Date(value)
+                          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                        }}
+                        interval="preserveStartEnd"
+                        minTickGap={60}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#18181B',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                        }}
+                        labelStyle={{ color: '#A1A1AA', marginBottom: '4px', fontSize: '11px' }}
+                        itemStyle={{ color: '#fff', padding: '0' }}
+                        labelFormatter={(value) => {
+                          const date = new Date(value)
+                          return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="visitors"
+                        name="Visitors"
+                        stroke="#18181B"
+                        strokeWidth={1.5}
+                        fillOpacity={1}
+                        fill="url(#colorVisitorsMin)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                    No data yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Pages */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Pages</h3>
+                  <span className="text-xs text-gray-400">VISITORS</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {crmTraffic.top_pages?.length > 0 ? crmTraffic.top_pages.slice(0, 5).map((page, i) => (
+                    <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50">
+                      <span className="text-sm text-gray-700 truncate max-w-[200px]" title={page.path}>{page.path}</span>
+                      <span className="text-sm text-gray-900 font-medium">{page.visitors || page.views}</span>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">No data yet</div>
+                  )}
+                </div>
+                {crmTraffic.all_pages?.length > 5 && (
+                  <div className="px-4 py-2.5 border-t border-gray-100">
                     <button
-                      onClick={exportCrmToCSV}
-                      disabled={crmSessions.length === 0}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+                      onClick={() => setShowPagesModal(true)}
+                      className="text-sm text-gray-500 hover:text-gray-900"
                     >
-                      <Download className="h-4 w-4" />
-                      Export
+                      View all {crmTraffic.all_pages.length} pages →
                     </button>
                   </div>
+                )}
+              </div>
+
+              {/* Referrers */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Referrers</h3>
+                  <span className="text-xs text-gray-400">VISITORS</span>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by email..."
-                    value={crmSearch}
-                    onChange={(e) => setCrmSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="divide-y divide-gray-50">
+                  {crmTraffic.top_referrers?.length > 0 ? crmTraffic.top_referrers.slice(0, 5).map((ref, i) => (
+                    <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50">
+                      <span className="text-sm text-gray-700 truncate max-w-[200px]" title={ref.domain}>{ref.domain}</span>
+                      <span className="text-sm text-gray-900 font-medium">{ref.visitors || ref.views}</span>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">Direct traffic only</div>
+                  )}
+                </div>
+                {crmTraffic.all_referrers?.length > 5 && (
+                  <div className="px-4 py-2.5 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowReferrersModal(true)}
+                      className="text-sm text-gray-500 hover:text-gray-900"
+                    >
+                      View all {crmTraffic.all_referrers.length} referrers →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sessions List - Clean */}
+            <div className="bg-white border border-gray-200 rounded-lg">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-900">Customer Sessions</h3>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={crmFilter}
+                    onChange={(e) => setCrmFilter(e.target.value)}
+                    className="text-xs border-gray-200 rounded px-2 py-1 bg-white border focus:ring-1 focus:ring-gray-300"
+                  >
+                    <option value="all">All</option>
+                    <option value="browsing">Browsing</option>
+                    <option value="started_planning">Started Planning</option>
+                    <option value="review_book">Review & Book</option>
+                    <option value="payment_page">Payment Page</option>
+                    <option value="paid">Completed</option>
+                  </select>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={crmSearch}
+                      onChange={(e) => setCrmSearch(e.target.value)}
+                      className="w-40 pl-7 pr-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-gray-300 focus:border-gray-300"
+                    />
+                  </div>
+                  <button
+                    onClick={exportCrmToCSV}
+                    disabled={crmSessions.length === 0}
+                    className="text-xs text-gray-500 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Export
+                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 {crmLoading ? (
-                  <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+                  <div className="text-center py-12"><Loader2 className="h-5 w-5 animate-spin mx-auto text-gray-400" /></div>
                 ) : filteredCrmSessions.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">{crmSearch ? 'No matching sessions' : 'No sessions found'}</p>
+                  <p className="text-center text-gray-400 text-sm py-12">{crmSearch ? 'No matching sessions' : 'No sessions yet'}</p>
                 ) : (
                   <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Customer</th>
-                        <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Status</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Theme</th>
-                        <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Suppliers</th>
-                        <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Est. Value</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Last Active</th>
-                        <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Actions</th>
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Theme</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Suppliers</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                        <th className="px-4 py-2.5"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-gray-50">
                       {paginatedCrmSessions.map(session => (
-                        <tr key={session.id} className="hover:bg-gray-50">
+                        <tr key={session.id} className="hover:bg-gray-50/50">
                           <td className="px-4 py-3">
-                            <div className="text-sm font-medium">{session.email || 'Anonymous'}</div>
-                            {session.referrer && (
-                              <div className="text-xs text-gray-500">via {new URL(session.referrer).hostname || session.referrer}</div>
-                            )}
+                            <span className="text-sm text-gray-900">{session.email || 'Anonymous'}</span>
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            <CrmStatusBadge status={session.status} />
+                          <td className="px-4 py-3">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              session.status === 'paid' ? 'bg-green-50 text-green-700' :
+                              session.status === 'payment_page' ? 'bg-yellow-50 text-yellow-700' :
+                              session.status === 'review_book' ? 'bg-blue-50 text-blue-700' :
+                              session.status === 'started_planning' ? 'bg-purple-50 text-purple-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {session.status === 'paid' ? 'Completed' :
+                               session.status === 'payment_page' ? 'Payment' :
+                               session.status === 'review_book' ? 'Review' :
+                               session.status === 'started_planning' ? 'Planning' :
+                               session.status?.replace(/_/g, ' ') || 'Browsing'}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 text-sm capitalize">{session.party_theme || '-'}</td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {session.supplier_count > 0 ? (
-                              <span className="text-green-600 font-medium">{session.supplier_count}</span>
-                            ) : (
-                              <span className="text-gray-400">0</span>
-                            )}
+                          <td className="px-4 py-3 text-sm text-gray-600 capitalize">{session.party_theme || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 text-right">{session.supplier_count || 0}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                            {session.total_cost ? `£${session.total_cost.toFixed(0)}` : '-'}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm">
-                            {session.total_cost ? (
-                              <span className="font-semibold text-green-700">£{session.total_cost.toFixed(2)}</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{formatRelativeTime(session.last_activity)}</td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-4 py-3 text-sm text-gray-500 text-right">{formatRelativeTime(session.last_activity)}</td>
+                          <td className="px-4 py-3 text-right">
                             <button
                               onClick={() => fetchSessionDetail(session.id)}
-                              className="text-sm px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+                              className="text-xs text-gray-400 hover:text-gray-900"
                             >
-                              View
+                              View →
                             </button>
                           </td>
                         </tr>
@@ -984,23 +982,91 @@ export default function AdminDashboard() {
                   </table>
                 )}
               </div>
-              {/* Load More / Pagination Info */}
               {filteredCrmSessions.length > 0 && (
-                <div className="p-4 border-t flex items-center justify-between">
-                  <span className="text-sm text-gray-500">
-                    Showing {paginatedCrmSessions.length} of {filteredCrmSessions.length} sessions
+                <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {paginatedCrmSessions.length} of {filteredCrmSessions.length}
                   </span>
                   {hasMoreSessions && (
                     <button
                       onClick={() => setCrmDisplayCount(prev => prev + 15)}
-                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="text-xs text-gray-500 hover:text-gray-900"
                     >
-                      Load More
+                      Load more
                     </button>
                   )}
                 </div>
               )}
             </div>
+
+            {/* Pages Modal */}
+            {showPagesModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/20" onClick={() => setShowPagesModal(false)} />
+                <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-medium text-gray-900">Pages</h3>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-400 uppercase tracking-wider">Visitors</span>
+                      <span className="text-xs text-gray-400 uppercase tracking-wider">Page Views</span>
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto max-h-[60vh]">
+                    <div className="divide-y divide-gray-50">
+                      {crmTraffic.all_pages?.map((page, i) => (
+                        <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+                          <span className="text-sm text-gray-700 truncate max-w-[280px]" title={page.path}>{page.path}</span>
+                          <div className="flex items-center gap-8">
+                            <span className="text-sm text-gray-500 w-12 text-right">{page.percentage}%</span>
+                            <span className="text-sm text-gray-900 font-medium w-10 text-right">{page.visitors}</span>
+                            <span className="text-sm text-gray-500 w-10 text-right">{page.views}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="px-5 py-3 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowPagesModal(false)}
+                      className="w-full py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Referrers Modal */}
+            {showReferrersModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/20" onClick={() => setShowReferrersModal(false)} />
+                <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-medium text-gray-900">Referrers</h3>
+                    <span className="text-xs text-gray-400 uppercase tracking-wider">Visitors</span>
+                  </div>
+                  <div className="overflow-y-auto max-h-[60vh]">
+                    <div className="divide-y divide-gray-50">
+                      {crmTraffic.all_referrers?.map((ref, i) => (
+                        <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+                          <span className="text-sm text-gray-700 truncate max-w-[320px]" title={ref.domain}>{ref.domain}</span>
+                          <span className="text-sm text-gray-900 font-medium">{ref.visitors}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="px-5 py-3 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowReferrersModal(false)}
+                      className="w-full py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Session Detail Drawer */}
             {selectedSession && (
