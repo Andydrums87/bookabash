@@ -8,6 +8,43 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 // Admin emails that can access this endpoint
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
+// Country code to name mapping
+const COUNTRY_NAMES = {
+  'GB': 'United Kingdom',
+  'US': 'United States',
+  'CA': 'Canada',
+  'AU': 'Australia',
+  'DE': 'Germany',
+  'FR': 'France',
+  'ES': 'Spain',
+  'IT': 'Italy',
+  'NL': 'Netherlands',
+  'BE': 'Belgium',
+  'IE': 'Ireland',
+  'NZ': 'New Zealand',
+  'IN': 'India',
+  'BR': 'Brazil',
+  'MX': 'Mexico',
+  'JP': 'Japan',
+  'CN': 'China',
+  'KR': 'South Korea',
+  'SG': 'Singapore',
+  'AE': 'United Arab Emirates',
+  'ZA': 'South Africa',
+  'SE': 'Sweden',
+  'NO': 'Norway',
+  'DK': 'Denmark',
+  'FI': 'Finland',
+  'PL': 'Poland',
+  'PT': 'Portugal',
+  'AT': 'Austria',
+  'CH': 'Switzerland',
+}
+
+function getCountryName(code) {
+  return COUNTRY_NAMES[code] || code
+}
+
 export async function GET(request) {
   try {
     // Verify admin access
@@ -279,7 +316,7 @@ export async function GET(request) {
     // Get page view stats for the same date range
     let trafficQuery = supabaseAdmin
       .from('page_views')
-      .select('visitor_id, page_path, referrer_domain, device_type, is_new_visitor, created_at')
+      .select('visitor_id, page_path, referrer_domain, device_type, browser, os, country, is_new_visitor, created_at')
 
     if (dateFilter) {
       trafficQuery = trafficQuery.gte('created_at', dateFilter)
@@ -294,7 +331,10 @@ export async function GET(request) {
       returning_visitors: 0,
       top_pages: [],
       top_referrers: [],
-      devices: { desktop: 0, mobile: 0, tablet: 0 }
+      devices: [],
+      countries: [],
+      operating_systems: [],
+      browsers: []
     }
 
     if (pageViews && pageViews.length > 0) {
@@ -356,12 +396,79 @@ export async function GET(request) {
       traffic.top_referrers = allReferrers.slice(0, 5)
       traffic.all_referrers = allReferrers
 
-      // Device breakdown
+      // Device breakdown (by unique visitors)
+      const deviceVisitors = {}
+      const countryVisitors = {}
+      const osVisitors = {}
+      const browserVisitors = {}
+
       pageViews.forEach(pv => {
-        if (pv.device_type === 'desktop') traffic.devices.desktop++
-        else if (pv.device_type === 'mobile') traffic.devices.mobile++
-        else if (pv.device_type === 'tablet') traffic.devices.tablet++
+        // Devices
+        if (pv.device_type) {
+          if (!deviceVisitors[pv.device_type]) {
+            deviceVisitors[pv.device_type] = new Set()
+          }
+          deviceVisitors[pv.device_type].add(pv.visitor_id)
+        }
+
+        // Countries
+        if (pv.country) {
+          if (!countryVisitors[pv.country]) {
+            countryVisitors[pv.country] = new Set()
+          }
+          countryVisitors[pv.country].add(pv.visitor_id)
+        }
+
+        // Operating Systems
+        if (pv.os) {
+          if (!osVisitors[pv.os]) {
+            osVisitors[pv.os] = new Set()
+          }
+          osVisitors[pv.os].add(pv.visitor_id)
+        }
+
+        // Browsers
+        if (pv.browser) {
+          if (!browserVisitors[pv.browser]) {
+            browserVisitors[pv.browser] = new Set()
+          }
+          browserVisitors[pv.browser].add(pv.visitor_id)
+        }
       })
+
+      // Convert to arrays with percentages
+      traffic.devices = Object.entries(deviceVisitors)
+        .map(([name, visitors]) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          visitors: visitors.size,
+          percentage: Math.round((visitors.size / traffic.unique_visitors) * 100)
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
+
+      traffic.countries = Object.entries(countryVisitors)
+        .map(([code, visitors]) => ({
+          code,
+          name: getCountryName(code),
+          visitors: visitors.size,
+          percentage: Math.round((visitors.size / traffic.unique_visitors) * 100)
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
+
+      traffic.operating_systems = Object.entries(osVisitors)
+        .map(([name, visitors]) => ({
+          name,
+          visitors: visitors.size,
+          percentage: Math.round((visitors.size / traffic.unique_visitors) * 100)
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
+
+      traffic.browsers = Object.entries(browserVisitors)
+        .map(([name, visitors]) => ({
+          name,
+          visitors: visitors.size,
+          percentage: Math.round((visitors.size / traffic.unique_visitors) * 100)
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
     }
 
     // ============ TIME SERIES DATA FOR CHARTS ============

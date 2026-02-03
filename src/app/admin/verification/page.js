@@ -35,7 +35,7 @@ export default function AdminDashboard() {
   const [crmSearch, setCrmSearch] = useState('')
   const [crmStats, setCrmStats] = useState({ total: 0, browsing: 0, checkout: 0, paid: 0, abandoned: 0, with_email: 0, conversion_rate: 0 })
   const [crmFunnel, setCrmFunnel] = useState({ started: 0, added_suppliers: 0, reached_checkout: 0, completed: 0 })
-  const [crmTraffic, setCrmTraffic] = useState({ total_views: 0, unique_visitors: 0, new_visitors: 0, returning_visitors: 0, top_pages: [], all_pages: [], top_referrers: [], all_referrers: [], devices: { desktop: 0, mobile: 0, tablet: 0 }, visitor_to_session_rate: 0 })
+  const [crmTraffic, setCrmTraffic] = useState({ total_views: 0, unique_visitors: 0, new_visitors: 0, returning_visitors: 0, top_pages: [], all_pages: [], top_referrers: [], all_referrers: [], devices: [], countries: [], operating_systems: [], browsers: [], visitor_to_session_rate: 0 })
   const [selectedSession, setSelectedSession] = useState(null)
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false)
   const [crmDisplayCount, setCrmDisplayCount] = useState(15) // Pagination: show 15 at a time
@@ -884,6 +884,63 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Three Column Layout - Countries, Devices, Operating Systems */}
+            <div className="grid grid-cols-3 gap-6">
+              {/* Countries */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Countries</h3>
+                  <span className="text-xs text-gray-400">VISITORS</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {crmTraffic.countries?.length > 0 ? crmTraffic.countries.slice(0, 5).map((country, i) => (
+                    <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50">
+                      <span className="text-sm text-gray-700">{country.name}</span>
+                      <span className="text-sm text-gray-900 font-medium">{country.percentage}%</span>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">No data yet</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Devices */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Devices</h3>
+                  <span className="text-xs text-gray-400">VISITORS</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {crmTraffic.devices?.length > 0 ? crmTraffic.devices.map((device, i) => (
+                    <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50">
+                      <span className="text-sm text-gray-700">{device.name}</span>
+                      <span className="text-sm text-gray-900 font-medium">{device.percentage}%</span>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">No data yet</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Operating Systems */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Operating Systems</h3>
+                  <span className="text-xs text-gray-400">VISITORS</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {crmTraffic.operating_systems?.length > 0 ? crmTraffic.operating_systems.slice(0, 5).map((os, i) => (
+                    <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50">
+                      <span className="text-sm text-gray-700">{os.name}</span>
+                      <span className="text-sm text-gray-900 font-medium">{os.percentage}%</span>
+                    </div>
+                  )) : (
+                    <div className="px-4 py-8 text-center text-sm text-gray-400">No data yet</div>
+                  )}
+                </div>
               </div>
             </div>
 
