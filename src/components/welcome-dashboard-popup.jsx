@@ -13,6 +13,17 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
   const [lastName, setLastName] = useState("")
   const [childAge, setChildAge] = useState("")
   const [existingChildData, setExistingChildData] = useState(null)
+  const [showErrors, setShowErrors] = useState(false)
+
+  // Check if all required fields are filled
+  const isFormValid = firstName.trim() && lastName.trim() && childAge
+
+  // Individual field validation
+  const errors = {
+    firstName: !firstName.trim(),
+    lastName: !lastName.trim(),
+    childAge: !childAge
+  }
 
   // Check for existing party details and auto-submit if available
   useEffect(() => {
@@ -57,19 +68,27 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
   }, [isOpen, onNameSubmit, onClose])
 
   const handleNameSubmit = () => {
-    if (firstName.trim() && childAge) {
-      onNameSubmit?.({
-        childName: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        childAge: parseInt(childAge),
-        firstName: firstName.trim(),
-        lastName: lastName.trim()
-      })
-      // Close immediately instead of going to step 2
-      handleClose()
+    // Show errors if form is not valid
+    if (!isFormValid) {
+      setShowErrors(true)
+      return
     }
+
+    onNameSubmit?.({
+      childName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+      childAge: parseInt(childAge),
+      firstName: firstName.trim(),
+      lastName: lastName.trim()
+    })
+    // Close immediately instead of going to step 2
+    handleClose()
   }
 
   const handleClose = () => {
+    // Only allow closing if form is valid (all fields filled)
+    if (!isFormValid) {
+      return // Prevent closing without completing the form
+    }
     setFirstName("")
     setLastName("")
     setChildAge("")
@@ -77,15 +96,25 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
     onClose()
   }
 
+  // Handle dialog open change - prevent closing without valid form
+  const handleOpenChange = (open) => {
+    if (!open && !isFormValid) {
+      return // Prevent closing without completing the form
+    }
+    if (!open) {
+      handleClose()
+    }
+  }
+
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && firstName.trim() && childAge) {
+    if (e.key === 'Enter' && isFormValid) {
       handleNameSubmit()
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg w-[90vw] md:w-[60vw] max-h-[80vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg w-[90vw] md:w-[60vw] max-h-[80vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="md:text-4xl text-start text-3xl font-black text-gray-900 leading-tight">
             Almost Ready!<br className="sm:hidden" /> One Quick Thing...
@@ -108,37 +137,57 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                 First name
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${showErrors && errors.firstName ? 'text-red-400' : 'text-gray-400'}`} />
                 <Input
                   id="firstName"
                   type="text"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e) => {
+                    setFirstName(e.target.value)
+                    if (showErrors) setShowErrors(false)
+                  }}
                   onKeyPress={handleKeyPress}
-                  className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl"
+                  className={`pl-10 h-12 text-base font-medium border-2 rounded-xl transition-colors ${
+                    showErrors && errors.firstName
+                      ? 'border-red-400 focus:border-red-500'
+                      : 'border-gray-200 focus:border-[hsl(var(--primary-500))]'
+                  }`}
                   placeholder="e.g. Emma"
                   autoFocus
                 />
               </div>
+              {showErrors && errors.firstName && (
+                <p className="text-xs text-red-500 mt-1">Please enter first name</p>
+              )}
             </div>
 
             {/* Child's Last Name */}
             <div className="space-y-2">
               <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                Last name <span className="text-gray-400 text-xs">(optional)</span>
+                Last name
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${showErrors && errors.lastName ? 'text-red-400' : 'text-gray-400'}`} />
                 <Input
                   id="lastName"
                   type="text"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e) => {
+                    setLastName(e.target.value)
+                    if (showErrors) setShowErrors(false)
+                  }}
                   onKeyPress={handleKeyPress}
-                  className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-primary-500 rounded-xl"
+                  className={`pl-10 h-12 text-base font-medium border-2 rounded-xl transition-colors ${
+                    showErrors && errors.lastName
+                      ? 'border-red-400 focus:border-red-500'
+                      : 'border-gray-200 focus:border-primary-500'
+                  }`}
                   placeholder="e.g. Smith"
                 />
               </div>
+              {showErrors && errors.lastName && (
+                <p className="text-xs text-red-500 mt-1">Please enter last name</p>
+              )}
             </div>
 
             {/* Child's Age */}
@@ -147,9 +196,16 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                 Turning
               </Label>
               <div className="relative">
-                <Cake className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                <Select value={childAge} onValueChange={(value) => setChildAge(value)}>
-                  <SelectTrigger className="w-full pl-10 h-15 text-base border-2 border-gray-200 focus:border-primary-500 rounded-xl">
+                <Cake className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 z-10 ${showErrors && errors.childAge ? 'text-red-400' : 'text-gray-400'}`} />
+                <Select value={childAge} onValueChange={(value) => {
+                    setChildAge(value)
+                    if (showErrors) setShowErrors(false)
+                  }}>
+                  <SelectTrigger className={`w-full pl-10 h-15 text-base border-2 rounded-xl transition-colors ${
+                    showErrors && errors.childAge
+                      ? 'border-red-400 focus:border-red-500'
+                      : 'border-gray-200 focus:border-primary-500'
+                  }`}>
                     <SelectValue placeholder="Select age" />
                   </SelectTrigger>
                   <SelectContent>
@@ -167,15 +223,17 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                   </SelectContent>
                 </Select>
               </div>
+              {showErrors && errors.childAge && (
+                <p className="text-xs text-red-500 mt-1">Please select age</p>
+              )}
             </div>
           </div>
         </div>
 
         <DialogFooter className="pt-8">
-          <Button 
+          <Button
             onClick={handleNameSubmit}
-            disabled={!firstName.trim() || !childAge}
-            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 transition-all duration-200"
           >
             Continue to {firstName.trim() ? `${firstName.trim()}'s` : "My"} Party!
           </Button>

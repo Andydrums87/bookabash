@@ -6,7 +6,8 @@ import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import Link from "next/link"
-import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2, Search, ChevronDown, ChevronUp, X, ArrowUpDown, LayoutGrid, LayoutList, Users, Package, Mail, Phone } from "lucide-react"
+import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2, Search, ChevronDown, ChevronUp, X, ArrowUpDown, LayoutGrid, LayoutList, Users, Package, Mail, Phone, MessageSquare, Send, Loader2, CheckCheck } from "lucide-react"
+import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 import EnquiryResponseModal from "./components/EnquiryResponseModal"
 import CakeOrderCard from "../enquiries/components/CakeOrderCard"
 
@@ -364,6 +365,21 @@ function PartyEnquiryGroup({ partyId, partyEnquiries, onAccept, onDecline }) {
                           )}
 
                           <p className="text-sm font-semibold text-primary-600 mt-1">£{enquiry.quoted_price}</p>
+
+                          {/* Customer Message to Supplier */}
+                          {party?.supplier_messages?.[enquiry.supplier_id]?.message && (
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
+                              <div className="flex items-start gap-2">
+                                <MessageSquare className="w-3.5 h-3.5 text-primary-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-700 mb-0.5">Message from customer</p>
+                                  <p className="text-xs text-gray-600 whitespace-pre-wrap">
+                                    {party.supplier_messages[enquiry.supplier_id].message}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
@@ -402,6 +418,8 @@ function PartyEnquiryGroup({ partyId, partyEnquiries, onAccept, onDecline }) {
 // Party group card for confirmed bookings - Timeline Style Design
 function PartyBookingGroup({ partyId, partyBookings, onView, isCakeOrder, handleCakeStatusUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   // Get party info from the first booking
   const firstBooking = partyBookings[0]
@@ -409,6 +427,103 @@ function PartyBookingGroup({ partyId, partyBookings, onView, isCakeOrder, handle
   const customer = party?.users
   const partyDate = new Date(party?.party_date)
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+
+  // Check if email was already sent (from party data)
+  const emailAlreadySent = party?.booking_confirmed_email_sent || emailSent
+
+  // Send consolidated booking confirmation email
+  const handleSendConfirmationEmail = async (e) => {
+    e.stopPropagation()
+
+    if (emailAlreadySent) {
+      alert('Confirmation email has already been sent for this party.')
+      return
+    }
+
+    if (!confirm(`Send booking confirmation email to ${customer?.first_name} ${customer?.last_name} (${customer?.email})?`)) {
+      return
+    }
+
+    setSendingEmail(true)
+    try {
+      // Get all enquiry data for this party
+      const checkResult = await supplierEnquiryBackend.checkAllPartyEnquiriesAccepted(party.id)
+
+      if (!checkResult.success) {
+        throw new Error(checkResult.error || 'Failed to get party details')
+      }
+
+      // Get venue info
+      const venueData = party?.party_plan?.venue
+      const venueSupplier = venueData?.originalSupplier
+      const venue = venueData ? {
+        name: venueSupplier?.name || venueSupplier?.businessName || venueSupplier?.business_name || venueData?.name,
+        address: venueSupplier?.venueAddress?.fullAddress ||
+                 venueSupplier?.serviceDetails?.venueAddress?.fullAddress ||
+                 party?.location
+      } : null
+
+      // Format services for the email (category-focused, no supplier names)
+      const services = checkResult.enquiries.map(e => {
+        // Parse addon_details for package name
+        const addonDetails = typeof e.addon_details === 'string'
+          ? JSON.parse(e.addon_details || '{}')
+          : e.addon_details || {}
+
+        const packageName = addonDetails?.packageName ||
+                           addonDetails?.selectedPackage?.name ||
+                           addonDetails?.packageData?.name ||
+                           null
+
+        // Format category nicely
+        const formatCategory = (cat) => {
+          if (!cat) return 'Service'
+          // Capitalize first letter of each word
+          return cat.replace(/([a-z])([A-Z])/g, '$1 $2')
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, l => l.toUpperCase())
+        }
+
+        return {
+          category: formatCategory(e.supplier_category),
+          packageName: packageName,
+          price: parseFloat(e.final_price || e.quoted_price) || 0,
+        }
+      })
+
+      const emailResponse = await fetch("/api/email/booking-confirmed-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerEmail: customer?.email,
+          customerName: customer?.first_name,
+          childName: party?.child_name,
+          theme: party?.theme,
+          partyDate: party?.party_date,
+          partyTime: party?.party_time,
+          venue,
+          services,
+          totalValue: checkResult.totalValue,
+          dashboardLink: `${window.location.origin}/dashboard`,
+        }),
+      })
+
+      if (!emailResponse.ok) {
+        throw new Error('Failed to send email')
+      }
+
+      // Mark email as sent in database
+      await supplierEnquiryBackend.markConsolidatedEmailSent(party.id)
+
+      setEmailSent(true)
+      alert('Booking confirmation email sent successfully!')
+    } catch (err) {
+      console.error('Error sending confirmation email:', err)
+      alert('Failed to send email. Please try again.')
+    } finally {
+      setSendingEmail(false)
+    }
+  }
 
   // Calculate total value
   const totalValue = partyBookings.reduce((sum, b) => sum + (parseFloat(b.quoted_price) || 0), 0)
@@ -616,6 +731,21 @@ function PartyBookingGroup({ partyId, partyBookings, onView, isCakeOrder, handle
                           )}
 
                           <p className="text-sm font-semibold text-green-600 mt-1">£{booking.quoted_price}</p>
+
+                          {/* Customer Message to Supplier */}
+                          {party?.supplier_messages?.[booking.supplier_id]?.message && (
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
+                              <div className="flex items-start gap-2">
+                                <MessageSquare className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-700 mb-0.5">Message from customer</p>
+                                  <p className="text-xs text-gray-600 whitespace-pre-wrap">
+                                    {party.supplier_messages[booking.supplier_id].message}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={(e) => {
@@ -632,6 +762,43 @@ function PartyBookingGroup({ partyId, partyBookings, onView, isCakeOrder, handle
                 })}
               </div>
             </div>
+          </div>
+
+          {/* Send Confirmation Email Button */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              onClick={handleSendConfirmationEmail}
+              disabled={sendingEmail || emailAlreadySent}
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${
+                emailAlreadySent
+                  ? 'bg-green-50 text-green-700 cursor-default'
+                  : sendingEmail
+                    ? 'bg-gray-100 text-gray-500 cursor-wait'
+                    : 'bg-primary-500 text-white hover:bg-primary-600 active:scale-[0.98]'
+              }`}
+            >
+              {emailAlreadySent ? (
+                <>
+                  <CheckCheck className="w-4 h-4" />
+                  Confirmation Email Sent
+                </>
+              ) : sendingEmail ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Send Booking Confirmation to Customer
+                </>
+              )}
+            </button>
+            {!emailAlreadySent && (
+              <p className="text-xs text-gray-500 text-center mt-2">
+                This will email {customer?.first_name} with all confirmed supplier details
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -431,31 +431,10 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
         final_price: finalPrice ? Number(finalPrice) : null,
       })
 
-      // Send email notification
-      let emailSent = false
-      try {
-        const emailResponse = await fetch("/api/email/customer-response", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerEmail: customer?.email,
-            customerName: customer?.first_name,
-            childName: party?.child_name,
-            theme: party?.theme,
-            partyDate: party?.party_date,
-            supplierName: enquiry.supplier?.name || enquiry.businessName || 'Your Supplier',
-            supplierEmail: enquiry.supplier?.owner?.email || enquiry.supplier?.email,
-            supplierPhone: enquiry.supplier?.owner?.phone || enquiry.supplier?.phone,
-            serviceType: enquiry.supplier_category,
-            supplierMessage: responseMessage,
-            responseType: response,
-            dashboardLink: `${window.location.origin}/dashboard`,
-          }),
-        })
-        emailSent = emailResponse.ok
-      } catch (emailErr) {
-        console.error('Email sending failed:', emailErr)
-      }
+      // NOTE: Customer email is NOT sent automatically on supplier accept/decline
+      // The consolidated booking confirmation email is triggered manually via the dashboard
+      // once all suppliers have been confirmed by the PartySnap team
+      const emailSent = true // Mark as handled - no auto email
 
       // If accepted, sync to calendar and mark date as unavailable
       let calendarSynced = false

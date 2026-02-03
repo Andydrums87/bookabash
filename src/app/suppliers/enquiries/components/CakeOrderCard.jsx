@@ -5,6 +5,7 @@ import {
   Cake,
   MapPin,
   FileText,
+  MessageSquare,
 } from "lucide-react"
 import Link from "next/link"
 import {
@@ -209,6 +210,21 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
               </div>
             )}
           </div>
+
+          {/* Customer Message */}
+          {party?.supplier_messages?.[enquiry?.supplier_id]?.message && (
+            <div className="bg-primary-50 rounded-lg p-3 mb-4">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="w-3.5 h-3.5 text-primary-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-primary-700 mb-0.5">Customer message</p>
+                  <p className="text-xs text-gray-600 whitespace-pre-wrap line-clamp-2">
+                    {party.supplier_messages[enquiry.supplier_id].message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Minimal progress indicator */}
           <div className="flex items-center gap-1">

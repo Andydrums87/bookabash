@@ -34,7 +34,6 @@ import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
-import NextStepsWelcomeCard from "./components/NextStepsWelcomeCard"
 import SupplierAddedBanner from "./components/SupplierAddedBanner"
 import useDisableScroll from "@/hooks/useDisableScroll"
 import { useChatNotifications } from '../hooks/useChatNotifications'
@@ -77,6 +76,9 @@ import GuestsTabContent from "./components/tabs/GuestsTabContent"
 import TimelineTabContent from "./components/tabs/TimelineTabContent"
 import MoreTabContent from "./components/tabs/MoreTabContent"
 import SimplifiedSidebar from "./components/SimplifiedSidebar"
+import BudgetControls from "@/components/budget-controls"
+import ReferFriend from "@/components/ReferFriend"
+import SupportWidget from "./components/SupportWidget"
 
 
 
@@ -2012,12 +2014,6 @@ const addSuppliersSection = (
         </div>
       )}
 
-      {/* Next Steps Welcome Card - Shows after initial booking */}
-      <NextStepsWelcomeCard
-        suppliers={visibleSuppliers}
-        enquiries={enquiries}
-      />
-
       {/* Supplier Added Banner - Shows when adding suppliers later */}
       <SupplierAddedBanner />
       <EnquirySuccessBanner
@@ -2236,17 +2232,26 @@ const addSuppliersSection = (
           <aside className="hidden lg:block">
             <SimplifiedSidebar
               partyData={partyData}
-              suppliers={visibleSuppliers}
-              enquiries={enquiries}
-              onPaymentReady={handlePaymentReady}
-              totalOutstandingCost={outstandingData.totalDeposit}
-              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
               isPaymentConfirmed={isPaymentConfirmed}
               budgetControlProps={{
                 totalSpent: enhancedTotalCost,
               }}
             />
           </aside>
+        </div>
+
+        {/* Mobile Sidebar Content - shows below tabs on mobile/tablet */}
+        <div className="lg:hidden px-4 pb-8 space-y-4">
+          {/* Budget/Party Total - only show before payment is confirmed */}
+          {!isPaymentConfirmed && (
+            <BudgetControls totalSpent={enhancedTotalCost} />
+          )}
+
+          {/* Refer a Friend */}
+          <ReferFriend />
+
+          {/* Support Widget */}
+          <SupportWidget />
         </div>
       </div>
 

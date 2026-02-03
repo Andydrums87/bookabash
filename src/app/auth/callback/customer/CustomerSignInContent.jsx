@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { linkEmail } from "@/utils/partyTracking"
 import { AlertCircle, Loader2 } from "lucide-react"
 
 export default function CustomerAuthCallback() {
@@ -123,11 +124,34 @@ export default function CustomerAuthCallback() {
         }
   
         console.log("✅ User account verified, creating customer profile...")
-  
+
+        // Extract name from OAuth metadata
+        // Google uses: given_name, family_name, full_name
+        // Apple uses: name.firstName, name.lastName (only on first sign-in), or full_name
+        const getFirstName = () => {
+          // Google format
+          if (user.user_metadata?.given_name) return user.user_metadata.given_name
+          // Apple format (first sign-in only)
+          if (user.user_metadata?.name?.firstName) return user.user_metadata.name.firstName
+          // Fallback to full_name split
+          if (user.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0]
+          return ''
+        }
+
+        const getLastName = () => {
+          // Google format
+          if (user.user_metadata?.family_name) return user.user_metadata.family_name
+          // Apple format (first sign-in only)
+          if (user.user_metadata?.name?.lastName) return user.user_metadata.name.lastName
+          // Fallback to full_name split
+          if (user.user_metadata?.full_name) return user.user_metadata.full_name.split(' ').slice(1).join(' ')
+          return ''
+        }
+
         // Create or get customer profile
         const userResult = await partyDatabaseBackend.createOrGetUser({
-          firstName: user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || '',
-          lastName: user.user_metadata?.family_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          firstName: getFirstName(),
+          lastName: getLastName(),
           email: user.email,
           phone: user.user_metadata?.phone || '',
           postcode: ''
@@ -138,6 +162,9 @@ export default function CustomerAuthCallback() {
         }
   
         console.log("✅ Customer profile ready:", userResult.user.id)
+
+        // Link email to party tracking session (for CRM)
+        await linkEmail(user.email)
 
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 300))

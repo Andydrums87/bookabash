@@ -7,7 +7,8 @@ import BudgetControls from "@/components/budget-controls"
 import ReferFriend from "@/components/ReferFriend"
 import { Button } from "@/components/ui/button"
 import { Plus, Sparkles, X } from "lucide-react"
-import SnappysPresentParty from "./SnappysPresentParty"
+import RecentActivityWidget from "./RecentActivityWidget"
+import SupportWidget from "./SupportWidget"
 
 export default function Sidebar({
   partyData,
@@ -15,39 +16,28 @@ export default function Sidebar({
   budgetControlProps,
   suppliers,
   enquiries,
-  onPaymentReady,
-  totalOutstandingCost,
-  outstandingSuppliers,
   AddSuppliersSection,
 }) {
   const [showAddSuppliersModal, setShowAddSuppliersModal] = useState(false)
 
   if (!partyData) return null
 
-  const hasUnpaidAcceptedSuppliers = enquiries.some(e =>
-    e.status === 'accepted' && e.payment_status === 'unpaid'
-  )
-
-  const actuallyPaymentComplete = !hasUnpaidAcceptedSuppliers
-  const shouldShowPaymentCTA = hasUnpaidAcceptedSuppliers
-
   // Calculate empty suppliers
   const allSupplierTypes = ['venue', 'entertainment', 'cakes', 'decorations', 'facePainting', 'activities', 'partyBags', 'balloons', 'catering']
   const emptySlots = allSupplierTypes.filter(type => !suppliers[type]).length
 
+  // Get einvites from suppliers if available
+  const einvites = suppliers?.einvites || null
+
   return (
     <>
       <div className="space-y-6">
-        {/* Party Progress Widget */}
-        <SnappysPresentParty
-          suppliers={suppliers}
+        {/* Recent Activity Widget */}
+        <RecentActivityWidget
+          partyId={partyData.id}
           enquiries={enquiries}
-          timeRemaining={24}
-          onPaymentReady={onPaymentReady}
-          showPaymentCTA={shouldShowPaymentCTA}
-          isPaymentComplete={actuallyPaymentComplete}
-          totalOutstandingCost={totalOutstandingCost}
-          outstandingSuppliers={outstandingSuppliers}
+          partyData={partyData}
+          einvites={einvites}
         />
 
         {/* Add Suppliers Card */}
@@ -92,6 +82,9 @@ export default function Sidebar({
 
         {/* Refer Friend */}
         <ReferFriend />
+
+        {/* Support Widget */}
+        <SupportWidget />
       </div>
 
       {/* Add Suppliers Modal */}

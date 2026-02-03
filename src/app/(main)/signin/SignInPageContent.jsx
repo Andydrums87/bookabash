@@ -13,6 +13,7 @@ import { Eye, EyeOff, LogIn, Loader2, Building } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { getBaseUrl } from '@/utils/env'
+import { linkEmail } from "@/utils/partyTracking"
 
 export default function SignInPageContent() {
   const router = useRouter()
@@ -118,6 +119,9 @@ export default function SignInPageContent() {
       }
 
       console.log("✅ Customer profile ready:", userResult.user.id)
+
+      // Link email to party tracking session (for CRM)
+      await linkEmail(email)
 
       // Redirect back to where they came from or dashboard
       if (returnTo) {

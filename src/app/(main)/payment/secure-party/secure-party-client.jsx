@@ -27,6 +27,7 @@ import {
 
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
+import { trackPaymentPageStarted } from '@/utils/partyTracking'
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
 import { BookingTermsAcceptance } from '@/components/booking-terms-modal'
 import { supabase } from '@/lib/supabase'
@@ -41,6 +42,19 @@ import {
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
   locale: 'en-GB',
 })
+
+// ========================================
+// HELPER: Clear timer and refresh
+// ========================================
+const clearTimerAndRefresh = () => {
+  // Clear all booking timer keys from localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('booking_timer_')) {
+      localStorage.removeItem(key)
+    }
+  })
+  window.location.reload()
+}
 
 // ========================================
 // DATE FORMATTING HELPER
@@ -68,116 +82,49 @@ const formatDateWithOrdinal = (dateString) => {
 // ========================================
 function PaymentPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 animate-pulse">
-      <ContextualBreadcrumb currentPage="payment" />
-      
-      {/* Header Skeleton */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="space-y-2">
-            <div className="h-8 w-64 bg-gray-200 rounded"></div>
-            <div className="h-4 w-96 bg-gray-200 rounded"></div>
+    <div className="min-h-screen flex flex-col lg:flex-row animate-pulse">
+      {/* Left panel skeleton */}
+      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-2 lg:order-1">
+        <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
+          <div className="mb-8">
+            <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex justify-between">
+                <div>
+                  <div className="h-4 w-24 bg-gray-200 rounded mb-1"></div>
+                  <div className="h-3 w-32 bg-gray-100 rounded"></div>
+                </div>
+                <div className="h-4 w-12 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            <div className="flex justify-between">
+              <div className="h-4 w-16 bg-gray-200 rounded"></div>
+              <div className="h-4 w-16 bg-gray-200 rounded"></div>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-gray-200">
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column Skeleton */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Alert Skeleton */}
-            <div className="bg-gray-100 border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-48 bg-gray-200 rounded"></div>
-                  <div className="h-3 w-72 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Party Details Skeleton */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
-              <div className="grid grid-cols-2 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Services Skeleton */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                        <div className="space-y-2">
-                          <div className="h-5 w-32 bg-gray-200 rounded"></div>
-                          <div className="h-3 w-24 bg-gray-200 rounded"></div>
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-right">
-                        <div className="h-5 w-16 bg-gray-200 rounded ml-auto"></div>
-                        <div className="h-3 w-20 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* Right panel skeleton */}
+      <div className="lg:w-1/2 bg-white lg:min-h-screen order-1 lg:order-2">
+        <div className="max-w-md mr-auto px-6 lg:px-12 py-8 lg:py-16">
+          <div className="space-y-4">
+            <div className="h-12 w-full bg-gray-100 rounded"></div>
+            <div className="h-12 w-full bg-gray-100 rounded"></div>
+            <div className="h-12 w-full bg-gray-100 rounded"></div>
           </div>
-
-          {/* Right Column Skeleton */}
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
-              
-              {/* Summary Items */}
-              <div className="space-y-2 mb-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex justify-between">
-                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                    <div className="h-4 w-16 bg-gray-200 rounded"></div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between mb-3">
-                  <div className="h-5 w-32 bg-gray-200 rounded"></div>
-                  <div className="h-5 w-20 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-
-              {/* Protection Box */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                <div className="flex items-start space-x-3">
-                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                    <div className="h-3 w-full bg-gray-200 rounded"></div>
-                    <div className="h-3 w-full bg-gray-200 rounded"></div>
-                    <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Form Skeleton */}
-              <div className="space-y-4">
-                <div className="h-32 w-full bg-gray-100 rounded-lg border border-gray-200"></div>
-                <div className="h-12 w-full bg-gray-200 rounded-md"></div>
-              </div>
-            </div>
-          </div>
+          <div className="h-12 w-full bg-gray-200 rounded mt-6"></div>
         </div>
       </div>
     </div>
@@ -268,15 +215,18 @@ function BookingTimer({ partyId, onExpire, supplierCount = 0 }) {
 
   if (isExpired) {
     return (
-      <div className="fixed top-4 right-4 z-50 bg-red-50 border-2 border-red-300 rounded-lg shadow-lg p-3 max-w-xs animate-pulse">
+      <button
+        onClick={clearTimerAndRefresh}
+        className="fixed top-4 right-4 z-50 bg-primary-50 border-2 border-primary-300 rounded-lg shadow-lg p-3 max-w-xs hover:bg-primary-100 transition-colors cursor-pointer"
+      >
         <div className="flex items-center space-x-2">
-          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <div>
-            <h3 className="text-sm font-semibold text-red-900">Time Expired</h3>
-            <p className="text-xs text-red-700">Return to dashboard</p>
+          <AlertTriangle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+          <div className="text-left">
+            <h3 className="text-sm font-semibold text-primary-900">Session Expired</h3>
+            <p className="text-xs text-primary-700">Tap to refresh</p>
           </div>
         </div>
-      </div>
+      </button>
     )
   }
 
@@ -599,120 +549,110 @@ function PaymentForm({
   const isFormDisabled = isProcessing || isRedirecting || timerExpired
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        {!timerExpired && clientSecret && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Payment Method
-            </label>
-            <PaymentElement 
-              options={{
-                layout: {
-                  type: 'accordion',
-                  defaultCollapsed: true,
-                  radios: true,
-                  spacedAccordionItems: true
-                },
-                paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'klarna'],
-                wallets: {
-                  applePay: 'auto',
-                  googlePay: 'auto'
-                },
-                fields: {
-                  billingDetails: {
-                    name: 'auto',
-                    email: 'auto',
-                    address: {
-                      country: 'never',
-                      postalCode: 'auto'
-                    }
-                  }
-                },
-                terms: {
-                  card: 'never',
-                  klarna: 'auto'
+    <div className="space-y-5">
+      {!timerExpired && clientSecret && (
+        <PaymentElement
+          options={{
+            layout: {
+              type: 'tabs',
+              defaultCollapsed: false,
+              radios: false,
+              spacedAccordionItems: false
+            },
+            paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'klarna'],
+            wallets: {
+              applePay: 'auto',
+              googlePay: 'auto'
+            },
+            fields: {
+              billingDetails: {
+                name: 'auto',
+                email: 'auto',
+                address: {
+                  country: 'never',
+                  postalCode: 'auto'
                 }
-              }}
-            />
-          </div>
-        )}
+              }
+            },
+            terms: {
+              card: 'never',
+              klarna: 'auto'
+            }
+          }}
+        />
+      )}
 
-        {paymentError && !isRedirecting && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">{paymentError}</p>
-          </div>
-        )}
+      {paymentError && !isRedirecting && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm">{paymentError}</p>
+        </div>
+      )}
 
-        {timerExpired && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm font-semibold">Booking time has expired. Please return to your dashboard to restart.</p>
-          </div>
-        )}
+      {timerExpired && (
+        <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg text-center">
+          <p className="text-primary-800 text-sm font-medium mb-3">Your session has timed out. Refresh to continue with your booking.</p>
+          <button
+            onClick={clearTimerAndRefresh}
+            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors"
+          >
+            Refresh & Continue
+          </button>
+        </div>
+      )}
 
-        {!clientSecret && !timerExpired && (
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-600 text-sm">Loading payment options...</p>
-            </div>
+      {!clientSecret && !timerExpired && (
+        <div className="py-8">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+            <p className="text-gray-500 text-sm">Loading payment options...</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {partyDetails?.termsAccepted ? (
-          <div className="border border-green-200 rounded-lg p-4 mb-4 bg-green-50">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-900">
-                  Terms & Conditions Accepted
-                </p>
-                <p className="text-xs text-green-700 mt-1">
-                  You accepted our booking terms during checkout. Ready to complete payment.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <BookingTermsAcceptance
-            termsAccepted={bookingTermsAccepted}
-            setTermsAccepted={setBookingTermsAccepted}
-            partyDetails={partyDetails}
-            required={true}
-          />
-        )}
+      {partyDetails?.termsAccepted ? (
+        <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <p className="text-sm text-gray-600">
+            Terms & conditions accepted
+          </p>
+        </div>
+      ) : (
+        <BookingTermsAcceptance
+          termsAccepted={bookingTermsAccepted}
+          setTermsAccepted={setBookingTermsAccepted}
+          partyDetails={partyDetails}
+          required={true}
+        />
+      )}
 
-        <button 
+      {timerExpired ? (
+        <button
+          onClick={clearTimerAndRefresh}
+          className="cursor-pointer w-full bg-primary-500 hover:bg-primary-600 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm hover:shadow-md"
+        >
+          <span>Refresh & Continue</span>
+        </button>
+      ) : (
+        <button
           onClick={handlePayment}
           disabled={!stripe || isFormDisabled || !bookingTermsAccepted || !clientSecret}
-          className="cursor-pointer w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cursor-pointer w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
         >
           {isRedirecting ? (
             <div className="flex items-center justify-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Redirecting to confirmation...</span>
+              <span>Redirecting...</span>
             </div>
           ) : isProcessing ? (
             <div className="flex items-center justify-center space-x-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Processing Payment...</span>
+              <span>Processing...</span>
             </div>
-          ) : timerExpired ? (
-            <span>Booking Expired</span>
           ) : (
-            <div className="flex items-center justify-center space-x-2">
-              <Lock className="w-4 h-4" />
-              <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)} Securely</span>
-            </div>
+            <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
           )}
         </button>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs text-gray-500 text-center">
-          Secure payment powered by Stripe. Your payment details are encrypted and never stored.
-        </p>
-      </div>
+      )}
     </div>
   )
 }
@@ -919,6 +859,12 @@ export default function PaymentPageContent() {
         const addonsList = partyPlan.addons || []
         console.log('📦 Add-ons from party_plan:', addonsList)
 
+        // Check if we're adding a specific supplier (post-booking)
+        const isAddingSpecificSupplier = urlParams.get('add_supplier') === 'true'
+        const specificSupplierCategory = urlParams.get('supplier_category')
+
+        console.log('🎯 Add supplier mode:', { isAddingSpecificSupplier, specificSupplierCategory })
+
         const supplierList = Object.entries(partyPlan)
           .filter(([key, supplier]) => {
             // ✅ FIX: Exclude einvites and addons from payment
@@ -931,6 +877,14 @@ export default function PaymentPageContent() {
             if (paidCategories.has(key)) {
               console.log(`⏭️ Skipping ${key} - already paid`)
               return false
+            }
+
+            // ✅ NEW: If adding a specific supplier, ONLY include that category
+            if (isAddingSpecificSupplier && specificSupplierCategory) {
+              if (key !== specificSupplierCategory) {
+                console.log(`⏭️ Skipping ${key} - not the supplier being added (${specificSupplierCategory})`)
+                return false
+              }
             }
 
             // Only include valid supplier objects with names
@@ -1000,18 +954,52 @@ export default function PaymentPageContent() {
         setConfirmedSuppliers(supplierList)
         setPaymentBreakdown(breakdown)
         setPartyId(partyResult.party.id)
+
+        // Determine the display location - venue address takes priority over user's home
+        const venue = partyPlan.venue
+        let displayLocation = null
+
+        if (venue) {
+          // Check various venue address formats
+          const venueAddress = venue.venueAddress || venue.serviceDetails?.venueAddress || venue.data?.venueAddress
+          if (venueAddress) {
+            // Build full address from venue
+            const parts = [
+              venueAddress.line1 || venueAddress.addressLine1,
+              venueAddress.line2 || venueAddress.addressLine2,
+              venueAddress.city,
+              venueAddress.postcode
+            ].filter(Boolean)
+            displayLocation = parts.length > 0 ? parts.join(', ') : venue.name || venue.location
+          } else {
+            displayLocation = venue.name || venue.location || null
+          }
+        }
+
+        // Fallback to user's home address if no venue
+        if (!displayLocation) {
+          const userAddressParts = [
+            userResult.user.address_line_1,
+            userResult.user.address_line_2,
+            userResult.user.city,
+            userResult.user.postcode || partyResult.party.location
+          ].filter(Boolean)
+          displayLocation = userAddressParts.length > 0 ? userAddressParts.join(', ') : partyResult.party.location
+        }
+
         setPartyDetails({
           id: partyResult.party.id,
           childName: partyResult.party.child_name,
           theme: partyResult.party.theme,
           date: partyResult.party.party_date,
           childAge: partyResult.party.child_age,
-          location: partyResult.party.location,
+          location: displayLocation,
           guestCount: partyResult.party.guest_count,
           email: userResult.user.email,
           parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim(),
           termsAccepted: partyResult.party.terms_accepted || false,
-          termsAcceptedAt: partyResult.party.terms_accepted_at || null
+          termsAcceptedAt: partyResult.party.terms_accepted_at || null,
+          hasVenue: !!venue
         })
 
         // Fetch available referral credit for user
@@ -1078,6 +1066,9 @@ export default function PaymentPageContent() {
           setClientSecret('credit_only')
         }
   
+        // Track that user reached the payment page (Step 2 of checkout)
+        trackPaymentPageStarted()
+
       } catch (error) {
         console.error('Error loading payment data:', error)
         router.push('/dashboard')
@@ -1085,7 +1076,7 @@ export default function PaymentPageContent() {
         setLoading(false)
       }
     }
-  
+
     loadPaymentData()
   }, [router])
 
@@ -1163,176 +1154,187 @@ export default function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ContextualBreadcrumb currentPage="payment" />
-      
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {partyId && (
-        <BookingTimer 
-          partyId={partyId} 
+        <BookingTimer
+          partyId={partyId}
           onExpire={handleTimerExpire}
           onReset={handleTimerReset}
           supplierCount={confirmedSuppliers.length}
         />
       )}
-      
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="flex items-center space-x-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Secure Your Booking</h1>
-              <p className="text-gray-600 text-sm mt-1">Complete your payment to guarantee your party date</p>
+
+      {/* Left panel - Order summary (gray background) */}
+      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-2 lg:order-1">
+        <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
+
+          {/* Party header */}
+          <div className="mb-8">
+            <p className="text-sm text-gray-500 mb-1">Pay PartySnap</p>
+            <p className="text-4xl font-bold text-gray-900">
+              £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}
+            </p>
+          </div>
+
+          {/* Order items */}
+          <div className="space-y-4 mb-6">
+            {paymentBreakdown.paymentDetails.map((supplier) => (
+              <div key={supplier.id} className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
+                  <p className="text-xs text-gray-500">For {partyDetails.childName}'s party</p>
+                </div>
+                <p className="text-sm text-gray-900">£{supplier.amountToday}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Subtotal & Total */}
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="text-gray-900">£{paymentBreakdown.totalPaymentToday}</span>
             </div>
+
+            {creditApplied > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-600">Referral Credit</span>
+                <span className="text-green-600">-£{creditApplied.toFixed(2)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200">
+              <span className="text-gray-900">Total due</span>
+              <span className="text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Party details - compact */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Party Details</p>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                <span>{formatDateWithOrdinal(partyDetails.date)}</span>
+              </div>
+              <div className="flex items-center">
+                <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                <span>{partyDetails.location}</span>
+              </div>
+              <div className="flex items-center">
+                <Users className="w-4 h-4 text-gray-400 mr-2" />
+                <span>{partyDetails.guestCount || '10-15'} guests · Age {partyDetails.childAge}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Booking protection - minimal */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-center text-xs text-gray-500">
+              <Shield className="w-3.5 h-3.5 mr-1.5" />
+              <span>Secure booking · Customer support included</span>
+            </div>
+          </div>
+
+          {/* Powered by footer */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-400">
+              Powered by <span className="font-semibold">stripe</span>
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          <div className="lg:col-span-2 space-y-6">
-            
-            <div className="bg-primary-50 border border-[hsl(var(--primary-200))] rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="w-6 h-6 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-primary-800">Your suppliers are ready</h3>
-                  <p className="text-sm text-primary-600">Complete payment to secure {partyDetails.childName}'s {partyDetails.theme} party</p>
-                </div>
+      {/* Right panel - Payment form (white background) */}
+      <div className="lg:w-1/2 bg-white lg:min-h-screen order-1 lg:order-2">
+        <div className="max-w-md mr-auto px-6 lg:px-12 py-8 lg:py-16">
+
+          {creditApplied > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">£{creditApplied.toFixed(2)} referral credit applied</span>
+                </p>
               </div>
             </div>
+          )}
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Party Details</h2>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formatDateWithOrdinal(partyDetails.date)}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Users className="w-4 h-4" />
-                  <span>Age {partyDetails.childAge}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <MapPin className="w-4 h-4" />
-                  <span>{partyDetails.location}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Users className="w-4 h-4" />
-                  <span>{partyDetails.guestCount || '10-15'} guests</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Summary</h2>
-              
-              <div className="space-y-2 mb-4">
-                {paymentBreakdown.paymentDetails.map((supplier) => (
-                  <div key={supplier.id} className="flex justify-between text-sm">
-                    <span className="text-gray-600 capitalize">
-                      {supplier.category}
-                    </span>
-                    <span className="text-gray-900">£{supplier.amountToday}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-200 pt-4 mb-6 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span>
-                  <span>£{paymentBreakdown.totalPaymentToday}</span>
-                </div>
-
-                {creditApplied > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Referral Credit</span>
-                    <span>-£{creditApplied.toFixed(2)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-base font-medium text-gray-900 pt-2 border-t border-gray-100">
-                  <span>Total to Pay</span>
-                  <span>£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
-                </div>
-              </div>
-
-              {creditApplied > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-green-800">
-                    <span className="font-medium">Referral credit applied!</span> You're saving £{creditApplied.toFixed(2)} from your friend referrals.
-                  </p>
-                </div>
-              )}
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-start space-x-3">
-                  <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-sm font-medium text-blue-900 mb-1">Booking Protection</h3>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Full refund if suppliers cancel</li>
-                      <li>• 48-hour booking guarantee</li>
-                      <li>• Customer support included</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {clientSecret === 'credit_only' ? (
-                <CreditOnlyBooking
-                  partyDetails={partyDetails}
-                  creditApplied={creditApplied}
-                  onSuccess={handlePaymentSuccess}
-                  isRedirecting={isRedirecting}
-                  setIsRedirecting={setIsRedirecting}
-                />
-              ) : clientSecret ? (
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    clientSecret: clientSecret,
-                    appearance: {
-                      theme: 'stripe',
-                      variables: {
-                        colorPrimary: '#374151',
-                        colorBackground: '#ffffff',
-                        colorText: '#374151',
-                        colorDanger: '#ef4444',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        spacingUnit: '4px',
-                        borderRadius: '6px',
-                      },
+          {clientSecret === 'credit_only' ? (
+            <CreditOnlyBooking
+              partyDetails={partyDetails}
+              creditApplied={creditApplied}
+              onSuccess={handlePaymentSuccess}
+              isRedirecting={isRedirecting}
+              setIsRedirecting={setIsRedirecting}
+            />
+          ) : clientSecret ? (
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret: clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: '#0f172a',
+                    colorBackground: '#ffffff',
+                    colorText: '#1e293b',
+                    colorDanger: '#dc2626',
+                    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                    spacingUnit: '4px',
+                    borderRadius: '6px',
+                    fontSizeBase: '14px',
+                  },
+                  rules: {
+                    '.Input': {
+                      border: '1px solid #e2e8f0',
+                      boxShadow: 'none',
+                      padding: '12px',
                     },
-                  }}
-                >
-                  <PaymentForm
-                    partyDetails={partyDetails}
-                    confirmedSuppliers={confirmedSuppliers}
-                    addons={addons || []}
-                    paymentBreakdown={paymentBreakdown}
-                    onPaymentSuccess={handlePaymentSuccess}
-                    onPaymentError={handlePaymentError}
-                    isRedirecting={isRedirecting}
-                    setIsRedirecting={setIsRedirecting}
-                    timerExpired={timerExpired}
-                    clientSecret={clientSecret}
-                    creditApplied={creditApplied}
-                  />
-                </Elements>
-              ) : (
-                <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-600">Setting up secure payment...</p>
-                  </div>
-                </div>
-              )}
+                    '.Input:focus': {
+                      border: '1px solid #0f172a',
+                      boxShadow: '0 0 0 1px #0f172a',
+                    },
+                    '.Label': {
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      color: '#1e293b',
+                      marginBottom: '8px',
+                    },
+                    '.Tab': {
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                    },
+                    '.Tab--selected': {
+                      border: '1px solid #0f172a',
+                      backgroundColor: '#ffffff',
+                    },
+                  },
+                },
+              }}
+            >
+              <PaymentForm
+                partyDetails={partyDetails}
+                confirmedSuppliers={confirmedSuppliers}
+                addons={addons || []}
+                paymentBreakdown={paymentBreakdown}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentError={handlePaymentError}
+                isRedirecting={isRedirecting}
+                setIsRedirecting={setIsRedirecting}
+                timerExpired={timerExpired}
+                clientSecret={clientSecret}
+                creditApplied={creditApplied}
+              />
+            </Elements>
+          ) : (
+            <div className="py-16">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                <p className="text-sm text-gray-500">Loading...</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

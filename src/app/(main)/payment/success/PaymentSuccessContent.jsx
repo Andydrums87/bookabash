@@ -117,11 +117,18 @@ export default function PaymentSuccessPage() {
                   time: data.party.party_time,
                   location: data.party.location,
                   guestCount: data.party.guest_count,
-                  email: data.party.email,
+                  email: data.party.parent_email,
                   childAge: data.party.child_age
                 })
                 setLoading(false)
-                await markPaid()
+                // Mark paid with payment details for timeline
+                await markPaid({
+                  amount: data.party.total_paid || null,
+                  partyId: data.party.id,
+                  childName: data.party.child_name,
+                  theme: data.party.theme,
+                  paymentIntentId: paymentIntentId
+                })
                 return
               }
             }
@@ -158,8 +165,10 @@ export default function PaymentSuccessPage() {
         })
         setLoading(false)
 
-        // Mark payment as completed in tracking
-        await markPaid()
+        // Mark payment as completed in tracking (fallback with minimal data)
+        await markPaid({
+          paymentIntentId: paymentIntentId
+        })
       } catch (error) {
         console.error('Error loading booking details:', error)
         // Use fallback data
@@ -407,265 +416,197 @@ export default function PaymentSuccessPage() {
     )
   }
 
-  // Different content for adding supplier vs initial booking
+  // Adding supplier success page - Clean consistent design
   if (isAddingSupplier) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Email Confirmation Banner */}
-        <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
-          <div className="container mx-auto max-w-4xl">
-            <div className="flex items-center justify-center space-x-3">
-              <div className="text-center">
-                <span className="text-sm font-semibold text-green-900">
-                  Payment successful
-                </span>
-                <span className="text-sm text-green-800 mx-2 hidden sm:inline">•</span>
-                <span className="text-sm text-green-800 block sm:inline mt-1 sm:mt-0">
-                  Confirmation sent to <span className="font-medium">{bookingDetails.email}</span>
-                </span>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-xl mx-auto px-6 py-12">
+
+          {/* Header */}
+          <div className="mb-10">
+            <p className="text-gray-700 text-lg mb-4">
+              Exciting news!
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              {supplierName || `Your ${supplierCategory}`} is joining the party! A receipt has been sent to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
+            </p>
+          </div>
+
+          {/* What happens next */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">What happens next?</h2>
+
+            {/* Step 1 */}
+            <div className="mb-8">
+              <div className="flex items-center mb-3">
+                <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">1</span>
+                <h3 className="text-lg font-semibold text-gray-900">Wait for confirmation</h3>
               </div>
+              <p className="text-gray-600 leading-relaxed ml-10">
+                We're confirming your booking with {supplierName || 'the supplier'}. You'll receive a confirmation email within <span className="font-semibold">24 hours</span> once everything is locked in.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="mb-8">
+              <div className="flex items-center mb-3">
+                <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">2</span>
+                <h3 className="text-lg font-semibold text-gray-900">Check your dashboard</h3>
+              </div>
+              <p className="text-gray-600 leading-relaxed ml-10">
+                Your dashboard has been updated with your new supplier. You can view your complete party lineup and all booking details there.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="mb-8">
+              <div className="flex items-center mb-3">
+                <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">3</span>
+                <h3 className="text-lg font-semibold text-gray-900">We'll keep you updated</h3>
+              </div>
+              <p className="text-gray-600 leading-relaxed ml-10">
+                You'll receive reminders before your party with supplier contact details and any specific instructions.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="flex items-center justify-center px-4 py-12">
-          <div className="w-full max-w-2xl">
+          {/* Main CTA */}
+          <Button
+            onClick={handleReturnToDashboard}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-lg font-medium text-base"
+          >
+            Go to My Dashboard
+          </Button>
 
-            {/* Success Message */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {supplierName ? (
-                  <>🎉 Woohoo! {supplierName} is Joining the Party!</>
-                ) : (
-                  <>🎉 Woohoo! Your {supplierCategory || 'Supplier'} is Joining the Party!</>
-                )}
-              </h1>
-              <p className="text-gray-600 text-lg">
-                Your party just got even more amazing! Get ready for an unforgettable celebration! 🎈
-              </p>
-            </div>
-
-            {/* What's Happening Now */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <p className="text-sm text-blue-900 font-medium mb-3">
-                ✨ What's Happening Now?
-              </p>
-              <ul className="text-sm text-blue-800 space-y-2">
-                <li>• Payment confirmation is already in your inbox 📧</li>
-                <li>• {supplierName ? <><span className="font-semibold">{supplierName}</span> will</> : <>Your supplier will</>} be in touch within 24 hours to finalize the exciting details! 🎊</li>
-                <li>• Check your dashboard to see your complete party lineup 🎪</li>
-              </ul>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={handleReturnToDashboard}
-                className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3"
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Return to Dashboard
-              </Button>
-            </div>
-
-            {/* Reference Number */}
-            {paymentIntentId && (
-              <p className="text-xs text-gray-400 text-center mt-6">
-                Payment Reference: {paymentIntentId.slice(-8).toUpperCase()}
-              </p>
-            )}
-          </div>
+          {/* Reference Number */}
+          {paymentIntentId && (
+            <p className="text-xs text-gray-400 text-center mt-6">
+              Payment Reference: {paymentIntentId.slice(-8).toUpperCase()}
+            </p>
+          )}
         </div>
       </div>
     )
   }
 
-  // Initial booking success page
+  // Initial booking success page - Clean Sharesy-inspired design
   return (
-    <div className="min-h-screen bg-gray-50">
-
-      {/* Email Confirmation Banner - Fixed at Top like Treatwell */}
-      <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="flex items-center justify-center space-x-3">
-            {/* <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" /> */}
-            <div className="text-center">
-              <span className="text-sm font-semibold text-green-900">
-                Booking confirmed
-              </span>
-              <span className="text-sm text-green-800 mx-2 hidden sm:inline">•</span>
-              <span className="text-sm text-green-800 block sm:inline mt-1 sm:mt-0">
-                Confirmation sent to <span className="font-medium">{bookingDetails.email}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <div className="flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-2xl">
+      <div className="max-w-xl mx-auto px-6 py-12">
 
-          {/* Success Icon */}
-          <div className="text-center mb-8">
-            {/* <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div> */}
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              🎉 Woohoo! {bookingDetails.childName}'s Party is Booked!
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Get excited! An unforgettable {bookingDetails.theme} celebration is on its way! 🎈
+        {/* Header with greeting */}
+        <div className="mb-10">
+          <p className="text-gray-700 text-lg mb-4">
+            Congratulations!
+          </p>
+          <p className="text-gray-600 leading-relaxed">
+            {bookingDetails.childName}'s party is happening! We're so excited to help make this a day to remember. A receipt has been sent to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
+          </p>
+        </div>
+
+        {/* What happens next section */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">What happens next?</h2>
+
+          {/* Step 1 */}
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">1</span>
+              <h3 className="text-lg font-semibold text-gray-900">Wait for confirmation</h3>
+            </div>
+            <p className="text-gray-600 leading-relaxed ml-10">
+              We're confirming your booking with your suppliers. You'll receive a confirmation email within <span className="font-semibold">24 hours</span> once everything is locked in.
             </p>
           </div>
 
-          {/* Booking Details Card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-            
-            {/* Header */}
-            {/* <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] p-6 text-white">
-              <h2 className="text-2xl font-bold mb-1">
-                {bookingDetails.childName}'s Epic {bookingDetails.theme} Party! 🎂
-              </h2>
-              <p className="text-primary-100">
-                The ultimate age {bookingDetails.childAge} birthday bash is happening!
-              </p>
-            </div> */}
+          {/* Step 2 */}
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">2</span>
+              <h3 className="text-lg font-semibold text-gray-900">Invite your guests</h3>
+            </div>
+            <p className="text-gray-600 leading-relaxed ml-10">
+              We've created a guest list and e-invite tools for you. Share your party details with guests via WhatsApp, email, or our digital invites.
+            </p>
+            <button
+              onClick={handleReturnToDashboard}
+              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm underline underline-offset-2"
+            >
+              Go to my dashboard
+            </button>
+          </div>
 
-            {/* Main Details */}
-            <div className="p-6">
-              
-              {/* Date and Time - Large Display */}
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
-                <div>
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
-                    {formatTime(bookingDetails.time)}
-                  </div>
-                  <div className="text-lg text-gray-600">
-                    {formatDate(bookingDetails.date)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500 mb-1">Duration</div>
-                  <div className="text-xl font-semibold text-gray-900">2 hours</div>
-                </div>
-              </div>
+          {/* Step 3 */}
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">3</span>
+              <h3 className="text-lg font-semibold text-gray-900">We'll keep you updated</h3>
+            </div>
+            <p className="text-gray-600 leading-relaxed ml-10">
+              You'll receive reminders from us before your party. We'll also remind your suppliers about your booking and any specific requests you made.
+            </p>
+          </div>
 
-              {/* Location and Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Location
-                    </div>
-                    <div className="font-medium text-gray-900">
-                      {bookingDetails.location}
-                    </div>
-                  </div>
-                </div>
+          {/* Step 4 */}
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">4</span>
+              <h3 className="text-lg font-semibold text-gray-900">Save the date</h3>
+            </div>
+            <p className="text-gray-600 leading-relaxed ml-10">
+              Add the party to your calendar so you don't forget! We'll email you 48 hours before with final details and supplier contact information.
+            </p>
+            <button
+              onClick={handleAddToCalendar}
+              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm underline underline-offset-2"
+            >
+              Add to calendar
+            </button>
+          </div>
+        </div>
 
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Guests
-                    </div>
-                    <div className="font-medium text-gray-900">
-                      {bookingDetails.guestCount} children
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Cake className="w-5 h-5 text-pink-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Theme
-                    </div>
-                    <div className="font-medium text-gray-900">
-                      {bookingDetails.theme}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                      Status
-                    </div>
-                    <div className="font-medium text-green-600">
-                      All Set! ✨
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Add to Calendar Button */}
-              <button
-                onClick={handleAddToCalendar}
-                className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
-              >
-                <Calendar className="w-5 h-5" />
-                <span>Add to calendar</span>
-              </button>
-
+        {/* Booking summary card */}
+        <div className="bg-gray-50 rounded-xl p-6 mb-8">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Booking Summary</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Party for</span>
+              <span className="font-medium text-gray-900">{bookingDetails.childName} (Age {bookingDetails.childAge})</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Theme</span>
+              <span className="font-medium text-gray-900">{bookingDetails.theme ? `${bookingDetails.theme.charAt(0).toUpperCase()}${bookingDetails.theme.slice(1)}` : ''}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Date</span>
+              <span className="font-medium text-gray-900">{formatDate(bookingDetails.date)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Time</span>
+              <span className="font-medium text-gray-900">{formatTime(bookingDetails.time)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Guests</span>
+              <span className="font-medium text-gray-900">{bookingDetails.guestCount} children</span>
             </div>
           </div>
-
-          {/* Important Notes */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-blue-900 mb-2 text-sm">
-              ✨ What Happens Next?
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Your amazing suppliers are already preparing for the big day! 🎪</li>
-              <li>• Arrive 10 minutes early to set up the perfect party zone</li>
-              <li>• Check your inbox for all the fun details and supplier contacts 📧</li>
-              <li>• Need changes? Just let us know at least 48 hours ahead</li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
-              onClick={handleReturnToDashboard} 
-              className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Return to Dashboard
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => window.print()}
-              className="flex-1 border-gray-300 py-3"
-            >
-              Print Confirmation
-            </Button>
-          </div>
-
-          {/* Reference Number */}
-          {paymentIntentId && (
-            <p className="text-xs text-gray-400 text-center mt-6">
-              Booking Reference: {paymentIntentId.slice(-8).toUpperCase()}
-            </p>
-          )}
         </div>
+
+        {/* Main CTA */}
+        <Button
+          onClick={handleReturnToDashboard}
+          className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-lg font-medium text-base"
+        >
+          Go to My Dashboard
+        </Button>
+
+        {/* Reference Number */}
+        {paymentIntentId && (
+          <p className="text-xs text-gray-400 text-center mt-6">
+            Booking Reference: {paymentIntentId.slice(-8).toUpperCase()}
+          </p>
+        )}
       </div>
     </div>
   )

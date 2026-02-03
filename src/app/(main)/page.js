@@ -279,7 +279,8 @@ export default function HomePage() {
         }
       }
 
-  
+      // Save party details to localStorage for tracking and dashboard
+      localStorage.setItem('party_details', JSON.stringify(partyDetails));
 
       // ✅ Build party immediately without artificial delays
       const result = await buildParty(partyDetails)

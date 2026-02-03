@@ -52,16 +52,28 @@ function MobileCartIndicator({ className = "", onCartClick, currentPartyId }) {
 
   const handleCartClick = () => {
     console.log('🛒 Mobile cart clicked, partyId:', currentPartyId)
-    
+
     if (!currentPartyId) {
       console.warn('⚠️ No party ID available, redirecting to dashboard')
       router.push("/dashboard")
       onCartClick()
       return
     }
-    
+
     console.log('✅ Navigating to payment with party ID:', currentPartyId)
-    router.push(`/payment/secure-party?party_id=${currentPartyId}`)
+    // If only one supplier, pass add_supplier params for better receipt/success messaging
+    if (supplierCount === 1 && cartData.suppliers?.[0]) {
+      const supplier = cartData.suppliers[0]
+      const params = new URLSearchParams({
+        party_id: currentPartyId,
+        add_supplier: 'true',
+        ...(supplier.name && { supplier_name: supplier.name }),
+        ...(supplier.category && { supplier_category: supplier.category })
+      })
+      router.push(`/payment/secure-party?${params.toString()}`)
+    } else {
+      router.push(`/payment/secure-party?party_id=${currentPartyId}`)
+    }
     onCartClick()
   }
 

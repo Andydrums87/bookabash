@@ -2783,11 +2783,15 @@ export default function SupplierCustomizationModal({
                           key={pkg.id}
                           className={`relative flex-shrink-0 w-[200px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02] ring-3 ring-[hsl(var(--primary-200))]"
+                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md opacity-75"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
+                          {/* Selected overlay glow */}
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-[hsl(var(--primary-500))]/5 pointer-events-none z-10" />
+                          )}
                           {/* Package Image */}
                           <div className="relative w-full h-28">
                             {pkg.image || pkg.imageUrl ? (
@@ -2816,8 +2820,8 @@ export default function SupplierCustomizationModal({
                             )}
                             {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
-                                <Check className="w-3 h-3 text-white" />
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-lg ring-2 ring-white">
+                                <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
@@ -2862,13 +2866,17 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden border-2 ${
+                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden border-3 ${
                           isSelected
-                            ? "border-[hsl(var(--primary-500))] shadow-xl scale-[1.02]"
-                            : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-md hover:shadow-lg"
-                        } ${isPremium ? 'ring-2 ring-amber-400' : ''}`}
+                            ? "border-[hsl(var(--primary-500))] shadow-xl scale-[1.02] ring-4 ring-[hsl(var(--primary-200))]"
+                            : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-md hover:shadow-lg opacity-75 hover:opacity-100"
+                        } ${isPremium && !isSelected ? 'ring-2 ring-amber-400' : ''}`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
+                        {/* Selected overlay glow */}
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-[hsl(var(--primary-500))]/5 pointer-events-none z-10" />
+                        )}
                         {/* Package Image */}
                         <div className="relative w-full h-32">
                           {pkg.image || pkg.imageUrl ? (
@@ -2897,8 +2905,8 @@ export default function SupplierCustomizationModal({
                           )}
                           {/* Selection checkmark */}
                           {isSelected && (
-                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md z-20">
-                              <Check className="w-4 h-4 text-white" />
+                            <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-lg z-20 ring-2 ring-white">
+                              <Check className="w-4 h-4 text-white" strokeWidth={3} />
                             </div>
                           )}
                         </div>

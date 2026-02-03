@@ -4,6 +4,8 @@ import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
 import SitePasswordGate from "@/components/SitePasswordGate";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
+import PageViewTracker from "@/components/PageViewTracker";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -78,6 +80,8 @@ export default function RootLayout({ children }) {
           {children}
           <CookieConsent />
         </SitePasswordGate>
+        <Analytics />
+        <PageViewTracker />
       </body>
     </html>
   );

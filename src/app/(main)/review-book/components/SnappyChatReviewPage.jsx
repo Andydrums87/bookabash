@@ -65,7 +65,7 @@ import {
   getDisplayPrice,
   getPriceBreakdownText
 } from '@/utils/unifiedPricing'
-import { trackCheckoutStarted, linkEmail } from '@/utils/partyTracking';
+import { trackCheckoutStarted, trackReviewBookStarted, linkEmail } from '@/utils/partyTracking';
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
@@ -98,6 +98,10 @@ export default function SnappyChatReviewPage() {
   const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupFieldErrors, setSignupFieldErrors] = useState({});
+
+  // Supplier messages state - keyed by supplier ID for exact matching in enquiries
+  const [supplierMessages, setSupplierMessages] = useState({});
+  const [selectedMessageSupplier, setSelectedMessageSupplier] = useState("");
 
   // Signup form state
   const [signupFormData, setSignupFormData] = useState({
@@ -161,6 +165,13 @@ export default function SnappyChatReviewPage() {
       showMainForm: true
     },
     {
+      id: 'supplier-messages',
+      title: "Messages for Suppliers",
+      description: "Add personalised notes to your suppliers (Optional)",
+      showSupplierMessages: true,
+      optional: true
+    },
+    {
       id: 'forgotten',
       title: "Anything Missing?",
       description: "Here are some popular extras you might want to add (Optional)",
@@ -172,6 +183,8 @@ export default function SnappyChatReviewPage() {
   useEffect(() => {
     loadPartyDataFromLocalStorage();
     checkAuthStatusAndLoadProfile();
+    // Track that user reached the review-book page (Step 1 of checkout)
+    trackReviewBookStarted();
   }, []);
 
   useEffect(() => {
@@ -583,6 +596,17 @@ export default function SnappyChatReviewPage() {
         theme: partyDetailsLS.theme || "party",
         budget: parseInt(partyDetailsLS.budget) || 600,
         specialRequirements: formData.additionalMessage || "",
+        // Supplier-specific messages keyed by supplier ID for exact matching in enquiries
+        supplierMessages: Object.fromEntries(
+          Object.entries(supplierMessages)
+            .filter(([_, data]) => data?.message?.trim())
+            .map(([supplierId, data]) => [supplierId, {
+              supplierId: data.supplierId,
+              supplierName: data.supplierName,
+              supplierType: data.supplierType,
+              message: data.message.trim()
+            }])
+        ),
         dietaryRequirements: formData.dietaryRequirements,
         dietaryRequirementsArray: dietaryRequirementsArray,
         hasDietaryRequirements: dietaryRequirementsArray.length > 0,
@@ -724,6 +748,9 @@ export default function SnappyChatReviewPage() {
       // Set the user and proceed to next step
       setUser(authenticatedUser);
 
+      // Link email to tracking session for CRM
+      linkEmail(authenticatedUser.email);
+
       toast.success("Welcome back!", {
         duration: 3000
       });
@@ -822,6 +849,9 @@ export default function SnappyChatReviewPage() {
       // Set the user and proceed to next step
       setUser(authenticatedUser);
       setCustomerProfile(userResult.user);
+
+      // Link email to tracking session for CRM
+      linkEmail(authenticatedUser.email);
 
       // Pre-fill form data with user info
       setFormData((prev) => ({
@@ -1070,9 +1100,15 @@ export default function SnappyChatReviewPage() {
     }
   };
   
+  // Check if any supplier messages have been added
+  const hasSupplierMessages = Object.values(supplierMessages).some(msg => msg?.message?.trim());
+
   const getButtonText = (stepData) => {
     if (stepData.id === 'forgotten') {
       return hasAddedOnCurrentStep ? 'Continue' : 'Skip this';
+    }
+    if (stepData.id === 'supplier-messages') {
+      return hasSupplierMessages ? 'Continue' : 'Skip this';
     }
     if (stepData.optional) return 'Skip this';
     return 'Continue';
@@ -1080,6 +1116,9 @@ export default function SnappyChatReviewPage() {
 
   const getButtonIcon = (stepData) => {
     if (stepData.id === 'forgotten' && hasAddedOnCurrentStep) {
+      return <ArrowRight className="w-4 h-4 ml-2" />;
+    }
+    if (stepData.id === 'supplier-messages' && hasSupplierMessages) {
       return <ArrowRight className="w-4 h-4 ml-2" />;
     }
     if (!stepData.optional) return <ArrowRight className="w-4 h-4 ml-2" />;
@@ -1301,23 +1340,113 @@ export default function SnappyChatReviewPage() {
                           </div>
                         </div> */}
 
-                        {/* Special Requests */}
-                        <div className="rounded-lg ">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            Special Requests (Optional)
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-3">
-                            Any special requests or theme details for suppliers
-                          </p>
+                      </div>
+                    )}
 
-                          <Textarea
-                            placeholder="e.g., 'Please set up by 1pm', 'Superhero theme', 'Child sensitive to loud noises'..."
-                            value={formData.additionalMessage}
-                            onChange={(e) => updateFormData('additionalMessage', e.target.value)}
-                            className="min-h-[100px] placeholder:text-gray-400 placeholder:text-xs text-base border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-md"
-                          />
-                        </div>
+                    {/* Supplier Messages */}
+                    {currentStepData.showSupplierMessages && (
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-600 mb-4">
+                          Tap a supplier to add a personalised message for them.
+                        </p>
+
+                        {/* Simple list of all suppliers */}
+                        {selectedSuppliers.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedSuppliers.map((supplier) => {
+                              const supplierId = supplier.id || supplier.supplierId;
+                              const supplierName = supplier.name || supplier.supplierName || 'Unknown Supplier';
+                              const supplierType = supplier.type || supplier.supplierType || supplier.category || 'supplier';
+                              const hasMessage = supplierMessages[supplierId]?.message?.trim();
+                              const isExpanded = selectedMessageSupplier === supplierId;
+
+                              return (
+                                <div
+                                  key={supplierId}
+                                  className={`border rounded-xl overflow-hidden transition-all duration-200 ${
+                                    isExpanded
+                                      ? 'border-primary-400 bg-primary-50/50'
+                                      : hasMessage
+                                        ? 'border-green-300 bg-green-50/30'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  {/* Supplier header - always visible */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedMessageSupplier(isExpanded ? '' : supplierId)}
+                                    className="w-full p-3 flex items-center justify-between text-left"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-900">{supplierName}</span>
+                                      <span className="text-xs text-gray-500 capitalize">({supplierType})</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {hasMessage && !isExpanded && (
+                                        <span className="text-xs text-green-600 flex items-center gap-1">
+                                          <CheckCircle className="w-3 h-3" /> Message added
+                                        </span>
+                                      )}
+                                      <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                      </span>
+                                    </div>
+                                  </button>
+
+                                  {/* Expanded message input */}
+                                  {isExpanded && (
+                                    <div className="px-3 pb-3 space-y-2">
+                                      <Textarea
+                                        placeholder="e.g., 'Please arrive 30 mins early', 'We'd love a Frozen theme', 'Child is sensitive to loud noises'..."
+                                        value={supplierMessages[supplierId]?.message || ''}
+                                        onChange={(e) => {
+                                          setSupplierMessages(prev => ({
+                                            ...prev,
+                                            [supplierId]: {
+                                              supplierId: supplierId,
+                                              supplierName: supplierName,
+                                              supplierType: supplierType,
+                                              message: e.target.value
+                                            }
+                                          }));
+                                        }}
+                                        className="min-h-[80px] placeholder:text-gray-400 placeholder:text-xs text-sm border-gray-200 focus:border-primary-400 resize-none rounded-lg bg-white"
+                                        autoFocus
+                                      />
+                                      {hasMessage && (
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-green-600 flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" /> Saved
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSupplierMessages(prev => {
+                                                const updated = { ...prev };
+                                                delete updated[supplierId];
+                                                return updated;
+                                              });
+                                            }}
+                                            className="text-xs text-gray-400 hover:text-red-500"
+                                          >
+                                            Clear message
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 text-gray-500">
+                            <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No suppliers selected yet. Add suppliers to your party first.</p>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1376,6 +1505,36 @@ export default function SnappyChatReviewPage() {
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                               </svg>
                               <span className="font-semibold text-gray-800">Continue with Google</span>
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full h-12 bg-white border-2 border-gray-300 hover:border-[hsl(var(--primary-500))] hover:bg-gray-50 hover:shadow-md transition-all duration-200 shadow-sm"
+                              onClick={async () => {
+                                try {
+                                  // Store return path - callback checks localStorage for this
+                                  localStorage.setItem('oauth_return_to', '/review-book');
+                                  localStorage.setItem('oauth_preserve_party', 'true');
+                                  localStorage.setItem('oauth_context', 'review_book');
+
+                                  const { error } = await supabase.auth.signInWithOAuth({
+                                    provider: 'apple',
+                                    options: {
+                                      redirectTo: `${window.location.origin}/auth/callback/customer?return_to=/review-book&preserve_party=true&context=review_book`,
+                                    },
+                                  });
+                                  if (error) throw error;
+                                } catch (err) {
+                                  setSignupError("Failed to sign in with Apple. Please try again.");
+                                }
+                              }}
+                              disabled={isSubmitting}
+                            >
+                              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#000000" />
+                              </svg>
+                              <span className="font-semibold text-gray-800">Continue with Apple</span>
                             </Button>
 
                             <div className="relative">

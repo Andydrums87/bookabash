@@ -161,7 +161,19 @@ function CartIndicator({ className = "", partyId }) {
   }
 
   const handlePaymentClick = () => {
-    router.push(`/payment/secure-party?party_id=${partyId}`)
+    // If only one supplier, pass add_supplier params for better receipt/success messaging
+    if (supplierCount === 1 && cartData.suppliers?.[0]) {
+      const supplier = cartData.suppliers[0]
+      const params = new URLSearchParams({
+        party_id: partyId,
+        add_supplier: 'true',
+        ...(supplier.name && { supplier_name: supplier.name }),
+        ...(supplier.category && { supplier_category: supplier.category })
+      })
+      router.push(`/payment/secure-party?${params.toString()}`)
+    } else {
+      router.push(`/payment/secure-party?party_id=${partyId}`)
+    }
   }
 
   return (
@@ -644,7 +656,7 @@ const handleSignOut = async () => {
           {/* Right side - Search + CTA */}
           <div className="flex items-center space-x-4">
             {/* Search Button */}
-            <Button 
+            {/* <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleSearchToggle}
@@ -654,7 +666,7 @@ const handleSignOut = async () => {
               <span className="sr-only">
                 {isSearchOpen ? 'Close search' : 'Open search'}
               </span>
-            </Button>
+            </Button> */}
 
             {/* Desktop CTAs or User Menu */}
             <div className="hidden md:flex items-center space-x-2">

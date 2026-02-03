@@ -981,6 +981,169 @@ async getCakeOrders(orderStatus = null) {
     return { success: false, error: error.message }
   }
 }
+
+/**
+ * Check if all enquiries for a party have been accepted
+ * Returns details needed to send consolidated booking confirmation
+ * @param {string} partyId - The party ID to check
+ */
+async checkAllPartyEnquiriesAccepted(partyId) {
+  try {
+    // Get all paid enquiries for this party
+    const { data: enquiries, error: enquiriesError } = await supabase
+      .from('enquiries')
+      .select(`
+        id,
+        supplier_id,
+        supplier_category,
+        status,
+        quoted_price,
+        final_price,
+        supplier_response,
+        addon_details,
+        payment_status
+      `)
+      .eq('party_id', partyId)
+      .in('payment_status', ['paid', 'fully_paid', 'deposit_paid'])
+
+    if (enquiriesError) throw enquiriesError
+
+    console.log(`📋 Found ${enquiries?.length || 0} paid enquiries for party ${partyId}`)
+    if (enquiries?.length > 0) {
+      console.log('📋 Enquiry statuses:', enquiries.map(e => ({
+        id: e.id.slice(0, 8),
+        category: e.supplier_category,
+        status: e.status,
+        payment_status: e.payment_status
+      })))
+    }
+
+    if (!enquiries || enquiries.length === 0) {
+      return { success: true, allAccepted: false, reason: 'No paid enquiries found' }
+    }
+
+    // Check if all enquiries are accepted
+    const pendingEnquiries = enquiries.filter(e => e.status !== 'accepted')
+    const acceptedEnquiries = enquiries.filter(e => e.status === 'accepted')
+
+    if (pendingEnquiries.length > 0) {
+      return {
+        success: true,
+        allAccepted: false,
+        totalEnquiries: enquiries.length,
+        acceptedCount: acceptedEnquiries.length,
+        pendingCount: pendingEnquiries.length,
+        reason: `${pendingEnquiries.length} enquiries still pending`
+      }
+    }
+
+    // All accepted! Get party and customer details for the email
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('id', partyId)
+      .single()
+
+    if (partyError) throw partyError
+
+    // Get customer details
+    let customer = null
+    if (party?.user_id) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', party.user_id)
+        .single()
+
+      if (!userError) {
+        customer = userData
+      }
+    }
+
+    // Get supplier details for each enquiry
+    const supplierIds = [...new Set(enquiries.map(e => e.supplier_id))]
+    const { data: suppliers, error: suppliersError } = await supabase
+      .from('suppliers')
+      .select('id, business_name, data')
+      .in('id', supplierIds)
+
+    if (suppliersError) {
+      console.warn('Failed to fetch suppliers:', suppliersError)
+    }
+
+    // Map supplier data to enquiries
+    const supplierMap = new Map((suppliers || []).map(s => [s.id, s]))
+    const enrichedEnquiries = enquiries.map(e => {
+      const supplier = supplierMap.get(e.supplier_id)
+      const supplierData = typeof supplier?.data === 'string'
+        ? JSON.parse(supplier.data)
+        : supplier?.data || {}
+      return {
+        ...e,
+        supplierName: supplier?.business_name || supplierData?.name || 'Supplier',
+        supplierEmail: supplierData?.owner?.email || supplierData?.email,
+        supplierPhone: supplierData?.owner?.phone || supplierData?.phone
+      }
+    })
+
+    return {
+      success: true,
+      allAccepted: true,
+      party,
+      customer,
+      enquiries: enrichedEnquiries,
+      totalValue: enquiries.reduce((sum, e) => sum + (parseFloat(e.final_price || e.quoted_price) || 0), 0)
+    }
+
+  } catch (error) {
+    console.error('❌ Error checking party enquiries:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Check if consolidated booking email has already been sent for this party
+ * @param {string} partyId - The party ID to check
+ */
+async hasConsolidatedEmailBeenSent(partyId) {
+  try {
+    const { data: party, error } = await supabase
+      .from('parties')
+      .select('booking_confirmed_email_sent')
+      .eq('id', partyId)
+      .single()
+
+    if (error) throw error
+
+    return { success: true, sent: party?.booking_confirmed_email_sent === true }
+  } catch (error) {
+    console.error('❌ Error checking email sent status:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Mark that consolidated booking email has been sent for this party
+ * @param {string} partyId - The party ID to mark
+ */
+async markConsolidatedEmailSent(partyId) {
+  try {
+    const { error } = await supabase
+      .from('parties')
+      .update({
+        booking_confirmed_email_sent: true,
+        booking_confirmed_email_sent_at: new Date().toISOString()
+      })
+      .eq('id', partyId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('❌ Error marking email as sent:', error)
+    return { success: false, error: error.message }
+  }
+}
 }
 
 // Cake/product order status constants

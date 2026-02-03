@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { getBaseUrl } from "@/utils/env"
 import { processReferralSignup } from "@/utils/referralUtils"
+import { linkEmail } from "@/utils/partyTracking"
 
 export default function SignUpPageContent() {
   const router = useRouter()
@@ -175,6 +176,9 @@ export default function SignUpPageContent() {
       if (referralResult.referralRecorded) {
         console.log("🎉 Referral recorded for new user!")
       }
+
+      // Link email to party tracking session (for CRM)
+      await linkEmail(formData.email)
 
       // Check if email confirmation is required
       if (authData.user && !authData.session) {

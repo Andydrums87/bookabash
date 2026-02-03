@@ -96,6 +96,10 @@ async function processPaymentSuccess(paymentIntent) {
     const partyPlan = party.party_plan || {}
     console.log('📦 Party plan categories:', Object.keys(partyPlan))
 
+    // Get supplier-specific messages from party data (keyed by supplier ID)
+    const supplierMessages = party.supplier_messages || {}
+    const generalSpecialRequests = party.special_requirements || ''
+
     for (const [category, supplier] of Object.entries(partyPlan)) {
       if (!supplier || typeof supplier !== 'object' || ['addons', 'einvites'].includes(category)) {
         continue
@@ -122,10 +126,25 @@ async function processPaymentSuccess(paymentIntent) {
         console.log(`🎂 Including cake customization for ${category}`)
       }
 
+      // Build the message: supplier-specific message takes priority, then general special requests
+      const supplierSpecificMessage = supplierMessages[supplier.id]?.message || ''
+      let enquiryMessage = 'BOOKING CONFIRMED - Customer has completed FULL payment'
+
+      // Add supplier-specific message if provided
+      if (supplierSpecificMessage) {
+        enquiryMessage += `\n\n📝 Customer message for you:\n"${supplierSpecificMessage}"`
+      }
+
+      // Add general special requests if provided and different from supplier message
+      if (generalSpecialRequests && generalSpecialRequests !== supplierSpecificMessage) {
+        enquiryMessage += `\n\n📋 General party notes:\n"${generalSpecialRequests}"`
+      }
+
       const enquiryData = {
         supplier_id: supplier.id,
         supplier_category: category,
-        message: 'BOOKING CONFIRMED - Customer has completed FULL payment',
+        message: enquiryMessage,
+        special_requests: supplierSpecificMessage || generalSpecialRequests || null,
         quoted_price: supplier.price || 0,
         package_id: supplier.packageId || supplier.packageData?.id || supplier.packageData?.name || null,
         addon_details: Object.keys(addonDetailsObj).length > 0 ? addonDetailsObj : null

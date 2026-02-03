@@ -40,10 +40,19 @@ export default function EnquirySuccessBanner({ partyId }) {
   }
 
   const handleSecureBooking = () => {
-
-      
     if (partyId) {
-      router.push(`/payment/secure-party?party_id=${partyId}`)
+      // Get supplier details from URL params to pass through to payment
+      const supplierName = searchParams.get('supplier_name')
+      const supplierCategory = searchParams.get('supplier_category')
+
+      const params = new URLSearchParams({
+        party_id: partyId,
+        add_supplier: 'true',
+        ...(supplierName && { supplier_name: supplierName }),
+        ...(supplierCategory && { supplier_category: supplierCategory })
+      })
+
+      router.push(`/payment/secure-party?${params.toString()}`)
     } else {
       // Fallback - go to dashboard and let user navigate from there
       router.push('/dashboard')

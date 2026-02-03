@@ -5,6 +5,7 @@ import { AlertCircle, Check, Send } from 'lucide-react'
 import { getCurrentState, checkForUnsavedChanges, generateInviteId, copyToClipboard, formatThemeDisplayName } from '../utils/helperFunctions'
 import { SAVE_BUTTON_STATES } from '../constants/inviteConstants'
 import { urlGenerator } from '@/utils/urlGenerator'
+import { trackEInviteShared } from '@/utils/partyTracking'
 
 export const useSaveState = (selectedTheme, inviteData, guestList, generatedImage, useAIGeneration, themes) => {
   const [isSaved, setIsSaved] = useState(false)
@@ -87,11 +88,15 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
   }
 
   // Copy shareable link
-  const copyShareableLink = async () => {
-    const link = await generateShareableLink() 
+  const copyShareableLink = async (partyId = null) => {
+    const link = await generateShareableLink()
     const success = await copyToClipboard(link)
     if (success) {
       alert("Invite link copied to clipboard!")
+      // Track the share (non-blocking)
+      if (partyId) {
+        trackEInviteShared(partyId, 'copy_link')
+      }
     }
   }
 

@@ -4,6 +4,13 @@
 // Import client supabase (always available)
 import { supabase as supabaseClient } from '@/lib/supabase'
 import { getEnhancedGiftSuggestions } from './rapidAPIProducts'
+import {
+  trackPostBookingSupplierAdded,
+  trackEInviteCreated,
+  trackGuestAdded,
+  trackGiftRegistryCreated,
+  trackGiftItemAdded
+} from './partyTracking'
 
 // Dynamic function to get the appropriate Supabase client
 // Server-side: Use admin client (service role) for full access
@@ -240,6 +247,8 @@ class PartyDatabaseBackend {
         theme: partyDetails.theme,
         budget: partyDetails.budget,
         special_requirements: partyDetails.specialRequirements,
+        // Supplier-specific messages keyed by supplier ID
+        supplier_messages: partyDetails.supplierMessages || {},
         party_plan: partyPlan,
         estimated_cost: this.calculatePartyPlanCost(partyPlan),
 
@@ -1026,8 +1035,8 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
         party_id: partyId,
         supplier_id: supplier.id,
         supplier_category: supplierType,
-        status: 'accepted',
-        auto_accepted: true,
+        status: 'pending',
+        auto_accepted: false,
         payment_status: 'unpaid', // Will be updated when payment is made
         quoted_price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
         package_id: selectedPackage?.id || null,
@@ -1036,16 +1045,49 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
         updated_at: new Date().toISOString()
       }
 
-      const { data: enquiry, error: enquiryError } = await supabase
+      // Check if enquiry already exists for this party + supplier combination
+      const { data: existingEnquiry } = await supabase
         .from('enquiries')
-        .insert(enquiryData)
-        .select()
-        .single()
+        .select('id')
+        .eq('party_id', partyId)
+        .eq('supplier_id', supplier.id)
+        .maybeSingle()
+
+      let enquiry = null
+      let enquiryError = null
+
+      if (existingEnquiry) {
+        // Update existing enquiry instead of creating duplicate
+        console.log('📝 Updating existing enquiry:', existingEnquiry.id)
+        const { data, error } = await supabase
+          .from('enquiries')
+          .update({
+            ...enquiryData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingEnquiry.id)
+          .select()
+          .single()
+        enquiry = data
+        enquiryError = error
+      } else {
+        // Create new enquiry
+        const { data, error } = await supabase
+          .from('enquiries')
+          .insert(enquiryData)
+          .select()
+          .single()
+        enquiry = data
+        enquiryError = error
+      }
 
       if (enquiryError) {
-        console.error('❌ Failed to create enquiry:', enquiryError)
+        console.error('❌ Failed to create/update enquiry:', enquiryError)
         // Don't fail the whole operation, just log it
       }
+
+      // Track post-booking supplier addition (non-blocking)
+      trackPostBookingSupplierAdded(partyId, supplier)
 
       return {
         success: true,
@@ -1150,25 +1192,59 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       status: 'pending',
       created_at: new Date().toISOString()
     }
-       
-    
-       
-    // Insert enquiry
-    const { data: newEnquiry, error: insertError } = await supabase
+
+    // Check if enquiry already exists for this party + supplier combination
+    const { data: existingEnquiry } = await supabase
       .from('enquiries')
-      .insert(enquiryData)
-      .select(`
-        *,
-        suppliers:supplier_id (
-          id,
-          business_name,
-          data
-        )
-      `)
-      .single()
-       
+      .select('id')
+      .eq('party_id', partyId)
+      .eq('supplier_id', supplier.id)
+      .maybeSingle()
+
+    let newEnquiry
+    let insertError
+
+    if (existingEnquiry) {
+      // Update existing enquiry instead of creating duplicate
+      console.log('📝 Updating existing enquiry:', existingEnquiry.id)
+      const { data, error } = await supabase
+        .from('enquiries')
+        .update({
+          ...enquiryData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingEnquiry.id)
+        .select(`
+          *,
+          suppliers:supplier_id (
+            id,
+            business_name,
+            data
+          )
+        `)
+        .single()
+      newEnquiry = data
+      insertError = error
+    } else {
+      // Insert new enquiry
+      const { data, error } = await supabase
+        .from('enquiries')
+        .insert(enquiryData)
+        .select(`
+          *,
+          suppliers:supplier_id (
+            id,
+            business_name,
+            data
+          )
+        `)
+        .single()
+      newEnquiry = data
+      insertError = error
+    }
+
     if (insertError) {
-      console.error('❌ Error creating individual enquiry:', insertError)
+      console.error('❌ Error creating/updating individual enquiry:', insertError)
       throw insertError
     }
        
@@ -1997,28 +2073,62 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         message: customMessage || `Individual enquiry for ${party.child_name || 'child'}'s ${party.theme || 'themed'} party`,
         special_requests: party.special_requirements || null,
         quoted_price: totalQuotedPrice,
-        status: 'accepted',
+        status: 'pending',
         created_at: new Date().toISOString(),
       }
-  
 
-  
-      // Insert enquiry
-      const { data: newEnquiry, error: insertError } = await supabase
+      // Check if enquiry already exists for this party + supplier combination
+      const { data: existingEnquiry } = await supabase
         .from('enquiries')
-        .insert(enquiryData)
-        .select(`
-          *,
-          suppliers:supplier_id (
-            id,
-            business_name,
-            data
-          )
-        `)
-        .single()
-  
+        .select('id')
+        .eq('party_id', partyId)
+        .eq('supplier_id', supplier.id)
+        .maybeSingle()
+
+      let newEnquiry
+      let insertError
+
+      if (existingEnquiry) {
+        // Update existing enquiry instead of creating duplicate
+        console.log('📝 Updating existing enquiry:', existingEnquiry.id)
+        const { data, error } = await supabase
+          .from('enquiries')
+          .update({
+            ...enquiryData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingEnquiry.id)
+          .select(`
+            *,
+            suppliers:supplier_id (
+              id,
+              business_name,
+              data
+            )
+          `)
+          .single()
+        newEnquiry = data
+        insertError = error
+      } else {
+        // Insert new enquiry
+        const { data, error } = await supabase
+          .from('enquiries')
+          .insert(enquiryData)
+          .select(`
+            *,
+            suppliers:supplier_id (
+              id,
+              business_name,
+              data
+            )
+          `)
+          .single()
+        newEnquiry = data
+        insertError = error
+      }
+
       if (insertError) {
-        console.error('❌ Error creating individual enquiry:', insertError)
+        console.error('❌ Error creating/updating individual enquiry:', insertError)
         throw insertError
       }
   
@@ -2488,10 +2598,11 @@ async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
       .insert(registryItem)
       .select(`
         *,
-        gift_items(*)
+        gift_items(*),
+        party_gift_registries!registry_items_registry_id_fkey(party_id)
       `)
       .single();
-    
+
     if (error) {
       console.error('❌ [Backend] Error adding curated item to registry:', error);
       return {
@@ -2499,9 +2610,16 @@ async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
         error: `Failed to add item to registry: ${error.message}`
       };
     }
-    
 
-    
+    // Track gift item addition (non-blocking)
+    const partyId = newItem?.party_gift_registries?.party_id;
+    if (partyId) {
+      trackGiftItemAdded(partyId, {
+        name: newItem?.gift_items?.name,
+        price: newItem?.gift_items?.price
+      });
+    }
+
     return {
       success: true,
       registryItem: newItem,
@@ -2744,11 +2862,14 @@ async getPartyGiftRegistry(partyId) {
         .select('*')
         .eq('id', newRegistry.id)
         .single();
-      
+
       if (verifyError) {
         console.error('⚠️ [Backend] Registry created but verification failed:', verifyError);
         // Still return success since the registry was created
       }
+
+      // Track gift registry creation (non-blocking)
+      trackGiftRegistryCreated(partyId, newRegistry.id);
 
       return {
         success: true,
@@ -3006,9 +3127,12 @@ async addRealProductToRegistry(registryId, product, itemData = {}) {
     const { data: newItem, error } = await supabase
       .from('registry_items') // ✅ CORRECT TABLE NAME
       .insert(registryItem)
-      .select()
+      .select(`
+        *,
+        party_gift_registries!registry_items_registry_id_fkey(party_id)
+      `)
       .single();
-    
+
     if (error) {
       console.error('❌ [Backend] Error adding product to registry:', error);
       return {
@@ -3016,15 +3140,23 @@ async addRealProductToRegistry(registryId, product, itemData = {}) {
         error: `Failed to add product to registry: ${error.message}`
       };
     }
-    
-    
-    
+
+    // Track gift item addition (non-blocking)
+    const partyId = newItem?.party_gift_registries?.party_id;
+    if (partyId) {
+      trackGiftItemAdded(partyId, {
+        name: product.name,
+        price: product.price,
+        externalSource: product.source || 'amazon'
+      });
+    }
+
     return {
       success: true,
       registryItem: newItem,
       message: 'Product added to registry successfully'
     };
-    
+
   } catch (error) {
     console.error('❌ [Backend] Exception in addRealProductToRegistry:', error);
     return {
@@ -3861,6 +3993,13 @@ async createPublicInvite(inviteData) {
       return { success: false, error: error.message };
     }
 
+    // Track e-invite creation (non-blocking)
+    trackEInviteCreated(inviteData.partyId, {
+      inviteId: inviteData.inviteId,
+      theme: inviteData.theme,
+      generatedImage: inviteData.generatedImage
+    });
+
     return { success: true, publicInvite: data };
   } catch (error) {
     console.error('❌ Error in createPublicInvite:', error);
@@ -4454,12 +4593,18 @@ async addGuestToList(partyId, guestData) {
       return { success: false, error: error.message };
     }
 
+    // Track guest addition (non-blocking)
+    trackGuestAdded(partyId, {
+      type: guestData.type,
+      manuallyAdded: true
+    });
+
     return {
       success: true,
       party: data,
       newGuest: newGuest
     };
-    
+
   } catch (error) {
     console.error('❌ Error in addGuestToList:', error);
     return { success: false, error: error.message };

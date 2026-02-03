@@ -149,7 +149,7 @@ export default function ReferFriend() {
 
   return (
     <>
-      <div className="relative h-[280px] rounded-xl bg-primary-400 hidden md:flex justify-center items-start gap-4 p-6 flex-col overflow-hidden">
+      <div className="relative h-[280px] rounded-xl bg-primary-400 flex justify-center items-start gap-4 p-6 flex-col overflow-hidden">
         {/* Background pattern - behind content */}
         <img src="/Union.png" alt="" className="absolute top-0 right-0 h-30 z-0 opacity-50" />
         <img src="/circles-top.png" alt="" className="absolute bottom-[-10px] left-0 h-12 z-0 opacity-50" />

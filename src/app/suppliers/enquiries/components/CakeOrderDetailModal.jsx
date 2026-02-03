@@ -23,6 +23,7 @@ import {
   FileText,
   Download,
   ExternalLink,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -225,6 +226,21 @@ export default function CakeOrderDetailModal({
                   )}
                 </div>
 
+                {/* Customer Message to Supplier */}
+                {party?.supplier_messages?.[enquiry?.supplier_id]?.message && (
+                  <div className="bg-primary-50 rounded-lg p-3 border border-primary-100">
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-primary-700 mb-1">Message from customer</p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {party.supplier_messages[enquiry.supplier_id].message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Party */}
                 <div>
                   <p className="font-medium text-gray-900 mb-2">Party</p>
@@ -273,6 +289,23 @@ export default function CakeOrderDetailModal({
               </div>
             )}
           </div>
+
+          {/* Customer Message - Visible outside expandable section */}
+          {party?.supplier_messages?.[enquiry?.supplier_id]?.message && (
+            <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-4 h-4 text-primary-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary-700 mb-1">Message from customer</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {party.supplier_messages[enquiry.supplier_id].message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Step Cards */}
           {isComplete ? (

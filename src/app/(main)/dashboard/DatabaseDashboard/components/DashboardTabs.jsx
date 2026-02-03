@@ -16,8 +16,8 @@ const TABS = [
 // Modern Tab Navigation Component
 function TabNavigation({ activeTab, onTabChange, notifications = {} }) {
   return (
-    <div className="sticky top-0 z-40">
-      {/* Desktop Tabs - Bold style with better contrast */}
+    <>
+      {/* Desktop Tabs - Inside the card */}
       <div className="hidden md:flex items-center justify-start gap-2 py-3">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id
@@ -57,47 +57,51 @@ function TabNavigation({ activeTab, onTabChange, notifications = {} }) {
           )
         })}
       </div>
+    </>
+  )
+}
 
-      {/* Mobile Tabs - Compact pills */}
-      <div className="md:hidden flex items-center gap-1 px-3 py-2 overflow-x-auto">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id
-          const notificationCount = notifications[tab.id] || 0
-          const Icon = tab.icon
+// Mobile Tab Navigation - Separate component to be rendered outside the card
+function MobileTabNavigation({ activeTab, onTabChange, notifications = {} }) {
+  return (
+    <div className="md:hidden flex items-center gap-1.5 px-4 pt-1 pb-4 overflow-x-auto bg-transparent -mt-2">
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id
+        const notificationCount = notifications[tab.id] || 0
+        const Icon = tab.icon
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`
-                relative flex items-center gap-1.5 px-3 py-2 rounded-full transition-all whitespace-nowrap flex-shrink-0 cursor-pointer
-                ${isActive
-                  ? "bg-gray-700 text-white"
-                  : "bg-gray-100 text-gray-700"
-                }
-              `}
-            >
-              {/* Icon */}
-              <Icon className="w-4 h-4" />
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`
+              relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-full transition-all whitespace-nowrap flex-shrink-0 cursor-pointer
+              ${isActive
+                ? "bg-gray-700 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-200"
+              }
+            `}
+          >
+            {/* Icon */}
+            <Icon className="w-4 h-4" />
 
-              {/* Label */}
-              <span className="text-xs font-semibold">
-                {tab.mobileLabel}
+            {/* Label */}
+            <span className="text-sm font-semibold">
+              {tab.mobileLabel}
+            </span>
+
+            {/* Notification badge */}
+            {notificationCount > 0 && (
+              <span className={`
+                w-4 h-4 rounded-full text-xs font-bold flex items-center justify-center
+                ${isActive ? "bg-white text-gray-900" : "bg-primary-500 text-white"}
+              `}>
+                {notificationCount}
               </span>
-
-              {/* Notification badge */}
-              {notificationCount > 0 && (
-                <span className={`
-                  w-4 h-4 rounded-full text-xs font-bold flex items-center justify-center
-                  ${isActive ? "bg-white text-gray-900" : "bg-primary-500 text-white"}
-                `}>
-                  {notificationCount}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -155,23 +159,33 @@ export default function DashboardTabs({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mt-6">
-      {/* Tab Navigation */}
-      <div className="px-5 pt-5">
-        <TabNavigation
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          notifications={notifications}
-        />
-      </div>
+    <>
+      {/* Mobile Tabs - Outside the card, in the gap */}
+      <MobileTabNavigation
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        notifications={notifications}
+      />
 
-      {/* Tab Content */}
-      <div className="flex-1">
-        {renderTabContent()}
+      {/* Main Card Container */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden md:mt-6">
+        {/* Desktop Tab Navigation - Inside the card */}
+        <div className="hidden md:block px-5 pt-5">
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            notifications={notifications}
+          />
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1">
+          {renderTabContent()}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
 // Export individual components for flexibility
-export { TabNavigation, TABS }
+export { TabNavigation, MobileTabNavigation, TABS }

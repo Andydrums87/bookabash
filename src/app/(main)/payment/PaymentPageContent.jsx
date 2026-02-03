@@ -31,6 +31,7 @@ import {
 // Hooks and Backend
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
+import { trackPaymentPageStarted } from '@/utils/partyTracking'
 
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
@@ -648,6 +649,9 @@ const loadPaymentData = async () => {
       price: s.price
     })), null, 2))
     setConfirmedSuppliers(confirmedSuppliers)
+
+    // Track that user reached the payment page (Step 2 of checkout)
+    trackPaymentPageStarted()
 
   } catch (error) {
     console.error('❌ Error loading payment data:', error)

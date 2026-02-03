@@ -306,26 +306,9 @@ export default function EnquiryDetailsPage() {
         try { await createCalendarEventsForBooking(enquiry, party, customer) } catch {}
       }
 
-      try {
-        await fetch("/api/email/customer-response", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerEmail: customer?.email,
-            customerName: customer?.first_name,
-            childName: party?.child_name,
-            theme: party?.theme,
-            partyDate: party?.party_date,
-            supplierName: enquiry.supplier?.name || enquiry.businessName || 'Your Supplier',
-            supplierEmail: enquiry.supplier?.owner?.email || enquiry.supplier?.email,
-            supplierPhone: enquiry.supplier?.owner?.phone || enquiry.supplier?.phone,
-            serviceType: enquiry.supplier_category,
-            supplierMessage: responseMessage,
-            responseType: response,
-            dashboardLink: `${window.location.origin}/dashboard`,
-          }),
-        })
-      } catch {}
+      // NOTE: Customer email is NOT sent automatically on supplier accept/decline
+      // The consolidated booking confirmation email is triggered manually via the dashboard
+      // once all suppliers have been confirmed by the PartySnap team
 
       await loadEnquiryDetails()
       setShowResponseForm(false)
@@ -333,9 +316,9 @@ export default function EnquiryDetailsPage() {
       if (isPaid && response === "declined") {
         alert("PartySnap has been notified. They will find a replacement supplier.")
       } else if (isPaid && response === "accepted") {
-        alert("Booking confirmed! You'll receive final details closer to the date.")
+        alert("Booking confirmed! Remember to send the customer confirmation email once all suppliers are confirmed.")
       } else {
-        alert(`Enquiry ${response}! The customer has been notified.`)
+        alert(`Enquiry ${response}!`)
       }
     } catch (err) {
       setError(err.message)
@@ -528,7 +511,7 @@ export default function EnquiryDetailsPage() {
           <Section className="mb-6">
             <SectionHeader title="Customer Message" />
             <div className="p-6">
-              <p className="text-gray-700 italic">"{enquiry.message}"</p>
+              <div className="text-gray-700 whitespace-pre-wrap">{enquiry.message}</div>
             </div>
           </Section>
         )}

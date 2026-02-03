@@ -1,22 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Sparkles, CheckCircle, CreditCard } from "lucide-react"
+import { Sparkles, CheckCircle } from "lucide-react"
 
 export default function SnappysPresentParty({
   suppliers = {},
   enquiries = [],
-  timeRemaining = 24,
-  onPaymentReady,
-  showPaymentCTA = false,
   isPaymentComplete = false,
-  totalOutstandingCost = 0, // New prop for total outstanding amount
-  outstandingSuppliers = [], // New prop for list of suppliers needing payment
 }) {
   const [snappyExpression, setSnappyExpression] = useState("waiting")
   const [animatedProgress, setAnimatedProgress] = useState(0)
-  const [pulsePayment, setPulsePayment] = useState(false)
 
   // Filter out einvites from tracking
   const trackableSuppliers = Object.entries(suppliers).filter(([key, supplier]) => supplier && key !== "einvites")
@@ -34,15 +27,6 @@ export default function SnappysPresentParty({
   const confirmedCount = supplierStates.filter((s) => s.status === "accepted").length
   const allConfirmed = confirmedCount === totalSuppliers && totalSuppliers > 0
   const progressPercentage = totalSuppliers > 0 ? (confirmedCount / totalSuppliers) * 100 : 0
-
-  // Pulse payment button when multiple suppliers need payment
-  useEffect(() => {
-    if (outstandingSuppliers.length > 1 && showPaymentCTA) {
-      setPulsePayment(true)
-      const timer = setTimeout(() => setPulsePayment(false), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [outstandingSuppliers.length, showPaymentCTA])
 
   // Animate progress bar
   useEffect(() => {
@@ -63,12 +47,6 @@ export default function SnappysPresentParty({
     }
   }, [confirmedCount, allConfirmed])
 
-  const formatTime = (hours) => {
-    const h = Math.floor(hours)
-    const m = Math.floor((hours - h) * 60)
-    return `${h}h ${m}m`
-  }
-
   const getSnappyMessage = () => {
     if (allConfirmed) {
       return isPaymentComplete ? "Party secured & paid! 🎉" : "All suppliers confirmed! 🎉"
@@ -77,14 +55,6 @@ export default function SnappysPresentParty({
       return `${confirmedCount} supplier${confirmedCount > 1 ? "s" : ""} confirmed`
     }
     return "Waiting for confirmations..."
-  }
-
-  // New function to get payment button text
-  const getPaymentButtonText = () => {
-    if (outstandingSuppliers.length > 1) {
-      return `Secure All ${outstandingSuppliers.length} Suppliers - £${totalOutstandingCost}`
-    }
-    return `Secure Your Party - £${totalOutstandingCost}`
   }
 
   // Semi-circular progress arc component (like reference image)
@@ -169,25 +139,11 @@ export default function SnappysPresentParty({
       <div className="mt-4 pt-4 border-t border-gray-100">
         <p className="text-sm text-gray-600 mb-3">{getSnappyMessage()}</p>
 
-        {allConfirmed && (
-          <div>
-            {isPaymentComplete ? (
-              <div className="w-full bg-green-50 border border-green-200 text-green-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Party Secured & Paid
-                <Sparkles className="w-4 h-4" />
-              </div>
-            ) : showPaymentCTA ? (
-              <Button
-                onClick={onPaymentReady}
-                className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  <span>{getPaymentButtonText()}</span>
-                </div>
-              </Button>
-            ) : null}
+        {allConfirmed && isPaymentComplete && (
+          <div className="w-full bg-green-50 border border-green-200 text-green-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Party Secured & Paid
+            <Sparkles className="w-4 h-4" />
           </div>
         )}
       </div>
