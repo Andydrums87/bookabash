@@ -12,7 +12,25 @@ export default function AdminDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState(null)
-  const [activeTab, setActiveTab] = useState('verification')
+
+  // Initialize tab from URL hash or default to 'verification'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '')
+      if (['verification', 'invoices', 'crm'].includes(hash)) {
+        return hash
+      }
+    }
+    return 'verification'
+  })
+
+  // Update URL hash when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `#${tab}`)
+    }
+  }
 
   // Verification state
   const [suppliers, setSuppliers] = useState([])
@@ -435,7 +453,7 @@ export default function AdminDashboard() {
       <div className="bg-white border-b">
         <div className="flex gap-1 px-6">
           <button
-            onClick={() => setActiveTab('verification')}
+            onClick={() => handleTabChange('verification')}
             className={`px-6 py-3 font-medium border-b-2 transition ${
               activeTab === 'verification' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600'
             }`}
@@ -444,7 +462,7 @@ export default function AdminDashboard() {
             Verification
           </button>
           <button
-            onClick={() => setActiveTab('invoices')}
+            onClick={() => handleTabChange('invoices')}
             className={`px-6 py-3 font-medium border-b-2 transition ${
               activeTab === 'invoices' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600'
             }`}
@@ -453,7 +471,7 @@ export default function AdminDashboard() {
             Invoices & Payouts
           </button>
           <button
-            onClick={() => setActiveTab('crm')}
+            onClick={() => handleTabChange('crm')}
             className={`px-6 py-3 font-medium border-b-2 transition ${
               activeTab === 'crm' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600'
             }`}
