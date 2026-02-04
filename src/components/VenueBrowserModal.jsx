@@ -246,6 +246,20 @@ export default function VenueBrowserModal({
                             <span>{capacityCheck.capacity} capacity</span>
                           </div>
                         )}
+                        {/* Tables & Chairs */}
+                        {(() => {
+                          const tables = venue.serviceDetails?.equipment?.tables || venue.data?.serviceDetails?.equipment?.tables || 0
+                          const chairs = venue.serviceDetails?.equipment?.chairs || venue.data?.serviceDetails?.equipment?.chairs || 0
+                          if (tables > 0 || chairs > 0) {
+                            return (
+                              <div className="flex items-center gap-1">
+                                <span>🪑</span>
+                                <span>{tables > 0 ? `${tables} tables` : ''}{tables > 0 && chairs > 0 ? ', ' : ''}{chairs > 0 ? `${chairs} chairs` : ''}</span>
+                              </div>
+                            )
+                          }
+                          return null
+                        })()}
                         {venue.rating && (
                           <div className="flex items-center gap-1">
                             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />

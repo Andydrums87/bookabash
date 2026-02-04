@@ -123,6 +123,8 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, s
     aboutUs: true, // Start expanded
     venueAddress: false,
     venueType: false,
+    tablesChairs: false,
+    facilitiesIncluded: false,
     pricing: false,
     addons: false,
     allowedItems: false,
@@ -150,12 +152,13 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, s
     'address': 'venueAddress',
     'type': 'venueType',
     'capacity': 'capacity',
+    'tablesChairs': 'tablesChairs',
+    'facilities': 'facilitiesIncluded',
     'pricing': 'pricing',
     'packages': 'packages',
     'addons': 'addons',
     'restricted': 'allowedItems',
     'rules': 'restrictions',
-    'facilities': 'facilities',
     'verification': 'verification',
   }
 
@@ -194,6 +197,13 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, s
         const hasType = details.venueType
         const hasCapacity = details.capacity?.max > 0
         return hasType && hasCapacity ? `${details.venueType}, max ${details.capacity.max}` : 'Needs setup'
+      case 'tablesChairs':
+        const tables = details.equipment?.tables || 0
+        const chairs = details.equipment?.chairs || 0
+        return tables > 0 || chairs > 0 ? `${tables} tables, ${chairs} chairs` : 'Not set'
+      case 'facilitiesIncluded':
+        const facilityIncludedCount = details.facilities?.length || 0
+        return facilityIncludedCount > 0 ? `${facilityIncludedCount} facilit${facilityIncludedCount !== 1 ? 'ies' : 'y'} selected` : 'None selected'
       case 'pricing':
         const hasRate = details.pricing?.hourlyRate > 0
         return hasRate ? `£${details.pricing.hourlyRate}/hour` : 'Set your rates'
@@ -1209,12 +1219,13 @@ const handleVenueDetailsSave = () => {
     venueAddress: 'Location',
     venueType: 'Venue type',
     capacity: 'Capacity',
+    tablesChairs: 'Tables & chairs',
+    facilitiesIncluded: 'Facilities included',
     pricing: 'Pricing',
     packages: 'Packages',
     addons: 'Add-on services',
     allowedItems: 'Items not permitted',
     restrictions: 'House rules',
-    facilities: 'Facilities & equipment',
     verification: 'Verification',
   }
 
@@ -1555,6 +1566,123 @@ const handleVenueDetailsSave = () => {
                 error={venueBasicInfoState.error}
               />
             </div>
+          </div>
+        )
+
+      case 'tablesChairs':
+        return (
+          <div className="py-8 max-w-2xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🪑</span>
+              </div>
+              <h2 className="text-2xl font-medium text-gray-700">How many tables and chairs do you have?</h2>
+              <p className="text-gray-500 mt-2">This helps families plan seating for their party</p>
+            </div>
+
+            <div className="space-y-8">
+              {/* Tables */}
+              <div className="flex items-center justify-between py-6 border-b border-gray-200">
+                <div>
+                  <div className="text-lg font-medium text-gray-900">Tables</div>
+                  <div className="text-sm text-gray-600">Standard rectangular or round tables</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNestedFieldChange("equipment", "tables", Math.max(0, (details.equipment?.tables || 0) - 1))}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={(details.equipment?.tables || 0) <= 0}
+                  >
+                    <span className="text-xl text-gray-600">−</span>
+                  </button>
+                  <div className="w-16 text-center text-xl font-medium">{details.equipment?.tables || 0}</div>
+                  <button
+                    onClick={() => handleNestedFieldChange("equipment", "tables", (details.equipment?.tables || 0) + 1)}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+                  >
+                    <span className="text-xl text-gray-600">+</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Chairs */}
+              <div className="flex items-center justify-between py-6 border-b border-gray-200">
+                <div>
+                  <div className="text-lg font-medium text-gray-900">Chairs</div>
+                  <div className="text-sm text-gray-600">Seating for guests</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNestedFieldChange("equipment", "chairs", Math.max(0, (details.equipment?.chairs || 0) - 5))}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={(details.equipment?.chairs || 0) <= 0}
+                  >
+                    <span className="text-xl text-gray-600">−</span>
+                  </button>
+                  <div className="w-16 text-center text-xl font-medium">{details.equipment?.chairs || 0}</div>
+                  <button
+                    onClick={() => handleNestedFieldChange("equipment", "chairs", (details.equipment?.chairs || 0) + 5)}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+                  >
+                    <span className="text-xl text-gray-600">+</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12">
+              <SectionSave
+                sectionName="Tables & Chairs"
+                hasChanges={venueFacilitiesState.hasChanges}
+                onSave={handleVenueFacilitiesSave}
+                saving={venueFacilitiesState.saving}
+                lastSaved={venueFacilitiesState.lastSaved}
+                error={venueFacilitiesState.error}
+              />
+            </div>
+          </div>
+        )
+
+      case 'facilitiesIncluded':
+        return (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Select the facilities available at your venue. These were selected during onboarding - you can update them here.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {facilityOptions.map((facility) => (
+                <div
+                  key={facility}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    details.facilities?.includes(facility)
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                  onClick={() => handleArrayToggle(details.facilities || [], facility, "facilities")}
+                >
+                  <span className="text-sm font-medium">{facility}</span>
+                  {details.facilities?.includes(facility) && (
+                    <CheckCircle className="w-4 h-4 text-gray-900" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Summary of selected facilities */}
+            {details.facilities?.length > 0 && (
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                  {details.facilities.length} facilit{details.facilities.length !== 1 ? 'ies' : 'y'} selected
+                </h4>
+              </div>
+            )}
+
+            <SectionSave
+              sectionName="Facilities"
+              hasChanges={venueFacilitiesState.hasChanges}
+              onSave={handleVenueFacilitiesSave}
+              saving={venueFacilitiesState.saving}
+              lastSaved={venueFacilitiesState.lastSaved}
+              error={venueFacilitiesState.error}
+            />
           </div>
         )
 

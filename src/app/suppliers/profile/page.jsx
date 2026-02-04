@@ -686,6 +686,8 @@ if (loading) {
     { id: 'address', label: 'Venue address', icon: MapPin },
     { id: 'type', label: 'Venue type', icon: Building2 },
     { id: 'capacity', label: 'Capacity', icon: Users },
+    { id: 'tablesChairs', label: 'Tables & chairs', icon: Users },
+    { id: 'facilities', label: 'Facilities included', icon: Settings },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'packages', label: 'Packages', icon: Package },
     { id: 'addons', label: 'Add-on services', icon: Settings },
