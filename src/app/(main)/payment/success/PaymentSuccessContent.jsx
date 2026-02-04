@@ -495,13 +495,13 @@ export default function PaymentSuccessPage() {
       {/* Main Content */}
       <div className="max-w-xl mx-auto px-6 py-12">
 
-        {/* Header with greeting */}
+        {/* Header with celebration */}
         <div className="mb-10">
-          <p className="text-gray-700 text-lg mb-4">
-            Congratulations!
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Congratulations! {bookingDetails.childName}'s party is happening!
+          </h1>
           <p className="text-gray-600 leading-relaxed">
-            {bookingDetails.childName}'s party is happening! We're so excited to help make this a day to remember. A receipt has been sent to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
+            We're so excited to help make this a day to remember. A receipt has been sent to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
           </p>
         </div>
 
@@ -513,10 +513,16 @@ export default function PaymentSuccessPage() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">1</span>
-              <h3 className="text-lg font-semibold text-gray-900">Wait for confirmation</h3>
+              <h3 className="text-lg font-semibold text-gray-900">We take care of the details</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              We're confirming your booking with your suppliers. You'll receive a confirmation email within <span className="font-semibold">24 hours</span> once everything is locked in.
+              We're now securing your party with our trusted partners and handling all the arrangements for you.
+            </p>
+            <p className="text-gray-600 leading-relaxed ml-10 mt-2">
+              You'll receive a confirmation email within <span className="font-semibold">2 working days</span> once everything is locked in.
+            </p>
+            <p className="text-gray-500 text-sm ml-10 mt-2 italic">
+              Bookings made outside working hours are confirmed the next working day.
             </p>
           </div>
 
@@ -527,7 +533,7 @@ export default function PaymentSuccessPage() {
               <h3 className="text-lg font-semibold text-gray-900">Invite your guests</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              We've created a guest list and e-invite tools for you. Share your party details with guests via WhatsApp, email, or our digital invites.
+              We've created guest list and e-invite tools for you. Share your party details via WhatsApp, email, or our digital invites.
             </p>
             <button
               onClick={handleReturnToDashboard}
@@ -544,7 +550,7 @@ export default function PaymentSuccessPage() {
               <h3 className="text-lg font-semibold text-gray-900">We'll keep you updated</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              You'll receive reminders from us before your party. We'll also remind your suppliers about your booking and any specific requests you made.
+              We'll send reminders before the party and coordinate with your suppliers so you don't have to.
             </p>
           </div>
 
@@ -555,7 +561,7 @@ export default function PaymentSuccessPage() {
               <h3 className="text-lg font-semibold text-gray-900">Save the date</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              Add the party to your calendar so you don't forget! We'll email you 48 hours before with final details and supplier contact information.
+              Add the party to your calendar and relax — we'll email you 48 hours before with final details and supplier contact information.
             </p>
             <button
               onClick={handleAddToCalendar}
@@ -563,33 +569,6 @@ export default function PaymentSuccessPage() {
             >
               Add to calendar
             </button>
-          </div>
-        </div>
-
-        {/* Booking summary card */}
-        <div className="bg-gray-50 rounded-xl p-6 mb-8">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Booking Summary</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Party for</span>
-              <span className="font-medium text-gray-900">{bookingDetails.childName} (Age {bookingDetails.childAge})</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Theme</span>
-              <span className="font-medium text-gray-900">{bookingDetails.theme ? `${bookingDetails.theme.charAt(0).toUpperCase()}${bookingDetails.theme.slice(1)}` : ''}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Date</span>
-              <span className="font-medium text-gray-900">{formatDate(bookingDetails.date)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Time</span>
-              <span className="font-medium text-gray-900">{formatTime(bookingDetails.time)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Guests</span>
-              <span className="font-medium text-gray-900">{bookingDetails.guestCount} children</span>
-            </div>
           </div>
         </div>
 
@@ -601,9 +580,14 @@ export default function PaymentSuccessPage() {
           Go to My Dashboard
         </Button>
 
+        {/* Help line */}
+        <p className="text-sm text-gray-500 text-center mt-6">
+          Questions or special requests? Just reply to your confirmation email — we're happy to help.
+        </p>
+
         {/* Reference Number */}
         {paymentIntentId && (
-          <p className="text-xs text-gray-400 text-center mt-6">
+          <p className="text-xs text-gray-400 text-center mt-4">
             Booking Reference: {paymentIntentId.slice(-8).toUpperCase()}
           </p>
         )}

@@ -283,8 +283,9 @@ function TimeSlotModal({ date, blockedSlots, onToggle, onClose }) {
 }
 
 // Settings panel (slide out)
-function SettingsPanel({ isOpen, onClose, workingHours, setWorkingHours, advanceBookingDays, setAdvanceBookingDays }) {
+function SettingsPanel({ isOpen, onClose, workingHours, setWorkingHours, advanceBookingDays, setAdvanceBookingDays, businessName }) {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  const [expandedDay, setExpandedDay] = useState(null)
 
   const toggleDay = (day) => {
     setWorkingHours(prev => ({
@@ -300,13 +301,56 @@ function SettingsPanel({ isOpen, onClose, workingHours, setWorkingHours, advance
     }))
   }
 
+  const setDayAvailability = (day, type) => {
+    // type: 'all', 'morning', 'afternoon', 'off'
+    setWorkingHours(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        active: type !== 'off',
+        timeSlots: {
+          morning: { available: type === 'all' || type === 'morning' },
+          afternoon: { available: type === 'all' || type === 'afternoon' }
+        }
+      }
+    }))
+    setExpandedDay(null)
+  }
+
+  const getDayAvailabilityType = (day) => {
+    const hours = workingHours[day]
+    if (!hours?.active) return 'off'
+    const morning = hours.timeSlots?.morning?.available
+    const afternoon = hours.timeSlots?.afternoon?.available
+    if (morning && afternoon) return 'all'
+    if (morning && !afternoon) return 'morning'
+    if (!morning && afternoon) return 'afternoon'
+    return 'off'
+  }
+
+  const getDayAvailabilityLabel = (day) => {
+    const type = getDayAvailabilityType(day)
+    switch (type) {
+      case 'all': return 'All day'
+      case 'morning': return 'Morning only'
+      case 'afternoon': return 'Afternoon only'
+      case 'off': return 'Closed'
+      default: return 'Closed'
+    }
+  }
+
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50">
       <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl overflow-y-auto">
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Availability settings</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Availability settings</h2>
+            {businessName && (
+              <p className="text-sm text-gray-500">{businessName}</p>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
           </button>
@@ -315,24 +359,104 @@ function SettingsPanel({ isOpen, onClose, workingHours, setWorkingHours, advance
         <div className="p-6 space-y-8">
           {/* Working Days */}
           <div>
-            <h3 className="font-medium text-gray-900 mb-4">Working days</h3>
+            <h3 className="font-medium text-gray-900 mb-2">Working hours</h3>
+            <p className="text-sm text-gray-500 mb-4">Set availability for each day of the week</p>
             <div className="space-y-2">
-              {days.map(day => (
-                <button
-                  key={day}
-                  onClick={() => toggleDay(day)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50"
-                >
-                  <span className="text-gray-900">{day}</span>
-                  <div className={`w-10 h-6 rounded-full transition-colors ${
-                    workingHours[day]?.active ? "bg-gray-900" : "bg-gray-200"
-                  }`}>
-                    <div className={`w-5 h-5 mt-0.5 rounded-full bg-white shadow transition-transform ${
-                      workingHours[day]?.active ? "translate-x-4 ml-0.5" : "translate-x-0.5"
-                    }`} />
+              {days.map(day => {
+                const availabilityType = getDayAvailabilityType(day)
+                const isExpanded = expandedDay === day
+
+                return (
+                  <div key={day} className="border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Day header */}
+                    <button
+                      onClick={() => setExpandedDay(isExpanded ? null : day)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="font-medium text-gray-900">{day}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${availabilityType === 'off' ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {getDayAvailabilityLabel(day)}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* Expanded options */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 p-3 bg-gray-50 space-y-2">
+                        <button
+                          onClick={() => setDayAvailability(day, 'all')}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                            availabilityType === 'all'
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className="font-medium">All day</div>
+                            <div className={`text-xs ${availabilityType === 'all' ? 'text-gray-300' : 'text-gray-500'}`}>
+                              Morning & afternoon
+                            </div>
+                          </div>
+                          {availabilityType === 'all' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        <button
+                          onClick={() => setDayAvailability(day, 'morning')}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                            availabilityType === 'morning'
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className="font-medium">Morning only</div>
+                            <div className={`text-xs ${availabilityType === 'morning' ? 'text-gray-300' : 'text-gray-500'}`}>
+                              9:00 AM - 1:00 PM
+                            </div>
+                          </div>
+                          {availabilityType === 'morning' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        <button
+                          onClick={() => setDayAvailability(day, 'afternoon')}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                            availabilityType === 'afternoon'
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className="font-medium">Afternoon only</div>
+                            <div className={`text-xs ${availabilityType === 'afternoon' ? 'text-gray-300' : 'text-gray-500'}`}>
+                              1:00 PM - 5:00 PM
+                            </div>
+                          </div>
+                          {availabilityType === 'afternoon' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        <button
+                          onClick={() => setDayAvailability(day, 'off')}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                            availabilityType === 'off'
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className="font-medium">Closed</div>
+                            <div className={`text-xs ${availabilityType === 'off' ? 'text-gray-300' : 'text-gray-500'}`}>
+                              Not available
+                            </div>
+                          </div>
+                          {availabilityType === 'off' && <Check className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </button>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -500,6 +624,26 @@ const TimeSlotAvailabilityContent = ({
     }
   }, [currentSupplier])
 
+  // Load working hours when switching to a specific business
+  useEffect(() => {
+    if (selectedCalendarBusiness === 'all') {
+      // Reset to primary business settings when viewing all
+      if (currentSupplier) {
+        setWorkingHours(migrateWorkingHours(currentSupplier.workingHours) || getDefaultWorkingHours())
+        setAdvanceBookingDays(currentSupplier.advanceBookingDays ?? 7)
+      }
+    } else {
+      // Load the selected business's working hours
+      const selectedBusiness = businesses?.find(b => b.id === selectedCalendarBusiness)
+      if (selectedBusiness?.data) {
+        setWorkingHours(migrateWorkingHours(selectedBusiness.data.workingHours) || getDefaultWorkingHours())
+        setAdvanceBookingDays(selectedBusiness.data.advanceBookingDays ?? 7)
+      }
+    }
+    // Reset the lastSavedDataRef so changes are detected properly
+    lastSavedDataRef.current = null
+  }, [selectedCalendarBusiness, businesses, currentSupplier])
+
   // Compute unavailable dates based on selected business
   // When "all" is selected, aggregate from all businesses
   // When a specific business is selected, show only that business's blocked dates
@@ -664,18 +808,23 @@ const TimeSlotAvailabilityContent = ({
     fetchBookings()
   }, [businesses, supplier?.id, primaryBusiness?.id])
 
-  // Auto-save
+  // Auto-save - saves to the currently selected business
   const saveToDatabase = useCallback(async (data) => {
-    const dataString = JSON.stringify(data)
+    // Don't save when viewing "all businesses" - settings are per-business
+    if (selectedCalendarBusiness === 'all') return
+
+    const dataString = JSON.stringify({ ...data, businessId: selectedCalendarBusiness })
     if (lastSavedDataRef.current === dataString) return
 
     try {
       setSaveStatus("saving")
 
-      if (!primaryBusiness) throw new Error("No business found")
+      // Find the target business to save to
+      const targetBusiness = businesses?.find(b => b.id === selectedCalendarBusiness) || primaryBusiness
+      if (!targetBusiness) throw new Error("No business found")
 
       const updatedData = {
-        ...primaryBusiness.data,
+        ...targetBusiness.data,
         workingHours: data.workingHours,
         unavailableDates: data.unavailableDates,
         advanceBookingDays: data.advanceBookingDays,
@@ -686,7 +835,7 @@ const TimeSlotAvailabilityContent = ({
       const { error } = await supabase
         .from("suppliers")
         .update({ data: updatedData })
-        .eq("id", primaryBusiness.id)
+        .eq("id", targetBusiness.id)
 
       if (error) throw error
 
@@ -698,10 +847,12 @@ const TimeSlotAvailabilityContent = ({
       setSaveStatus("error")
       setTimeout(() => setSaveStatus("idle"), 3000)
     }
-  }, [primaryBusiness])
+  }, [selectedCalendarBusiness, businesses, primaryBusiness])
 
   useEffect(() => {
-    if (!primaryBusiness) return
+    // Don't auto-save when viewing all businesses
+    if (selectedCalendarBusiness === 'all') return
+    if (!primaryBusiness && !businesses?.length) return
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
 
     saveTimeoutRef.current = setTimeout(() => {
@@ -711,7 +862,7 @@ const TimeSlotAvailabilityContent = ({
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
-  }, [workingHours, unavailableDates, advanceBookingDays, saveToDatabase, primaryBusiness])
+  }, [workingHours, unavailableDates, advanceBookingDays, saveToDatabase, primaryBusiness, selectedCalendarBusiness, businesses])
 
   // Calendar navigation
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
@@ -801,10 +952,50 @@ const TimeSlotAvailabilityContent = ({
     return date.toLocaleDateString("en-US", { weekday: "long" })
   }
 
+  // Get working hours for a specific business (or the shared state for primary/settings)
+  const getBusinessWorkingHours = (businessId) => {
+    if (!businessId || businessId === 'all') return null
+    const business = businesses?.find(b => b.id === businessId)
+    if (business?.data?.workingHours) {
+      return migrateWorkingHours(business.data.workingHours)
+    }
+    return null
+  }
+
   // Check if a day is a working day based on settings
+  // Only applies when viewing a specific business, not "all businesses"
   const isWorkingDay = (date) => {
+    // When viewing all businesses, all days are considered working days
+    if (selectedCalendarBusiness === 'all') return true
+
+    // Get working hours for the selected business
+    const businessWorkingHours = getBusinessWorkingHours(selectedCalendarBusiness) || workingHours
     const dayName = getDayName(date)
-    return workingHours[dayName]?.active ?? true
+    return businessWorkingHours[dayName]?.active ?? true
+  }
+
+  // Get unavailable slots from working hours settings (e.g., morning-only means afternoon is unavailable)
+  // Only applies when viewing a specific business, not "all businesses"
+  const getWorkingHoursUnavailableSlots = (date) => {
+    // Don't apply working hours restrictions when viewing all businesses
+    if (selectedCalendarBusiness === 'all') return []
+
+    // Get working hours for the selected business
+    const businessWorkingHours = getBusinessWorkingHours(selectedCalendarBusiness) || workingHours
+    const dayName = getDayName(date)
+    const dayHours = businessWorkingHours[dayName]
+    if (!dayHours?.active) return ['morning', 'afternoon'] // Closed = both unavailable
+
+    const unavailable = []
+    if (!dayHours.timeSlots?.morning?.available) unavailable.push('morning')
+    if (!dayHours.timeSlots?.afternoon?.available) unavailable.push('afternoon')
+    return unavailable
+  }
+
+  // Check if a slot is unavailable due to working hours settings
+  const isSlotUnavailableFromWorkingHours = (date, slot) => {
+    const unavailableSlots = getWorkingHoursUnavailableSlots(date)
+    return unavailableSlots.includes(slot)
   }
 
   // Filter bookings based on selected calendar business
@@ -858,13 +1049,16 @@ const TimeSlotAvailabilityContent = ({
     // Day cells - Airbnb style: taller cells with date at top
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day)
-      const blockedSlots = getBlockedSlots(date)
+      const manualBlockedSlots = getBlockedSlots(date)
+      const workingHoursUnavailable = getWorkingHoursUnavailableSlots(date)
+      // Combine manual blocks with working hours restrictions
+      const allUnavailableSlots = [...new Set([...manualBlockedSlots, ...workingHoursUnavailable])]
       const booking = getBookingForDate(date)
       const isPast = date < today
       const isToday = date.toDateString() === today.toDateString()
       const isNonWorkingDay = !isWorkingDay(date)
-      const isFullyBlocked = blockedSlots.length === 2 || isNonWorkingDay
-      const isPartiallyBlocked = blockedSlots.length === 1 && !isNonWorkingDay
+      const isFullyBlocked = allUnavailableSlots.length === 2 || isNonWorkingDay
+      const isPartiallyBlocked = allUnavailableSlots.length === 1 && !isNonWorkingDay
       const hasBooking = !!booking
 
       // Handle click - bookings open modal, available dates open time slot picker
@@ -877,9 +1071,9 @@ const TimeSlotAvailabilityContent = ({
         }
       }
 
-      // Determine which slot is blocked for partial blocks
-      const isMorningBlocked = blockedSlots.includes("morning")
-      const isAfternoonBlocked = blockedSlots.includes("afternoon")
+      // Determine which slot is blocked for partial blocks (from both manual and working hours)
+      const isMorningBlocked = allUnavailableSlots.includes("morning")
+      const isAfternoonBlocked = allUnavailableSlots.includes("afternoon")
 
       // Get business color for this booking
       const bookingColor = booking?.businessColor || BUSINESS_COLORS[0]
@@ -949,8 +1143,8 @@ const TimeSlotAvailabilityContent = ({
               <span className="text-sm text-gray-400 font-medium">Closed</span>
             )}
             {!isPast && !hasBooking && isPartiallyBlocked && (
-              <span className="text-xs font-medium text-gray-400 bg-white/80 px-1.5 py-0.5 rounded">
-                <span className="line-through">{isMorningBlocked ? "AM" : "PM"}</span>
+              <span className="text-xs font-medium text-gray-500 bg-white/80 px-1.5 py-0.5 rounded">
+                {isMorningBlocked ? "PM only" : "AM only"}
               </span>
             )}
             {!isPast && !hasBooking && isFullyBlocked && !isNonWorkingDay && (
@@ -962,7 +1156,7 @@ const TimeSlotAvailabilityContent = ({
     }
 
     return days
-  }, [currentMonth, filteredUnavailableDates, workingHours, filteredBookings, businesses])
+  }, [currentMonth, filteredUnavailableDates, workingHours, filteredBookings, businesses, selectedCalendarBusiness])
 
   if (loading) {
     return (
@@ -1008,11 +1202,14 @@ const TimeSlotAvailabilityContent = ({
       const isToday = date.toDateString() === today.toDateString()
       const booking = getBookingForDate(date)
       const hasBooking = !!booking
-      const blockedSlots = getBlockedSlots(date)
+      const manualBlockedSlots = getBlockedSlots(date)
+      const workingHoursUnavailable = getWorkingHoursUnavailableSlots(date)
+      // Combine manual blocks with working hours restrictions
+      const allUnavailableSlots = [...new Set([...manualBlockedSlots, ...workingHoursUnavailable])]
       const isNonWorkingDay = !isWorkingDay(date)
-      const isFullyBlocked = blockedSlots.length === 2 || isNonWorkingDay
-      const isPartiallyBlocked = blockedSlots.length === 1 && !isNonWorkingDay
-      const isMorningBlocked = blockedSlots.includes("morning")
+      const isFullyBlocked = allUnavailableSlots.length === 2 || isNonWorkingDay
+      const isPartiallyBlocked = allUnavailableSlots.length === 1 && !isNonWorkingDay
+      const isMorningBlocked = allUnavailableSlots.includes("morning")
 
       // Get business color for booking
       const bookingColor = booking?.businessColor || BUSINESS_COLORS[0]
@@ -1117,10 +1314,15 @@ const TimeSlotAvailabilityContent = ({
               >
                 <Calendar className="w-5 h-5 text-gray-600" />
               </button>
-              {/* Settings Button */}
+              {/* Settings Button - only enabled when a specific business is selected */}
               <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-full border border-gray-200 hover:bg-gray-50"
+                onClick={() => selectedCalendarBusiness !== 'all' && setShowSettings(true)}
+                className={`p-2 rounded-full border border-gray-200 ${
+                  selectedCalendarBusiness !== 'all'
+                    ? 'hover:bg-gray-50'
+                    : 'opacity-50 cursor-not-allowed'
+                }`}
+                disabled={selectedCalendarBusiness === 'all'}
               >
                 <Settings className="w-5 h-5 text-gray-600" />
               </button>
@@ -1531,19 +1733,30 @@ const TimeSlotAvailabilityContent = ({
               </div>
             )}
 
-            {/* Availability settings card */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-all bg-white text-left"
-            >
-              <div>
+            {/* Availability settings card - only show when a specific business is selected */}
+            {selectedCalendarBusiness !== 'all' ? (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-all bg-white text-left"
+              >
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">
+                    Settings for {businesses?.find(b => b.id === selectedCalendarBusiness)?.name || 'this business'}
+                  </p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {Object.values(workingHours).filter(d => d.active).length} working days, {advanceBookingDays === 0 ? 'same-day' : `${advanceBookingDays}-day`} notice
+                  </p>
+                </div>
+                <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              </button>
+            ) : (
+              <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 text-left">
                 <p className="text-xs text-gray-500 mb-0.5">Availability settings</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {Object.values(workingHours).filter(d => d.active).length} working days, {advanceBookingDays === 0 ? 'same-day' : `${advanceBookingDays}-day`} notice
+                <p className="text-sm text-gray-500">
+                  Select a specific business to edit its availability settings
                 </p>
               </div>
-              <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            </button>
+            )}
 
             {/* Calendar sync card - cleaner design */}
             <div className="border border-gray-200 rounded-xl p-4 bg-white">
@@ -1662,6 +1875,7 @@ const TimeSlotAvailabilityContent = ({
         setWorkingHours={setWorkingHours}
         advanceBookingDays={advanceBookingDays}
         setAdvanceBookingDays={setAdvanceBookingDays}
+        businessName={selectedCalendarBusiness !== 'all' ? businesses?.find(b => b.id === selectedCalendarBusiness)?.name : null}
       />
 
       {/* Auto-save indicator */}
