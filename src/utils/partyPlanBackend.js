@@ -1107,7 +1107,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     loading,
     error,
     totalCost,
-    venueCarouselOptions, // ✅ ADD THIS LINE
+    venueCarouselOptions,
     addSupplier,
     addAddon,
     removeAddon,
@@ -1117,7 +1117,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     getPartySummary: () => partyPlanBackend.getPartySummary(),
     updateSupplierPackage,
     getSupplierFromPlan,
-    removeAddonFromSupplier, 
+    removeAddonFromSupplier,
     isSupplierInPartyWithPackage
   };
 }

@@ -160,7 +160,15 @@ const detectCategory = (supplier) => {
   return 'basic';
 };
 
-const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) => {
+const ServiceDetailsDisplayRouter = ({
+  supplier,
+  isPreview,
+  themeAccentColor,
+  // Venue add-on props (optional)
+  selectedAddons = [],
+  onToggleAddon,
+  isInteractive = false
+}) => {
   const serviceDetails = supplier?.serviceDetails;
 
   const detectedCategory = detectCategory(supplier);
@@ -190,8 +198,12 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) 
       ...serviceDetails,
       personalBio: undefined // Remove personalBio from service details
     },
-    isPreview, // ✅ ADD THIS - Pass isPreview to all display components
-    themeAccentColor // ✅ Pass theme accent color
+    isPreview,
+    themeAccentColor,
+    // Venue add-on props
+    selectedAddons,
+    onToggleAddon,
+    isInteractive
   };
   
   // Render based on detected category

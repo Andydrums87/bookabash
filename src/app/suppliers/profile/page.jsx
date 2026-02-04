@@ -1186,7 +1186,128 @@ if (loading) {
                   </div>
                 )
 
-              // Cake-specific mobile sections
+              // Venue-specific mobile sections
+              case 'tablesChairs':
+                const mobileTablesChairsData = serviceDetails.tablesChairs || {}
+                const mobileHasTablesChairs = mobileTablesChairsData.tables || mobileTablesChairsData.chairs || mobileTablesChairsData.included
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Tables & chairs</h3>
+                    {mobileHasTablesChairs ? (
+                      <div className="space-y-0.5">
+                        {mobileTablesChairsData.included && <p className="font-medium text-gray-900">Included in hire</p>}
+                        {mobileTablesChairsData.tables && <p className="text-sm text-gray-600">{mobileTablesChairsData.tables} tables</p>}
+                        {mobileTablesChairsData.chairs && <p className="text-sm text-gray-600">{mobileTablesChairsData.chairs} chairs</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add tables & chairs info</p>
+                    )}
+                  </div>
+                )
+
+              case 'facilities':
+                const mobileFacilitiesData = serviceDetails.facilities || []
+                const mobileFacilitiesArray = Array.isArray(mobileFacilitiesData) ? mobileFacilitiesData : []
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Facilities included</h3>
+                    {mobileFacilitiesArray.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileFacilitiesArray.slice(0, 3).map((facility, i) => (
+                          <p key={i} className="font-medium text-gray-900">
+                            {typeof facility === 'string' ? facility : facility.name || facility.label || 'Facility'}
+                          </p>
+                        ))}
+                        {mobileFacilitiesArray.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileFacilitiesArray.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add facilities</p>
+                    )}
+                  </div>
+                )
+
+              // Cake business settings mobile sections
+              case 'businessName':
+                const mobileCakeBusinessName = supplierData?.name || serviceDetails.businessName || ''
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Business name</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileCakeBusinessName || 'Add your business name'}
+                    </p>
+                  </div>
+                )
+
+              case 'contact':
+                const mobileContactPhone = supplierData?.owner?.phone || serviceDetails.phone || ''
+                const mobileContactEmail = supplierData?.owner?.email || ''
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Contact info</h3>
+                    {mobileContactPhone || mobileContactEmail ? (
+                      <div className="space-y-0.5">
+                        {mobileContactPhone && <p className="font-medium text-gray-900">{mobileContactPhone}</p>}
+                        {mobileContactEmail && <p className="text-sm text-gray-600">{mobileContactEmail}</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add contact details</p>
+                    )}
+                  </div>
+                )
+
+              case 'location':
+                const mobileCakeLocation = serviceDetails.location || {}
+                const mobileCakeCity = mobileCakeLocation.city || supplierData?.location || ''
+                const mobileCakePostcode = mobileCakeLocation.postcode || ''
+                const mobileCakeLocationText = [mobileCakeCity, mobileCakePostcode].filter(Boolean).join(', ')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Location</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileCakeLocationText || 'Set your business location'}
+                    </p>
+                  </div>
+                )
+
+              case 'fulfilment':
+                const mobileFulfilmentOptions = serviceDetails.fulfilment || {}
+                const mobileOffersPickup = mobileFulfilmentOptions.offersPickup
+                const mobileOffersDelivery = mobileFulfilmentOptions.offersDelivery
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Fulfilment options</h3>
+                    {mobileOffersPickup || mobileOffersDelivery ? (
+                      <div className="space-y-0.5">
+                        {mobileOffersPickup && <p className="font-medium text-gray-900">Collection available</p>}
+                        {mobileOffersDelivery && <p className="font-medium text-gray-900">Delivery available</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Set fulfilment options</p>
+                    )}
+                  </div>
+                )
+
+              case 'leadTimes':
+                const mobileLeadTimeData = serviceDetails.leadTime || {}
+                const mobileMinLead = mobileLeadTimeData.minimum
+                const mobileStdLead = mobileLeadTimeData.standard
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Lead times</h3>
+                    {mobileMinLead || mobileStdLead ? (
+                      <div className="space-y-0.5">
+                        {mobileMinLead && <p className="font-medium text-gray-900">{mobileMinLead}+ days notice</p>}
+                        {mobileStdLead && <p className="text-sm text-gray-600">{mobileStdLead} days recommended</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Set lead times</p>
+                    )}
+                  </div>
+                )
+
+              // Cake product mobile sections
               case 'flavours':
                 const mobileFlavours = serviceDetails.flavours || []
                 return (
@@ -1493,6 +1614,48 @@ if (loading) {
                           </div>
                         ) : (
                           <p className="text-sm text-gray-500">Set capacity</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'tablesChairs':
+                    const tablesChairsData = serviceDetails.tablesChairs || {}
+                    const hasTablesChairs = tablesChairsData.tables || tablesChairsData.chairs || tablesChairsData.included
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Tables & chairs</h3>
+                        {hasTablesChairs ? (
+                          <div className="space-y-1 text-sm text-gray-500">
+                            {tablesChairsData.included && <p>Included in hire</p>}
+                            {tablesChairsData.tables && <p>{tablesChairsData.tables} tables</p>}
+                            {tablesChairsData.chairs && <p>{tablesChairsData.chairs} chairs</p>}
+                            {tablesChairsData.highChairs && <p>{tablesChairsData.highChairs} high chairs</p>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add tables & chairs info</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'facilities':
+                    const facilitiesData = serviceDetails.facilities || []
+                    const facilitiesArray = Array.isArray(facilitiesData) ? facilitiesData : []
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Facilities included</h3>
+                        {facilitiesArray.length > 0 ? (
+                          <div className="space-y-1">
+                            {facilitiesArray.slice(0, 5).map((facility, i) => (
+                              <p key={i} className="text-sm text-gray-500">
+                                {typeof facility === 'string' ? facility : facility.name || facility.label || 'Facility'}
+                              </p>
+                            ))}
+                            {facilitiesArray.length > 5 && (
+                              <p className="text-sm text-gray-400">+{facilitiesArray.length - 5} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add facilities</p>
                         )}
                       </div>
                     )
@@ -1839,7 +2002,108 @@ if (loading) {
                       </div>
                     )
 
-                  // Cake-specific sections
+                  // Cake business settings sections
+                  case 'businessName':
+                    const cakeBusinessName = supplierData?.name || serviceDetails.businessName || ''
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Business name</h3>
+                        <p className="text-sm text-gray-500">
+                          {cakeBusinessName || 'Add your business name'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'contact':
+                    const contactPhone = supplierData?.owner?.phone || serviceDetails.phone || ''
+                    const contactEmail = supplierData?.owner?.email || ''
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Contact info</h3>
+                        {contactPhone || contactEmail ? (
+                          <div className="space-y-1 text-sm text-gray-500">
+                            {contactPhone && <p>{contactPhone}</p>}
+                            {contactEmail && <p>{contactEmail}</p>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add contact details</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'location':
+                    const cakeLocation = serviceDetails.location || {}
+                    const cakeCity = cakeLocation.city || supplierData?.location || ''
+                    const cakePostcode = cakeLocation.postcode || ''
+                    const cakeLocationText = [cakeCity, cakePostcode].filter(Boolean).join(', ')
+                    const encodedCakeLocation = encodeURIComponent(cakeLocationText ? cakeLocationText + ', UK' : 'London, UK')
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Location</h3>
+                        {cakeLocationText ? (
+                          <>
+                            <p className="text-sm text-gray-500 mb-3">{cakeLocationText}</p>
+                            <div className="rounded-xl overflow-hidden h-28">
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                loading="lazy"
+                                src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedCakeLocation}&zoom=12`}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set your business location</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'fulfilment':
+                    const fulfilmentOptions = serviceDetails.fulfilment || {}
+                    const offersPickup = fulfilmentOptions.offersPickup
+                    const offersDelivery = fulfilmentOptions.offersDelivery
+                    const deliveryRadius = fulfilmentOptions.deliveryRadius
+                    const deliveryFee = fulfilmentOptions.deliveryFee
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Fulfilment options</h3>
+                        {offersPickup || offersDelivery ? (
+                          <div className="space-y-1 text-sm text-gray-500">
+                            {offersPickup && <p>Collection available</p>}
+                            {offersDelivery && (
+                              <>
+                                <p>Delivery available</p>
+                                {deliveryRadius && <p>{deliveryRadius} mile radius</p>}
+                                {deliveryFee > 0 && <p>£{deliveryFee} delivery fee</p>}
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set fulfilment options</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'leadTimes':
+                    const leadTimeData = serviceDetails.leadTime || {}
+                    const minLead = leadTimeData.minimum
+                    const stdLead = leadTimeData.standard
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Lead times</h3>
+                        {minLead || stdLead ? (
+                          <div className="space-y-1 text-sm text-gray-500">
+                            {minLead && <p>Minimum: {minLead} day{minLead !== 1 ? 's' : ''} notice</p>}
+                            {stdLead && <p>Recommended: {stdLead} day{stdLead !== 1 ? 's' : ''}</p>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set lead times</p>
+                        )}
+                      </div>
+                    )
+
+                  // Cake product sections
                   case 'flavours':
                     const cakeFlavours = serviceDetails.flavours || []
                     return (

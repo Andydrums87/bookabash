@@ -1101,6 +1101,25 @@ const handleNameSubmit = (nameData) => {
     }
   }
 
+  // Handler for saving multiple venue add-ons at once (from quick view modal)
+  const handleSaveVenueAddons = async (selectedAddons) => {
+    if (!selectedAddons || selectedAddons.length === 0) return
+
+    console.log('🏛️ Saving venue add-ons:', selectedAddons)
+
+    try {
+      for (const addon of selectedAddons) {
+        // Check if addon already exists
+        if (!hasAddon(addon.id)) {
+          await handleAddAddon(addon, suppliers.venue?.id)
+        }
+      }
+      console.log('✅ Venue add-ons saved successfully')
+    } catch (error) {
+      console.error('❌ Error saving venue add-ons:', error)
+    }
+  }
+
   const handleRemoveAddon = async (addonId) => {
     try {
 
@@ -1934,6 +1953,8 @@ const handleChildPhotoUpload = async (file) => {
                               // ✅ Add venue browser props
                               showBrowseVenues={hasCarouselOptions}
                               onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                              // ✅ Add venue add-ons handler
+                              onSaveVenueAddons={handleSaveVenueAddons}
                             />
                           );
                         };

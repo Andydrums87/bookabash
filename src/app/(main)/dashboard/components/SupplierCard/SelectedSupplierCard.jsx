@@ -39,6 +39,7 @@ export default function SelectedSupplierCard({
   onCustomize,
   onAddSupplier,
   onCustomizationComplete, // ✅ NEW PROP - handler for when customization is complete
+  onSaveVenueAddons, // NEW: Handler for saving venue add-ons
   showBrowseVenues = false,
   onBrowseVenues
 }) {
@@ -250,6 +251,23 @@ export default function SelectedSupplierCard({
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-80" />
 
+                {/* Change Venue Button - Top Left (venues only) */}
+                {type === 'venue' && onBrowseVenues && (
+                  <div className="absolute top-4 left-4 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onBrowseVenues()
+                      }}
+                      disabled={isDeleting}
+                      className="px-3 py-1.5 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 transition-all duration-200 shadow-md cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Change
+                    </button>
+                  </div>
+                )}
+
                 {/* Remove Button Only */}
                 <div className="absolute top-4 right-4 z-20">
                   <button
@@ -421,50 +439,31 @@ export default function SelectedSupplierCard({
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
-              {/* Top row - View Details and Customize/Change (consistent across all cards) */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowQuickViewModal(true)
-                  }}
-                  variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-                  disabled={isDeleting}
-                  data-tour={`view-supplier-${type}`}
-                >
-                  <Eye className="w-4 h-4 mr-1.5" />
-                  <span className="truncate">View</span>
-                </Button>
-                {type === 'venue' ? (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (onBrowseVenues) {
-                        onBrowseVenues()
-                      }
-                    }}
-                    className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
-                    disabled={isDeleting}
-                  >
-                    <RefreshCw className="w-4 h-4 mr-1.5" />
-                    <span className="truncate">Change</span>
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      fetchFullSupplierData()
-                    }}
-                    className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
-                    disabled={isDeleting}
-                  >
-                    <Wand2 className="w-4 h-4 mr-1.5" />
-                    <span className="truncate">Customize</span>
-                  </Button>
-                )}
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowQuickViewModal(true)
+                }}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+                disabled={isDeleting}
+                data-tour={`view-supplier-${type}`}
+              >
+                <Eye className="w-4 h-4 mr-1.5" />
+                <span className="truncate">View</span>
+              </Button>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fetchFullSupplierData()
+                }}
+                className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
+                disabled={isDeleting}
+              >
+                <Wand2 className="w-4 h-4 mr-1.5" />
+                <span className="truncate">Customize</span>
+              </Button>
             </div>
           </div>
         </Card>
@@ -478,6 +477,7 @@ export default function SelectedSupplierCard({
           partyDetails={partyDetails}
           type={type}
           isAlreadyAdded={true}
+          onSaveVenueAddons={type === 'venue' ? onSaveVenueAddons : undefined}
         />
         
         {/* Customization Modal */}

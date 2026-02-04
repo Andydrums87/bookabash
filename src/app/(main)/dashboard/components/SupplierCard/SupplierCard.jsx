@@ -46,7 +46,9 @@ export default function SupplierCard({
   selectedVenue = null,
   // Props for editing booked suppliers
   onEdit = null,
-  partyDate = null
+  partyDate = null,
+  // Props for venue add-ons
+  onSaveVenueAddons
 }) {
   const router = useRouter()
 
@@ -237,7 +239,9 @@ export default function SupplierCard({
     onBrowseVenues: onBrowseVenues,
     // Edit mode props
     onEdit: onEdit,
-    partyDate: partyDate
+    partyDate: partyDate,
+    // Venue add-ons props
+    onSaveVenueAddons: onSaveVenueAddons
   }
 
   // Debug log to verify prop is received

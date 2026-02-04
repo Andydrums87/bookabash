@@ -157,7 +157,14 @@ const MapWidget = ({ address, venueAddress, venueName }) => {
 };
 
 
-const VenueDisplay = ({ supplier, serviceDetails }) => {
+const VenueDisplay = ({
+  supplier,
+  serviceDetails,
+  // Add-on selection props (optional - for interactive mode)
+  selectedAddons = [],
+  onToggleAddon,
+  isInteractive = false
+}) => {
 
   // State for expandable sections
   const [showAllFacilities, setShowAllFacilities] = useState(false);
@@ -254,47 +261,91 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   // Helper function to render add-on services with horizontal scroll
   const renderAddOnServices = (addOnServices) => {
     if (!addOnServices?.length) return null;
-    
+
     return (
       <div className="mb-6">
         <SectionHeader>Additional Services</SectionHeader>
-        <p className="text-base text-gray-600 mb-4">Optional extras you can add to enhance your booking</p>
-          
+        <p className="text-base text-gray-600 mb-4">
+          {isInteractive ? 'Tap to add extras to your booking' : 'Optional extras you can add to enhance your booking'}
+        </p>
+
           {/* Horizontal scrolling container */}
           <div className="overflow-x-auto pb-2">
             <div className="flex gap-4 min-w-max">
               {addOnServices.map((addon, index) => {
                 const categoryInfo = getCategoryInfo(addon.category);
-                
+                const addonId = addon.id || `addon-${index}`;
+                const isSelected = selectedAddons.some(a => (a.id || a) === addonId);
+
                 return (
-                  <div key={index} className="flex-shrink-0 w-72 p-4 bg-white border border-[hsl(var(--primary-500))] rounded-lg hover:bg-primary-100 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="text-primary-500">
-                          {categoryInfo.icon}
+                  <div
+                    key={addonId}
+                    className={`flex-shrink-0 w-72 rounded-xl overflow-hidden transition-all shadow-sm ${
+                      isSelected
+                        ? 'ring-2 ring-green-500 shadow-green-100'
+                        : 'ring-1 ring-gray-200 hover:ring-primary-300 hover:shadow-md'
+                    }`}
+                  >
+                    {/* Card content */}
+                    <div className={`p-4 ${isSelected ? 'bg-green-50' : 'bg-white'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`${isSelected ? 'text-green-500' : 'text-primary-500'}`}>
+                            {categoryInfo.icon}
+                          </div>
+                          <h4 className="font-semibold text-gray-900">{addon.name}</h4>
                         </div>
-                        <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+                        <span className={`font-bold text-lg ${isSelected ? 'text-green-600' : 'text-primary-600'}`}>
+                          +£{addon.price}
+                        </span>
                       </div>
-                      <span className="font-bold text-primary-600 text-lg">£{addon.price}</span>
+                      {addon.description && (
+                        <p className="text-gray-600 text-sm mt-2">{addon.description}</p>
+                      )}
+                      <div className="mt-3">
+                        <Badge variant="outline" className={`text-xs ${
+                          isSelected
+                            ? 'text-green-700 border-green-300 bg-green-100'
+                            : 'text-gray-600 border-gray-200 bg-gray-50'
+                        }`}>
+                          {addon.category === 'service' && 'Additional Service'}
+                          {addon.category === 'access' && 'Facility Access'}
+                          {addon.category === 'equipment' && 'Equipment Rental'}
+                          {addon.category === 'premium' && 'Premium Upgrade'}
+                          {addon.category === 'logistics' && 'Logistics'}
+                          {!addon.category && 'Extra'}
+                        </Badge>
+                      </div>
                     </div>
-                    {addon.description && (
-                      <p className="text-gray-700 text-sm mt-2">{addon.description}</p>
+
+                    {/* CTA Button - only show when interactive */}
+                    {isInteractive && (
+                      <button
+                        onClick={() => onToggleAddon && onToggleAddon(addon)}
+                        className={`w-full py-3 px-4 font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                          isSelected
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-primary-500 hover:bg-primary-600 text-white'
+                        }`}
+                      >
+                        {isSelected ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            Added to Booking
+                          </>
+                        ) : (
+                          <>
+                            Add to Booking
+                          </>
+                        )}
+                      </button>
                     )}
-                    <div className="mt-2">
-                      <Badge variant="outline" className="text-xs text-primary-700 border-primary-300 bg-primary-100">
-                        {addon.category === 'service' && 'Additional Service'}
-                        {addon.category === 'access' && 'Facility Access'}
-                        {addon.category === 'equipment' && 'Equipment Rental'}
-                        {addon.category === 'premium' && 'Premium Upgrade'}
-                        {addon.category === 'logistics' && 'Logistics'}
-                      </Badge>
-                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
-          
+
           {/* Scroll indicator */}
           {addOnServices.length > 2 && (
             <p className="text-sm text-gray-500 mt-2 text-center">
@@ -642,6 +693,9 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 
       {/* House Rules - Simplified colors */}
       {renderHouseRules(serviceDetails.houseRules)}
+
+      {/* Add-On Services */}
+      {renderAddOnServices(serviceDetails.addOnServices)}
 
       {/* Special Features */}
       {serviceDetails.specialFeatures && (

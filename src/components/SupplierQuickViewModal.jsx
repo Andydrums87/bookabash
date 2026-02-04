@@ -20,7 +20,9 @@ export default function SupplierQuickViewModal({
   onBookPackage, // NEW: Callback to directly book a package (bypasses customization)
   bookingPackageId, // NEW: ID of package currently being booked (for loading state)
   partyDetails,
-  type
+  type,
+  onSaveVenueAddons, // NEW: Callback to save selected venue add-ons
+  isAlreadyAdded = false // NEW: Whether this supplier is already in the party plan
 }) {
   const [fullSupplier, setFullSupplier] = useState(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
@@ -29,6 +31,30 @@ export default function SupplierQuickViewModal({
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
   const scrollPositionRef = useRef(0) // Store scroll position in ref to avoid stale closure
+
+  // Venue add-on selection state
+  const [selectedVenueAddons, setSelectedVenueAddons] = useState([])
+
+  // Check if this is a venue
+  const isVenue = type === 'venue' ||
+    supplier?.category?.toLowerCase() === 'venue' ||
+    supplier?.category?.toLowerCase() === 'venues'
+
+  // Handler for toggling venue add-ons
+  const handleToggleVenueAddon = (addon) => {
+    setSelectedVenueAddons(prev => {
+      const addonId = addon.id || addon.name
+      const isSelected = prev.some(a => (a.id || a.name) === addonId)
+      if (isSelected) {
+        return prev.filter(a => (a.id || a.name) !== addonId)
+      } else {
+        return [...prev, addon]
+      }
+    })
+  }
+
+  // Calculate total add-on price
+  const venueAddonTotal = selectedVenueAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
 
   // Detect theme from supplier name/description
   const getSupplierTheme = (supplier) => {
@@ -151,6 +177,14 @@ export default function SupplierQuickViewModal({
   };
 
   const supplierImages = getSupplierImages(fullSupplier || supplier);
+
+  // Reset venue add-ons when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Reset selected add-ons when modal opens
+      setSelectedVenueAddons([])
+    }
+  }, [isOpen])
 
   // Disable body scroll when modal is open - Enhanced for mobile
   useEffect(() => {
@@ -2036,6 +2070,9 @@ export default function SupplierQuickViewModal({
                   supplier={displaySupplier}
                   isPreview={false}
                   themeAccentColor={themeAccentColor}
+                  selectedAddons={selectedVenueAddons}
+                  onToggleAddon={handleToggleVenueAddon}
+                  isInteractive={isVenue && isAlreadyAdded && !!onSaveVenueAddons}
                 />
                 </div>
               </>
@@ -2045,12 +2082,40 @@ export default function SupplierQuickViewModal({
 
         {/* ✅ COMPACT: Sticky Footer - Less padding on mobile */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-2 sm:p-3 flex-shrink-0">
-          <Button
-            onClick={onClose}
-            className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-semibold text-sm py-3"
-          >
-            Close
-          </Button>
+          {/* Show save button when venue addons are selected */}
+          {isVenue && isAlreadyAdded && onSaveVenueAddons && selectedVenueAddons.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-2 text-sm">
+                <span className="text-gray-600">{selectedVenueAddons.length} extra{selectedVenueAddons.length !== 1 ? 's' : ''} selected</span>
+                <span className="font-bold text-[hsl(var(--primary-600))]">+£{venueAddonTotal}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={onClose}
+                  variant="outline"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-sm py-3"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    onSaveVenueAddons(selectedVenueAddons)
+                    onClose()
+                  }}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-sm py-3"
+                >
+                  Save Extras
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              onClick={onClose}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-semibold text-sm py-3"
+            >
+              Close
+            </Button>
+          )}
         </div>
       </div>
 

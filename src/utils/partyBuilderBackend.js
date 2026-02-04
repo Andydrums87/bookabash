@@ -388,7 +388,7 @@ class PartyBuilderBackend {
 // In partyBuilderBackend.js
 // Replace the selectMultipleVenuesForCarousel method with this updated version:
 
-selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 5) {
+selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 50) {
   const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
   
   if (venueSuppliers.length === 0) {
