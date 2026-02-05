@@ -621,7 +621,7 @@ const VenueDisplay = ({
       </div>
 
       {/* Location & Access */}
-      {(supplier?.owner?.address || serviceDetails.venueDetails) && (
+      {(supplier?.owner?.address || supplier?.venueAddress || serviceDetails?.venueAddress || serviceDetails?.venueDetails) && (
         <div className="mb-6">
           <SectionHeader>Location & Access</SectionHeader>
 
@@ -633,17 +633,24 @@ const VenueDisplay = ({
                 </p>
               </div>
             )}
-            {supplier.venueAddress && (
+            {(supplier?.venueAddress || serviceDetails?.venueAddress) && (
                <div className="mb-4">
                <h4 className="font-bold text-lg text-gray-900 mb-2">Address</h4>
-               <p className="text-base text-gray-700">
-                 {supplier?.venueAddress?.addressLine1}, {supplier.venueAddress?.addressLine2}, {supplier.venueAddress?.city}, {supplier.venueAddress.postcode}
-               </p>
+               {(() => {
+                 const addr = supplier?.venueAddress || serviceDetails?.venueAddress;
+                 const parts = [
+                   addr?.addressLine1,
+                   addr?.addressLine2,
+                   addr?.city,
+                   addr?.postcode
+                 ].filter(p => p && p.trim());
+                 return <p className="text-base text-gray-700">{parts.join(', ')}</p>;
+               })()}
              </div>
             )}
             {/* Add the map widget */}
             <MapWidget
-              venueAddress={supplier?.venueAddress}
+              venueAddress={supplier?.venueAddress || serviceDetails?.venueAddress}
               address={supplier?.owner?.address}
               venueName={supplier?.businessName || supplier?.name}
             />
