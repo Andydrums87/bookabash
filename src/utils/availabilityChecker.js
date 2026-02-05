@@ -137,7 +137,8 @@ export function checkSupplierAvailability(supplier, partyDate, partyTime = null,
     }
 
     // 3. Check working hours and days of week
-    if (supplier.workingHours && partyTime) {
+    // Always check if the day is active, even without partyTime
+    if (supplier.workingHours) {
       const workingHoursCheck = checkWorkingHours(supplier.workingHours, dayOfWeek, partyTime, partyDuration);
 
       if (!workingHoursCheck.available) {
@@ -216,20 +217,39 @@ export function checkSupplierAvailability(supplier, partyDate, partyTime = null,
  */
 function checkWorkingHours(workingHours, dayOfWeek, partyTime, partyDuration) {
   try {
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayName = dayNames[dayOfWeek];
+    // Support both lowercase and capitalized day names
+    const dayNamesLower = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNamesCap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNameLower = dayNamesLower[dayOfWeek];
+    const dayNameCap = dayNamesCap[dayOfWeek];
+
+    // Try both lowercase and capitalized versions
+    const daySchedule = workingHours[dayNameLower] || workingHours[dayNameCap];
 
     // Check if supplier works on this day
-    if (workingHours[dayName] === false || workingHours[dayName]?.enabled === false) {
+    // Handle multiple formats:
+    // 1. daySchedule === false (day is completely off)
+    // 2. daySchedule.enabled === false (legacy format)
+    // 3. daySchedule.active === false (current format used by venues)
+    if (daySchedule === false ||
+        daySchedule?.enabled === false ||
+        daySchedule?.active === false) {
       return {
         available: false,
-        reason: `This supplier doesn't work on ${capitalize(dayName)}s. Please choose a different date.`
+        reason: `This venue doesn't operate on ${dayNameCap}s. Please choose a different date.`
       };
     }
 
-    // If working hours are specified for this day, check time range
-    const daySchedule = workingHours[dayName];
-    if (daySchedule && typeof daySchedule === 'object' && daySchedule.start && daySchedule.end) {
+    // If no schedule exists for this day, assume unavailable
+    if (!daySchedule) {
+      return {
+        available: false,
+        reason: `This venue doesn't have availability set for ${dayNameCap}s. Please choose a different date.`
+      };
+    }
+
+    // If partyTime is provided and working hours are specified, check time range
+    if (partyTime && daySchedule && typeof daySchedule === 'object' && daySchedule.start && daySchedule.end) {
       const partyStartTime = parseTime(partyTime);
       const partyEndTime = partyStartTime + partyDuration;
       const workStart = parseTime(daySchedule.start);
@@ -238,7 +258,21 @@ function checkWorkingHours(workingHours, dayOfWeek, partyTime, partyDuration) {
       if (partyStartTime < workStart || partyEndTime > workEnd) {
         return {
           available: false,
-          reason: `This supplier only works ${daySchedule.start} - ${daySchedule.end} on ${capitalize(dayName)}s. Your party time doesn't fit their schedule.`
+          reason: `This venue only operates ${daySchedule.start} - ${daySchedule.end} on ${dayNameCap}s. Your party time doesn't fit their schedule.`
+        };
+      }
+    }
+
+    // Also check timeSlots if the venue uses that format
+    // Format: { timeSlots: { morning: { available: true }, afternoon: { available: false } } }
+    if (partyTime && daySchedule?.timeSlots) {
+      const hour = parseTime(partyTime);
+      const timeSlot = hour < 13 ? 'morning' : 'afternoon';
+
+      if (daySchedule.timeSlots[timeSlot]?.available === false) {
+        return {
+          available: false,
+          reason: `This venue is not available for ${timeSlot} events on ${dayNameCap}s. Please choose a different time or date.`
         };
       }
     }
