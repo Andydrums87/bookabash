@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BookABash (PartySnap) is a Next.js 15 marketplace platform for children's party entertainment and services. It's a dual-sided marketplace connecting customers (party planners) with suppliers (entertainers, bakers, decorators, etc.).
+PartySnap is a Next.js 15 marketplace platform for children's party entertainment and services. It's a dual-sided marketplace connecting customers (party planners) with suppliers (entertainers, bakers, decorators, etc.).
 
 ## Development Commands
 

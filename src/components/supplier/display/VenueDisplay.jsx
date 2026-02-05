@@ -1,22 +1,11 @@
 // components/supplier/display/VenueDisplay.jsx
 import React, { useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Building,
+import {
   MapPin,
-  DollarSign,
   Users,
-  Settings,
   Car,
   Clock,
-  Sparkles,
   CheckCircle,
-  XCircle,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
   Ban,
   Gift,
   Star,
@@ -176,8 +165,8 @@ const VenueDisplay = ({
 
 
 
-  // Helper function to render expandable badge list
-  const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
+  // Helper function to render expandable item list - Airbnb minimal style
+  const renderExpandableBadges = (items, title, _icon, _colorClass, showAll, setShowAll, maxInitial = 6) => {
     if (!items?.length) return null;
 
     const displayItems = showAll ? items : items.slice(0, maxInitial);
@@ -185,61 +174,43 @@ const VenueDisplay = ({
 
     return (
       <div className="mb-6">
-        <h4 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
-          {icon && <span className="w-5 h-5">{icon}</span>}
+        <h4 className="text-sm font-medium text-gray-900 mb-3">
           {title}
-          {items.length > 0 && (
-            <span className="text-sm text-gray-500 font-normal">({items.length})</span>
-          )}
         </h4>
 
-        <div className="space-y-3 overflow-hidden">
-          {/* Grid layout for better organization */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
             {displayItems.map((item, index) => (
-              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center text-sm py-1.5 truncate max-w-full`}>
-                <span className="truncate">{item}</span>
-              </Badge>
+              <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
+                {item}
+              </span>
             ))}
           </div>
 
-          {/* Show more/less button */}
           {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setShowAll(!showAll)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-sm"
+              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
             >
-              {showAll ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  Show {items.length - maxInitial} more
-                </>
-              )}
-            </Button>
+              {showAll ? 'Show less' : `Show all ${items.length}`}
+            </button>
           )}
         </div>
       </div>
     );
   };
 
-  // Helper function to render age groups
+  // Helper function to render age groups - Airbnb minimal
   const renderAgeGroups = (ageGroups) => {
     if (!ageGroups?.length) return null;
     return (
       <div className="mb-6">
-        <h4 className="font-bold text-lg text-gray-900 mb-3">Suitable Age Groups</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Suitable age groups</h4>
         <div className="flex flex-wrap gap-2">
           {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-sm py-1.5 text-slate-700 border-slate-300 bg-slate-50">
+            <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
               {age}
-            </Badge>
+            </span>
           ))}
         </div>
       </div>
@@ -366,37 +337,25 @@ const VenueDisplay = ({
     return (
       <div className="mb-6">
         <SectionHeader>Items We Welcome</SectionHeader>
-        <p className="text-base text-gray-600 mb-4">These special items and equipment are welcome at our venue</p>
+        <p className="text-sm text-gray-500 mb-4">These items and equipment are welcome at our venue</p>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
             {displayItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span className="text-gray-800 text-base">{item}</span>
+              <div key={index} className="flex items-center gap-2 py-1">
+                <CheckCircle className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0" />
+                <span className="text-gray-700">{item}</span>
               </div>
             ))}
           </div>
 
           {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setShowAllAllowedItems(!showAllAllowedItems)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-sm"
+              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
             >
-              {showAllAllowedItems ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  Show {allowedItems.length - 8} more
-                </>
-              )}
-            </Button>
+              {showAllAllowedItems ? 'Show less' : `Show all ${allowedItems.length}`}
+            </button>
           )}
         </div>
       </div>
@@ -413,37 +372,25 @@ const VenueDisplay = ({
     return (
       <div className="mb-6">
         <SectionHeader>Items Not Permitted</SectionHeader>
-        <p className="text-base text-gray-600 mb-4">Please note these items are not allowed at this venue</p>
+        <p className="text-sm text-gray-500 mb-4">Please note these items are not allowed at this venue</p>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
             {displayItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <Ban className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                <span className="text-gray-800 text-base">{item}</span>
+              <div key={index} className="flex items-center gap-2 py-1">
+                <Ban className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-600">{item}</span>
               </div>
             ))}
           </div>
 
           {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setShowAllRestrictions(!showAllRestrictions)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-sm"
+              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
             >
-              {showAllRestrictions ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  Show {restrictedItems.length - 8} more
-                </>
-              )}
-            </Button>
+              {showAllRestrictions ? 'Show less' : `Show all ${restrictedItems.length}`}
+            </button>
           )}
         </div>
       </div>
@@ -460,50 +407,43 @@ const VenueDisplay = ({
     return (
       <div className="mb-6">
         <SectionHeader>House Rules</SectionHeader>
-        <p className="text-base text-gray-600 mb-4">Please follow these important venue guidelines</p>
+        <p className="text-sm text-gray-500 mb-4">Please follow these important venue guidelines</p>
 
-        <div className="space-y-3">
-          <div className="space-y-2">
+        <div className="space-y-2">
+          <div className="space-y-1">
             {displayRules.map((rule, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-900 text-base">{rule}</span>
+              <div key={index} className="flex items-start gap-2 py-1">
+                <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-700">{rule}</span>
               </div>
             ))}
           </div>
 
           {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setShowAllRules(!showAllRules)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-sm"
+              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
             >
-              {showAllRules ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  Show {houseRules.length - 6} more
-                </>
-              )}
-            </Button>
+              {showAllRules ? 'Show less' : `Show all ${houseRules.length}`}
+            </button>
           )}
         </div>
       </div>
     );
   };
 
-  // Consistent section header style - matching SupplierQuickViewModal
+  // Consistent section header style - Airbnb minimal
   const SectionHeader = ({ children }) => (
-    <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+    <h2 className="text-xl font-semibold text-gray-900 mb-4">
       {children}
-      <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
     </h2>
   );
+
+  // Get highlights from multiple possible locations
+  const highlights = serviceDetails.highlights ||
+                     supplier?.highlights ||
+                     supplier?.data?.highlights ||
+                     [];
 
   return (
     <div className="space-y-8">
@@ -519,36 +459,19 @@ const VenueDisplay = ({
       <div className="mb-6">
         <SectionHeader>Venue Information</SectionHeader>
           
-          {/* Capacity - Featured */}
+          {/* Capacity - Minimal inline */}
           {serviceDetails.capacity && (
-            <div className="bg-[hsl(var(--primary-50))] rounded-2xl p-6 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[hsl(var(--primary-500))] rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xl text-gray-900">Capacity</h4>
-                  <p className="text-gray-600">Maximum guests this venue can accommodate</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl p-4 text-center">
-                  <p className="text-3xl font-black text-[hsl(var(--primary-600))]">
-                    {serviceDetails.capacity?.max || serviceDetails.capacity?.min || '—'}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">Total Capacity</p>
-                </div>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Users className="w-4 h-4 text-gray-400" />
+                <span className="font-medium">
+                  Up to {serviceDetails.capacity?.max || serviceDetails.capacity?.min || '—'} guests
+                </span>
                 {serviceDetails.capacity?.seated && (
-                  <div className="bg-white rounded-xl p-4 text-center">
-                    <p className="text-3xl font-black text-gray-900">{serviceDetails.capacity.seated}</p>
-                    <p className="text-sm text-gray-600 mt-1">Seated</p>
-                  </div>
+                  <span className="text-gray-500">· {serviceDetails.capacity.seated} seated</span>
                 )}
                 {serviceDetails.capacity?.standing && (
-                  <div className="bg-white rounded-xl p-4 text-center">
-                    <p className="text-3xl font-black text-gray-900">{serviceDetails.capacity.standing}</p>
-                    <p className="text-sm text-gray-600 mt-1">Standing</p>
-                  </div>
+                  <span className="text-gray-500">· {serviceDetails.capacity.standing} standing</span>
                 )}
               </div>
             </div>
@@ -588,8 +511,8 @@ const VenueDisplay = ({
           {renderExpandableBadges(
             serviceDetails.facilities,
             "Available Facilities",
-            <Settings className="w-3 h-3" />,
-            "text-gray-700 border-gray-300 bg-gray-50",
+            null,
+            null,
             showAllFacilities,
             setShowAllFacilities,
             8
@@ -599,8 +522,8 @@ const VenueDisplay = ({
           {renderExpandableBadges(
             serviceDetails.setupOptions,
             "Setup Options",
-            <Settings className="w-3 h-3" />,
-            "text-gray-700 border-gray-300 bg-gray-50",
+            null,
+            null,
             showAllSetupOptions,
             setShowAllSetupOptions,
             6
@@ -610,8 +533,8 @@ const VenueDisplay = ({
           {renderExpandableBadges(
             serviceDetails.cateringOptions,
             "Catering Options",
-            <Sparkles className="w-3 h-3" />,
-            "text-gray-700 border-gray-300 bg-gray-50",
+            null,
+            null,
             showAllCateringOptions,
             setShowAllCateringOptions,
             6
@@ -717,6 +640,21 @@ const VenueDisplay = ({
         <div className="mb-6">
           <SectionHeader>About This Venue</SectionHeader>
           <p className="text-base text-gray-700 leading-relaxed">{serviceDetails.aboutService}</p>
+        </div>
+      )}
+
+      {/* What We Love Section - at the bottom */}
+      {highlights.length > 0 && (
+        <div className="mb-6">
+          <SectionHeader>What We Love</SectionHeader>
+          <div className="space-y-3">
+            {highlights.map((highlight, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <Star className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                <p className="text-gray-700">{highlight}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

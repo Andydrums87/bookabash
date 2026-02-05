@@ -2,6 +2,7 @@
 
 import PartyPhaseContent from '../../../components/PartyPhaseContent'
 import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions'
+import AgeBasedRecommendationBanner from '@/components/AgeBasedRecommendationBanner'
 
 export default function JourneyTabContent({
   partyPhase,
@@ -33,6 +34,12 @@ export default function JourneyTabContent({
 }) {
   return (
     <div className="space-y-8 py-6 px-5">
+      {/* Age-based recommendation banner for ages 1-2 */}
+      <AgeBasedRecommendationBanner
+        childAge={partyDetails?.childAge}
+        childName={partyDetails?.childName}
+      />
+
       {/* Party Journey heading */}
       <div>
         <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>

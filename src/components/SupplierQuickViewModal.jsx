@@ -547,10 +547,9 @@ export default function SupplierQuickViewModal({
 
                     return (
                       <div className="prose prose-sm sm:prose max-w-none">
-                        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
                           About This Cake
-                          <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                        </h2>
+                                                  </h2>
                         <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                           {cakeDescription}
                         </p>
@@ -563,10 +562,9 @@ export default function SupplierQuickViewModal({
 
                   return (
                     <div className="prose prose-sm sm:prose max-w-none">
-                      <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
                         What to Expect
-                        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                      </h2>
+                                              </h2>
                       <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                         {displaySupplier.serviceDetails.aboutUs}
                       </p>
@@ -606,10 +604,9 @@ export default function SupplierQuickViewModal({
                       <div className="space-y-6">
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Age Range */}
@@ -664,10 +661,9 @@ export default function SupplierQuickViewModal({
                         {/* Meet the Entertainer */}
                         {serviceDetails.personalBio?.personalStory && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Meet the Entertainer
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             {serviceDetails.personalBio.yearsExperience && (
                               <p className="text-base text-gray-700 mb-3">
                                 <span className="font-semibold">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties
@@ -679,18 +675,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🎉</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Party Entertainment</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                Our entertainers bring all the equipment needed and keep the kids engaged throughout the party!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Info Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.
+                        </p>
                       </div>
                     )
                   }
@@ -706,10 +694,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Face Painting
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -719,16 +706,15 @@ export default function SupplierQuickViewModal({
                         {/* Design Collections / Packages */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Design Collections
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
                                   </div>
                                   {pkg.description && (
                                     <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
@@ -738,7 +724,7 @@ export default function SupplierQuickViewModal({
                                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Includes designs:</p>
                                       <div className="flex flex-wrap gap-1.5">
                                         {pkg.designs.map((design, dIndex) => (
-                                          <span key={dIndex} className="px-2 py-1 bg-primary-100 text-[hsl(var(--primary-700))] text-xs rounded-full">
+                                          <span key={dIndex} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                                             {design}
                                           </span>
                                         ))}
@@ -783,10 +769,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Time per child */}
@@ -815,18 +800,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🎨</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Face Painting Fun</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                Kids love choosing their design! We work continuously throughout the party so everyone gets a turn.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Info Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Kids love choosing their design. We work continuously throughout the party so everyone gets a turn.
+                        </p>
                       </div>
                     )
                   }
@@ -843,10 +820,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Party Bags
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -856,21 +832,20 @@ export default function SupplierQuickViewModal({
                         {/* Packages */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Party Bag Options
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-sm text-gray-500 mb-4">Price per bag - order one for each guest</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => {
                                 const guestCount = partyDetails?.guestCount || 10
                                 const totalPrice = (pkg.price * guestCount).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
                                       <p className="text-xs text-gray-500">£{pkg.price} per bag</p>
                                     </div>
                                   </div>
@@ -925,10 +900,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Delivery Info */}
@@ -961,18 +935,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🎁</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                Party bags delivered to your home within 3-5 working days so everything is ready for the big day!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Delivery Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Free delivery included. Party bags delivered to your home within 3-5 working days.
+                        </p>
                       </div>
                     )
                   }
@@ -988,10 +954,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Bouncy Castle
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1000,10 +965,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Hire Duration */}
@@ -1038,18 +1002,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🏰</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Bouncy Castle Hire</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                The bouncy castle is included for your entire party - endless bouncing fun for the kids!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Info Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          The bouncy castle is included for your entire party duration.
+                        </p>
                       </div>
                     )
                   }
@@ -1066,10 +1022,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Soft Play
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1079,15 +1034,14 @@ export default function SupplierQuickViewModal({
                         {/* Equipment Items */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Available Equipment
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => {
                                 const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
                                 return (
-                                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
+                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden">
                                     {/* Item Image with View button */}
                                     {pkg.image && (
                                       <div className="relative h-32 w-full">
@@ -1159,10 +1113,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Age Range */}
@@ -1197,18 +1150,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🎪</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Full Service Hire</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                We handle everything - delivery, setup, and collection. You just enjoy the party!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Info Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Full service hire includes delivery, setup, and collection.
+                        </p>
                       </div>
                     )
                   }
@@ -1225,10 +1170,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Sweet Treats
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1238,16 +1182,15 @@ export default function SupplierQuickViewModal({
                         {/* Available Items */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Available Treats
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-sm text-gray-500 mb-4">Pick and choose from our range - mix and match for your perfect party!</p>
                             <div className="grid gap-4 sm:grid-cols-2">
                               {packages.map((pkg, index) => {
                                 const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
                                 return (
-                                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 overflow-hidden">
+                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden">
                                     {/* Item Image with View button */}
                                     {pkg.image && (
                                       <div className="relative h-32 w-full">
@@ -1319,10 +1262,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Setup */}
@@ -1351,18 +1293,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🍭</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Sweet Treats at Your Party</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                A fun treat station the kids will love! Perfect for keeping energy levels up during the party.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Info Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          A fun treat station perfect for keeping energy levels up during the party.
+                        </p>
                       </div>
                     )
                   }
@@ -1380,10 +1314,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Catering
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1393,21 +1326,20 @@ export default function SupplierQuickViewModal({
                         {/* Lunchbox Packages */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Lunchbox Options
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-sm text-gray-500 mb-4">Price per child - order for each guest</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => {
                                 const guestCount = partyDetails?.guestCount || 10
                                 const totalPrice = (pkg.price * guestCount).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
                                       <p className="text-xs text-gray-500">£{pkg.price} per child</p>
                                     </div>
                                   </div>
@@ -1452,29 +1384,23 @@ export default function SupplierQuickViewModal({
 
                         {/* Dietary Options */}
                         {dietaryOptions.length > 0 && (
-                          <div className="p-4 bg-primary-50 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <span className="text-2xl">🥗</span>
-                              <div>
-                                <h4 className="font-bold text-lg text-gray-900">Dietary Options Available</h4>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {dietaryOptions.map((option, index) => (
-                                    <span key={index} className="px-3 py-1 bg-white text-[hsl(var(--primary-700))] rounded-full text-sm border border-primary-200">
-                                      {typeof option === 'object' ? option.name : option}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Dietary options available</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {dietaryOptions.map((option, index) => (
+                                <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
+                                  {typeof option === 'object' ? option.name : option}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         )}
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Delivery */}
@@ -1505,18 +1431,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🚚</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                Fresh lunchboxes delivered direct to your party venue - one less thing to worry about!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Delivery Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Free delivery included. Fresh lunchboxes delivered direct to your party venue.
+                        </p>
                       </div>
                     )
                   }
@@ -1564,10 +1482,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Decorations
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1577,10 +1494,9 @@ export default function SupplierQuickViewModal({
                         {/* Theme Gallery */}
                         {Object.keys(themeImagesGallery).length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Available Themes
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-sm text-gray-500 mb-4">Our tableware and decorations are available in these popular themes</p>
                             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
                               {Object.entries(themeImagesGallery).map(([theme, imageUrl]) => (
@@ -1605,10 +1521,9 @@ export default function SupplierQuickViewModal({
                         {/* Packages */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Packages
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-sm text-gray-500 mb-4">Priced per set - we round up to pack sizes to ensure you have enough</p>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => {
@@ -1618,11 +1533,11 @@ export default function SupplierQuickViewModal({
                                 const packSize = packSizes.find(size => size >= guestCount) || packSizes[packSizes.length - 1]
                                 const totalPrice = (pkg.price * packSize).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
                                     <div className="text-right">
-                                      <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{totalPrice}</span>
+                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
                                       <p className="text-xs text-gray-500">£{pkg.price}/set × {packSize} sets</p>
                                     </div>
                                   </div>
@@ -1667,10 +1582,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Delivery */}
@@ -1701,18 +1615,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🚚</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Free Delivery Included</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                All decorations and tableware delivered to your door the evening before your party - no need to pick anything up!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Delivery Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Free delivery included. All decorations delivered to your door the evening before your party.
+                        </p>
                       </div>
                     )
                   }
@@ -1728,10 +1634,9 @@ export default function SupplierQuickViewModal({
                         {/* About */}
                         {aboutUs && (
                           <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               About Our Balloons
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
                               {aboutUs}
                             </p>
@@ -1741,16 +1646,15 @@ export default function SupplierQuickViewModal({
                         {/* Packages */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Packages
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100">
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                                   <div className="flex justify-between items-start mb-3">
                                     <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <span className="font-black text-2xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
                                   </div>
                                   {pkg.description && (
                                     <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
@@ -1793,10 +1697,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Delivery */}
@@ -1825,18 +1728,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Info Card */}
-                        <div className="p-4 bg-primary-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">🎈</span>
-                            <div>
-                              <h4 className="font-bold text-lg text-gray-900">Home Delivery</h4>
-                              <p className="text-base text-gray-700 mt-1">
-                                Balloons are delivered to your home address ready for you to take to your party venue.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Delivery Note */}
+                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                          Balloons are delivered to your home address ready for you to take to your party venue.
+                        </p>
                       </div>
                     )
                   }
@@ -1879,7 +1774,7 @@ export default function SupplierQuickViewModal({
                             <h3 className="font-bold text-lg text-gray-900 mb-3">Available Flavours</h3>
                             <div className="flex flex-wrap gap-2">
                               {cakeFlavours.map((flavour, index) => (
-                                <span key={index} className="px-4 py-2 bg-[hsl(var(--primary-50))] text-[hsl(var(--primary-700))] rounded-full text-base">
+                                <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
                                   {flavour}
                                 </span>
                               ))}
@@ -1904,16 +1799,15 @@ export default function SupplierQuickViewModal({
                         {/* Sizes & Pricing */}
                         {packages.length > 0 && (
                           <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Sizes & Pricing
-                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                            </h2>
+                                                          </h2>
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-4 bg-gray-50 rounded-xl">
+                                <div key={index} className="p-4 border border-gray-200 rounded-lg">
                                   <div className="flex justify-between items-start">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    <span className="font-medium text-gray-900">{pkg.name}</span>
+                                    <span className="font-semibold text-gray-900">£{pkg.price}</span>
                                   </div>
                                   {(pkg.serves || pkg.feeds) && (
                                     <p className="text-base text-gray-600 mt-2">Feeds {pkg.serves || pkg.feeds} people</p>
@@ -1926,47 +1820,31 @@ export default function SupplierQuickViewModal({
 
                         {/* Delivery & Collection Options */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             Delivery & Collection
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                           </h2>
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {offersDelivery && (
-                              <div className="p-4 bg-primary-50 rounded-xl">
-                                <div className="flex items-start gap-3">
-                                  <span className="text-2xl">🚚</span>
-                                  <div>
-                                    <h4 className="font-bold text-lg text-gray-900">Delivery Available</h4>
-                                    <p className="text-base text-gray-700 mt-1">
-                                      Your cake will be delivered on the Friday before your party weekend to ensure freshness.
-                                    </p>
-                                    {deliveryFee > 0 && (
-                                      <p className="text-base font-semibold text-[hsl(var(--primary-500))] mt-2">
-                                        Delivery fee: £{deliveryFee}
-                                      </p>
-                                    )}
-                                    {deliveryFee === 0 && (
-                                      <p className="text-base font-semibold text-[hsl(var(--primary-600))] mt-2">
-                                        Free delivery
-                                      </p>
-                                    )}
-                                  </div>
+                              <div className="flex items-start gap-3">
+                                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
+                                <div>
+                                  <span className="font-medium text-gray-900">Delivery available</span>
+                                  <span className="text-gray-600"> — delivered on Friday before your party</span>
+                                  {deliveryFee > 0 && (
+                                    <span className="text-[hsl(var(--primary-600))]"> (£{deliveryFee})</span>
+                                  )}
+                                  {deliveryFee === 0 && (
+                                    <span className="text-[hsl(var(--primary-600))]"> (free)</span>
+                                  )}
                                 </div>
                               </div>
                             )}
                             {offersCollection && (
-                              <div className="p-4 bg-gray-50 rounded-xl">
-                                <div className="flex items-start gap-3">
-                                  <span className="text-2xl">📍</span>
-                                  <div>
-                                    <h4 className="font-bold text-lg text-gray-900">Collection Available</h4>
-                                    <p className="text-base text-gray-700 mt-1">
-                                      Collect your cake from our location on the Friday before your party.
-                                    </p>
-                                    <p className="text-base text-gray-600 mt-2">
-                                      <span className="font-medium">Location:</span> {collectionAddress || 'Address provided after booking'}
-                                    </p>
-                                  </div>
+                              <div className="flex items-start gap-3">
+                                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
+                                <div>
+                                  <span className="font-medium text-gray-900">Collection available</span>
+                                  <span className="text-gray-600"> — {collectionAddress || 'address provided after booking'}</span>
                                 </div>
                               </div>
                             )}
@@ -1975,10 +1853,9 @@ export default function SupplierQuickViewModal({
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             What You Need to Know
-                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                          </h2>
+                                                      </h2>
 
                           <div className="space-y-4 text-base text-gray-700">
                             {/* Delivery timing */}
@@ -2030,37 +1907,25 @@ export default function SupplierQuickViewModal({
                   const backgroundImage = displaySupplier?.coverPhoto;
 
                   return (
-                    <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8">
-                      {backgroundImage && (
-                        <div
-                          className="absolute inset-0 bg-cover bg-center"
-                          style={{
-                            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${backgroundImage})`
-                          }}
-                        />
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                        What's Included
+                      </h2>
+
+                      {packageFeatures.length > 0 ? (
+                        <ul className="space-y-2">
+                          {packageFeatures.map((feature, index) => (
+                            <li key={index} className="flex items-start gap-2 text-gray-700">
+                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          Package details will be shown after you customize this supplier.
+                        </p>
                       )}
-
-                      <div className="relative z-10">
-                        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                          What's Included
-                          <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                        </h2>
-
-                        {packageFeatures.length > 0 ? (
-                          <ul className="space-y-2">
-                            {packageFeatures.map((feature, index) => (
-                              <li key={index} className="flex items-start gap-3 text-base text-gray-700">
-                                <span className="text-[hsl(var(--primary-500))] mt-1">✓</span>
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-gray-600">
-                            Package details will be shown after you customize this supplier.
-                          </p>
-                        )}
-                      </div>
                     </div>
                   )
                 })()}
@@ -2102,7 +1967,7 @@ export default function SupplierQuickViewModal({
                     onSaveVenueAddons(selectedVenueAddons)
                     onClose()
                   }}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-sm py-3"
+                  className="flex-1 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-medium text-sm py-3"
                 >
                   Save Extras
                 </Button>

@@ -30,6 +30,7 @@ const StandardPackageManagement = ({
     name: "",
     description: "",
     price: "",
+    weekendPrice: "",
     duration: "",
     features: [""],
     image: "",
@@ -154,6 +155,7 @@ const StandardPackageManagement = ({
         name: pkg.name || "",
         description: pkg.description || "",
         price: pkg.price || "",
+        weekendPrice: pkg.weekendPrice || "",
         duration: pkg.duration || "",
         features: pkg.features || pkg.whatsIncluded || [""],
         image: pkg.image || "",
@@ -164,6 +166,7 @@ const StandardPackageManagement = ({
         name: "",
         description: "",
         price: "",
+        weekendPrice: "",
         duration: "",
         features: [""],
         image: "",
@@ -248,6 +251,7 @@ const StandardPackageManagement = ({
       name: "",
       description: "",
       price: "",
+      weekendPrice: "",
       duration: "",
       features: [""],
       image: "",
@@ -270,6 +274,7 @@ const StandardPackageManagement = ({
       features: filteredFeatures,
       whatsIncluded: filteredFeatures,
       price: Number.parseFloat(packageFormData.price) || 0,
+      weekendPrice: packageFormData.weekendPrice ? Number.parseFloat(packageFormData.weekendPrice) : null,
       priceType: "flat",
       image: packageFormData.image,
     }
@@ -537,19 +542,36 @@ const StandardPackageManagement = ({
                     placeholder="150"
                     className="mt-1 px-4 py-3 text-sm"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Sun-Thu rate</p>
                 </div>
                 <div>
-                  <Label htmlFor="package-duration" className="text-sm font-medium">
-                    Duration *
+                  <Label htmlFor="package-weekend-price" className="text-sm font-medium">
+                    Weekend Price (£)
                   </Label>
                   <Input
-                    id="package-duration"
-                    value={packageFormData.duration}
-                    onChange={(e) => handleFormChange("duration", e.target.value)}
-                    placeholder={currentPlaceholders.duration}
+                    id="package-weekend-price"
+                    type="number"
+                    value={packageFormData.weekendPrice}
+                    onChange={(e) => handleFormChange("weekendPrice", e.target.value)}
+                    placeholder="200"
                     className="mt-1 px-4 py-3 text-sm"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Fri-Sat rate (optional)</p>
                 </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <Label htmlFor="package-duration" className="text-sm font-medium">
+                  Duration *
+                </Label>
+                <Input
+                  id="package-duration"
+                  value={packageFormData.duration}
+                  onChange={(e) => handleFormChange("duration", e.target.value)}
+                  placeholder={currentPlaceholders.duration}
+                  className="mt-1 px-4 py-3 text-sm"
+                />
               </div>
 
               {/* Package Features */}

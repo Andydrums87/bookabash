@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles, Camera } from "lucide-react"
+import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles, Camera, Info } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar as CalendarPicker } from "@/components/ui/calendar"
@@ -372,10 +372,6 @@ const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onS
     onClose()
   }
 
-  const getTimeRange = (slot) => {
-    return slot === 'morning' ? '11am - 1pm' : '2pm - 4pm'
-  }
-
   return (
     <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
       <ModalHeader
@@ -394,41 +390,37 @@ const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onS
                 type="button"
                 onClick={() => setTimeSlot('morning')}
                 className={`
-                  flex-1 px-4 py-4 rounded-xl text-sm font-medium transition-all
+                  flex-1 px-4 py-4 rounded-xl text-base font-semibold transition-all
                   ${timeSlot === 'morning'
                     ? 'bg-primary-500 text-white shadow-md ring-2 ring-primary-300'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                 `}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="font-semibold text-base">Morning</span>
-                  <span className="text-xs opacity-90">11am - 1pm</span>
-                </div>
+                Morning
               </button>
               <button
                 type="button"
                 onClick={() => setTimeSlot('afternoon')}
                 className={`
-                  flex-1 px-4 py-4 rounded-xl text-sm font-medium transition-all
+                  flex-1 px-4 py-4 rounded-xl text-base font-semibold transition-all
                   ${timeSlot === 'afternoon'
                     ? 'bg-primary-500 text-white shadow-md ring-2 ring-primary-300'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                 `}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="font-semibold text-base">Afternoon</span>
-                  <span className="text-xs opacity-90">2pm - 4pm</span>
-                </div>
+                Afternoon
               </button>
             </div>
           </div>
 
-          <div className="bg-primary-50 rounded-lg p-3 border border-primary-200">
-            <div className="text-sm text-gray-500 font-medium">Party will run:</div>
-            <div className="font-bold text-gray-900">
-              {getTimeRange(timeSlot)}
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-gray-700 leading-relaxed">
+                Parties last 2 hours and usually run late morning or early afternoon. Venues allow extra time either side for setup and cleanup. We'll confirm exact timings based on availability.
+              </p>
             </div>
           </div>
         </div>
@@ -925,11 +917,17 @@ export default function LocalStoragePartyHeader({
   }
 
   const getDisplayTimeRange = () => {
-    const storedTimeRange = partyDetails?.displayTimeRange
-    const calculatedTimeRange = formatTimeRangeFromDatabase(partyDetails?.startTime, null, partyDetails?.duration)
-    const fallback = "2pm - 4pm"
-
-    return storedTimeRange || calculatedTimeRange || fallback
+    // Determine time slot from startTime
+    const startTime = partyDetails?.startTime
+    if (startTime) {
+      const hour = parseInt(startTime.split(':')[0])
+      return hour < 13 ? "Morning" : "Afternoon"
+    }
+    // Fallback to timeSlot if available
+    if (partyDetails?.timeSlot) {
+      return partyDetails.timeSlot === 'morning' ? "Morning" : "Afternoon"
+    }
+    return "Afternoon"
   }
 
   const getChildAge = () => {

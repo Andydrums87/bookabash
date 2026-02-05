@@ -209,6 +209,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                     <SelectValue placeholder="Select age" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="1">1 year old</SelectItem>
                     <SelectItem value="2">2 years old</SelectItem>
                     <SelectItem value="3">3 years old</SelectItem>
                     <SelectItem value="4">4 years old</SelectItem>

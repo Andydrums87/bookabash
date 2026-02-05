@@ -391,8 +391,26 @@ class PartyBuilderBackend {
 async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 50) {
   const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
 
+  // Check if this is a toddler party (ages 1-2)
+  const childAge = partyDetails?.childAge || 6;
+  const isToddlerParty = childAge <= 2;
+
   console.log(`🏠 Venue selection: Looking for venues near "${location}"`);
   console.log(`📍 Found ${venueSuppliers.length} venue suppliers to score`);
+  if (isToddlerParty) {
+    console.log(`👶 Toddler party (age ${childAge}) - prioritizing venues with catering/restaurant type`);
+
+    // Count venues with catering options for toddler parties
+    const venuesWithCatering = venueSuppliers.filter(v => {
+      const cp = v.cateringPackages || v.serviceDetails?.cateringPackages || v.data?.cateringPackages || v.data?.serviceDetails?.cateringPackages || [];
+      return Array.isArray(cp) && cp.length > 0;
+    });
+    const restaurantVenues = venueSuppliers.filter(v => {
+      const vt = (v.venueType || v.serviceDetails?.venueType || v.data?.venueType || v.data?.serviceDetails?.venueType || '').toLowerCase();
+      return vt.includes('restaurant') || vt.includes('hotel') || vt.includes('pub');
+    });
+    console.log(`👶 Available: ${venuesWithCatering.length} with catering, ${restaurantVenues.length} restaurant/pub type`);
+  }
 
   if (venueSuppliers.length === 0) {
     return { venues: [], mainVenue: null };
@@ -484,6 +502,48 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
       compositeScore += ratingBonus;
     }
 
+    // TODDLER PARTY BONUS: Prioritize venues with catering for ages 1-2
+    // Pubs and restaurants with catering packages are ideal for toddler parties
+    let hasCatering = false;
+    let isRestaurantType = false;
+    if (isToddlerParty) {
+      // Check for catering packages in ALL possible locations in the data structure
+      // After transformation from Supabase, data is spread to top level
+      const cateringPackages = venue.cateringPackages ||
+                               venue.serviceDetails?.cateringPackages ||
+                               venue.data?.cateringPackages ||
+                               venue.data?.serviceDetails?.cateringPackages || [];
+      const hasExplicitCatering = Array.isArray(cateringPackages) && cateringPackages.length > 0;
+
+      // Check venue type in ALL possible locations
+      // venueType can be at top level OR inside serviceDetails
+      const venueType = (
+        venue.venueType ||
+        venue.serviceDetails?.venueType ||
+        venue.data?.venueType ||
+        venue.data?.serviceDetails?.venueType ||
+        ''
+      ).toLowerCase();
+
+      // Match "Restaurant Private Room", "Hotel Conference Room", "pub", etc.
+      isRestaurantType = venueType.includes('pub') ||
+                         venueType.includes('restaurant') ||
+                         venueType.includes('hotel') ||
+                         venueType.includes('function room');
+
+      // For toddler parties, restaurant/hotel venue types implicitly have catering
+      // (even if cateringPackages data isn't explicitly set)
+      hasCatering = hasExplicitCatering || isRestaurantType;
+
+      // SIGNIFICANT bonus for venues suitable for toddler parties
+      // Priority: explicit catering > restaurant type > other venues
+      if (hasExplicitCatering) {
+        compositeScore += 150; // Highest priority - explicit catering packages
+      } else if (isRestaurantType) {
+        compositeScore += 100; // High priority - restaurant/pub/hotel type (implicit catering)
+      }
+    }
+
     return {
       ...enhancedVenue,
       compositeScore,
@@ -492,7 +552,8 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
       availabilityScore: availabilityCheck.available ? (availabilityCheck.confidence === 'high' ? 50 : 25) : -50,
       availabilityCheck,
       isAvailable: availabilityCheck.available,
-      canServeLocation: locationScore >= 25
+      canServeLocation: locationScore >= 25,
+      hasCatering // Track if venue has catering for toddler party display
     };
   }));
   
@@ -513,21 +574,9 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
   // Log the selection result
   if (topVenues.length > 0) {
     const mainVenue = topVenues[0];
-    const mainVenuePostcode = mainVenue.location ||
-                              mainVenue.venueAddress?.postcode ||
-                              mainVenue.serviceDetails?.venueAddress?.postcode ||
-                              mainVenue.contactInfo?.postcode ||
-                              'NO POSTCODE';
     const distanceStr = mainVenue.distanceKm != null ? `${mainVenue.distanceKm.toFixed(1)}km` : 'unknown';
-    console.log(`✅ Selected main venue: "${mainVenue.name}" (postcode: ${mainVenuePostcode}, distance: ${distanceStr}, score: ${mainVenue.compositeScore})`);
-
-    // Log top 3 for comparison
-    console.log('📊 Top 3 venues by distance:');
-    topVenues.slice(0, 3).forEach((v, i) => {
-      const vPostcode = v.location || v.venueAddress?.postcode || v.serviceDetails?.venueAddress?.postcode || v.contactInfo?.postcode || 'NO POSTCODE';
-      const vDistance = v.distanceKm != null ? `${v.distanceKm.toFixed(1)}km` : 'unknown';
-      console.log(`   ${i + 1}. ${v.name} (${vPostcode}) - distance: ${vDistance}, score: ${v.compositeScore}`);
-    });
+    const cateringInfo = mainVenue.hasCatering ? ' (has catering)' : '';
+    console.log(`✅ Selected venue: "${mainVenue.name}" - ${distanceStr}${cateringInfo}`);
   }
 
   return {
@@ -768,12 +817,12 @@ checkSupplierLocation(supplier, partyLocation) {
   };
 }
   selectSuppliersForParty({
-    suppliers, 
-    themedEntertainment, 
-    theme, 
-    guestCount, 
-    location, 
-    budget, 
+    suppliers,
+    themedEntertainment,
+    theme,
+    guestCount,
+    location,
+    budget,
     childAge,
     timeSlot = 'afternoon',
     duration = 2,
@@ -783,7 +832,19 @@ checkSupplierLocation(supplier, partyLocation) {
     let remainingBudget = budget;
     const guests = parseInt(guestCount);
     const isLargeParty = guests >= 30;
-    
+    const age = parseInt(childAge) || 6;
+
+    // AGE-BASED RECOMMENDATIONS: For ages 1-2, we recommend a simpler party
+    // - Pub/restaurant with catering (no blank canvas venue)
+    // - Cake and party bags
+    // - NO entertainer (too young to engage)
+    // - NO bouncy castles/activities (safety concern)
+    const isToddlerParty = age <= 2;
+
+    if (isToddlerParty) {
+      console.log(`👶 Toddler party detected (age ${age}) - using simplified party recommendations`);
+    }
+
     // Create party details object for pricing calculations
     const partyDetails = {
       date: new Date(date),
@@ -791,13 +852,24 @@ checkSupplierLocation(supplier, partyLocation) {
       guestCount: guests,
       timeSlot,
       theme,
-      location
+      location,
+      childAge: age
     };
-    
-    // Define budget allocation based on budget size
+
+    // Define budget allocation based on budget size AND age
     let budgetAllocation, includedCategories;
-    
-    if (budget <= 500) {
+
+    if (isToddlerParty) {
+      // TODDLER PARTY (ages 1-2): Focus on venue with catering, cake, and party bags
+      // No entertainment, activities, or bouncy castles
+      includedCategories = ['venue', 'cakes', 'partyBags'];
+      budgetAllocation = {
+        venue: 0.50,     // More budget for venue with catering
+        cakes: 0.35,     // Nice cake is important
+        partyBags: 0.15  // Simple party bags
+      };
+      console.log(`👶 Toddler budget allocation:`, budgetAllocation);
+    } else if (budget <= 500) {
       includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
       budgetAllocation = { venue: 0.20, entertainment: 0.45, cakes: 0.25, partyBags: 0.05 };
     } else if (budget <= 700) {
@@ -828,31 +900,35 @@ checkSupplierLocation(supplier, partyLocation) {
       }
     }
     
-    // 1. SELECT ENTERTAINMENT FIRST (theme priority)
-    const entertainmentBudget = budget * budgetAllocation.entertainment;
-    
-    if (themedEntertainment && themedEntertainment.length > 0) {
-      const entertainmentResult = this.selectBestSupplier(
-        themedEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
-      );
-      
-      if (entertainmentResult.supplier) {
-        selected.entertainment = entertainmentResult.supplier;
-        remainingBudget -= entertainmentResult.supplier.enhancedPrice;
-      }
-    }
+    // 1. SELECT ENTERTAINMENT FIRST (theme priority) - SKIP FOR TODDLER PARTIES
+    if (!isToddlerParty) {
+      const entertainmentBudget = budget * budgetAllocation.entertainment;
 
-    // Fallback to general entertainment if no themed entertainment selected
-    if (!selected.entertainment) {
-      const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
-      const entertainmentResult = this.selectBestSupplier(
-        generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
-      );
+      if (themedEntertainment && themedEntertainment.length > 0) {
+        const entertainmentResult = this.selectBestSupplier(
+          themedEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
+        );
 
-      if (entertainmentResult.supplier) {
-        selected.entertainment = entertainmentResult.supplier;
-        remainingBudget -= entertainmentResult.supplier.enhancedPrice;
+        if (entertainmentResult.supplier) {
+          selected.entertainment = entertainmentResult.supplier;
+          remainingBudget -= entertainmentResult.supplier.enhancedPrice;
+        }
       }
+
+      // Fallback to general entertainment if no themed entertainment selected
+      if (!selected.entertainment) {
+        const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
+        const entertainmentResult = this.selectBestSupplier(
+          generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
+        );
+
+        if (entertainmentResult.supplier) {
+          selected.entertainment = entertainmentResult.supplier;
+          remainingBudget -= entertainmentResult.supplier.enhancedPrice;
+        }
+      }
+    } else {
+      console.log(`👶 Skipping entertainment selection for toddler party (age ${age})`);
     }
     
     // 2. SELECT OTHER CATEGORIES

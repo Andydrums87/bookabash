@@ -65,17 +65,20 @@ export default function VenueCarouselCard({
     }
 
     // ✅ FIX: Create a clean venue object with the correct base price from packageData
+    // Use totalPrice first (includes weekend premium + catering), then fall back to package price
+    const packageTotalPrice = currentVenue.packageData?.totalPrice || currentVenue.packageData?.price
     const cleanVenue = {
       ...currentVenue,
-      // Use package price as the true base price
-      price: currentVenue.packageData?.price || currentVenue.originalPrice || currentVenue.price,
-      originalPrice: currentVenue.packageData?.price || currentVenue.originalPrice || currentVenue.price,
+      // Use package total price as the true base price (includes weekend premium + catering if applicable)
+      price: packageTotalPrice || currentVenue.originalPrice || currentVenue.price,
+      originalPrice: packageTotalPrice || currentVenue.originalPrice || currentVenue.price,
     }
 
     console.log('🏛️ VENUE PRICING DEBUG:', {
       venueName: currentVenue.name,
       rawPrice: currentVenue.price,
       packagePrice: currentVenue.packageData?.price,
+      packageTotalPrice: currentVenue.packageData?.totalPrice,
       originalPrice: currentVenue.originalPrice,
       usingPrice: cleanVenue.price,
       addonsCount: venueAddons.length

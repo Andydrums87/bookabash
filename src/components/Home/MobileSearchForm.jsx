@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation, X } from "lucide-react"
+import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation, X, Info } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -140,42 +140,49 @@ export default function MobileSearchForm({
                   type="button"
                   onClick={() => handleFieldChange('timeSlot', 'morning')}
                   className={`
-                    flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all
+                    flex-1 px-3 py-3 rounded-lg text-sm font-semibold transition-all
                     ${formData.timeSlot === 'morning'
                       ? 'bg-primary-500 text-white shadow-sm'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }
                   `}
                 >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="font-semibold">Morning</span>
-                    <span className="text-[10px] opacity-90">11am - 1pm</span>
-                  </div>
+                  Morning
                 </button>
                 <button
                   type="button"
                   onClick={() => handleFieldChange('timeSlot', 'afternoon')}
                   className={`
-                    flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all
+                    flex-1 px-3 py-3 rounded-lg text-sm font-semibold transition-all
                     ${formData.timeSlot === 'afternoon'
                       ? 'bg-primary-500 text-white shadow-sm'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }
                   `}
                 >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="font-semibold">Afternoon</span>
-                    <span className="text-[10px] opacity-90">2pm - 4pm</span>
-                  </div>
+                  Afternoon
                 </button>
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mt-2 w-full hover:text-gray-700 transition-colors">
+                    <Info className="w-3 h-3" />
+                    <span>How do party times work?</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3 text-xs" side="top">
+                  <p className="text-gray-700 leading-relaxed">
+                    Parties last 2 hours and usually run late morning or early afternoon. Venues allow extra time either side for setup and cleanup. We'll confirm exact timings based on availability.
+                  </p>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
           {/* Event Type */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-700">
-              Event type <span className="text-red-500">*</span>
+              Event theme <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <SearchableEventTypeSelect
@@ -188,7 +195,7 @@ export default function MobileSearchForm({
                 <div className="mt-1">
                   <p className="text-xs text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Event type is required
+                    Event theme is required
                   </p>
                 </div>
               )}
@@ -219,12 +226,12 @@ export default function MobileSearchForm({
                   <SelectValue placeholder="Select number of children" />
                 </SelectTrigger>
                 <SelectContent className="border-gray-200">
-                  <SelectItem value="5">5 children</SelectItem>
-                  <SelectItem value="10">10 children</SelectItem>
-                  <SelectItem value="15">15 children</SelectItem>
-                  <SelectItem value="20">20 children</SelectItem>
-                  <SelectItem value="25">25 children</SelectItem>
-                  <SelectItem value="30">30+ children</SelectItem>
+                  {Array.from({ length: 26 }, (_, i) => i + 5).map((num) => (
+                    <SelectItem key={num} value={String(num)}>
+                      {num} children
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="31">30+ children</SelectItem>
                 </SelectContent>
               </Select>
               {hasAttemptedSubmit && !formData.guestCount && (

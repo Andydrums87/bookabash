@@ -268,6 +268,11 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                   supplier.category?.toLowerCase() === 'venue'
 
   if (isVenue) {
+    // ✅ PRIORITY: Check packageData.totalPrice first (includes weekend premium + catering from customization modal)
+    if (supplier.packageData?.totalPrice && supplier.packageData.totalPrice > 0) {
+      return supplier.packageData.totalPrice;
+    }
+
     // If venue already has a calculated price set, use it
     if (supplier.price && supplier.price > 0 && supplier.price !== supplier.priceFrom) {
       return supplier.price;

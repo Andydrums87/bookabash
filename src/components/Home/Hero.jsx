@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin, Navigation } from "lucide-react"
+import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin, Navigation, Info } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
@@ -147,35 +147,42 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                             type="button"
                             onClick={() => handleFieldChange('timeSlot', 'morning')}
                             className={`
-                              flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                              flex-1 px-3 py-3 rounded-lg text-sm font-semibold transition-all
                               ${formData.timeSlot === 'morning'
                                 ? 'bg-primary-500 text-white shadow-sm'
                                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                               }
                             `}
                           >
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className="font-semibold">Morning</span>
-                              <span className="text-[10px] opacity-90">11am - 1pm</span>
-                            </div>
+                            Morning
                           </button>
                           <button
                             type="button"
                             onClick={() => handleFieldChange('timeSlot', 'afternoon')}
                             className={`
-                              flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                              flex-1 px-3 py-3 rounded-lg text-sm font-semibold transition-all
                               ${formData.timeSlot === 'afternoon'
                                 ? 'bg-primary-500 text-white shadow-sm'
                                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                               }
                             `}
                           >
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className="font-semibold">Afternoon</span>
-                              <span className="text-[10px] opacity-90">2pm - 4pm</span>
-                            </div>
+                            Afternoon
                           </button>
                         </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mt-2 w-full hover:text-gray-700 transition-colors">
+                              <Info className="w-3 h-3" />
+                              <span>How do party times work?</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-3 text-xs" side="top">
+                            <p className="text-gray-700 leading-relaxed">
+                              Parties last 2 hours and usually run late morning or early afternoon. Venues allow extra time either side for setup and cleanup. We'll confirm exact timings based on availability.
+                            </p>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -193,7 +200,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
               {/* Event Type */}
               <div className="col-span-2 md:col-span-1 space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event type  <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700">Event theme  <span className="text-red-500">*</span></label>
                 <SearchableEventTypeSelect 
                   value={formData.theme}
                   onValueChange={(value) => handleFieldChange('theme', value)}
@@ -212,12 +219,12 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       <SelectValue placeholder="Children" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5">5 children</SelectItem>
-                      <SelectItem value="10">10 children</SelectItem>
-                      <SelectItem value="15">15 children</SelectItem>
-                      <SelectItem value="20">20 children</SelectItem>
-                      <SelectItem value="25">25 children</SelectItem>
-                      <SelectItem value="30">30+ children</SelectItem>
+                      {Array.from({ length: 26 }, (_, i) => i + 5).map((num) => (
+                        <SelectItem key={num} value={String(num)}>
+                          {num} children
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="31">30+ children</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -345,7 +352,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   </span>
                 </h1>
                 <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
-                  Let Snappy handle everything — one click and it's done!
+                Let Snappy handle everything — one click and we take it from there!
                 </p>
               </div>
             </div>

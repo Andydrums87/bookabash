@@ -9,6 +9,7 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
   const [partyTheme, setPartyTheme] = useState(cachedPartyTheme || "superhero")
   const [themeLoaded, setThemeLoaded] = useState(!!cachedPartyDetails) // ✅ Already loaded if cached
   const [isLoading, setIsLoading] = useState(!cachedPartyDetails) // ✅ Not loading if cached
+  const [isRebuilding, setIsRebuilding] = useState(false) // ✅ Track when rebuilding for age-specific party
 
   // Get party details from localStorage (for guests)
   const getPartyDetailsFromLocalStorage = () => {
@@ -312,8 +313,49 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
   };
 
   // Handle name submission (for welcome popup)
-  const handleNameSubmit = async ({ childName, childAge }) => {
-    await handlePartyDetailsUpdate({ childName, childAge });
+  // For age-specific parties (toddlers, teens, etc.), we rebuild the party plan with appropriate recommendations
+  const handleNameSubmit = async ({ childName, childAge, firstName, lastName }) => {
+    // Check if we need to rebuild for age-specific recommendations BEFORE updating
+    const needsRebuild = childAge && childAge <= 2; // Toddler party (ages 1-2)
+    // Future: Add more age-specific rebuilds here (e.g., teen parties, etc.)
+
+    // Set rebuilding state BEFORE closing the popup so dashboard shows loading
+    if (needsRebuild) {
+      setIsRebuilding(true);
+    }
+
+    await handlePartyDetailsUpdate({ childName, childAge, firstName, lastName });
+
+    // AGE-SPECIFIC PARTY REBUILD: Rebuild the party plan with age-appropriate recommendations
+    if (needsRebuild) {
+      console.log(`👶 Toddler party detected (age ${childAge}) - rebuilding party plan`);
+      try {
+        const { partyBuilderBackend } = await import('@/utils/partyBuilderBackend');
+        const existingDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
+
+        const rebuildResult = await partyBuilderBackend.buildParty({
+          ...existingDetails,
+          childName,
+          childAge,
+          firstName,
+          lastName
+        });
+
+        if (rebuildResult.success) {
+          console.log('👶 Party plan rebuilt for toddler:', rebuildResult);
+          // Trigger storage event so components update
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'user_party_plan',
+            newValue: localStorage.getItem('user_party_plan')
+          }));
+        }
+      } catch (rebuildError) {
+        console.error('Error rebuilding party for toddler:', rebuildError);
+      } finally {
+        // Always clear rebuilding state
+        setIsRebuilding(false);
+      }
+    }
   };
 
   return {
@@ -321,6 +363,7 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
     partyTheme,
     themeLoaded,
     isLoading,
+    isRebuilding, // ✅ Track when rebuilding for age-specific party (shows loading skeletons)
     getPartyDetails: user && currentParty ? () => getPartyDetailsFromDatabase(currentParty) : getPartyDetailsFromLocalStorage,
     savePartyDetails,
     handleNameSubmit,

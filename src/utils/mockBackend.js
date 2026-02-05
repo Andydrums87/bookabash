@@ -907,9 +907,11 @@ export const suppliersAPI = {
         data: data[0].data,
       }
 
-      // Regenerate venue packages on-the-fly to ensure correct party time calculation
+      // Only generate venue packages if none exist in database
+      // Venues with custom packages (like Eden Room) should use their defined packages
       const isVenue = supplier.category === 'Venues' || supplier.category?.toLowerCase() === 'venue'
-      if (isVenue && supplier.serviceDetails) {
+      const hasExistingPackages = supplier.packages?.length > 0 || supplier.data?.packages?.length > 0
+      if (isVenue && supplier.serviceDetails && !hasExistingPackages) {
         const freshPackages = generateVenuePackages(supplier.serviceDetails, supplier)
         if (freshPackages.length > 0) {
           supplier.packages = freshPackages

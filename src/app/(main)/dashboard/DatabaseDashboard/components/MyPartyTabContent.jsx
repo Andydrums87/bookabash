@@ -699,29 +699,25 @@ export default function MyPartyTabContent({
     }
   }
 
-  // Format time for display
+  // Format time for display - show Morning/Afternoon instead of exact times
   const formatTime = (timeString) => {
-    if (!timeString) return '2pm - 4pm'
-
     // Handle timeSlot format
     if (partyDetails?.timeSlot) {
-      return partyDetails.timeSlot === 'morning' ? '11am - 1pm' : '2pm - 4pm'
+      return partyDetails.timeSlot === 'morning' ? 'Morning' : 'Afternoon'
     }
 
-    // Handle HH:MM format
-    if (timeString.includes(':')) {
+    // Handle HH:MM format - determine morning vs afternoon
+    if (timeString && timeString.includes(':')) {
       try {
         const [hours] = timeString.split(':')
         const hour = parseInt(hours)
-        const endHour = hour + 2
-        const formatHour = (h) => h > 12 ? `${h - 12}pm` : h === 12 ? '12pm' : `${h}am`
-        return `${formatHour(hour)} - ${formatHour(endHour)}`
+        return hour < 13 ? 'Morning' : 'Afternoon'
       } catch (e) {
-        return timeString
+        return 'Afternoon'
       }
     }
 
-    return timeString
+    return 'Afternoon'
   }
 
   // Get full venue address

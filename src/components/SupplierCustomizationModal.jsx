@@ -322,6 +322,9 @@ export default function SupplierCustomizationModal({
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedPackageIds, setSelectedPackageIds] = useState([]) // For multi-select suppliers
   const [selectedAddons, setSelectedAddons] = useState([])
+  // Venue catering state
+  const [selectedCateringId, setSelectedCateringId] = useState(null)
+  const [cateringGuestCount, setCateringGuestCount] = useState(20) // Default guest count for catering
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: "planning_empty_slot", showModal: false })
 
@@ -434,6 +437,13 @@ export default function SupplierCustomizationModal({
       const isDecorationsFromType = supplierType === 'decorations' || supplierType.toLowerCase().includes('decoration') || supplierType.toLowerCase().includes('tableware')
       const isEntertainmentFromType = supplierType === 'entertainment' || supplierType.toLowerCase().includes('entertain') || supplierType.toLowerCase().includes('magician') || supplierType.toLowerCase().includes('clown')
 
+      // Detect if this is a venue supplier from supplierType prop or category
+      const venueTypesFromProp = ['venue', 'private function room', 'community hall', 'church hall', 'village hall', 'school hall', 'sports centre', 'hotel', 'restaurant', 'pub', 'bar', 'event space']
+      const supplierCategory = (supplier?.category || supplierData?.category || '').toLowerCase()
+      const isVenueFromType = venueTypesFromProp.some(type => supplierType.toLowerCase().includes(type)) ||
+        supplierCategory === 'venue' || supplierCategory === 'venues' ||
+        venueTypesFromProp.some(type => supplierCategory.includes(type))
+
       // For activities/soft play and sweet treats, always treat as multi-select
       // These suppliers are inherently multi-select (users pick individual items)
       const isMultiSelectForActivities = isSoftPlayFromType || isSweetTreatsFromType
@@ -449,6 +459,7 @@ export default function SupplierCustomizationModal({
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
         isEntertainment: isEntertainmentFromType,
+        isVenue: isVenueFromType,
         isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
         hasPackages: supplierData?.packages?.length
       })
@@ -465,6 +476,7 @@ export default function SupplierCustomizationModal({
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
         isEntertainment: isEntertainmentFromType,
+        isVenue: isVenueFromType,
         isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
       }
     }
@@ -569,11 +581,31 @@ export default function SupplierCustomizationModal({
       dataObj?.serviceType === 'entertainment' ||
       supplier?.category === 'Entertainment'
 
+    // Detect if this is a venue supplier
+    // Venue types include: Private Function Room, Community Hall, Church Hall, etc.
+    const venueTypes = ['private function room', 'community hall', 'church hall', 'school hall',
+      'sports centre', 'outdoor space', 'village hall', 'hotel conference room',
+      'restaurant private room', 'village green', 'community centre']
+    const isVenueSupplier =
+      categoryStr.includes("venue") ||
+      venueTypes.some(type => categoryStr.includes(type)) ||
+      supplier?.type?.toLowerCase()?.includes("venue") ||
+      supplier?.serviceType === 'venue' ||
+      supplier?.serviceType === 'venues' ||
+      dataObj?.serviceType === 'venue' ||
+      dataObj?.serviceType === 'venues' ||
+      supplier?.category === 'Venue' ||
+      supplier?.category === 'Venues' ||
+      dataObj?.category === 'Venue' ||
+      dataObj?.category === 'Venues'
+
     // Sweet treats also uses multi-select
     const isMultiSelectForSweetTreats = isSoftPlaySupplier || isSweetTreatsSupplier
 
     console.log('🔍 [Type Detection] Checking supplier type:', {
       category: categoryStr,
+      rawCategory: supplier?.category,
+      dataCategory: dataObj?.category,
       isCake: isCakeSupplier,
       isPartyBags: isPartyBagsSupplier,
       isBalloons: isBalloonsSupplier,
@@ -583,9 +615,12 @@ export default function SupplierCustomizationModal({
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
       isEntertainment: isEntertainmentSupplier,
+      isVenue: isVenueSupplier,
       isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
       hasDataFlavours: dataObj?.flavours?.length > 0,
-      hasDataPackages: dataObj?.packages?.length > 0
+      hasDataPackages: dataObj?.packages?.length > 0,
+      dataPackagesCount: dataObj?.packages?.length,
+      supplierPackagesCount: supplier?.packages?.length,
     })
 
     return {
@@ -600,6 +635,7 @@ export default function SupplierCustomizationModal({
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
       isEntertainment: isEntertainmentSupplier,
+      isVenue: isVenueSupplier,
       isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
     }
   }, [supplier, supplierType])
@@ -801,6 +837,27 @@ export default function SupplierCustomizationModal({
     }
   }, [supplier, effectivePartyDetails, supplierTypeDetection])
 
+  // Helper to check if party date is a weekend (Fri-Sat)
+  const isWeekendParty = useMemo(() => {
+    const partyDateStr = effectivePartyDetails?.date || partyDate || selectedDate
+    if (!partyDateStr) return false
+
+    const date = new Date(partyDateStr)
+    const dayOfWeek = date.getDay()
+    // Friday = 5, Saturday = 6
+    return dayOfWeek === 5 || dayOfWeek === 6
+  }, [effectivePartyDetails?.date, partyDate, selectedDate])
+
+  // Get the appropriate price for a venue package based on party date
+  const getVenuePackagePrice = (pkg) => {
+    if (!pkg) return 0
+    // If weekend and weekendPrice exists, use it; otherwise use regular price
+    if (isWeekendParty && pkg.weekendPrice) {
+      return pkg.weekendPrice
+    }
+    return pkg.price
+  }
+
   // ✅ UPDATED: Enhanced packages with unified pricing
   const packages = useMemo(() => {
     if (!supplier) return []
@@ -838,21 +895,24 @@ export default function SupplierCustomizationModal({
     })
 
     if (supplierPackages.length > 0) {
-      // For multi-select suppliers, show all items; for others, limit to 3
-      const packagesToShow = isMultiSelectSupplier ? supplierPackages : supplierPackages.slice(0, 3)
+      // For multi-select suppliers, show all items; for others, limit to 3 (except venues which show all)
+      const catLower = (supplier?.category || dataObj?.category || '').toLowerCase()
+      const isVenueType = catLower.includes('venue') || catLower.includes('function room') || catLower.includes('hall')
+      const packagesToShow = (isMultiSelectSupplier || isVenueType) ? supplierPackages : supplierPackages.slice(0, 3)
       return packagesToShow.map((pkg, index) => {
         const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
         return {
           id: pkg.id || `real-${index}`,
           name: pkg.name,
           price: pkg.price,
+          weekendPrice: pkg.weekendPrice || null, // Venue weekend pricing
           enhancedPrice: enhancedPrice,
           duration: pkg.duration,
           image: pkg.image,
           themeImages: pkg.themeImages, // Theme-based images for decorations
           features: pkg.whatsIncluded || pkg.features || [],
           contents: pkg.contents || [], // Catering lunchbox contents
-          popular: index === 1,
+          popular: pkg.popular || index === 1,
           description: pkg.description,
           // Cake-specific fields
           serves: pkg.serves,
@@ -864,6 +924,10 @@ export default function SupplierCustomizationModal({
           packSizes: pkg.packSizes,
           pricingModel: pkg.pricingModel,
           fixedItems: pkg.fixedItems,
+          // Venue-specific fields
+          minGuests: pkg.minGuests,
+          maxGuests: pkg.maxGuests,
+          pricePerPerson: pkg.pricePerPerson, // For packages with per-person add-ons like catering
         }
       })
     }
@@ -1082,6 +1146,43 @@ export default function SupplierCustomizationModal({
       })
     }
 
+    // ✅ VENUE: Use weekend price if applicable, plus separate catering add-on
+    if (supplierTypeDetection.isVenue) {
+      // Get the correct base price based on party date (weekend vs weekday)
+      const partyDateStr = effectivePartyDetails?.date
+      let isWeekend = false
+      if (partyDateStr) {
+        const date = new Date(partyDateStr)
+        const dayOfWeek = date.getDay()
+        isWeekend = dayOfWeek === 5 || dayOfWeek === 6 // Friday or Saturday
+      }
+
+      // Use weekend price if it's a weekend and weekend price exists
+      const venueBasePrice = (isWeekend && selectedPackage.weekendPrice)
+        ? selectedPackage.weekendPrice
+        : selectedPackage.price
+
+      // Add catering if a catering package is selected (from cateringPackages array)
+      const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+      const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
+      const cateringPrice = selectedCatering
+        ? selectedCatering.pricePerHead * cateringGuestCount
+        : 0
+
+      packagePrice = venueBasePrice + cateringPrice
+
+      console.log("🏠 Venue pricing:", {
+        isWeekend,
+        venueBasePrice,
+        weekendPrice: selectedPackage.weekendPrice,
+        selectedCateringId,
+        selectedCatering: selectedCatering?.name,
+        cateringGuestCount,
+        cateringPrice,
+        totalPackagePrice: packagePrice,
+      })
+    }
+
     // Calculate addons price (addons typically don't have weekend/duration premiums for now)
     const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
       const addon = availableAddons.find((a) => a.id === addonId)
@@ -1117,7 +1218,7 @@ export default function SupplierCustomizationModal({
           }
         : null,
     }
-  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsPackSize])
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsPackSize, selectedCateringId, cateringGuestCount])
 
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
@@ -1239,6 +1340,8 @@ export default function SupplierCustomizationModal({
     // Reset when modal closes
     if (!isOpen) {
       setSelectedPackageId(null);
+      setSelectedCateringId(null);
+      setCateringGuestCount(20);
     }
   }, [isOpen, packages, supplier, supplierTypeDetection.isFacePainting, supplierTypeDetection.isBalloons, databasePartyData?.theme, partyDetails?.theme])
 
@@ -1700,6 +1803,7 @@ export default function SupplierCustomizationModal({
                 {supplierTypeDetection.isSweetTreats && <span className="flex-shrink-0">🍭</span>}
                 {supplierTypeDetection.isDecorations && <span className="flex-shrink-0">🎊</span>}
                 {supplierTypeDetection.isEntertainment && <span className="flex-shrink-0">🎭</span>}
+                {supplierTypeDetection.isVenue && <span className="flex-shrink-0">🏠</span>}
                 <span className="truncate">{supplier.name || supplier.data?.name || 'Supplier'}</span>
               </h2>
             </div>
@@ -3173,7 +3277,7 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {availableAddons.length > 0 && !supplierTypeDetection.isCake && (
+            {availableAddons.length > 0 && !supplierTypeDetection.isCake && !supplierTypeDetection.isVenue && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Plus className="w-5 h-5 text-primary-500" />
@@ -3216,7 +3320,394 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && !supplierTypeDetection.isEntertainment && (
+            {/* Venue Suppliers - Room Selection + Catering Add-on */}
+            {console.log('🏠 [Venue Check] isVenue:', supplierTypeDetection.isVenue, 'packages:', packages.length)}
+            {supplierTypeDetection.isVenue && (
+              <section className="space-y-6">
+                {/* Party date pricing indicator */}
+                {effectivePartyDetails?.date && (
+                  <div className={`px-4 py-2.5 rounded-lg text-sm ${
+                    isWeekendParty
+                      ? "bg-amber-50 text-amber-800 border border-amber-200"
+                      : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  }`}>
+                    <span className="font-medium">
+                      {isWeekendParty ? "Weekend pricing" : "Weekday pricing"}
+                    </span>
+                    <span className="ml-1 opacity-75">
+                      ({isWeekendParty ? "Fri-Sat rates apply" : "Sun-Thu rates apply"})
+                    </span>
+                  </div>
+                )}
+
+                {/* Room Package Cards - Grid like party bags */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {packages.map((pkg, index) => {
+                    const isSelected = selectedPackageId === pkg.id
+                    const displayPrice = getVenuePackagePrice(pkg)
+                    const hasWeekendPricing = pkg.weekendPrice && pkg.weekendPrice !== pkg.price
+
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden ${
+                          isSelected
+                            ? "ring-2 ring-[hsl(var(--primary-500))] shadow-lg"
+                            : "border border-gray-200 hover:shadow-md"
+                        }`}
+                        onClick={() => setSelectedPackageId(pkg.id)}
+                      >
+                        {/* Popular badge */}
+                        {pkg.popular && (
+                          <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-semibold text-center py-1.5 uppercase tracking-wide z-10">
+                            Most Popular
+                          </div>
+                        )}
+
+                        {/* Selection checkmark */}
+                        {isSelected && (
+                          <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-10">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+
+                        {/* Package Image */}
+                        {pkg.image && (
+                          <div className={`relative w-full h-36 ${pkg.popular ? 'mt-7' : ''}`}>
+                            <Image
+                              src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
+                              alt={pkg.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, 50vw"
+                            />
+                          </div>
+                        )}
+
+                        {/* Package Content */}
+                        <div className="p-4 bg-white">
+                          <h4 className="font-bold text-gray-900 text-lg">{pkg.name}</h4>
+
+                          {/* Price */}
+                          <div className="mt-2">
+                            <span className="text-2xl font-bold text-[hsl(var(--primary-500))]">
+                              £{displayPrice}
+                            </span>
+                            {hasWeekendPricing && (
+                              <span className="text-sm text-gray-500 ml-2">
+                                {isWeekendParty ? `(£${pkg.price} weekdays)` : `(£${pkg.weekendPrice} weekends)`}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Capacity & Duration */}
+                          {(pkg.minGuests || pkg.maxGuests || pkg.duration) && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {pkg.minGuests && pkg.maxGuests && `${pkg.minGuests}-${pkg.maxGuests} guests`}
+                              {pkg.duration && ` • ${pkg.duration}`}
+                            </p>
+                          )}
+
+                          {/* Description */}
+                          {pkg.description && (
+                            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{pkg.description}</p>
+                          )}
+
+                          {/* Features */}
+                          {pkg.features && pkg.features.length > 0 && (
+                            <div className="mt-3 space-y-1.5">
+                              {pkg.features.slice(0, 5).map((feature, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                  <span>{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* SECTION 2: Add Catering (if venue offers it) */}
+                {(() => {
+                  const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+                  if (cateringPackages.length === 0) return null
+
+                  return (
+                    <div className="pt-4 border-t border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-4">Add Party Catering</h3>
+
+                      <div className="space-y-3">
+                        {/* No catering option */}
+                        <div
+                          className={`rounded-xl cursor-pointer transition-all duration-200 p-4 ${
+                            !selectedCateringId
+                              ? "bg-[hsl(var(--primary-50))] ring-2 ring-[hsl(var(--primary-500))]"
+                              : "bg-gray-50 border border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => setSelectedCateringId(null)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">No catering needed</h4>
+                              <p className="text-sm text-gray-500">Room hire only</p>
+                            </div>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              !selectedCateringId
+                                ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
+                                : 'bg-white border-gray-300'
+                            }`}>
+                              {!selectedCateringId && <Check className="w-4 h-4 text-white" />}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Catering packages */}
+                        {cateringPackages.map((catering) => {
+                          const isSelected = selectedCateringId === catering.id
+
+                          return (
+                            <div
+                              key={catering.id}
+                              className={`rounded-xl cursor-pointer transition-all duration-200 overflow-hidden ${
+                                isSelected
+                                  ? "ring-2 ring-[hsl(var(--primary-500))]"
+                                  : "border border-gray-200 hover:border-gray-300"
+                              }`}
+                              onClick={() => setSelectedCateringId(catering.id)}
+                            >
+                              {/* Catering image if available */}
+                              {catering.image && (
+                                <div className="relative w-full h-32">
+                                  <Image
+                                    src={catering.image}
+                                    alt={catering.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              )}
+
+                              <div className="p-4 bg-white">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-bold text-gray-900">{catering.name}</h4>
+                                    <p className="text-sm text-gray-600 mt-0.5">{catering.description}</p>
+                                  </div>
+                                  <div className="text-right ml-4">
+                                    <div className="text-xl font-bold text-[hsl(var(--primary-500))]">£{catering.pricePerHead}</div>
+                                    <div className="text-xs text-gray-500">per person</div>
+                                  </div>
+                                  <div className={`ml-3 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                    isSelected
+                                      ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
+                                      : 'bg-white border-gray-300'
+                                  }`}>
+                                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                                  </div>
+                                </div>
+
+                                {/* Menu items - grouped by section if available */}
+                                {catering.sections && catering.sections.length > 0 ? (
+                                  <div className="mt-4 space-y-4">
+                                    {catering.sections.map((section, sIdx) => (
+                                      <div key={sIdx}>
+                                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{section.title}</h5>
+                                        <div className="space-y-1">
+                                          {section.items.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
+                                              <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                              <span>{item}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : catering.items && catering.items.length > 0 && (
+                                  <div className="mt-3 space-y-1">
+                                    {catering.items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
+                                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                        <span>{item}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {catering.dietaryInfo && (
+                                  <p className="text-xs text-gray-500 mt-3 italic">{catering.dietaryInfo}</p>
+                                )}
+
+                                {/* Guest count when selected */}
+                                {isSelected && (
+                                  <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-gray-700">Number of guests:</span>
+                                      <div className="flex items-center gap-3">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setCateringGuestCount(prev => Math.max((catering.minGuests || 1), prev - 1))
+                                          }}
+                                          className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-lg"
+                                        >
+                                          -
+                                        </button>
+                                        <span className="w-10 text-center font-bold text-xl">{cateringGuestCount}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setCateringGuestCount(prev => Math.min((catering.maxGuests || 100), prev + 1))
+                                          }}
+                                          className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-lg"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                                      <span className="text-sm text-gray-600">Catering total:</span>
+                                      <span className="font-bold text-lg text-[hsl(var(--primary-500))]">
+                                        £{(catering.pricePerHead * cateringGuestCount).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* SECTION 3: Add-ons (if venue has any) */}
+                {availableAddons.length > 0 && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Plus className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                      <h3 className="text-lg font-bold text-gray-900">Add Extras</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {availableAddons.map((addon) => (
+                        <div
+                          key={addon.id}
+                          className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                            selectedAddons.includes(addon.id)
+                              ? "bg-[hsl(var(--primary-50))] ring-2 ring-[hsl(var(--primary-500))]"
+                              : "bg-gray-50 border border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => handleAddonToggle(addon.id)}
+                        >
+                          <Checkbox
+                            id={`venue-addon-${addon.id}`}
+                            checked={selectedAddons.includes(addon.id)}
+                            onCheckedChange={() => handleAddonToggle(addon.id)}
+                            className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] mt-0.5 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <label
+                                htmlFor={`venue-addon-${addon.id}`}
+                                className="font-semibold text-gray-900 cursor-pointer"
+                              >
+                                {addon.name}
+                              </label>
+                              {addon.popular && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Sparkles className="w-3 h-3 mr-1" />
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+                            {addon.description && (
+                              <p className="text-sm text-gray-600">{addon.description}</p>
+                            )}
+                          </div>
+                          <div className="font-bold text-[hsl(var(--primary-500))] text-lg flex-shrink-0">+£{addon.price}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SECTION 4: Price Summary */}
+                {selectedPackage && (
+                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <h4 className="font-bold text-gray-900 mb-4">Your Booking Summary</h4>
+                    <div className="space-y-3">
+                      {/* Room */}
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-gray-900">{selectedPackage.name}</p>
+                          <p className="text-sm text-gray-500">{selectedPackage.duration}</p>
+                        </div>
+                        <span className="font-semibold text-gray-900">£{getVenuePackagePrice(selectedPackage)}</span>
+                      </div>
+
+                      {/* Catering (if selected) */}
+                      {(() => {
+                        const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+                        const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
+                        if (!selectedCatering) return null
+
+                        return (
+                          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                            <div>
+                              <p className="font-medium text-gray-900">{selectedCatering.name}</p>
+                              <p className="text-sm text-gray-500">{cateringGuestCount} guests × £{selectedCatering.pricePerHead}</p>
+                            </div>
+                            <span className="font-semibold text-gray-900">£{(selectedCatering.pricePerHead * cateringGuestCount).toFixed(2)}</span>
+                          </div>
+                        )
+                      })()}
+
+                      {/* Add-ons (if selected) */}
+                      {selectedAddons.length > 0 && (
+                        <div className="pt-3 border-t border-gray-200 space-y-2">
+                          {selectedAddons.map(addonId => {
+                            const addon = availableAddons.find(a => a.id === addonId)
+                            if (!addon) return null
+                            return (
+                              <div key={addonId} className="flex justify-between items-center">
+                                <p className="font-medium text-gray-900">{addon.name}</p>
+                                <span className="font-semibold text-gray-900">£{addon.price}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="flex justify-between items-center pt-3 border-t border-gray-300 mt-2">
+                        <span className="text-lg font-bold text-gray-900">Total</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--primary-500))]">
+                          £{(() => {
+                            const venuePrice = getVenuePackagePrice(selectedPackage)
+                            const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+                            const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
+                            const cateringPrice = selectedCatering ? selectedCatering.pricePerHead * cateringGuestCount : 0
+                            const addonsPrice = selectedAddons.reduce((sum, addonId) => {
+                              const addon = availableAddons.find(a => a.id === addonId)
+                              return sum + (addon?.price || 0)
+                            }, 0)
+                            return (venuePrice + cateringPrice + addonsPrice).toFixed(2)
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && !supplierTypeDetection.isEntertainment && !supplierTypeDetection.isVenue && (
               <section className="bg-gray-50 rounded-lg p-5 border border-gray-200">
                 {/* ✅ EDIT MODE: Price diff banner */}
                 {mode === "edit" && priceDiff !== 0 && (

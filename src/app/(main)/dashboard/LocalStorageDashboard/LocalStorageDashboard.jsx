@@ -32,6 +32,7 @@ import BudgetControls from "@/components/budget-controls"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+import AgeBasedRecommendationBanner from "@/components/AgeBasedRecommendationBanner"
 import ReferFriend from "@/components/ReferFriend"
 // Make sure you have this import
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
@@ -199,6 +200,7 @@ const childPhotoRef = useRef(null)
     partyDetails,
     partyTheme,
     themeLoaded,
+    isRebuilding, // ✅ Track when rebuilding for age-specific party
     handleNameSubmit: originalHandleNameSubmit,
     handlePartyDetailsUpdate
   } = usePartyDetails()
@@ -734,12 +736,11 @@ const handleEditPartyDetails = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const handleNameSubmit = (nameData) => {
-
-
+const handleNameSubmit = async (nameData) => {
   try {
+    // Call the hook's handleNameSubmit which handles toddler party rebuilds
     if (typeof originalHandleNameSubmit === 'function') {
-      originalHandleNameSubmit(nameData)
+      await originalHandleNameSubmit(nameData)
     }
 
     setWelcomeJustCompleted(true)
@@ -765,7 +766,13 @@ const handleNameSubmit = (nameData) => {
         }
 
         localStorage.setItem('party_details', JSON.stringify(updatedDetails))
+      }
 
+      // For toddler parties, refetch the plan after rebuild
+      const isToddlerParty = nameData.childAge && nameData.childAge <= 2
+      if (isToddlerParty && typeof refetch === 'function') {
+        console.log('👶 Refetching party plan after toddler rebuild')
+        await refetch()
       }
 
       // NEW: Start tour after confetti completes
@@ -1778,6 +1785,12 @@ const handleChildPhotoUpload = async (file) => {
         {/* Container for rest of content */}
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8 lg:pb-20">
           <div>
+            {/* Age-based recommendation banner for ages 1-2 */}
+            <AgeBasedRecommendationBanner
+              childAge={partyDetails?.childAge}
+              childName={partyDetails?.childName}
+            />
+
             {/* Main Content */}
             <main className="space-y-8">
               <div className="hidden md:flex justify-between mb-4 items-start" data-tour="supplier-section">
@@ -1810,8 +1823,8 @@ const handleChildPhotoUpload = async (file) => {
 <div className="w-full">
                 {/* Desktop Grid */}
                 <div className="hidden md:grid md:grid-cols-4 gap-6">
-                  {(!recommendationsLoaded) ? (
-                    // Show skeleton cards while recommendations load
+                  {(!recommendationsLoaded || isRebuilding) ? (
+                    // Show skeleton cards while recommendations load OR during age-specific party rebuild
                     <>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
                         <Card key={i} className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
@@ -2075,42 +2088,57 @@ const handleChildPhotoUpload = async (file) => {
 
                 {/* Mobile Navigation */}
                 <div className="md:hidden">
-                  <MobileSupplierNavigation
-                    suppliers={suppliers}
-                    loadingCards={loadingCards}
-                    partyDetails={partyDetails}
-                    getSupplierDisplayPricing={getSupplierDisplayPricing}
-                    suppliersToDelete={suppliersToDelete}
-                    openSupplierModal={openSupplierModal}
-                    handleDeleteSupplier={handleDeleteSupplier}
-                    getSupplierDisplayName={getSupplierDisplayName}
-                    addons={addons}
-                    handleRemoveAddon={handleRemoveAddon}
-                    getEnquiryStatus={getEnquiryStatus}
-                    getEnquiryTimestamp={getEnquiryTimestamp}
-                    isPaymentConfirmed={false}
-                    enquiries={[]}
-                    showPartyTasks={false}
-                    currentPhase="planning"
-                    partyTasksStatus={{}}
-                    totalCost={totalCost}
-                    activeSupplierType={activeMobileSupplierType}
-                    onSupplierTabChange={handleMobileSupplierTabChange}
-                    isTourActiveOnNavigation={isTourActiveOnNavigation}
-                    getRecommendedSupplierForType={getRecommendedSupplierForType}
-                    onAddSupplier={handleAddRecommendedSupplier}
-                    venueCarouselOptions={venueCarouselOptions}
-                    onSelectVenue={handleSelectVenue}
-                    isSelectingVenue={isSelectingVenue}
-                    type="venue"
-                    onCustomizationComplete={handleCustomizationComplete}
-                    showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
-                    onBrowseVenues={() => setShowVenueBrowserModal(true)}
-                    onEditPartyDetails={handleEditPartyDetails}
-                    childPhoto={partyDetails?.childPhoto}
-                    onPhotoUpload={handleChildPhotoUpload}
-                    uploadingPhoto={uploadingChildPhoto}
-                  />
+                  {isRebuilding ? (
+                    // Show mobile skeleton during age-specific party rebuild
+                    <div className="space-y-4 p-4">
+                      <div className="h-12 bg-gray-200 rounded-full animate-pulse" />
+                      <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl">
+                        <div className="relative h-48 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                        <div className="p-4 bg-white space-y-3">
+                          <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+                          <div className="h-10 bg-gray-200 rounded-full animate-pulse" />
+                        </div>
+                      </Card>
+                    </div>
+                  ) : (
+                    <MobileSupplierNavigation
+                      suppliers={suppliers}
+                      loadingCards={loadingCards}
+                      partyDetails={partyDetails}
+                      getSupplierDisplayPricing={getSupplierDisplayPricing}
+                      suppliersToDelete={suppliersToDelete}
+                      openSupplierModal={openSupplierModal}
+                      handleDeleteSupplier={handleDeleteSupplier}
+                      getSupplierDisplayName={getSupplierDisplayName}
+                      addons={addons}
+                      handleRemoveAddon={handleRemoveAddon}
+                      getEnquiryStatus={getEnquiryStatus}
+                      getEnquiryTimestamp={getEnquiryTimestamp}
+                      isPaymentConfirmed={false}
+                      enquiries={[]}
+                      showPartyTasks={false}
+                      currentPhase="planning"
+                      partyTasksStatus={{}}
+                      totalCost={totalCost}
+                      activeSupplierType={activeMobileSupplierType}
+                      onSupplierTabChange={handleMobileSupplierTabChange}
+                      isTourActiveOnNavigation={isTourActiveOnNavigation}
+                      getRecommendedSupplierForType={getRecommendedSupplierForType}
+                      onAddSupplier={handleAddRecommendedSupplier}
+                      venueCarouselOptions={venueCarouselOptions}
+                      onSelectVenue={handleSelectVenue}
+                      isSelectingVenue={isSelectingVenue}
+                      type="venue"
+                      onCustomizationComplete={handleCustomizationComplete}
+                      showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
+                      onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                      onEditPartyDetails={handleEditPartyDetails}
+                      childPhoto={partyDetails?.childPhoto}
+                      onPhotoUpload={handleChildPhotoUpload}
+                      uploadingPhoto={uploadingChildPhoto}
+                    />
+                  )}
                 </div>
               </div>
 
