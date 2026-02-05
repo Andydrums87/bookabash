@@ -274,10 +274,10 @@ const VenueDisplay = ({
                         <p className="text-gray-600 text-sm mt-2">{addon.description}</p>
                       )}
                       <div className="mt-3">
-                        <Badge variant="outline" className={`text-xs ${
+                        <span className={`text-xs px-2 py-1 rounded ${
                           isSelected
-                            ? 'text-green-700 border-green-300 bg-green-100'
-                            : 'text-gray-600 border-gray-200 bg-gray-50'
+                            ? 'text-green-700 bg-green-100'
+                            : 'text-gray-600 bg-gray-100'
                         }`}>
                           {addon.category === 'service' && 'Additional Service'}
                           {addon.category === 'access' && 'Facility Access'}
@@ -285,7 +285,7 @@ const VenueDisplay = ({
                           {addon.category === 'premium' && 'Premium Upgrade'}
                           {addon.category === 'logistics' && 'Logistics'}
                           {!addon.category && 'Extra'}
-                        </Badge>
+                        </span>
                       </div>
                     </div>
 
