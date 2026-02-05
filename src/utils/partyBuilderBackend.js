@@ -388,7 +388,7 @@ class PartyBuilderBackend {
 // In partyBuilderBackend.js
 // Replace the selectMultipleVenuesForCarousel method with this updated version:
 
-selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 50) {
+async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 50) {
   const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
 
   console.log(`🏠 Venue selection: Looking for venues near "${location}"`);
@@ -398,17 +398,44 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
     return { venues: [], mainVenue: null };
   }
 
-  // Score and sort all venues - LOCATION AND AVAILABILITY ONLY
-  const scoredVenues = venueSuppliers.map(venue => {
-    const availabilityCheck = this.checkSupplierAvailability(venue, new Date(date), timeSlot);
-    const locationCheck = this.checkSupplierLocation(venue, location);
+  // Get target coordinates for distance calculation
+  const targetCoords = await LocationService.getPostcodeCoordinates(location);
+  console.log(`📍 Target location coordinates:`, targetCoords);
 
-    // Log venue location info for debugging
+  // Score and sort all venues - LOCATION AND AVAILABILITY ONLY
+  const scoredVenues = await Promise.all(venueSuppliers.map(async (venue) => {
+    const availabilityCheck = this.checkSupplierAvailability(venue, new Date(date), timeSlot);
+
+    // Get venue postcode
     const venuePostcode = venue.location ||
                           venue.venueAddress?.postcode ||
-                          venue.serviceDetails?.venueDetails?.postcode ||
-                          'NO POSTCODE';
-    console.log(`  📍 ${venue.name}: postcode="${venuePostcode}", confidence="${locationCheck.confidence}", canServe=${locationCheck.canServe}`);
+                          venue.serviceDetails?.venueAddress?.postcode ||
+                          venue.contactInfo?.postcode ||
+                          null;
+
+    // Calculate real distance if we have coordinates
+    let distanceKm = null;
+    let locationScore = 50; // Default neutral score
+
+    if (targetCoords && venuePostcode) {
+      const venueCoords = await LocationService.getPostcodeCoordinates(venuePostcode);
+      if (venueCoords) {
+        distanceKm = LocationService.calculateDistance(
+          targetCoords.lat, targetCoords.lng,
+          venueCoords.lat, venueCoords.lng
+        );
+        // Convert distance to score (closer = higher score)
+        // 0km = 100, 5km = 75, 10km = 50, 20km = 25, 30km+ = 0
+        locationScore = Math.max(0, Math.round(100 - (distanceKm * 3.33)));
+        console.log(`  📍 ${venue.name}: postcode="${venuePostcode}", distance=${distanceKm?.toFixed(1)}km, locationScore=${locationScore}`);
+      } else {
+        // Fallback to postcode-based scoring
+        locationScore = LocationService.scoreByPostcode(venuePostcode, location);
+        console.log(`  📍 ${venue.name}: postcode="${venuePostcode}", locationScore=${locationScore} (postcode fallback)`);
+      }
+    } else {
+      console.log(`  📍 ${venue.name}: postcode="${venuePostcode || 'NO POSTCODE'}", locationScore=${locationScore} (no coords)`);
+    }
 
     // Set up basic package
     const basicPackage = this.getBasicPackageForSupplier(venue, theme);
@@ -433,22 +460,12 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
     const pricingResult = calculateFinalPrice(enhancedVenue, partyDetails, []);
     enhancedVenue.enhancedPrice = pricingResult.finalPrice;
     enhancedVenue.enhancedPricing = pricingResult;
-    
-    // ✅ NEW SCORING: Location is PRIMARY, then availability
+
+    // ✅ NEW SCORING: Location is PRIMARY (based on real distance), then availability
     let compositeScore = 0;
-    
-    // LOCATION SCORING (0-100 points)
-    if (locationCheck.canServe) {
-      if (locationCheck.confidence === 'exact') {
-        compositeScore += 150; // Exact postcode match - highest priority
-      } else if (locationCheck.confidence === 'high') {
-        compositeScore += 100; // Same district or same area
-      } else {
-        compositeScore += 50; // Nearby
-      }
-    } else {
-      compositeScore -= 100; // Cannot serve this location - major penalty
-    }
+
+    // LOCATION SCORING - Use the distance-based score (0-100)
+    compositeScore += locationScore;
 
     // AVAILABILITY SCORING (0-50 points)
     if (availabilityCheck.available) {
@@ -466,20 +483,18 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
       const ratingBonus = venue.rating * 2;
       compositeScore += ratingBonus;
     }
-    
+
     return {
       ...enhancedVenue,
       compositeScore,
-      locationScore: locationCheck.canServe ? 
-      (locationCheck.confidence === 'exact' ? 150 : 
-       locationCheck.confidence === 'high' ? 100 : 50) : -100,
+      locationScore,
+      distanceKm, // Include actual distance for display
       availabilityScore: availabilityCheck.available ? (availabilityCheck.confidence === 'high' ? 50 : 25) : -50,
       availabilityCheck,
-      locationCheck,
       isAvailable: availabilityCheck.available,
-      canServeLocation: locationCheck.canServe
+      canServeLocation: locationScore >= 25
     };
-  });
+  }));
   
   // Sort by composite score (location-first, then availability)
   const sortedVenues = scoredVenues.sort((a, b) => {
@@ -500,15 +515,18 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
     const mainVenue = topVenues[0];
     const mainVenuePostcode = mainVenue.location ||
                               mainVenue.venueAddress?.postcode ||
-                              mainVenue.serviceDetails?.venueDetails?.postcode ||
+                              mainVenue.serviceDetails?.venueAddress?.postcode ||
+                              mainVenue.contactInfo?.postcode ||
                               'NO POSTCODE';
-    console.log(`✅ Selected main venue: "${mainVenue.name}" (postcode: ${mainVenuePostcode}, score: ${mainVenue.compositeScore}, locationScore: ${mainVenue.locationScore})`);
+    const distanceStr = mainVenue.distanceKm != null ? `${mainVenue.distanceKm.toFixed(1)}km` : 'unknown';
+    console.log(`✅ Selected main venue: "${mainVenue.name}" (postcode: ${mainVenuePostcode}, distance: ${distanceStr}, score: ${mainVenue.compositeScore})`);
 
     // Log top 3 for comparison
-    console.log('📊 Top 3 venues by score:');
+    console.log('📊 Top 3 venues by distance:');
     topVenues.slice(0, 3).forEach((v, i) => {
-      const vPostcode = v.location || v.venueAddress?.postcode || v.serviceDetails?.venueDetails?.postcode || 'NO POSTCODE';
-      console.log(`   ${i + 1}. ${v.name} (${vPostcode}) - score: ${v.compositeScore}, location: ${v.locationScore}`);
+      const vPostcode = v.location || v.venueAddress?.postcode || v.serviceDetails?.venueAddress?.postcode || v.contactInfo?.postcode || 'NO POSTCODE';
+      const vDistance = v.distanceKm != null ? `${v.distanceKm.toFixed(1)}km` : 'unknown';
+      console.log(`   ${i + 1}. ${v.name} (${vPostcode}) - distance: ${vDistance}, score: ${v.compositeScore}`);
     });
   }
 
@@ -712,70 +730,42 @@ checkSupplierLocation(supplier, partyLocation) {
   // Get supplier's postcode from all possible locations
   const supplierLocationRaw = supplier.location ||
                               supplier.venueAddress?.postcode ||
-                              supplier.serviceDetails?.venueDetails?.postcode ||
-                              supplier.serviceDetails?.location?.postcode ||
-                              supplier.data?.location ||
-                              supplier.data?.venueAddress?.postcode;
+                              supplier.serviceDetails?.venueAddress?.postcode ||
+                              supplier.contactInfo?.postcode ||
+                              supplier.serviceDetails?.serviceArea?.postcode ||
+                              supplier.serviceDetails?.location?.postcode;
 
   if (!supplierLocationRaw || !partyLocation) {
-    return { canServe: true, reason: 'no-location-data', confidence: 'low' };
+    return { canServe: true, reason: 'no-location-data', confidence: 'low', score: 50 };
   }
 
-  try {
-    // Normalize postcodes for comparison
-    const normalizePostcode = (pc) => {
-      if (!pc) return '';
-      return pc.replace(/\s+/g, '').toUpperCase();
-    };
-    const supplierPostcode = normalizePostcode(supplierLocationRaw);
-    const partyPostcode = normalizePostcode(partyLocation);
+  // Use the new reliable scoring method
+  const score = LocationService.scoreByPostcode(supplierLocationRaw, partyLocation);
 
-    // Check for exact postcode match first
-    if (supplierPostcode === partyPostcode) {
-      return {
-        canServe: true,
-        reason: 'exact-postcode-match',
-        confidence: 'exact'
-      };
-    }
+  console.log(`🔍 Location check for "${supplier.name}": postcode="${supplierLocationRaw}" vs "${partyLocation}" → score=${score}`);
 
-    // Check for same district (e.g., W4 4BZ and W4 5XX)
-    const supplierDistrict = LocationService.getPostcodeDistrict(supplierLocationRaw);
-    const partyDistrict = LocationService.getPostcodeDistrict(partyLocation);
-
-    if (supplierDistrict && partyDistrict && supplierDistrict === partyDistrict) {
-      return {
-        canServe: true,
-        reason: 'same-district',
-        confidence: 'exact' // Same district should be treated as very close
-      };
-    }
-
-    // Check for same area (e.g., W4 and W3 - both West London)
-    const supplierArea = LocationService.getPostcodeArea(supplierLocationRaw);
-    const partyArea = LocationService.getPostcodeArea(partyLocation);
-
-    if (supplierArea && partyArea && supplierArea === partyArea) {
-      return {
-        canServe: true,
-        reason: 'same-area',
-        confidence: 'high'
-      };
-    }
-
-    // Use LocationService for other checks (adjacent areas, etc.)
-    const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
-    const canServe = LocationService.arePostcodesNearby(supplierLocationRaw, partyLocation, serviceRadius);
-
-    return {
-      canServe,
-      reason: canServe ? 'location-within-range' : 'location-too-far',
-      confidence: canServe ? 'medium' : 'low'
-    };
-  } catch (error) {
-    console.warn(`Location check failed for ${supplier.name}:`, error);
-    return { canServe: true, reason: 'location-check-error', confidence: 'low' };
+  // Convert score to confidence levels for compatibility
+  let confidence, reason;
+  if (score === 100) {
+    confidence = 'exact';
+    reason = 'same-district';
+  } else if (score >= 75) {
+    confidence = 'high';
+    reason = 'same-area';
+  } else if (score >= 50) {
+    confidence = 'medium';
+    reason = 'nearby';
+  } else {
+    confidence = 'low';
+    reason = 'different-area';
   }
+
+  return {
+    canServe: score >= 25, // Allow if not completely different area
+    reason,
+    confidence,
+    score // Include raw score for precise sorting
+  };
 }
   selectSuppliersForParty({
     suppliers, 
@@ -1114,7 +1104,7 @@ async buildParty(partyDetails) {
     const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
     
     // Always get venue options, but only set main venue if needed
-    const venueCarouselResult = this.selectMultipleVenuesForCarousel(
+    const venueCarouselResult = await this.selectMultipleVenuesForCarousel(
       allSuppliers,
       theme,
       processedTimeSlot,

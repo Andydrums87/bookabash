@@ -43,37 +43,40 @@ const calculateVenuePrice = (venue) => {
   return venue.packages?.[0]?.price || venue.priceFrom || venue.data?.priceFrom || 0;
 };
 
-// Helper to extract postcode district (e.g., "W4" from "W4 2DR")
-const getPostcodeDistrict = (postcode) => {
-  if (!postcode) return null;
-  const clean = postcode.toUpperCase().replace(/\s+/g, '');
-  // Match the outward code (district)
-  const match = clean.match(/^([A-Z]{1,2}\d{1,2}[A-Z]?)/);
-  return match ? match[1] : null;
-};
+// Import LocationService for reliable postcode scoring
+import { LocationService } from "@/utils/locationService";
 
-// Simple distance scoring based on postcode matching
-const scoreVenueByLocation = (venue, userPostcode) => {
-  if (!userPostcode) return 0;
+// Score venue by location using real distance calculation
+const scoreVenueByLocation = async (venue, userPostcode, targetCoords) => {
+  if (!userPostcode) return { score: 0, distanceKm: null };
 
-  const userDistrict = getPostcodeDistrict(userPostcode);
-  const venuePostcode = venue.venueAddress?.postcode ||
-                        venue.serviceDetails?.venueDetails?.postcode ||
-                        venue.location ||
+  // Get venue postcode from all possible locations
+  const venuePostcode = venue.location ||
+                        venue.venueAddress?.postcode ||
+                        venue.serviceDetails?.venueAddress?.postcode ||
+                        venue.contactInfo?.postcode ||
                         venue.postcode;
-  const venueDistrict = getPostcodeDistrict(venuePostcode);
 
-  if (!venueDistrict || !userDistrict) return 0;
+  if (!venuePostcode) return { score: 0, distanceKm: null };
 
-  // Exact district match
-  if (venueDistrict === userDistrict) return 100;
+  // If we have target coordinates, calculate real distance
+  if (targetCoords) {
+    const venueCoords = await LocationService.getPostcodeCoordinates(venuePostcode);
+    if (venueCoords) {
+      const distanceKm = LocationService.calculateDistance(
+        targetCoords.lat, targetCoords.lng,
+        venueCoords.lat, venueCoords.lng
+      );
+      // Convert distance to score (closer = higher score)
+      // 0km = 100, 5km = 75, 10km = 50, 20km = 25, 30km+ = 0
+      const score = Math.max(0, Math.round(100 - (distanceKm * 3.33)));
+      return { score, distanceKm };
+    }
+  }
 
-  // Same area (first letter/number matches, e.g., W4 and W3)
-  const userArea = userDistrict.match(/^([A-Z]{1,2})/)?.[1];
-  const venueArea = venueDistrict.match(/^([A-Z]{1,2})/)?.[1];
-  if (userArea && venueArea && userArea === venueArea) return 50;
-
-  return 0;
+  // Fallback to postcode-based scoring
+  const score = LocationService.scoreByPostcode(venuePostcode, userPostcode);
+  return { score, distanceKm: null };
 };
 
 export default function VenueBrowserModal({
@@ -153,19 +156,41 @@ export default function VenueBrowserModal({
           })
         : venueSuppliers;
 
-      // Score and sort by location (nearest first)
+      // Score and sort by location (nearest first) using real distance
       const userPostcode = partyDetails?.postcode || partyDetails?.location;
-      const scoredVenues = availableVenues.map(venue => ({
-        ...venue,
-        locationScore: scoreVenueByLocation(venue, userPostcode)
-      }));
 
-      // Sort by location score (highest first), then by rating
+      // Get target coordinates for distance calculation
+      const targetCoords = userPostcode
+        ? await LocationService.getPostcodeCoordinates(userPostcode)
+        : null;
+
+      console.log(`📍 VenueBrowser: Scoring ${availableVenues.length} venues by distance from "${userPostcode}"`);
+
+      // Score all venues with real distance
+      const scoredVenues = await Promise.all(
+        availableVenues.map(async (venue) => {
+          const { score, distanceKm } = await scoreVenueByLocation(venue, userPostcode, targetCoords);
+          return {
+            ...venue,
+            locationScore: score,
+            distanceKm
+          };
+        })
+      );
+
+      // Sort by location score (highest first = closest), then by rating
       scoredVenues.sort((a, b) => {
         if (b.locationScore !== a.locationScore) {
           return b.locationScore - a.locationScore;
         }
         return (b.rating || 0) - (a.rating || 0);
+      });
+
+      // Log top 3 venues
+      console.log('📊 Top 3 venues by distance:');
+      scoredVenues.slice(0, 3).forEach((v, i) => {
+        const distStr = v.distanceKm != null ? `${v.distanceKm.toFixed(1)}km` : 'unknown';
+        console.log(`   ${i + 1}. ${v.name} - distance: ${distStr}, score: ${v.locationScore}`);
       });
 
       setAllVenues(scoredVenues);

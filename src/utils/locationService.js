@@ -1,7 +1,37 @@
 // utils/locationService.js - Smart location filtering for different supplier types
 
+// Cache for postcode coordinates to avoid repeated API calls
+const postcodeCache = new Map();
+
 export class LocationService {
-  
+
+    // Normalize a UK postcode to standard format (uppercase, proper spacing)
+    static normalizePostcode(postcode) {
+      if (!postcode) return null;
+      // Remove all spaces, uppercase
+      const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
+      // UK postcodes: outward (2-4 chars) + inward (3 chars)
+      // Add space before last 3 characters
+      if (cleaned.length >= 5) {
+        return cleaned.slice(0, -3) + ' ' + cleaned.slice(-3);
+      }
+      return cleaned; // Short postcode (just outward code)
+    }
+
+    // Extract the outward code (district) from a postcode
+    // e.g., "AL2 7XX" -> "AL2", "W4 2DR" -> "W4"
+    static getOutwardCode(postcode) {
+      if (!postcode) return null;
+      const normalized = this.normalizePostcode(postcode);
+      if (!normalized) return null;
+      // If it has a space, take everything before the space
+      if (normalized.includes(' ')) {
+        return normalized.split(' ')[0];
+      }
+      // Otherwise it's already just the outward code
+      return normalized;
+    }
+
     // Extract postcode area from full postcode
     static getPostcodeArea(postcode) {
       if (!postcode) return null;
@@ -9,13 +39,121 @@ export class LocationService {
       const areaMatch = cleaned.match(/^([A-Z]{1,2})/);
       return areaMatch ? areaMatch[1] : null;
     }
-    
-    // Extract postcode district from full postcode  
+
+    // Extract postcode district (outward code) from full postcode
+    // This is the RELIABLE method - uses the space or calculates from length
     static getPostcodeDistrict(postcode) {
+      return this.getOutwardCode(postcode);
+    }
+
+    // Fetch coordinates for a postcode using postcodes.io API
+    static async getPostcodeCoordinates(postcode) {
       if (!postcode) return null;
-      const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-      const districtMatch = cleaned.match(/^([A-Z]{1,2}\d{1,2})/);
-      return districtMatch ? districtMatch[1] : null;
+
+      const normalized = this.normalizePostcode(postcode);
+      if (!normalized) return null;
+
+      // Check cache first
+      if (postcodeCache.has(normalized)) {
+        return postcodeCache.get(normalized);
+      }
+
+      try {
+        const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalized)}`);
+        if (!response.ok) {
+          // Try with just the outward code for partial postcodes
+          const outward = this.getOutwardCode(postcode);
+          if (outward && outward !== normalized) {
+            const outwardResponse = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(outward)}`);
+            if (outwardResponse.ok) {
+              const outwardData = await outwardResponse.json();
+              if (outwardData.status === 200 && outwardData.result) {
+                const coords = {
+                  lat: outwardData.result.latitude,
+                  lng: outwardData.result.longitude,
+                  outward: outward
+                };
+                postcodeCache.set(normalized, coords);
+                return coords;
+              }
+            }
+          }
+          console.warn(`Postcode lookup failed for: ${postcode}`);
+          return null;
+        }
+
+        const data = await response.json();
+        if (data.status === 200 && data.result) {
+          const coords = {
+            lat: data.result.latitude,
+            lng: data.result.longitude,
+            outward: data.result.outcode
+          };
+          postcodeCache.set(normalized, coords);
+          return coords;
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error fetching postcode coordinates for ${postcode}:`, error);
+        return null;
+      }
+    }
+
+    // Calculate distance between two points using Haversine formula (returns km)
+    static calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // Calculate distance between two postcodes (returns km, or null if can't calculate)
+    static async getDistanceBetweenPostcodes(postcode1, postcode2) {
+      const coords1 = await this.getPostcodeCoordinates(postcode1);
+      const coords2 = await this.getPostcodeCoordinates(postcode2);
+
+      if (!coords1 || !coords2) {
+        return null;
+      }
+
+      return this.calculateDistance(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+    }
+
+    // Score a venue by distance (0-100, higher = closer)
+    // Returns synchronously using outward code comparison as fallback
+    static scoreByPostcode(supplierPostcode, targetPostcode) {
+      if (!supplierPostcode || !targetPostcode) return 50; // Neutral score if no data
+
+      const supplierOutward = this.getOutwardCode(supplierPostcode);
+      const targetOutward = this.getOutwardCode(targetPostcode);
+
+      console.log(`📍 Postcode scoring: supplier="${supplierOutward}" vs target="${targetOutward}"`);
+
+      if (!supplierOutward || !targetOutward) return 50;
+
+      // Exact outward code match = same district = very close
+      if (supplierOutward === targetOutward) {
+        console.log(`   ✅ EXACT district match: ${supplierOutward}`);
+        return 100;
+      }
+
+      // Same area (first 1-2 letters match)
+      const supplierArea = this.getPostcodeArea(supplierPostcode);
+      const targetArea = this.getPostcodeArea(targetPostcode);
+
+      if (supplierArea === targetArea) {
+        console.log(`   📍 Same area: ${supplierArea}`);
+        return 75;
+      }
+
+      // Different area
+      console.log(`   ❌ Different area: ${supplierArea} vs ${targetArea}`);
+      return 25;
     }
     
     // Extract postcode from a venue string (like "The Church, 18 Birkbeck grove, London, W3 7QD")
