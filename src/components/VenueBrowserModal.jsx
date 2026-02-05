@@ -205,7 +205,37 @@ export default function VenueBrowserModal({
   };
 
   // Use fetched venues or fall back to initial
-  const venues = allVenues.length > 0 ? allVenues : initialVenues;
+  // Always ensure venues are sorted by distance (locationScore) if available
+  const venues = useMemo(() => {
+    const sourceVenues = allVenues.length > 0 ? allVenues : initialVenues;
+
+    // Sort by locationScore (highest first = closest) if available, then by rating
+    return [...sourceVenues].sort((a, b) => {
+      // First, prefer venues with distance data
+      const aHasDistance = a.distanceKm != null || a.locationScore != null;
+      const bHasDistance = b.distanceKm != null || b.locationScore != null;
+
+      if (aHasDistance && !bHasDistance) return -1;
+      if (!aHasDistance && bHasDistance) return 1;
+
+      // If both have location scores, sort by score (higher = closer)
+      if (a.locationScore != null && b.locationScore != null) {
+        if (b.locationScore !== a.locationScore) {
+          return b.locationScore - a.locationScore;
+        }
+      }
+
+      // If both have distance, sort by distance (lower = closer)
+      if (a.distanceKm != null && b.distanceKm != null) {
+        if (a.distanceKm !== b.distanceKm) {
+          return a.distanceKm - b.distanceKm;
+        }
+      }
+
+      // Fall back to rating
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  }, [allVenues, initialVenues]);
 
   // Calculate total attendees (children + adults)
   const attendees = useMemo(() => {
@@ -281,7 +311,7 @@ export default function VenueBrowserModal({
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Choose Your Venue</h2>
                 <p className="text-sm text-white/90 mt-0.5">
-                  {venues.length} venues available in your area
+                  {venues.length} venues available • Sorted by distance
                 </p>
               </div>
             </div>
@@ -394,12 +424,18 @@ export default function VenueBrowserModal({
                         )}
                       </div>
 
-                      {/* Postcode */}
+                      {/* Location & Distance */}
                       <div className="flex flex-wrap gap-2 mb-3 text-xs text-gray-600">
                         {(venue.venueAddress?.postcode || venue.location || venue.data?.location) && (
                           <div className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             <span>{venue.venueAddress?.postcode || venue.location || venue.data?.location}</span>
+                          </div>
+                        )}
+                        {/* Show distance if available */}
+                        {venue.distanceKm != null && (
+                          <div className="flex items-center gap-1 text-primary-600 font-medium">
+                            <span>📍 {venue.distanceKm.toFixed(1)} km away</span>
                           </div>
                         )}
                         {capacityCheck.capacity && (
