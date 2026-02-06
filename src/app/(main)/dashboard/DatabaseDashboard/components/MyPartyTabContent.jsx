@@ -460,6 +460,8 @@ export default function MyPartyTabContent({
         <div
           className="relative h-64 w-full cursor-pointer group/image"
           onClick={(e) => {
+            // Don't open quick view if clicking on a button inside the image area
+            if (e.target.closest('button')) return
             e.stopPropagation()
             setSelectedSupplierForQuickView(supplier)
           }}
@@ -530,10 +532,11 @@ export default function MyPartyTabContent({
 
           {/* Change Button (venues only) - Top Left */}
           {type === 'venue' && onBrowseVenues && (
-            <div className="absolute top-4 left-4 z-20">
+            <div className="absolute top-4 left-4 z-30">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
+                  e.preventDefault()
                   onBrowseVenues()
                 }}
                 className="px-3 py-1.5 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 transition-all duration-200 shadow-md cursor-pointer"
