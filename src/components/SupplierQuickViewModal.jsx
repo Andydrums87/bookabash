@@ -1954,8 +1954,8 @@ export default function SupplierQuickViewModal({
                   let packageFeatures = []
 
                   // For venues, dynamically generate features based on serviceDetails
-                  const category = displaySupplier?.category?.toLowerCase() || ''
-                  const isVenueCategory = category === 'venues' || category === 'venue'
+                  const supplierCategory = displaySupplier?.category?.toLowerCase() || ''
+                  const isVenueCategory = supplierCategory === 'venues' || supplierCategory === 'venue'
 
                   if (isVenueCategory) {
                     const serviceDetails = displaySupplier?.serviceDetails || displaySupplier?.data?.serviceDetails || {}
