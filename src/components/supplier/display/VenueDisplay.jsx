@@ -20,7 +20,9 @@ import {
   ParkingCircle,
   Accessibility,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  Video,
+  View
 } from "lucide-react";
 
 // MapWidget component for Google Maps embed
@@ -270,6 +272,56 @@ const VenueDisplay = ({
             </div>
           </SectionRow>
         </>
+      )}
+
+      {/* Virtual Tour / 360 View */}
+      {(serviceDetails.virtualTour || serviceDetails.videoTour) && (
+        <SectionRow label="Virtual tour">
+          <div className="space-y-4">
+            {/* 360 Tour Embed (Momento360, Matterport, etc.) */}
+            {serviceDetails.virtualTour && (
+              <div>
+                <div className="flex items-center gap-2 text-gray-900 font-medium mb-3">
+                  <View className="w-5 h-5 text-teal-500" />
+                  360° Tour
+                </div>
+                <div className="rounded-xl overflow-hidden border border-gray-200">
+                  <iframe
+                    src={serviceDetails.virtualTour}
+                    width="100%"
+                    height="400"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    title="360° Virtual Tour"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Video Tour (YouTube, Vimeo, etc.) */}
+            {serviceDetails.videoTour && (
+              <div>
+                <div className="flex items-center gap-2 text-gray-900 font-medium mb-3">
+                  <Video className="w-5 h-5 text-teal-500" />
+                  Video Tour
+                </div>
+                <div className="rounded-xl overflow-hidden border border-gray-200 aspect-video">
+                  <iframe
+                    src={serviceDetails.videoTour}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    title="Video Tour"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionRow>
       )}
 
       {/* Capacity */}
