@@ -8,8 +8,13 @@ import useEmblaCarousel from "embla-carousel-react"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
 
 // Helper function to calculate venue price
-// Check if venue has instant book enabled (via Google Calendar sync)
+// Check if venue has instant book enabled (manual flag or Google Calendar sync)
 const hasInstantBook = (venue) => {
+  // Check manual instant book flag first
+  if (venue.instantBook === true || venue.data?.instantBook === true) {
+    return true
+  }
+  // Fall back to calendar integration check
   return venue.googleCalendarSync?.enabled === true ||
          venue.calendarIntegration?.enabled === true ||
          venue.data?.googleCalendarSync?.enabled === true ||

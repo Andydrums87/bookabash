@@ -15,8 +15,13 @@ import VenueMapView from "@/components/venue-map/VenueMapView"
 import VenueMapListItem from "@/components/venue-map/VenueMapListItem"
 import VenueMobileBottomSheet from "@/components/venue-map/VenueMobileBottomSheet"
 
-// Check if venue has instant book enabled (via Google Calendar sync)
+// Check if venue has instant book enabled (manual flag or Google Calendar sync)
 const hasInstantBook = (venue) => {
+  // Check manual instant book flag first
+  if (venue.instantBook === true || venue.data?.instantBook === true) {
+    return true
+  }
+  // Fall back to calendar integration check
   return venue.googleCalendarSync?.enabled === true ||
          venue.calendarIntegration?.enabled === true ||
          venue.data?.googleCalendarSync?.enabled === true ||
@@ -307,7 +312,8 @@ export default function VenueBrowserModal({
 
       // Filter by availability if party date is set
       const partyDate = partyDetails?.date
-      const partyTime = partyDetails?.time
+      // Handle both property names: 'time' (database) and 'startTime' (localStorage)
+      const partyTime = partyDetails?.time || partyDetails?.startTime
       const partyDuration = partyDetails?.duration || 2
 
       const availableVenues = partyDate
