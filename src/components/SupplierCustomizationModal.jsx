@@ -23,6 +23,7 @@ import {
   ImageIcon,
   Info,
   MapPin,
+  ChevronDown,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -325,6 +326,7 @@ export default function SupplierCustomizationModal({
   // Venue catering state
   const [selectedCateringId, setSelectedCateringId] = useState(null)
   const [cateringGuestCount, setCateringGuestCount] = useState(20) // Default guest count for catering
+  const [expandedCateringMenus, setExpandedCateringMenus] = useState({}) // Track which catering menus are expanded
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: "planning_empty_slot", showModal: false })
 
@@ -3405,6 +3407,17 @@ export default function SupplierCustomizationModal({
                   const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
                   if (cateringPackages.length === 0) return null
 
+                  // Parse dietary codes from text like "v = vegetarian, ve = vegan, nga = non-gluten available"
+                  const getDietaryBadges = (dietaryInfo) => {
+                    if (!dietaryInfo) return []
+                    const badges = []
+                    const lower = dietaryInfo.toLowerCase()
+                    if (lower.includes('ve') || lower.includes('vegan')) badges.push({ code: 'VE', label: 'Vegan options', color: 'bg-green-100 text-green-700' })
+                    if ((lower.includes('v =') || lower.includes('v=') || lower.includes('vegetarian')) && !badges.some(b => b.code === 'VE')) badges.push({ code: 'V', label: 'Vegetarian options', color: 'bg-emerald-100 text-emerald-700' })
+                    if (lower.includes('nga') || lower.includes('gluten')) badges.push({ code: 'GF', label: 'Gluten-free available', color: 'bg-amber-100 text-amber-700' })
+                    return badges
+                  }
+
                   return (
                     <div className="pt-4 border-t border-gray-200">
                       <h3 className="text-lg font-bold text-gray-900 mb-4">Add Party Catering</h3>
@@ -3437,20 +3450,25 @@ export default function SupplierCustomizationModal({
                         {/* Catering packages */}
                         {cateringPackages.map((catering) => {
                           const isSelected = selectedCateringId === catering.id
+                          const menuExpanded = expandedCateringMenus[catering.id] || false
+                          const dietaryBadges = getDietaryBadges(catering.dietaryInfo)
+                          const hasMenu = (catering.sections && catering.sections.length > 0) || (catering.items && catering.items.length > 0)
 
                           return (
                             <div
                               key={catering.id}
-                              className={`rounded-xl cursor-pointer transition-all duration-200 overflow-hidden ${
+                              className={`rounded-xl transition-all duration-200 overflow-hidden ${
                                 isSelected
                                   ? "ring-2 ring-[hsl(var(--primary-500))]"
                                   : "border border-gray-200 hover:border-gray-300"
                               }`}
-                              onClick={() => setSelectedCateringId(catering.id)}
                             >
                               {/* Catering image if available */}
                               {catering.image && (
-                                <div className="relative w-full h-32">
+                                <div
+                                  className="relative w-full h-32 cursor-pointer"
+                                  onClick={() => setSelectedCateringId(catering.id)}
+                                >
                                   <Image
                                     src={catering.image}
                                     alt={catering.name}
@@ -3461,58 +3479,102 @@ export default function SupplierCustomizationModal({
                               )}
 
                               <div className="p-4 bg-white">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="font-bold text-gray-900">{catering.name}</h4>
-                                    <p className="text-sm text-gray-600 mt-0.5">{catering.description}</p>
-                                  </div>
-                                  <div className="text-right ml-4">
-                                    <div className="text-xl font-bold text-[hsl(var(--primary-500))]">£{catering.pricePerHead}</div>
-                                    <div className="text-xs text-gray-500">per person</div>
-                                  </div>
-                                  <div className={`ml-3 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                    isSelected
-                                      ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
-                                      : 'bg-white border-gray-300'
-                                  }`}>
-                                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                                {/* Main clickable card header */}
+                                <div
+                                  className="cursor-pointer"
+                                  onClick={() => setSelectedCateringId(catering.id)}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h4 className="font-bold text-gray-900">{catering.name}</h4>
+                                        {/* Dietary badges */}
+                                        {dietaryBadges.map((badge) => (
+                                          <span
+                                            key={badge.code}
+                                            className={`px-1.5 py-0.5 text-xs font-semibold rounded ${badge.color}`}
+                                            title={badge.label}
+                                          >
+                                            {badge.code}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">{catering.description}</p>
+                                    </div>
+                                    <div className="text-right ml-4">
+                                      {catering.pricePerHead ? (
+                                        <>
+                                          <div className="text-xl font-bold text-[hsl(var(--primary-500))]">£{catering.pricePerHead}</div>
+                                          <div className="text-xs text-gray-500">per person</div>
+                                        </>
+                                      ) : catering.pricing && (
+                                        <div className="text-sm font-medium text-gray-700">{catering.pricing}</div>
+                                      )}
+                                    </div>
+                                    <div className={`ml-3 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                      isSelected
+                                        ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
+                                        : 'bg-white border-gray-300'
+                                    }`}>
+                                      {isSelected && <Check className="w-4 h-4 text-white" />}
+                                    </div>
                                   </div>
                                 </div>
 
-                                {/* Menu items - grouped by section if available */}
-                                {catering.sections && catering.sections.length > 0 ? (
-                                  <div className="mt-4 space-y-4">
-                                    {catering.sections.map((section, sIdx) => (
-                                      <div key={sIdx}>
-                                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{section.title}</h5>
-                                        <div className="space-y-1">
-                                          {section.items.map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
-                                              <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                                              <span>{item}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : catering.items && catering.items.length > 0 && (
-                                  <div className="mt-3 space-y-1">
-                                    {catering.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
-                                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                                        <span>{item}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                {/* Collapsible menu section */}
+                                {hasMenu && (
+                                  <div className="mt-3">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setExpandedCateringMenus(prev => ({
+                                          ...prev,
+                                          [catering.id]: !prev[catering.id]
+                                        }))
+                                      }}
+                                      className="flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-700))] transition-colors"
+                                    >
+                                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${menuExpanded ? 'rotate-180' : ''}`} />
+                                      {menuExpanded ? 'Hide menu' : 'View menu'}
+                                    </button>
 
-                                {catering.dietaryInfo && (
-                                  <p className="text-xs text-gray-500 mt-3 italic">{catering.dietaryInfo}</p>
+                                    {/* Expanded menu content */}
+                                    {menuExpanded && (
+                                      <div className="mt-3 pt-3 border-t border-gray-100">
+                                        {catering.sections && catering.sections.length > 0 ? (
+                                          <div className="space-y-4">
+                                            {catering.sections.map((section, sIdx) => (
+                                              <div key={sIdx}>
+                                                <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{section.title}</h5>
+                                                <div className="space-y-1.5">
+                                                  {section.items.map((item, idx) => (
+                                                    <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                                      <Check className="w-3.5 h-3.5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                                                      <span>{item}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : catering.items && catering.items.length > 0 && (
+                                          <div className="space-y-1.5">
+                                            {catering.items.map((item, idx) => (
+                                              <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                                <Check className="w-3.5 h-3.5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                                                <span>{item}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
 
                                 {/* Guest count when selected */}
-                                {isSelected && (
+                                {isSelected && catering.pricePerHead && (
                                   <div className="mt-4 pt-4 border-t border-gray-200">
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium text-gray-700">Number of guests:</span>
