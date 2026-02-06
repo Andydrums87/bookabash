@@ -1953,7 +1953,63 @@ export default function SupplierQuickViewModal({
 
                   let packageFeatures = []
 
-                  if (packageData?.features && Array.isArray(packageData.features)) {
+                  // For venues, dynamically generate features based on serviceDetails
+                  const category = displaySupplier?.category?.toLowerCase() || ''
+                  const isVenueCategory = category === 'venues' || category === 'venue'
+
+                  if (isVenueCategory) {
+                    const serviceDetails = displaySupplier?.serviceDetails || displaySupplier?.data?.serviceDetails || {}
+                    const facilities = serviceDetails.facilities || []
+                    const addOnServices = serviceDetails.addOnServices || []
+                    const restrictedItems = serviceDetails.restrictedItems || []
+                    const cateringPackages = displaySupplier?.cateringPackages || serviceDetails.cateringPackages || []
+                    const capacity = serviceDetails.capacity || {}
+                    const pricing = serviceDetails.pricing || {}
+                    const availability = serviceDetails.availability || {}
+
+                    // Check if kitchen is a facility (included) vs an add-on (not included)
+                    const hasKitchenFacility = facilities.some(f =>
+                      f.toLowerCase().includes('kitchen')
+                    )
+                    const hasKitchenAddon = addOnServices.some(a =>
+                      a.name?.toLowerCase().includes('kitchen')
+                    )
+
+                    if (hasKitchenFacility && !hasKitchenAddon) {
+                      packageFeatures.push('Kitchen facilities included')
+                    }
+
+                    // Party time with setup/cleanup
+                    const minHours = availability.minimumBookingHours || pricing.minimumBookingHours || 2
+                    const setupTime = pricing.setupTime || 60
+                    const cleanupTime = pricing.cleanupTime || 60
+                    packageFeatures.push(`${minHours} hour${minHours > 1 ? 's' : ''} party time with ${setupTime} min setup and ${cleanupTime} min cleanup included`)
+
+                    // Tables and chairs
+                    const equipment = serviceDetails.equipment || {}
+                    if (equipment.tables || equipment.chairs) {
+                      packageFeatures.push('Tables and chairs included')
+                    }
+
+                    // Catering packages available
+                    if (cateringPackages.length > 0) {
+                      packageFeatures.push('Great food options available')
+                    }
+
+                    // Bouncy castle accepted
+                    const bouncyCastleRestricted = restrictedItems.some(item =>
+                      item.toLowerCase().includes('bouncy') || item.toLowerCase().includes('inflatable')
+                    )
+                    if (!bouncyCastleRestricted) {
+                      packageFeatures.push('Bouncy castle and soft play accepted')
+                    }
+
+                    // Large capacity
+                    const maxCapacity = capacity.max || capacity.standing || capacity.seated || 0
+                    if (maxCapacity >= 70) {
+                      packageFeatures.push('Loads of space for kids to run around')
+                    }
+                  } else if (packageData?.features && Array.isArray(packageData.features)) {
                     packageFeatures = packageData.features
                   } else if (packageData?.description && typeof packageData.description === 'string') {
                     packageFeatures = packageData.description.split('\n').filter(f => f.trim())
@@ -1961,7 +2017,7 @@ export default function SupplierQuickViewModal({
                     packageFeatures = packageData.included
                   }
 
-                  if (packageFeatures.length === 0 && !packageData) return null
+                  if (packageFeatures.length === 0 && !packageData && !isVenueCategory) return null
 
                   const backgroundImage = displaySupplier?.coverPhoto;
 
