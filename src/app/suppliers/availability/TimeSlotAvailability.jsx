@@ -611,6 +611,15 @@ const TimeSlotAvailabilityContent = ({
     }
   }
 
+  // Auto-select first business if only one exists, or if none selected yet
+  // This ensures saves work correctly for single-business suppliers
+  useEffect(() => {
+    if (businesses?.length === 1 && selectedCalendarBusiness === 'all') {
+      console.log('📅 Auto-selecting single business:', businesses[0].id)
+      setSelectedCalendarBusiness(businesses[0].id)
+    }
+  }, [businesses, selectedCalendarBusiness])
+
   // Load initial data (working hours, unavailable dates, and advance booking from primary)
   useEffect(() => {
     if (currentSupplier) {
