@@ -802,9 +802,17 @@ export default function VenueBrowserModal({
         ) : (
           // DESKTOP LAYOUT: Airbnb-style split view
           <div className="h-full flex flex-col">
-            {/* Top navbar with logo and close button */}
+            {/* Top navbar with back button and logo */}
             <div className="px-6 py-3 border-b border-gray-100 flex-shrink-0">
               <div className="flex items-center justify-between">
+                {/* Back button */}
+                <button
+                  onClick={onClose}
+                  className="flex items-center gap-2 px-3 py-2 -ml-3 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span className="text-sm font-medium">Back to dashboard</span>
+                </button>
                 {/* Logo */}
                 <Image
                   src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
@@ -813,13 +821,6 @@ export default function VenueBrowserModal({
                   height={28}
                   className="h-auto w-auto"
                 />
-                {/* Close button */}
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
               </div>
             </div>
 

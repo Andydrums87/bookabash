@@ -528,10 +528,27 @@ export default function MyPartyTabContent({
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-90" />
 
-          {/* Status Badge and Remove Button */}
+          {/* Change Button (venues only) - Top Left */}
+          {type === 'venue' && onBrowseVenues && (
+            <div className="absolute top-4 left-4 z-20">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onBrowseVenues()
+                }}
+                className="px-3 py-1.5 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 transition-all duration-200 shadow-md cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Change
+              </button>
+            </div>
+          )}
+
+          {/* Status Badge (non-venues) and Remove Button */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
             <div>
-              {isPaid && (
+              {/* Only show paid badge for non-venues (venues have Change button) */}
+              {type !== 'venue' && isPaid && (
                 <Badge className="bg-green-500 text-white shadow-lg backdrop-blur-sm">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Paid
@@ -621,31 +638,16 @@ export default function MyPartyTabContent({
             <Eye className="w-4 h-4 mr-2" />
             View
           </Button>
-          {type === 'venue' ? (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (onBrowseVenues) {
-                  onBrowseVenues()
-                }
-              }}
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Change
-            </Button>
-          ) : (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation()
-                fetchFullSupplierData(supplier, type)
-              }}
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              Customize
-            </Button>
-          )}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              fetchFullSupplierData(supplier, type)
+            }}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+          >
+            <Wand2 className="w-4 h-4 mr-2" />
+            Customize
+          </Button>
         </div>
       </Card>
     )

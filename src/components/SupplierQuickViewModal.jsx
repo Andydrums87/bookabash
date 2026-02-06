@@ -1,10 +1,11 @@
 // components/SupplierQuickViewModal.jsx
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
 import { X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import useEmblaCarousel from "embla-carousel-react"
 
 // Import the swipeable carousel
 import SwipeableSupplierCarousel from '@/components/supplier/SwipableSupplierCarousel'
@@ -31,6 +32,9 @@ export default function SupplierQuickViewModal({
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
   const scrollPositionRef = useRef(0) // Store scroll position in ref to avoid stale closure
+
+  // Embla Carousel for mobile swipe support
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
 
   // Venue add-on selection state
   const [selectedVenueAddons, setSelectedVenueAddons] = useState([])
@@ -178,6 +182,41 @@ export default function SupplierQuickViewModal({
 
   const supplierImages = getSupplierImages(fullSupplier || supplier);
 
+  // Embla carousel callbacks
+  const onEmblaSelect = useCallback(() => {
+    if (!emblaApi) return
+    setCarouselIndex(emblaApi.selectedScrollSnap())
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    onEmblaSelect()
+    emblaApi.on("select", onEmblaSelect)
+    emblaApi.on("reInit", onEmblaSelect)
+    return () => {
+      emblaApi.off("select", onEmblaSelect)
+      emblaApi.off("reInit", onEmblaSelect)
+    }
+  }, [emblaApi, onEmblaSelect])
+
+  // Reset carousel when supplier changes
+  useEffect(() => {
+    if (emblaApi && supplier?.id) {
+      emblaApi.scrollTo(0)
+      setCarouselIndex(0)
+    }
+  }, [supplier?.id, emblaApi])
+
+  const scrollPrev = useCallback((e) => {
+    e.stopPropagation()
+    emblaApi?.scrollPrev()
+  }, [emblaApi])
+
+  const scrollNext = useCallback((e) => {
+    e.stopPropagation()
+    emblaApi?.scrollNext()
+  }, [emblaApi])
+
   // Reset venue add-ons when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -243,14 +282,10 @@ export default function SupplierQuickViewModal({
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={onClose}
-      onTouchMove={(e) => e.preventDefault()}
-      style={{ touchAction: 'none' }}
     >
       <div
         className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 relative"
         onClick={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.stopPropagation()}
-        style={{ touchAction: 'auto' }}
       >
         {/* Close Button - Floating over carousel */}
         <button
@@ -292,12 +327,12 @@ export default function SupplierQuickViewModal({
               <>
                 {/* Mobile: Carousel | Desktop: Gallery Grid */}
                 <div className="relative">
-                  {/* Mobile carousel with blurred background (hidden on lg+) */}
+                  {/* Mobile carousel with Embla for swipe support (hidden on lg+) */}
                   <div className="lg:hidden relative h-56 sm:h-64 md:h-72 overflow-hidden">
                     {/* Blurred background fill */}
                     {supplierImages.length > 0 && (
                       <div
-                        className="absolute inset-0 scale-110"
+                        className="absolute inset-0 scale-110 z-0"
                         style={{
                           backgroundImage: `url(${supplierImages[carouselIndex] || supplierImages[0]})`,
                           backgroundSize: 'cover',
@@ -307,50 +342,73 @@ export default function SupplierQuickViewModal({
                       />
                     )}
                     {/* Dark overlay for better contrast */}
-                    <div className="absolute inset-0 bg-black/20" />
-                    {/* Main image with object-contain */}
-                    {supplierImages.length > 0 && (
-                      <div className="relative h-full w-full">
-                        <Image
-                          src={supplierImages[carouselIndex] || supplierImages[0]}
-                          alt={`Image ${carouselIndex + 1}`}
-                          fill
-                          className="object-contain relative z-10"
-                          sizes="100vw"
-                        />
+                    <div className="absolute inset-0 bg-black/20 z-[1]" />
+
+                    {/* Embla Carousel */}
+                    <div className="overflow-hidden h-full relative z-[2]" ref={emblaRef}>
+                      <div className="flex h-full">
+                        {supplierImages.map((img, index) => (
+                          <div key={index} className="flex-[0_0_100%] min-w-0 relative h-full">
+                            <Image
+                              src={img}
+                              alt={`Image ${index + 1}`}
+                              fill
+                              className="object-contain"
+                              sizes="100vw"
+                            />
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {/* Navigation dots for multiple images */}
+                    </div>
+
+                    {/* Navigation arrows */}
                     {supplierImages.length > 1 && (
-                      <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-1.5">
+                      <>
+                        <button
+                          onClick={scrollPrev}
+                          className={`
+                            absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full
+                            shadow-lg flex items-center justify-center active:scale-95
+                            transition-all duration-200 z-20
+                            ${carouselIndex > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                          `}
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-800" />
+                        </button>
+                        <button
+                          onClick={scrollNext}
+                          className={`
+                            absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full
+                            shadow-lg flex items-center justify-center active:scale-95
+                            transition-all duration-200 z-20
+                            ${carouselIndex < supplierImages.length - 1 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                          `}
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-800" />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Navigation dots */}
+                    {supplierImages.length > 1 && (
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                         {supplierImages.map((_, idx) => (
-                          <button
+                          <div
                             key={idx}
-                            onClick={() => setCarouselIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all ${
-                              idx === carouselIndex
-                                ? 'bg-white w-4'
-                                : 'bg-white/50 hover:bg-white/70'
-                            }`}
+                            className={`
+                              w-1.5 h-1.5 rounded-full transition-all duration-200
+                              ${idx === carouselIndex
+                                ? "bg-white"
+                                : "bg-white/50"
+                              }
+                            `}
                           />
                         ))}
                       </div>
                     )}
-                    {/* Swipe areas for navigation */}
-                    {supplierImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setCarouselIndex(prev => prev === 0 ? supplierImages.length - 1 : prev - 1)}
-                          className="absolute left-0 top-0 bottom-0 w-1/4 z-10"
-                          aria-label="Previous image"
-                        />
-                        <button
-                          onClick={() => setCarouselIndex(prev => prev === supplierImages.length - 1 ? 0 : prev + 1)}
-                          className="absolute right-0 top-0 bottom-0 w-1/4 z-10"
-                          aria-label="Next image"
-                        />
-                      </>
-                    )}
+
                     {/* Maximize button */}
                     {supplierImages.length > 0 && (
                       <button
@@ -364,6 +422,7 @@ export default function SupplierQuickViewModal({
                         <span className="text-white text-xs font-medium">View</span>
                       </button>
                     )}
+
                     {/* Image counter */}
                     {supplierImages.length > 1 && (
                       <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full">

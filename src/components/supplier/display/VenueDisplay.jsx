@@ -1,443 +1,176 @@
 // components/supplier/display/VenueDisplay.jsx
+// Tagvenue-inspired professional layout for venue details
 import React, { useState } from 'react';
 import {
   MapPin,
   Users,
   Car,
-  Clock,
-  CheckCircle,
-  Ban,
+  Check,
+  X as XIcon,
   Gift,
   Star,
-  AlertTriangle,
+  AlertCircle,
   Key,
   Music,
-  Truck
+  Truck,
+  Wifi,
+  Wind,
+  Volume2,
+  Sun,
+  ParkingCircle,
+  Accessibility,
+  ExternalLink,
+  CheckCircle
 } from "lucide-react";
 
-// Add this MapWidget component at the top of your VenueDisplay.jsx file
-// Place it right after your imports and before the main VenueDisplay component
-
-
-
+// MapWidget component for Google Maps embed
 const MapWidget = ({ address, venueAddress, venueName }) => {
-  // Determine which address format to use
   const addressData = venueAddress || address;
-
   if (!addressData) return null;
 
-  console.log('Full addressData received:', addressData);
-
-  // Handle different address formats with better formatting
   let addressString;
   let businessQuery = '';
-  
+
   if (venueAddress) {
- 
-    
-    // Clean up the postcode by trimming whitespace
     const cleanPostcode = venueAddress.postcode?.trim();
-    
-    // Build address parts array
     const parts = [
       venueAddress.addressLine1,
       venueAddress.addressLine2,
       venueAddress.city,
       cleanPostcode,
       venueAddress.country
-    ].filter(part => part && part.trim() !== ''); // Remove empty/null/undefined strings
-    
+    ].filter(part => part && part.trim() !== '');
 
-    
     addressString = parts.join(', ');
-
-    
-    // If we have a business name, create a separate business query
     if (venueAddress.businessName && venueAddress.businessName.trim()) {
       businessQuery = venueAddress.businessName.trim();
-
     }
   } else if (address) {
-
-    // Original address format: { street, city, postcode }
     const cleanPostcode = address.postcode?.trim();
     addressString = `${address.street}, ${address.city}, ${cleanPostcode}`;
-
   } else {
-    console.log('No valid address data found');
     return null;
   }
 
-  // Try multiple search strategies
   const queries = [
-    // First try just the address (often more reliable)
     addressString || null,
-    // Then try with business name if available  
     businessQuery && addressString ? `${businessQuery}, ${addressString}` : null,
-    // Finally try with just postcode and city as fallback
-    venueAddress ? `${venueAddress.city}, ${venueAddress.postcode?.trim()}` : 
+    venueAddress ? `${venueAddress.city}, ${venueAddress.postcode?.trim()}` :
                    address ? `${address.city}, ${address.postcode?.trim()}` : null
   ].filter(Boolean);
 
-
-
-  // Use the first (most specific) query for the map
   const primaryQuery = queries[0];
+  if (!primaryQuery) return null;
 
-  
-  if (!primaryQuery) {
-    console.error('No valid query could be generated');
-    return (
-      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <h4 className="font-semibold text-red-900 mb-2">Address Error</h4>
-        <p className="text-red-700">Unable to generate a valid address for mapping.</p>
-      </div>
-    );
-  }
-  
   const encodedAddress = encodeURIComponent(primaryQuery);
-  
-  // Google Maps embed URL
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapSrc = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedAddress}`;
-
-  // Use venue business name if available, otherwise fall back to venueName prop
   const displayName = venueAddress?.businessName || venueName || 'venue';
 
   return (
-    <div className="mt-4">
-      <h4 className="font-semibold text-gray-900 mb-3">Location Map</h4>
-      <div className="rounded-lg overflow-hidden border border-gray-200">
-        <iframe
-          src={mapSrc}
-          width="100%"
-          height="300"
-          style={{ border: 0 }}
-          allowFullScreen=""
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title={`Map showing location of ${displayName}`}
-        />
-      </div>
-      <div className="my-5 flex gap-2">
+    <div className="rounded-xl overflow-hidden border border-gray-200">
+      <iframe
+        src={mapSrc}
+        width="100%"
+        height="280"
+        style={{ border: 0 }}
+        allowFullScreen=""
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        title={`Map showing location of ${displayName}`}
+      />
+      <div className="p-3 bg-gray-50 flex gap-4">
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+          className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1.5 font-medium"
         >
-          <MapPin className="w-4 h-4" />
-          Open in Google Maps
+          <ExternalLink className="w-4 h-4" />
+          Open in Maps
         </a>
         <a
           href={`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+          className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1.5 font-medium"
         >
           <Car className="w-4 h-4" />
           Get Directions
         </a>
       </div>
-      
-   
     </div>
   );
 };
 
+// Section row component - Tagvenue style (label left, content right)
+const SectionRow = ({ label, children, className = "" }) => (
+  <div className={`grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4 md:gap-8 py-6 ${className}`}>
+    <div className="text-gray-900 font-semibold text-base">{label}</div>
+    <div className="text-gray-700">{children}</div>
+  </div>
+);
+
+// Feature item with check or X icon
+const FeatureItem = ({ text, allowed = true, bold = false }) => (
+  <div className="flex items-start gap-2 py-1">
+    {allowed ? (
+      <Check className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
+    ) : (
+      <XIcon className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5 line-through" />
+    )}
+    <span className={`${allowed ? 'text-gray-900' : 'text-gray-400 line-through'} ${bold ? 'font-medium' : ''}`}>
+      {text}
+    </span>
+  </div>
+);
+
+// Capacity icon component
+const CapacityIcon = ({ type }) => {
+  const icons = {
+    standing: (
+      <div className="flex items-end justify-center w-12 h-12 text-gray-400">
+        <svg viewBox="0 0 40 40" className="w-10 h-10">
+          <rect x="5" y="5" width="30" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2" rx="2"/>
+        </svg>
+      </div>
+    ),
+    dining: (
+      <div className="flex items-center justify-center w-12 h-12 text-teal-500">
+        <svg viewBox="0 0 40 40" className="w-10 h-10">
+          <circle cx="20" cy="20" r="8" fill="currentColor" opacity="0.3"/>
+          <circle cx="12" cy="10" r="4" fill="currentColor"/>
+          <circle cx="28" cy="10" r="4" fill="currentColor"/>
+          <circle cx="12" cy="30" r="4" fill="currentColor"/>
+          <circle cx="28" cy="30" r="4" fill="currentColor"/>
+        </svg>
+      </div>
+    ),
+    cabaret: (
+      <div className="flex items-center justify-center w-12 h-12 text-teal-500">
+        <svg viewBox="0 0 40 40" className="w-10 h-10">
+          <circle cx="10" cy="15" r="3" fill="currentColor"/>
+          <circle cx="20" cy="15" r="3" fill="currentColor"/>
+          <circle cx="30" cy="15" r="3" fill="currentColor"/>
+          <circle cx="10" cy="25" r="3" fill="currentColor"/>
+          <circle cx="20" cy="25" r="3" fill="currentColor"/>
+          <circle cx="30" cy="25" r="3" fill="currentColor"/>
+        </svg>
+      </div>
+    )
+  };
+  return icons[type] || icons.standing;
+};
 
 const VenueDisplay = ({
   supplier,
   serviceDetails,
-  // Add-on selection props (optional - for interactive mode)
   selectedAddons = [],
   onToggleAddon,
   isInteractive = false
 }) => {
-
-  // State for expandable sections
+  const [showFullDescription, setShowFullDescription] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
-  const [showAllSetupOptions, setShowAllSetupOptions] = useState(false);
-  const [showAllCateringOptions, setShowAllCateringOptions] = useState(false);
-  const [showAllRestrictions, setShowAllRestrictions] = useState(false);
-  const [showAllRules, setShowAllRules] = useState(false);
-  const [showAllAllowedItems, setShowAllAllowedItems] = useState(false); // NEW: State for allowed items
-
-
-
-  // Helper function to render expandable item list - Airbnb minimal style
-  const renderExpandableBadges = (items, title, _icon, _colorClass, showAll, setShowAll, maxInitial = 6) => {
-    if (!items?.length) return null;
-
-    const displayItems = showAll ? items : items.slice(0, maxInitial);
-    const hasMore = items.length > maxInitial;
-
-    return (
-      <div className="mb-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">
-          {title}
-        </h4>
-
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            {displayItems.map((item, index) => (
-              <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
-                {item}
-              </span>
-            ))}
-          </div>
-
-          {hasMore && (
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
-            >
-              {showAll ? 'Show less' : `Show all ${items.length}`}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to render age groups - Airbnb minimal
-  const renderAgeGroups = (ageGroups) => {
-    if (!ageGroups?.length) return null;
-    return (
-      <div className="mb-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Suitable age groups</h4>
-        <div className="flex flex-wrap gap-2">
-          {ageGroups.map((age, index) => (
-            <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
-              {age}
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to get category icon and color
-  const getCategoryInfo = (category) => {
-    const categories = {
-      service: { icon: <Gift className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
-      access: { icon: <Key className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
-      equipment: { icon: <Music className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
-      premium: { icon: <Star className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
-      logistics: { icon: <Truck className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
-    };
-    return categories[category] || categories.service;
-  };
-
-  // Helper function to render add-on services with horizontal scroll
-  const renderAddOnServices = (addOnServices) => {
-    if (!addOnServices?.length) return null;
-
-    return (
-      <div className="mb-6">
-        <SectionHeader>Additional Services</SectionHeader>
-        <p className="text-base text-gray-600 mb-4">
-          {isInteractive ? 'Tap to add extras to your booking' : 'Optional extras you can add to enhance your booking'}
-        </p>
-
-          {/* Horizontal scrolling container */}
-          <div className="overflow-x-auto pb-2">
-            <div className="flex gap-4 min-w-max">
-              {addOnServices.map((addon, index) => {
-                const categoryInfo = getCategoryInfo(addon.category);
-                const addonId = addon.id || `addon-${index}`;
-                const isSelected = selectedAddons.some(a => (a.id || a) === addonId);
-
-                return (
-                  <div
-                    key={addonId}
-                    className={`flex-shrink-0 w-72 rounded-xl overflow-hidden transition-all shadow-sm ${
-                      isSelected
-                        ? 'ring-2 ring-green-500 shadow-green-100'
-                        : 'ring-1 ring-gray-200 hover:ring-primary-300 hover:shadow-md'
-                    }`}
-                  >
-                    {/* Card content */}
-                    <div className={`p-4 ${isSelected ? 'bg-green-50' : 'bg-white'}`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`${isSelected ? 'text-green-500' : 'text-primary-500'}`}>
-                            {categoryInfo.icon}
-                          </div>
-                          <h4 className="font-semibold text-gray-900">{addon.name}</h4>
-                        </div>
-                        <span className={`font-bold text-lg ${isSelected ? 'text-green-600' : 'text-primary-600'}`}>
-                          +£{addon.price}
-                        </span>
-                      </div>
-                      {addon.description && (
-                        <p className="text-gray-600 text-sm mt-2">{addon.description}</p>
-                      )}
-                      <div className="mt-3">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          isSelected
-                            ? 'text-green-700 bg-green-100'
-                            : 'text-gray-600 bg-gray-100'
-                        }`}>
-                          {addon.category === 'service' && 'Additional Service'}
-                          {addon.category === 'access' && 'Facility Access'}
-                          {addon.category === 'equipment' && 'Equipment Rental'}
-                          {addon.category === 'premium' && 'Premium Upgrade'}
-                          {addon.category === 'logistics' && 'Logistics'}
-                          {!addon.category && 'Extra'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* CTA Button - only show when interactive */}
-                    {isInteractive && (
-                      <button
-                        onClick={() => onToggleAddon && onToggleAddon(addon)}
-                        className={`w-full py-3 px-4 font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                          isSelected
-                            ? 'bg-green-500 hover:bg-green-600 text-white'
-                            : 'bg-primary-500 hover:bg-primary-600 text-white'
-                        }`}
-                      >
-                        {isSelected ? (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            Added to Booking
-                          </>
-                        ) : (
-                          <>
-                            Add to Booking
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Scroll indicator */}
-          {addOnServices.length > 2 && (
-            <p className="text-sm text-gray-500 mt-2 text-center">
-              Scroll horizontally to see all {addOnServices.length} services
-            </p>
-          )}
-      </div>
-    );
-  };
-
-  // NEW: Helper function to render allowed items
-  const renderAllowedItems = (allowedItems) => {
-    if (!allowedItems?.length) return null;
-    
-    const displayItems = showAllAllowedItems ? allowedItems : allowedItems.slice(0, 8);
-    const hasMore = allowedItems.length > 8;
-
-    return (
-      <div className="mb-6">
-        <SectionHeader>Items We Welcome</SectionHeader>
-        <p className="text-sm text-gray-500 mb-4">These items and equipment are welcome at our venue</p>
-
-        <div className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
-            {displayItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 py-1">
-                <CheckCircle className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0" />
-                <span className="text-gray-700">{item}</span>
-              </div>
-            ))}
-          </div>
-
-          {hasMore && (
-            <button
-              onClick={() => setShowAllAllowedItems(!showAllAllowedItems)}
-              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
-            >
-              {showAllAllowedItems ? 'Show less' : `Show all ${allowedItems.length}`}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to render restricted items (simplified colors)
-  const renderRestrictedItems = (restrictedItems) => {
-    if (!restrictedItems?.length) return null;
-    
-    const displayItems = showAllRestrictions ? restrictedItems : restrictedItems.slice(0, 8);
-    const hasMore = restrictedItems.length > 8;
-
-    return (
-      <div className="mb-6">
-        <SectionHeader>Items Not Permitted</SectionHeader>
-        <p className="text-sm text-gray-500 mb-4">Please note these items are not allowed at this venue</p>
-
-        <div className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
-            {displayItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 py-1">
-                <Ban className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-600">{item}</span>
-              </div>
-            ))}
-          </div>
-
-          {hasMore && (
-            <button
-              onClick={() => setShowAllRestrictions(!showAllRestrictions)}
-              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
-            >
-              {showAllRestrictions ? 'Show less' : `Show all ${restrictedItems.length}`}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to render house rules (simplified colors)
-  const renderHouseRules = (houseRules) => {
-    if (!houseRules?.length) return null;
-    
-    const displayRules = showAllRules ? houseRules : houseRules.slice(0, 6);
-    const hasMore = houseRules.length > 6;
-
-    return (
-      <div className="mb-6">
-        <SectionHeader>House Rules</SectionHeader>
-        <p className="text-sm text-gray-500 mb-4">Please follow these important venue guidelines</p>
-
-        <div className="space-y-2">
-          <div className="space-y-1">
-            {displayRules.map((rule, index) => (
-              <div key={index} className="flex items-start gap-2 py-1">
-                <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">{rule}</span>
-              </div>
-            ))}
-          </div>
-
-          {hasMore && (
-            <button
-              onClick={() => setShowAllRules(!showAllRules)}
-              className="text-gray-500 hover:text-gray-900 text-sm font-medium underline"
-            >
-              {showAllRules ? 'Show less' : `Show all ${houseRules.length}`}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Consistent section header style - Airbnb minimal
-  const SectionHeader = ({ children }) => (
-    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-      {children}
-    </h2>
-  );
 
   // Get highlights from multiple possible locations
   const highlights = serviceDetails.highlights ||
@@ -445,217 +178,514 @@ const VenueDisplay = ({
                      supplier?.data?.highlights ||
                      [];
 
+  // Get address
+  const venueAddress = supplier?.venueAddress || serviceDetails?.venueAddress;
+  const ownerAddress = supplier?.owner?.address;
+
+  const getAddressString = () => {
+    if (venueAddress) {
+      const parts = [
+        venueAddress.addressLine1,
+        venueAddress.addressLine2,
+        venueAddress.city,
+        venueAddress.postcode
+      ].filter(p => p && p.trim());
+      return parts.join(', ');
+    }
+    if (ownerAddress) {
+      return `${ownerAddress.street}, ${ownerAddress.city}, ${ownerAddress.postcode}`;
+    }
+    return null;
+  };
+
+  // Get capacity data
+  const capacity = serviceDetails.capacity;
+  const hasCapacity = capacity && (capacity.max || capacity.seated || capacity.standing);
+
+  // Get policies
+  const policies = serviceDetails.policies || {};
+
+  // Determine catering features
+  const cateringOptions = serviceDetails.cateringOptions || [];
+  const hasInHouseCatering = cateringOptions.some(o =>
+    o.toLowerCase().includes('in-house') || o.toLowerCase().includes('catering available')
+  );
+  const hasExternalCatering = cateringOptions.some(o =>
+    o.toLowerCase().includes('external') || o.toLowerCase().includes('outside food')
+  ) || policies.ownFood;
+  const hasKitchenAccess = cateringOptions.some(o =>
+    o.toLowerCase().includes('kitchen')
+  ) || serviceDetails.equipment?.kitchen;
+  const hasBar = cateringOptions.some(o =>
+    o.toLowerCase().includes('bar') || o.toLowerCase().includes('alcohol')
+  ) || policies.alcohol || serviceDetails.equipment?.bar;
+
+  // Build facilities list with icons
+  const getFacilityIcon = (facility) => {
+    const lower = facility.toLowerCase();
+    if (lower.includes('wifi') || lower.includes('internet')) return <Wifi className="w-4 h-4" />;
+    if (lower.includes('air') || lower.includes('conditioning')) return <Wind className="w-4 h-4" />;
+    if (lower.includes('sound') || lower.includes('pa') || lower.includes('speaker')) return <Volume2 className="w-4 h-4" />;
+    if (lower.includes('light') || lower.includes('natural')) return <Sun className="w-4 h-4" />;
+    if (lower.includes('parking')) return <ParkingCircle className="w-4 h-4" />;
+    if (lower.includes('access') || lower.includes('wheelchair')) return <Accessibility className="w-4 h-4" />;
+    return <Check className="w-4 h-4" />;
+  };
+
+  // Get add-on category info
+  const getCategoryInfo = (category) => {
+    const categories = {
+      service: { icon: <Gift className="w-4 h-4" />, label: "Additional Service" },
+      access: { icon: <Key className="w-4 h-4" />, label: "Facility Access" },
+      equipment: { icon: <Music className="w-4 h-4" />, label: "Equipment Rental" },
+      premium: { icon: <Star className="w-4 h-4" />, label: "Premium Upgrade" },
+      logistics: { icon: <Truck className="w-4 h-4" />, label: "Logistics" },
+    };
+    return categories[category] || categories.service;
+  };
+
   return (
-    <div className="space-y-8">
-      {/* About Us Section */}
+    <div className="divide-y divide-gray-200">
+
+      {/* About this space */}
       {serviceDetails.aboutUs && (
-        <div className="mb-6">
-          <SectionHeader>About Our Venue</SectionHeader>
-          <p className="text-base text-gray-700 leading-relaxed">{serviceDetails.aboutUs}</p>
-        </div>
+        <>
+          <SectionRow label="About this space">
+            <div>
+              <p className={`text-gray-700 leading-relaxed ${!showFullDescription && serviceDetails.aboutUs.length > 300 ? 'line-clamp-4' : ''}`}>
+                {serviceDetails.aboutUs}
+              </p>
+              {serviceDetails.aboutUs.length > 300 && (
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="text-teal-600 hover:text-teal-700 font-medium text-sm mt-2 flex items-center gap-1"
+                >
+                  {showFullDescription ? (
+                    <>- Show less</>
+                  ) : (
+                    <>+ Show more</>
+                  )}
+                </button>
+              )}
+            </div>
+          </SectionRow>
+        </>
       )}
 
-      {/* Venue Information */}
-      <div className="mb-6">
-        <SectionHeader>Venue Information</SectionHeader>
-          
-          {/* Capacity - Minimal inline */}
-          {serviceDetails.capacity && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 text-gray-700">
-                <Users className="w-4 h-4 text-gray-400" />
-                <span className="font-medium">
-                  Up to {serviceDetails.capacity?.max || serviceDetails.capacity?.min || '—'} guests
-                </span>
-                {serviceDetails.capacity?.seated && (
-                  <span className="text-gray-500">· {serviceDetails.capacity.seated} seated</span>
-                )}
-                {serviceDetails.capacity?.standing && (
-                  <span className="text-gray-500">· {serviceDetails.capacity.standing} standing</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            {serviceDetails.venueType && (
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-2">Venue Type</h4>
-                <p className="text-base text-gray-700">{serviceDetails.venueType}</p>
+      {/* Capacity */}
+      {hasCapacity && (
+        <SectionRow label="Capacity">
+          <div className="flex flex-wrap gap-8">
+            {capacity.standing && (
+              <div className="flex items-center gap-3">
+                <CapacityIcon type="standing" />
+                <div>
+                  <div className="text-gray-500 text-sm">Standing</div>
+                  <div className="font-semibold text-gray-900">up to {capacity.standing}</div>
+                </div>
               </div>
             )}
-
-            {serviceDetails.availability?.minimumBookingHours && (
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-2 flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Minimum Booking
-                </h4>
-                <p className="text-base text-gray-700">{serviceDetails.availability.minimumBookingHours} hours</p>
+            {capacity.seated && (
+              <div className="flex items-center gap-3">
+                <CapacityIcon type="dining" />
+                <div>
+                  <div className="text-gray-500 text-sm">Dining</div>
+                  <div className="font-semibold text-gray-900">up to {capacity.seated}</div>
+                </div>
               </div>
             )}
-
-            {/* Tables & Chairs */}
-            {(serviceDetails.equipment?.tables || serviceDetails.equipment?.chairs) && (
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-2">Tables & Chairs</h4>
-                <div className="text-base text-gray-700">
-                  {serviceDetails.equipment.tables && <p>{serviceDetails.equipment.tables} tables</p>}
-                  {serviceDetails.equipment.chairs && <p>{serviceDetails.equipment.chairs} chairs</p>}
+            {capacity.max && !capacity.seated && !capacity.standing && (
+              <div className="flex items-center gap-3">
+                <Users className="w-8 h-8 text-teal-500" />
+                <div>
+                  <div className="text-gray-500 text-sm">Maximum</div>
+                  <div className="font-semibold text-gray-900">up to {capacity.max}</div>
                 </div>
               </div>
             )}
           </div>
+        </SectionRow>
+      )}
 
-          {/* Facilities with expandable layout */}
-          {renderExpandableBadges(
-            serviceDetails.facilities,
-            "Available Facilities",
-            null,
-            null,
-            showAllFacilities,
-            setShowAllFacilities,
-            8
-          )}
+      {/* Catering and drinks */}
+      {(cateringOptions.length > 0 || hasBar || hasKitchenAccess) && (
+        <SectionRow label="Catering and drinks">
+          <div className="space-y-4">
+            {/* Main catering options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+              {hasInHouseCatering && (
+                <FeatureItem text="In-house catering available" allowed={true} bold={true} />
+              )}
+              {hasKitchenAccess && (
+                <FeatureItem text="Kitchen access available" allowed={true} />
+              )}
+              {hasExternalCatering ? (
+                <FeatureItem text="External catering allowed" allowed={true} />
+              ) : (
+                <FeatureItem text="No external catering allowed" allowed={false} />
+              )}
+              {hasBar && (
+                <FeatureItem text="Venue provides alcohol" allowed={true} bold={true} />
+              )}
+              {policies.alcohol === false && (
+                <FeatureItem text="No BYO alcohol allowed" allowed={false} />
+              )}
+            </div>
 
-          {/* Setup Options with expandable layout */}
-          {renderExpandableBadges(
-            serviceDetails.setupOptions,
-            "Setup Options",
-            null,
-            null,
-            showAllSetupOptions,
-            setShowAllSetupOptions,
-            6
-          )}
-
-          {/* Catering Options with expandable layout */}
-          {renderExpandableBadges(
-            serviceDetails.cateringOptions,
-            "Catering Options",
-            null,
-            null,
-            showAllCateringOptions,
-            setShowAllCateringOptions,
-            6
-          )}
-
-          {renderAgeGroups(serviceDetails.ageGroups)}
-      </div>
-
-      {/* Location & Access */}
-      {(supplier?.owner?.address || supplier?.venueAddress || serviceDetails?.venueAddress || serviceDetails?.venueDetails) && (
-        <div className="mb-6">
-          <SectionHeader>Location & Access</SectionHeader>
-
-            {supplier?.owner?.address && (
-              <div className="mb-4">
-                <h4 className="font-bold text-lg text-gray-900 mb-2">Address</h4>
-                <p className="text-base text-gray-700">
-                  {supplier.owner.address.street}, {supplier.owner.address.city}, {supplier.owner.address.postcode}
-                </p>
+            {/* Additional catering details */}
+            {cateringOptions.length > 0 && (
+              <div className="pt-2">
+                {cateringOptions.filter(o =>
+                  !o.toLowerCase().includes('in-house') &&
+                  !o.toLowerCase().includes('external') &&
+                  !o.toLowerCase().includes('kitchen') &&
+                  !o.toLowerCase().includes('bar')
+                ).map((option, idx) => (
+                  <FeatureItem key={idx} text={option} allowed={true} />
+                ))}
               </div>
             )}
-            {(supplier?.venueAddress || serviceDetails?.venueAddress) && (
-               <div className="mb-4">
-               <h4 className="font-bold text-lg text-gray-900 mb-2">Address</h4>
-               {(() => {
-                 const addr = supplier?.venueAddress || serviceDetails?.venueAddress;
-                 const parts = [
-                   addr?.addressLine1,
-                   addr?.addressLine2,
-                   addr?.city,
-                   addr?.postcode
-                 ].filter(p => p && p.trim());
-                 return <p className="text-base text-gray-700">{parts.join(', ')}</p>;
-               })()}
-             </div>
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Facilities */}
+      {serviceDetails.facilities?.length > 0 && (
+        <SectionRow label="Facilities">
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+              {(showAllFacilities ? serviceDetails.facilities : serviceDetails.facilities.slice(0, 6)).map((facility, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-gray-700">
+                  <span className="text-teal-500">{getFacilityIcon(facility)}</span>
+                  <span>{facility}</span>
+                </div>
+              ))}
+            </div>
+            {serviceDetails.facilities.length > 6 && (
+              <button
+                onClick={() => setShowAllFacilities(!showAllFacilities)}
+                className="text-teal-600 hover:text-teal-700 font-medium text-sm mt-3 flex items-center gap-1"
+              >
+                {showAllFacilities ? (
+                  <>- Show less</>
+                ) : (
+                  <>+ Show all {serviceDetails.facilities.length} facilities</>
+                )}
+              </button>
             )}
-            {/* Add the map widget */}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Rules of the space */}
+      {(serviceDetails.houseRules?.length > 0 || serviceDetails.restrictedItems?.length > 0 || serviceDetails.allowedItems?.length > 0) && (
+        <SectionRow label="Rules of the space">
+          <div className="space-y-6">
+            {/* Allowed items */}
+            {serviceDetails.allowedItems?.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Items welcome</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+                  {serviceDetails.allowedItems.map((item, idx) => (
+                    <FeatureItem key={idx} text={item} allowed={true} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Restricted items */}
+            {serviceDetails.restrictedItems?.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Not permitted</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+                  {serviceDetails.restrictedItems.map((item, idx) => (
+                    <FeatureItem key={idx} text={item} allowed={false} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* House rules */}
+            {serviceDetails.houseRules?.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">House rules</h4>
+                <div className="space-y-1">
+                  {serviceDetails.houseRules.map((rule, idx) => (
+                    <div key={idx} className="flex items-start gap-2 py-1">
+                      <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{rule}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Accessibility */}
+      {serviceDetails.facilities?.some(f =>
+        f.toLowerCase().includes('access') ||
+        f.toLowerCase().includes('wheelchair') ||
+        f.toLowerCase().includes('lift') ||
+        f.toLowerCase().includes('ground')
+      ) && (
+        <SectionRow label="Accessibility">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+            {serviceDetails.facilities.filter(f =>
+              f.toLowerCase().includes('access') ||
+              f.toLowerCase().includes('wheelchair') ||
+              f.toLowerCase().includes('lift') ||
+              f.toLowerCase().includes('ground') ||
+              f.toLowerCase().includes('toilet') ||
+              f.toLowerCase().includes('parking')
+            ).map((facility, idx) => (
+              <FeatureItem key={idx} text={facility} allowed={true} />
+            ))}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Booking info */}
+      {(serviceDetails.availability?.minimumBookingHours || serviceDetails.pricing?.setupTime || serviceDetails.pricing?.cleanupTime) && (
+        <SectionRow label="Booking info">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {serviceDetails.availability?.minimumBookingHours && (
+              <div>
+                <div className="text-gray-500 text-sm">Minimum booking</div>
+                <div className="font-medium text-gray-900">{serviceDetails.availability.minimumBookingHours} hours</div>
+              </div>
+            )}
+            {serviceDetails.pricing?.setupTime && (
+              <div>
+                <div className="text-gray-500 text-sm">Setup time included</div>
+                <div className="font-medium text-gray-900">{serviceDetails.pricing.setupTime} minutes</div>
+              </div>
+            )}
+            {serviceDetails.pricing?.cleanupTime && (
+              <div>
+                <div className="text-gray-500 text-sm">Cleanup time included</div>
+                <div className="font-medium text-gray-900">{serviceDetails.pricing.cleanupTime} minutes</div>
+              </div>
+            )}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Location */}
+      {(venueAddress || ownerAddress || serviceDetails.venueDetails) && (
+        <SectionRow label="Location">
+          <div className="space-y-4">
+            {/* Address */}
+            {getAddressString() && (
+              <div className="flex items-start gap-2">
+                <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-gray-900 font-medium">{getAddressString()}</p>
+                  {(venueAddress?.city || ownerAddress?.city) && (
+                    <p className="text-gray-500 text-sm">{venueAddress?.city || ownerAddress?.city}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Map */}
             <MapWidget
-              venueAddress={supplier?.venueAddress || serviceDetails?.venueAddress}
-              address={supplier?.owner?.address}
+              venueAddress={venueAddress}
+              address={ownerAddress}
               venueName={supplier?.businessName || supplier?.name}
             />
 
+            {/* Additional location details */}
             {serviceDetails.venueDetails && (
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 {serviceDetails.venueDetails.parkingInfo && (
                   <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2 flex items-center gap-2">
-                      <Car className="w-5 h-5" />
+                    <div className="flex items-center gap-2 text-gray-900 font-medium mb-1">
+                      <Car className="w-4 h-4 text-gray-400" />
                       Parking
-                    </h4>
-                    <p className="text-base text-gray-700">{serviceDetails.venueDetails.parkingInfo}</p>
+                    </div>
+                    <p className="text-gray-600 text-sm">{serviceDetails.venueDetails.parkingInfo}</p>
                   </div>
                 )}
-
-                {serviceDetails.venueDetails.accessInstructions && (
-                  <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2">Access Instructions</h4>
-                    <p className="text-base text-gray-700">{serviceDetails.venueDetails.accessInstructions}</p>
-                  </div>
-                )}
-
                 {serviceDetails.venueDetails.nearestStation && (
                   <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2">Nearest Station</h4>
-                    <p className="text-base text-gray-700">{serviceDetails.venueDetails.nearestStation}</p>
+                    <div className="text-gray-900 font-medium mb-1">Nearest station</div>
+                    <p className="text-gray-600 text-sm">{serviceDetails.venueDetails.nearestStation}</p>
                   </div>
                 )}
-
-                {serviceDetails.venueDetails.landmarks && (
-                  <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2">Local Landmarks</h4>
-                    <p className="text-base text-gray-700">{serviceDetails.venueDetails.landmarks}</p>
+                {serviceDetails.venueDetails.accessInstructions && (
+                  <div className="sm:col-span-2">
+                    <div className="text-gray-900 font-medium mb-1">Access instructions</div>
+                    <p className="text-gray-600 text-sm">{serviceDetails.venueDetails.accessInstructions}</p>
                   </div>
                 )}
               </div>
             )}
-        </div>
+          </div>
+        </SectionRow>
       )}
 
-      {/* Items We Welcome */}
-      {renderAllowedItems(serviceDetails.allowedItems)}
+      {/* Additional Services / Add-ons */}
+      {serviceDetails.addOnServices?.length > 0 && (
+        <SectionRow label="Additional services">
+          <div>
+            <p className="text-gray-600 mb-4">
+              {isInteractive ? 'Tap to add extras to your booking' : 'Optional extras available with your booking'}
+            </p>
 
-      {/* Restricted Items - Simplified colors */}
-      {renderRestrictedItems(serviceDetails.restrictedItems)}
+            {/* Horizontal scrolling container */}
+            <div className="overflow-x-auto pb-2 -mx-4 px-4">
+              <div className="flex gap-4 min-w-max">
+                {serviceDetails.addOnServices.map((addon, index) => {
+                  const categoryInfo = getCategoryInfo(addon.category);
+                  const addonId = addon.id || `addon-${index}`;
+                  const isSelected = selectedAddons.some(a => (a.id || a) === addonId);
 
-      {/* House Rules - Simplified colors */}
-      {renderHouseRules(serviceDetails.houseRules)}
+                  return (
+                    <div
+                      key={addonId}
+                      className={`flex-shrink-0 w-64 rounded-xl border transition-all ${
+                        isSelected
+                          ? 'border-teal-500 bg-teal-50 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={isSelected ? 'text-teal-600' : 'text-gray-400'}>
+                              {categoryInfo.icon}
+                            </span>
+                            <h4 className="font-semibold text-gray-900 text-sm">{addon.name}</h4>
+                          </div>
+                          <span className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-900'}`}>
+                            +£{addon.price}
+                          </span>
+                        </div>
+                        {addon.description && (
+                          <p className="text-gray-600 text-sm line-clamp-2">{addon.description}</p>
+                        )}
+                      </div>
 
-      {/* Add-On Services */}
-      {renderAddOnServices(serviceDetails.addOnServices)}
+                      {/* CTA Button - only show when interactive */}
+                      {isInteractive && (
+                        <button
+                          onClick={() => onToggleAddon && onToggleAddon(addon)}
+                          className={`w-full py-2.5 px-4 font-medium text-sm transition-all flex items-center justify-center gap-2 border-t ${
+                            isSelected
+                              ? 'bg-teal-500 text-white border-teal-500'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              Added
+                            </>
+                          ) : (
+                            'Add to booking'
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {serviceDetails.addOnServices.length > 2 && (
+              <p className="text-sm text-gray-500 mt-2">
+                Scroll to see all {serviceDetails.addOnServices.length} services →
+              </p>
+            )}
+          </div>
+        </SectionRow>
+      )}
 
       {/* Special Features */}
       {serviceDetails.specialFeatures && (
-        <div className="mb-6">
-          <SectionHeader>Special Features</SectionHeader>
-          <p className="text-base text-gray-700 leading-relaxed">{serviceDetails.specialFeatures}</p>
-        </div>
+        <SectionRow label="Special features">
+          <p className="text-gray-700 leading-relaxed">{serviceDetails.specialFeatures}</p>
+        </SectionRow>
       )}
 
-      {/* Legacy Support */}
-      {serviceDetails.aboutService && (
-        <div className="mb-6">
-          <SectionHeader>About This Venue</SectionHeader>
-          <p className="text-base text-gray-700 leading-relaxed">{serviceDetails.aboutService}</p>
-        </div>
-      )}
-
-      {/* What We Love Section - at the bottom */}
+      {/* What We Love / Highlights */}
       {highlights.length > 0 && (
-        <div className="mb-6">
-          <SectionHeader>What We Love</SectionHeader>
-          <div className="space-y-3">
+        <SectionRow label="What we love">
+          <div className="space-y-2">
             {highlights.map((highlight, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <Star className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+              <div key={index} className="flex items-start gap-2">
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-gray-700">{highlight}</p>
               </div>
             ))}
           </div>
-        </div>
+        </SectionRow>
+      )}
+
+      {/* Venue Type - only show if we have type but no other info displayed it */}
+      {serviceDetails.venueType && !hasCapacity && (
+        <SectionRow label="Venue type">
+          <span className="text-gray-900">{serviceDetails.venueType}</span>
+        </SectionRow>
+      )}
+
+      {/* Equipment */}
+      {(serviceDetails.equipment?.tables || serviceDetails.equipment?.chairs) && (
+        <SectionRow label="Equipment included">
+          <div className="flex flex-wrap gap-6">
+            {serviceDetails.equipment.tables && (
+              <div className="text-gray-700">
+                <span className="font-medium">{serviceDetails.equipment.tables}</span> tables
+              </div>
+            )}
+            {serviceDetails.equipment.chairs && (
+              <div className="text-gray-700">
+                <span className="font-medium">{serviceDetails.equipment.chairs}</span> chairs
+              </div>
+            )}
+            {serviceDetails.equipment.soundSystem && (
+              <div className="text-gray-700">Sound system</div>
+            )}
+            {serviceDetails.equipment.projector && (
+              <div className="text-gray-700">Projector</div>
+            )}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Setup Options */}
+      {serviceDetails.setupOptions?.length > 0 && (
+        <SectionRow label="Setup options">
+          <div className="flex flex-wrap gap-2">
+            {serviceDetails.setupOptions.map((option, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">
+                {option}
+              </span>
+            ))}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Age Groups */}
+      {serviceDetails.ageGroups?.length > 0 && (
+        <SectionRow label="Suitable for">
+          <div className="flex flex-wrap gap-2">
+            {serviceDetails.ageGroups.map((age, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm font-medium">
+                {age}
+              </span>
+            ))}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Legacy Support - About Service */}
+      {serviceDetails.aboutService && !serviceDetails.aboutUs && (
+        <SectionRow label="About this venue">
+          <p className="text-gray-700 leading-relaxed">{serviceDetails.aboutService}</p>
+        </SectionRow>
       )}
     </div>
   );

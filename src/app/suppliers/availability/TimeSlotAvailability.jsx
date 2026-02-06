@@ -680,19 +680,12 @@ const TimeSlotAvailabilityContent = ({
       console.log('🗓️ Total aggregated blocked dates:', allDates.length)
       return allDates
     } else {
-      // Show only the selected business's unavailable dates
-      const selectedBusiness = businesses?.find(b => b.id === selectedCalendarBusiness)
-      if (selectedBusiness) {
-        const dates = migrateDateArray(selectedBusiness.data?.unavailableDates) || []
-        console.log(`🗓️ Selected business ${selectedBusiness.name || selectedBusiness.business_name}: ${dates.length} blocked dates`)
-        return dates
-      }
-      // Fallback to primary business
-      const fallbackDates = migrateDateArray(currentSupplier?.unavailableDates) || []
-      console.log('🗓️ Using fallback (currentSupplier):', fallbackDates.length, 'blocked dates')
-      return fallbackDates
+      // When viewing a specific business, use the local unavailableDates state
+      // This ensures manual blocks are immediately reflected in the UI
+      console.log(`🗓️ Using local unavailableDates state: ${unavailableDates?.length} blocked dates`)
+      return unavailableDates
     }
-  }, [selectedCalendarBusiness, businesses, currentSupplier])
+  }, [selectedCalendarBusiness, businesses, unavailableDates])
 
   // Show loading skeleton when switching between businesses
   useEffect(() => {
@@ -874,9 +867,16 @@ const TimeSlotAvailabilityContent = ({
     return filteredUnavailableDates.find((item) => item.date === dateStr)
   }
 
-  // Get blocked slots for a date
+  // Get blocked slots for a date (for calendar display)
   const getBlockedSlots = (date) => {
     return getBlockedDateInfo(date)?.timeSlots || []
+  }
+
+  // Get blocked slots from local state (for modal - always reflects current edits)
+  const getLocalBlockedSlots = (date) => {
+    const dateStr = dateToLocalString(date)
+    const found = unavailableDates.find((item) => item.date === dateStr)
+    return found?.timeSlots || []
   }
 
   // Check if a blocked date is a PartySnap booking (has "Party" in title)
@@ -1062,11 +1062,12 @@ const TimeSlotAvailabilityContent = ({
       const hasBooking = !!booking
 
       // Handle click - bookings open modal, available dates open time slot picker
+      // Only allow blocking when a specific business is selected (not "all")
       const handleClick = () => {
         if (isPast) return
         if (hasBooking) {
           setSelectedBooking(booking)
-        } else if (!isNonWorkingDay) {
+        } else if (!isNonWorkingDay && selectedCalendarBusiness !== 'all') {
           setSelectedDate(date)
         }
       }
@@ -1214,11 +1215,12 @@ const TimeSlotAvailabilityContent = ({
       // Get business color for booking
       const bookingColor = booking?.businessColor || BUSINESS_COLORS[0]
 
+      // Only allow blocking when a specific business is selected (not "all")
       const handleClick = () => {
         if (isPast) return
         if (hasBooking) {
           setSelectedBooking(booking)
-        } else if (!isNonWorkingDay) {
+        } else if (!isNonWorkingDay && selectedCalendarBusiness !== 'all') {
           setSelectedDate(date)
         }
       }
@@ -1853,7 +1855,7 @@ const TimeSlotAvailabilityContent = ({
       {selectedDate && (
         <TimeSlotModal
           date={selectedDate}
-          blockedSlots={getBlockedSlots(selectedDate)}
+          blockedSlots={getLocalBlockedSlots(selectedDate)}
           onToggle={handleTimeSlotToggle}
           onClose={() => setSelectedDate(null)}
         />

@@ -1782,9 +1782,9 @@ export default function SupplierCustomizationModal({
         className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[85vh] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">
+        <div className="p-4 sm:p-5 flex items-center justify-between flex-shrink-0 bg-white border-b border-gray-200">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-white/30 shadow-sm flex-shrink-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
               <Image
                 src={typeof supplier.image === 'object' ? supplier.image.src : (supplier.image || supplier.imageUrl || "/placeholder.png")}
                 alt={supplier.name}
@@ -1794,25 +1794,16 @@ export default function SupplierCustomizationModal({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2">
-                {supplierTypeDetection.isCake && <span className="flex-shrink-0">🎂</span>}
-                {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />}
-                {supplierTypeDetection.isBalloons && <span className="flex-shrink-0">🎈</span>}
-                {supplierTypeDetection.isFacePainting && <span className="flex-shrink-0">🎨</span>}
-                {supplierTypeDetection.isCatering && <span className="flex-shrink-0">🍱</span>}
-                {supplierTypeDetection.isSweetTreats && <span className="flex-shrink-0">🍭</span>}
-                {supplierTypeDetection.isDecorations && <span className="flex-shrink-0">🎊</span>}
-                {supplierTypeDetection.isEntertainment && <span className="flex-shrink-0">🎭</span>}
-                {supplierTypeDetection.isVenue && <span className="flex-shrink-0">🏠</span>}
-                <span className="truncate">{supplier.name || supplier.data?.name || 'Supplier'}</span>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                {supplier.name || supplier.data?.name || 'Supplier'}
               </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+            className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
@@ -3324,22 +3315,6 @@ export default function SupplierCustomizationModal({
             {console.log('🏠 [Venue Check] isVenue:', supplierTypeDetection.isVenue, 'packages:', packages.length)}
             {supplierTypeDetection.isVenue && (
               <section className="space-y-6">
-                {/* Party date pricing indicator */}
-                {effectivePartyDetails?.date && (
-                  <div className={`px-4 py-2.5 rounded-lg text-sm ${
-                    isWeekendParty
-                      ? "bg-amber-50 text-amber-800 border border-amber-200"
-                      : "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                  }`}>
-                    <span className="font-medium">
-                      {isWeekendParty ? "Weekend pricing" : "Weekday pricing"}
-                    </span>
-                    <span className="ml-1 opacity-75">
-                      ({isWeekendParty ? "Fri-Sat rates apply" : "Sun-Thu rates apply"})
-                    </span>
-                  </div>
-                )}
-
                 {/* Room Package Cards - Grid like party bags */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {packages.map((pkg, index) => {
@@ -3393,11 +3368,6 @@ export default function SupplierCustomizationModal({
                             <span className="text-2xl font-bold text-[hsl(var(--primary-500))]">
                               £{displayPrice}
                             </span>
-                            {hasWeekendPricing && (
-                              <span className="text-sm text-gray-500 ml-2">
-                                {isWeekendParty ? `(£${pkg.price} weekdays)` : `(£${pkg.weekendPrice} weekends)`}
-                              </span>
-                            )}
                           </div>
 
                           {/* Capacity & Duration */}
