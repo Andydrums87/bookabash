@@ -114,7 +114,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
       style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         style={{ touchAction: 'auto' }}
@@ -128,7 +128,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
             className="object-contain"
           />
           {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
           <button
             onClick={onClose}
@@ -139,22 +139,22 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
 
           {/* Package info directly on image */}
           <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10">
-            <h2 className="text-xl sm:text-3xl font-bold text-white drop-shadow-lg mb-2">{pkg.name}</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold text-white mb-1">{pkg.name}</h2>
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <div>
-                <span className="text-2xl sm:text-4xl font-black text-white drop-shadow-lg">
+                <span className="text-2xl sm:text-3xl font-bold text-white">
                   £{displayPrice}
                 </span>
               </div>
               {isCake && feedsInfo && (
-                <div className="flex items-center text-white text-sm sm:text-base drop-shadow-md">
-                  <span className="font-semibold">Feeds {feedsInfo} people</span>
+                <div className="flex items-center text-white/90 text-sm sm:text-base">
+                  <span className="font-medium">Feeds {feedsInfo} people</span>
                 </div>
               )}
               {!isPartyBags && !isCake && (
-                <div className="flex items-center text-white text-sm sm:text-base drop-shadow-md">
+                <div className="flex items-center text-white/90 text-sm sm:text-base">
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" />
-                  <span className="font-semibold">{formattedDuration || pkg.duration}</span>
+                  <span className="font-medium">{formattedDuration || pkg.duration}</span>
                 </div>
               )}
             </div>
@@ -167,7 +167,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
           {isCake && cakeDescription && (
             <div className="mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">About This Cake</h3>
-              <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                 <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed">
                   {cakeDescription}
                 </div>
@@ -181,7 +181,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Available Flavours</h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {cakeFlavours.map((flavour, i) => (
-                  <span key={i} className="bg-[hsl(var(--primary-500))] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-md">
                     {flavour}
                   </span>
                 ))}
@@ -209,7 +209,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">What's Included</h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {pkg.features.map((item, i) => (
-                  <span key={i} className="bg-[hsl(var(--primary-500))] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-md">
                     {item}
                   </span>
                 ))}
@@ -221,7 +221,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
           {!isCake && pkg.description && (
             <div className="mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Package Details</h3>
-              <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                 <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed">
                   {pkg.description}
                 </div>
@@ -1781,7 +1781,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[85vh] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
+        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-2xl sm:rounded-xl max-w-3xl w-full md:max-h-[85vh] max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom sm:fade-in duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-5 flex items-center justify-between flex-shrink-0 bg-white border-b border-gray-200">
@@ -1889,25 +1889,18 @@ export default function SupplierCustomizationModal({
                           <div
                             key={pkg.id}
                             onClick={() => setSelectedPackageId(pkg.id)}
-                            className={`relative flex-shrink-0 w-[150px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            className={`relative flex-shrink-0 w-[150px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
                               isSelected
-                                ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                                : "border-[hsl(var(--primary-100))] hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                                ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                                : "border-gray-200 hover:border-gray-300"
                             }`}
                           >
-                            {/* Top colored section */}
-                            <div
-                              className="px-4 py-3"
-                              style={{
-                                background: isSelected
-                                  ? 'linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-600)))'
-                                  : 'linear-gradient(135deg, hsl(var(--primary-400)), hsl(var(--primary-500)))'
-                              }}
-                            >
-                              <h4 className="font-bold text-white text-center text-lg">
+                            {/* Top section */}
+                            <div className="px-4 py-3 bg-white border-b border-gray-100">
+                              <h4 className="font-semibold text-gray-900 text-center text-base">
                                 {pkg.name}
                               </h4>
-                              <div className="text-white/80 text-xs text-center mt-0.5">
+                              <div className="text-gray-500 text-xs text-center mt-0.5">
                                 {tiers} {tiers === 1 ? 'tier' : 'tiers'}
                               </div>
                             </div>
@@ -2273,7 +2266,7 @@ export default function SupplierCustomizationModal({
                 </div>
 
                 {/* Special Requests */}
-                <div className="bg-primary-50 rounded-xl p-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                   <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
                   <p className="text-sm text-gray-600 mb-3">
                     Let the face painter know about any design preferences or special requirements
@@ -2320,7 +2313,7 @@ export default function SupplierCustomizationModal({
                 </div>
 
                 {/* Special Requests */}
-                <div className="bg-primary-50 rounded-xl p-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                   <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
                   <p className="text-sm text-gray-600 mb-3">
                     Let the entertainer know about your child's interests or any special requirements
@@ -2368,10 +2361,10 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[140px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[140px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => {
                             setSelectedPackageIds(prev =>
@@ -2398,7 +2391,7 @@ export default function SupplierCustomizationModal({
                             )}
                             {/* Selection checkmark overlay */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
@@ -2427,10 +2420,10 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 cursor-pointer group relative flex ${
+                        className={`bg-white rounded-lg overflow-hidden transition-all duration-200 cursor-pointer group relative flex border ${
                           isSelected
-                            ? "ring-2 ring-[hsl(var(--primary-500))]"
-                            : "hover:shadow-lg hover:ring-2 hover:ring-gray-200"
+                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => {
                           setSelectedPackageIds(prev =>
@@ -2529,10 +2522,10 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[160px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
@@ -2547,7 +2540,7 @@ export default function SupplierCustomizationModal({
                             />
                             {/* Selection checkmark overlay */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
@@ -2586,10 +2579,10 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 cursor-pointer group ${
+                        className={`bg-white rounded-lg overflow-hidden transition-all duration-200 cursor-pointer group border ${
                           isSelected
-                            ? "ring-2 ring-[hsl(var(--primary-500))]"
-                            : "hover:shadow-lg hover:ring-2 hover:ring-gray-200"
+                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
@@ -2664,7 +2657,7 @@ export default function SupplierCustomizationModal({
                               <div className="mt-3 pt-2 border-t border-green-200">
                                 <div className="flex flex-wrap gap-2">
                                   {pkg.features.map((feature, idx) => (
-                                    <span key={idx} className="inline-flex items-center gap-1 text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-medium">
+                                    <span key={idx} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-medium">
                                       <Check className="w-3 h-3" />
                                       {feature}
                                     </span>
@@ -2713,10 +2706,10 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[160px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
@@ -2731,13 +2724,13 @@ export default function SupplierCustomizationModal({
                                 sizes="160px"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                 <Package className="w-8 h-8 text-purple-300" />
                               </div>
                             )}
                             {/* Badge overlay */}
                             {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-[10px] font-bold py-1 text-center">
+                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-medium py-1 text-center">
                                 BEST VALUE
                               </div>
                             )}
@@ -2787,11 +2780,11 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden border-2 ${
+                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
                           isSelected
-                            ? "border-[hsl(var(--primary-500))] shadow-xl scale-[1.02]"
-                            : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-md hover:shadow-lg"
-                        } ${isPremium ? 'ring-2 ring-amber-400' : ''}`}
+                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
                         {/* Package Image - uses theme-based image if available */}
@@ -2805,13 +2798,13 @@ export default function SupplierCustomizationModal({
                               sizes="(max-width: 768px) 100vw, 33vw"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                               <Package className="w-12 h-12 text-purple-300" />
                             </div>
                           )}
                           {/* Badge overlay */}
                           {isPremium && (
-                            <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-bold py-1.5 text-center">
+                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
                               BEST VALUE
                             </div>
                           )}
@@ -2878,10 +2871,10 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[200px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02] ring-3 ring-[hsl(var(--primary-200))]"
-                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md opacity-75"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
@@ -2900,13 +2893,13 @@ export default function SupplierCustomizationModal({
                                 sizes="200px"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                 <Package className="w-10 h-10 text-purple-300" />
                               </div>
                             )}
                             {/* Badge overlay */}
                             {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-[10px] font-bold py-1 text-center">
+                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-medium py-1 text-center">
                                 BEST VALUE
                               </div>
                             )}
@@ -2917,7 +2910,7 @@ export default function SupplierCustomizationModal({
                             )}
                             {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-lg ring-2 ring-white">
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center">
                                 <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                               </div>
                             )}
@@ -2963,11 +2956,11 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden border-3 ${
+                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
                           isSelected
-                            ? "border-[hsl(var(--primary-500))] shadow-xl scale-[1.02] ring-4 ring-[hsl(var(--primary-200))]"
-                            : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-md hover:shadow-lg opacity-75 hover:opacity-100"
-                        } ${isPremium && !isSelected ? 'ring-2 ring-amber-400' : ''}`}
+                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
                         {/* Selected overlay glow */}
@@ -2985,13 +2978,13 @@ export default function SupplierCustomizationModal({
                               sizes="(max-width: 768px) 100vw, 33vw"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                               <Package className="w-12 h-12 text-purple-300" />
                             </div>
                           )}
                           {/* Badge overlay */}
                           {isPremium && (
-                            <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-bold py-1.5 text-center">
+                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
                               BEST VALUE
                             </div>
                           )}
@@ -3002,7 +2995,7 @@ export default function SupplierCustomizationModal({
                           )}
                           {/* Selection checkmark */}
                           {isSelected && (
-                            <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-lg z-20 ring-2 ring-white">
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-20">
                               <Check className="w-4 h-4 text-white" strokeWidth={3} />
                             </div>
                           )}
@@ -3327,10 +3320,10 @@ export default function SupplierCustomizationModal({
                     return (
                       <div
                         key={pkg.id}
-                        className={`relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden ${
+                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
                           isSelected
-                            ? "ring-2 ring-[hsl(var(--primary-500))] shadow-lg"
-                            : "border border-gray-200 hover:shadow-md"
+                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
@@ -3343,8 +3336,8 @@ export default function SupplierCustomizationModal({
 
                         {/* Selection checkmark */}
                         {isSelected && (
-                          <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-10">
-                            <Check className="w-4 h-4 text-white" />
+                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-10">
+                            <Check className="w-3 h-3 text-white" />
                           </div>
                         )}
 
@@ -3412,9 +3405,9 @@ export default function SupplierCustomizationModal({
                     if (!dietaryInfo) return []
                     const badges = []
                     const lower = dietaryInfo.toLowerCase()
-                    if (lower.includes('ve') || lower.includes('vegan')) badges.push({ code: 'VE', label: 'Vegan options', color: 'bg-green-100 text-green-700' })
-                    if ((lower.includes('v =') || lower.includes('v=') || lower.includes('vegetarian')) && !badges.some(b => b.code === 'VE')) badges.push({ code: 'V', label: 'Vegetarian options', color: 'bg-emerald-100 text-emerald-700' })
-                    if (lower.includes('nga') || lower.includes('gluten')) badges.push({ code: 'GF', label: 'Gluten-free available', color: 'bg-amber-100 text-amber-700' })
+                    if (lower.includes('ve') || lower.includes('vegan')) badges.push({ code: 'VE', label: 'Vegan options' })
+                    if ((lower.includes('v =') || lower.includes('v=') || lower.includes('vegetarian')) && !badges.some(b => b.code === 'VE')) badges.push({ code: 'V', label: 'Vegetarian options' })
+                    if (lower.includes('nga') || lower.includes('gluten')) badges.push({ code: 'GF', label: 'Gluten-free available' })
                     return badges
                   }
 
@@ -3425,10 +3418,10 @@ export default function SupplierCustomizationModal({
                       <div className="space-y-3">
                         {/* No catering option */}
                         <div
-                          className={`rounded-xl cursor-pointer transition-all duration-200 p-4 ${
+                          className={`rounded-lg cursor-pointer transition-all duration-200 p-4 border ${
                             !selectedCateringId
-                              ? "bg-[hsl(var(--primary-50))] ring-2 ring-[hsl(var(--primary-500))]"
-                              : "bg-gray-50 border border-gray-200 hover:border-gray-300"
+                              ? "bg-[hsl(var(--primary-50))] border-[hsl(var(--primary-500))]"
+                              : "bg-white border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedCateringId(null)}
                         >
@@ -3457,10 +3450,10 @@ export default function SupplierCustomizationModal({
                           return (
                             <div
                               key={catering.id}
-                              className={`rounded-xl transition-all duration-200 overflow-hidden ${
+                              className={`rounded-lg transition-all duration-200 overflow-hidden border ${
                                 isSelected
-                                  ? "ring-2 ring-[hsl(var(--primary-500))]"
-                                  : "border border-gray-200 hover:border-gray-300"
+                                  ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                                  : "border-gray-200 hover:border-gray-300"
                               }`}
                             >
                               {/* Catering image if available */}
@@ -3489,15 +3482,11 @@ export default function SupplierCustomizationModal({
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <h4 className="font-bold text-gray-900">{catering.name}</h4>
                                         {/* Dietary badges */}
-                                        {dietaryBadges.map((badge) => (
-                                          <span
-                                            key={badge.code}
-                                            className={`px-1.5 py-0.5 text-xs font-semibold rounded ${badge.color}`}
-                                            title={badge.label}
-                                          >
-                                            {badge.code}
+                                        {dietaryBadges.length > 0 && (
+                                          <span className="text-xs text-gray-500 font-medium">
+                                            {dietaryBadges.map(b => b.code).join(' · ')}
                                           </span>
-                                        ))}
+                                        )}
                                       </div>
                                       <p className="text-sm text-gray-600 mt-1">{catering.description}</p>
                                     </div>
@@ -3630,10 +3619,10 @@ export default function SupplierCustomizationModal({
                       {availableAddons.map((addon) => (
                         <div
                           key={addon.id}
-                          className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                          className={`flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-all duration-200 border ${
                             selectedAddons.includes(addon.id)
-                              ? "bg-[hsl(var(--primary-50))] ring-2 ring-[hsl(var(--primary-500))]"
-                              : "bg-gray-50 border border-gray-200 hover:border-gray-300"
+                              ? "bg-[hsl(var(--primary-50))] border-[hsl(var(--primary-500))]"
+                              : "bg-white border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => handleAddonToggle(addon.id)}
                         >
