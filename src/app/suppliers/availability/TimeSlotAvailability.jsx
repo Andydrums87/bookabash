@@ -633,20 +633,28 @@ const TimeSlotAvailabilityContent = ({
     }
   }, [currentSupplier])
 
-  // Load working hours when switching to a specific business
+  // Load all settings (including unavailableDates) when switching to a specific business
   useEffect(() => {
     if (selectedCalendarBusiness === 'all') {
       // Reset to primary business settings when viewing all
       if (currentSupplier) {
         setWorkingHours(migrateWorkingHours(currentSupplier.workingHours) || getDefaultWorkingHours())
         setAdvanceBookingDays(currentSupplier.advanceBookingDays ?? 7)
+        // Clear local unavailableDates - in "all" mode, filteredUnavailableDates aggregates from businesses prop
+        setUnavailableDates([])
+        console.log('📅 Switched to All businesses view - clearing local unavailableDates')
       }
     } else {
-      // Load the selected business's working hours
+      // Load the selected business's settings
       const selectedBusiness = businesses?.find(b => b.id === selectedCalendarBusiness)
       if (selectedBusiness?.data) {
+        console.log('📅 Loading data for business:', selectedBusiness.id, selectedBusiness.business_name || selectedBusiness.name)
         setWorkingHours(migrateWorkingHours(selectedBusiness.data.workingHours) || getDefaultWorkingHours())
         setAdvanceBookingDays(selectedBusiness.data.advanceBookingDays ?? 7)
+        // IMPORTANT: Also load unavailableDates for the selected business
+        const businessUnavailableDates = migrateDateArray(selectedBusiness.data.unavailableDates) || []
+        console.log('📅 Loading unavailableDates for business:', businessUnavailableDates.length, 'dates')
+        setUnavailableDates(businessUnavailableDates)
       }
     }
     // Reset the lastSavedDataRef so changes are detected properly
@@ -654,40 +662,15 @@ const TimeSlotAvailabilityContent = ({
   }, [selectedCalendarBusiness, businesses, currentSupplier])
 
   // Compute unavailable dates based on selected business
-  // When "all" is selected, aggregate from all businesses
+  // When "all" is selected, don't show any blocked dates (just bookings)
   // When a specific business is selected, show only that business's blocked dates
   const filteredUnavailableDates = useMemo(() => {
     console.log('🗓️ Computing filtered unavailable dates for:', selectedCalendarBusiness)
-    console.log('🗓️ Businesses available:', businesses?.length, businesses?.map(b => ({
-      id: b.id,
-      name: b.name || b.business_name,
-      unavailableDatesCount: b.data?.unavailableDates?.length || 0
-    })))
 
     if (selectedCalendarBusiness === 'all') {
-      // Aggregate unavailable dates from ALL businesses
-      const allDates = []
-      const dateMap = new Map() // Track dates to avoid duplicates
-
-      businesses?.forEach(business => {
-        const businessDates = migrateDateArray(business.data?.unavailableDates) || []
-        console.log(`🗓️ Business ${business.name || business.business_name}: ${businessDates.length} blocked dates`)
-        businessDates.forEach(dateItem => {
-          const existingDate = dateMap.get(dateItem.date)
-          if (existingDate) {
-            // Merge time slots if date already exists
-            const mergedSlots = [...new Set([...existingDate.timeSlots, ...dateItem.timeSlots])]
-            existingDate.timeSlots = mergedSlots
-          } else {
-            const newItem = { ...dateItem, businessId: business.id }
-            dateMap.set(dateItem.date, newItem)
-            allDates.push(newItem)
-          }
-        })
-      })
-
-      console.log('🗓️ Total aggregated blocked dates:', allDates.length)
-      return allDates
+      // Don't show blocked dates in "All businesses" view - only show bookings
+      console.log('🗓️ All businesses view - not showing blocked dates')
+      return []
     } else {
       // When viewing a specific business, use the local unavailableDates state
       // This ensures manual blocks are immediately reflected in the UI
@@ -813,17 +796,30 @@ const TimeSlotAvailabilityContent = ({
   // Auto-save - saves to the currently selected business
   const saveToDatabase = useCallback(async (data) => {
     // Don't save when viewing "all businesses" - settings are per-business
-    if (selectedCalendarBusiness === 'all') return
+    if (selectedCalendarBusiness === 'all') {
+      console.log('❌ Save skipped: viewing all businesses')
+      return
+    }
 
     const dataString = JSON.stringify({ ...data, businessId: selectedCalendarBusiness })
-    if (lastSavedDataRef.current === dataString) return
+    if (lastSavedDataRef.current === dataString) {
+      console.log('⏭️ Save skipped: no changes detected')
+      return
+    }
 
     try {
       setSaveStatus("saving")
 
       // Find the target business to save to
       const targetBusiness = businesses?.find(b => b.id === selectedCalendarBusiness) || primaryBusiness
-      if (!targetBusiness) throw new Error("No business found")
+      if (!targetBusiness) {
+        console.error('❌ No target business found for ID:', selectedCalendarBusiness)
+        throw new Error("No business found")
+      }
+
+      console.log('💾 Saving to database...')
+      console.log('   Target business:', targetBusiness.id, targetBusiness.business_name || targetBusiness.name)
+      console.log('   Unavailable dates being saved:', data.unavailableDates)
 
       const updatedData = {
         ...targetBusiness.data,
@@ -839,7 +835,21 @@ const TimeSlotAvailabilityContent = ({
         .update({ data: updatedData })
         .eq("id", targetBusiness.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Supabase error:', error)
+        throw error
+      }
+
+      console.log('✅ Save successful!')
+
+      // Update the local businesses data so "All businesses" view stays in sync
+      // This mutates the business object in the businesses array
+      if (targetBusiness.data) {
+        targetBusiness.data.unavailableDates = data.unavailableDates
+        targetBusiness.data.workingHours = data.workingHours
+        targetBusiness.data.advanceBookingDays = data.advanceBookingDays
+        console.log('📅 Updated local business data for sync')
+      }
 
       lastSavedDataRef.current = dataString
       setSaveStatus("saved")
