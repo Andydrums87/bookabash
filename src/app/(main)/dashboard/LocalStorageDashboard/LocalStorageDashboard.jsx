@@ -114,7 +114,14 @@ export default function LocalStorageDashboard() {
   const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
   const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
-  const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(false)
+  // Initialize from URL param so modal persists across refresh
+  const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('browseVenues') === 'true'
+    }
+    return false
+  })
   const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
   const [showStickyBottomCTA, setShowStickyBottomCTA] = useState(false)
   const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
@@ -602,6 +609,24 @@ useEffect(() => {
     unlockScroll() // Cleanup on unmount
   }
 }, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
+
+// Sync venue browser modal state with URL for persistence across refresh
+useEffect(() => {
+  if (!isMounted) return
+
+  const currentUrl = new URL(window.location.href)
+  const hasParam = currentUrl.searchParams.get('browseVenues') === 'true'
+
+  if (showVenueBrowserModal && !hasParam) {
+    // Modal opened - add URL param
+    currentUrl.searchParams.set('browseVenues', 'true')
+    window.history.replaceState({}, '', currentUrl)
+  } else if (!showVenueBrowserModal && hasParam) {
+    // Modal closed - remove URL param
+    currentUrl.searchParams.delete('browseVenues')
+    window.history.replaceState({}, '', currentUrl)
+  }
+}, [showVenueBrowserModal, isMounted])
 
 useEffect(() => {
 
