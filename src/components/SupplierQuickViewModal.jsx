@@ -1979,11 +1979,11 @@ export default function SupplierQuickViewModal({
                       packageFeatures.push('Kitchen facilities included')
                     }
 
-                    // Party time with setup/cleanup
+                    // Party time, setup, and cleanup as separate items
                     const minHours = availability.minimumBookingHours || pricing.minimumBookingHours || 2
-                    const setupTime = pricing.setupTime || 60
-                    const cleanupTime = pricing.cleanupTime || 60
-                    packageFeatures.push(`${minHours} hour${minHours > 1 ? 's' : ''} party time with ${setupTime} min setup and ${cleanupTime} min cleanup included`)
+                    packageFeatures.push(`${minHours} hour${minHours > 1 ? 's' : ''} party time`)
+                    packageFeatures.push('1 hour setup time included')
+                    packageFeatures.push('1 hour cleanup time included')
 
                     // Tables and chairs
                     const equipment = serviceDetails.equipment || {}
