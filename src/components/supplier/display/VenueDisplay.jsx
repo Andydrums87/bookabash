@@ -22,7 +22,9 @@ import {
   ExternalLink,
   CheckCircle,
   Video,
-  View
+  View,
+  ChevronDown,
+  UtensilsCrossed
 } from "lucide-react";
 
 // MapWidget component for Google Maps embed
@@ -173,6 +175,32 @@ const VenueDisplay = ({
 }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
+  const [expandedCateringMenus, setExpandedCateringMenus] = useState({});
+
+  // Get catering packages from supplier
+  const cateringPackages = supplier?.cateringPackages ||
+                           supplier?.data?.cateringPackages ||
+                           serviceDetails?.cateringPackages ||
+                           [];
+
+  // Toggle catering menu expansion
+  const toggleCateringMenu = (packageId) => {
+    setExpandedCateringMenus(prev => ({
+      ...prev,
+      [packageId]: !prev[packageId]
+    }));
+  };
+
+  // Get dietary badges from dietary info string
+  const getDietaryBadges = (dietaryInfo) => {
+    if (!dietaryInfo) return [];
+    const badges = [];
+    const lower = dietaryInfo.toLowerCase();
+    if (lower.includes('ve') || lower.includes('vegan')) badges.push('VE');
+    if ((lower.includes('v =') || lower.includes('v=') || lower.includes('vegetarian')) && !badges.includes('VE')) badges.push('V');
+    if (lower.includes('nga') || lower.includes('gluten')) badges.push('GF');
+    return badges;
+  };
 
   // Get highlights from multiple possible locations
   const highlights = serviceDetails.highlights ||
@@ -328,7 +356,7 @@ const VenueDisplay = ({
       {hasCapacity && (
         <SectionRow label="Capacity">
           <div className="flex flex-wrap gap-8">
-            {capacity.standing && (
+            {capacity.standing > 0 && (
               <div className="flex items-center gap-3">
                 <CapacityIcon type="standing" />
                 <div>
@@ -337,7 +365,7 @@ const VenueDisplay = ({
                 </div>
               </div>
             )}
-            {capacity.seated && (
+            {capacity.seated > 0 && (
               <div className="flex items-center gap-3">
                 <CapacityIcon type="dining" />
                 <div>
@@ -346,7 +374,7 @@ const VenueDisplay = ({
                 </div>
               </div>
             )}
-            {capacity.max && !capacity.seated && !capacity.standing && (
+            {capacity.max > 0 && !capacity.seated && !capacity.standing && (
               <div className="flex items-center gap-3">
                 <Users className="w-8 h-8 text-teal-500" />
                 <div>
@@ -397,6 +425,107 @@ const VenueDisplay = ({
                 ))}
               </div>
             )}
+          </div>
+        </SectionRow>
+      )}
+
+      {/* Catering Packages */}
+      {cateringPackages.length > 0 && (
+        <SectionRow label="Food packages">
+          <div className="space-y-3">
+            <p className="text-gray-600 text-sm mb-4">
+              This venue offers in-house catering. View the menu options below.
+            </p>
+            {cateringPackages.map((pkg, index) => {
+              const packageId = pkg.id || `pkg-${index}`;
+              const isExpanded = expandedCateringMenus[packageId];
+              const dietaryBadges = getDietaryBadges(pkg.dietaryInfo);
+
+              return (
+                <div
+                  key={packageId}
+                  className="border border-gray-200 rounded-xl overflow-hidden"
+                >
+                  {/* Package Header - Clickable */}
+                  <button
+                    onClick={() => toggleCateringMenu(packageId)}
+                    className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+                        <UtensilsCrossed className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{pkg.name}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-teal-600 font-medium">
+                            £{pkg.pricePerHead?.toFixed(2) || pkg.price} per person
+                          </span>
+                          {dietaryBadges.length > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {dietaryBadges.join(' · ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Expanded Menu Content */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 bg-gray-50 p-4">
+                      {pkg.description && (
+                        <p className="text-gray-600 text-sm mb-4">{pkg.description}</p>
+                      )}
+
+                      {/* Menu Sections */}
+                      {pkg.sections?.map((section, sIdx) => (
+                        <div key={sIdx} className="mb-4 last:mb-0">
+                          <h5 className="font-medium text-gray-900 text-sm mb-2">
+                            {section.title}
+                          </h5>
+                          <ul className="space-y-1.5">
+                            {section.items?.map((item, iIdx) => (
+                              <li
+                                key={iIdx}
+                                className="text-sm text-gray-600 flex items-start gap-2"
+                              >
+                                <Check className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+
+                      {/* Guest range */}
+                      {(pkg.minGuests || pkg.maxGuests) && (
+                        <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200">
+                          {pkg.minGuests && pkg.maxGuests
+                            ? `Serves ${pkg.minGuests}-${pkg.maxGuests} guests`
+                            : pkg.minGuests
+                              ? `Minimum ${pkg.minGuests} guests`
+                              : `Up to ${pkg.maxGuests} guests`
+                          }
+                        </p>
+                      )}
+
+                      {/* Dietary info */}
+                      {pkg.dietaryInfo && (
+                        <p className="text-xs text-gray-500 mt-2 italic">
+                          {pkg.dietaryInfo}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </SectionRow>
       )}
@@ -684,15 +813,15 @@ const VenueDisplay = ({
       )}
 
       {/* Equipment */}
-      {(serviceDetails.equipment?.tables || serviceDetails.equipment?.chairs) && (
+      {(serviceDetails.equipment?.tables > 0 || serviceDetails.equipment?.chairs > 0) && (
         <SectionRow label="Equipment included">
           <div className="flex flex-wrap gap-6">
-            {serviceDetails.equipment.tables && (
+            {serviceDetails.equipment.tables > 0 && (
               <div className="text-gray-700">
                 <span className="font-medium">{serviceDetails.equipment.tables}</span> tables
               </div>
             )}
-            {serviceDetails.equipment.chairs && (
+            {serviceDetails.equipment.chairs > 0 && (
               <div className="text-gray-700">
                 <span className="font-medium">{serviceDetails.equipment.chairs}</span> chairs
               </div>
