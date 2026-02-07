@@ -222,7 +222,8 @@ export default function VenueBrowserModal({
   isOpen,
   onClose,
   onSelectVenue,
-  partyDetails
+  partyDetails,
+  isSelectingVenue = false
 }) {
   const isMobile = useIsMobile()
 
@@ -1033,6 +1034,7 @@ export default function VenueBrowserModal({
                         onSelect={() => handleSelectVenue(venue)}
                         onViewDetails={() => handleViewDetails(venue)}
                         partyDetails={partyDetails}
+                        isLoading={isSelectingVenue}
                       />
                     ))}
                   </div>
@@ -1078,6 +1080,7 @@ export default function VenueBrowserModal({
             handleSelectVenue(selectedForPreview)
             setSelectedForPreview(null)
           }}
+          isSelectingSupplier={isSelectingVenue}
         />
       )}
 

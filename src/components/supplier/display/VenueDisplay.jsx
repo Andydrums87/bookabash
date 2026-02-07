@@ -202,7 +202,7 @@ const VenueDisplay = ({
 
   // Get capacity data
   const capacity = serviceDetails.capacity;
-  const hasCapacity = capacity && (capacity.max || capacity.seated || capacity.standing);
+  const hasCapacity = capacity && (capacity.max > 0 || capacity.seated > 0 || capacity.standing > 0);
 
   // Get policies
   const policies = serviceDetails.policies || {};

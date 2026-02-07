@@ -1512,6 +1512,9 @@ const handleNameSubmit = async (nameData) => {
  const handleSelectVenue = async (venue, skipConflictCheck = false) => {
   setIsSelectingVenue(true)
 
+  // Get venue name for notifications
+  const venueName = venue?.name || venue?.businessName || venue?.business_name || 'Venue'
+
   try {
     // Check for bouncy castle conflict (unless we're skipping the check)
     if (!skipConflictCheck) {
@@ -1564,11 +1567,23 @@ const handleNameSubmit = async (nameData) => {
 
       // Close venue browser modal if open
       setShowVenueBrowserModal(false)
+
+      // Show success toast
+      toast.success(`${venueName} added to your party!`, {
+        duration: 4000
+      })
+    } else {
+      // Show error toast if result indicates failure
+      toast.error(result.error || 'Failed to add venue. Please try again.', {
+        duration: 5000
+      })
     }
 
   } catch (error) {
     console.error('❌ Error selecting venue:', error)
-    alert('Failed to select venue. Please try again.')
+    toast.error('Failed to add venue. Please try again.', {
+      duration: 5000
+    })
   } finally {
     setIsSelectingVenue(false)
   }
@@ -2251,6 +2266,7 @@ const handleChildPhotoUpload = async (file) => {
         onClose={() => setShowVenueBrowserModal(false)}
         onSelectVenue={handleSelectVenue}
         partyDetails={partyDetails}
+        isSelectingVenue={isSelectingVenue}
       />
 
       {/* Venue Conflict Modal - Bouncy Castle Restriction */}

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import Image from "next/image"
-import { Star, ChevronLeft, ChevronRight, Zap, ShieldCheck } from "lucide-react"
+import { Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import useEmblaCarousel from "embla-carousel-react"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
@@ -57,6 +57,7 @@ export default function VenueMapListItem({
   onSelect,
   onViewDetails,
   partyDetails,
+  isLoading = false,
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -325,18 +326,27 @@ export default function VenueMapListItem({
             e.stopPropagation()
             onSelect?.(venue)
           }}
-          disabled={!hasCapacity}
+          disabled={!hasCapacity || isLoading}
           className={`
-            text-sm font-semibold underline underline-offset-2 transition-colors mt-2
+            text-sm font-semibold underline underline-offset-2 transition-colors mt-2 flex items-center gap-1.5
             ${isCurrentlySelected
               ? 'text-primary-500 hover:text-primary-600'
-              : hasCapacity
+              : hasCapacity && !isLoading
                 ? 'text-gray-900 hover:text-gray-600'
                 : 'text-gray-400 cursor-not-allowed no-underline'
             }
           `}
         >
-          {isCurrentlySelected ? 'Selected' : 'Select venue'}
+          {isLoading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Adding...
+            </>
+          ) : isCurrentlySelected ? (
+            'Selected'
+          ) : (
+            'Select venue'
+          )}
         </button>
       </div>
     </div>
