@@ -26,6 +26,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import Image from "next/image"
+import SupplierNote from '@/components/SupplierNote'
 
 // ✅ UPDATED: Import unified pricing system
 import {
@@ -204,11 +205,11 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
           )}
 
           {/* For non-cakes: What's Included */}
-          {!isCake && pkg.features?.length > 0 && (
+          {!isCake && (pkg.contents?.length > 0 || pkg.features?.length > 0) && (
             <div className="mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">What's Included</h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {pkg.features.map((item, i) => (
+                {(pkg.contents || pkg.features).map((item, i) => (
                   <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-md">
                     {item}
                   </span>
@@ -335,6 +336,8 @@ export default function SupplierCustomizationModal({
   const [selectedDietaryOptions, setSelectedDietaryOptions] = useState([]) // Array for multiple selections
   const [customMessage, setCustomMessage] = useState("")
   const [fulfillmentMethod, setFulfillmentMethod] = useState("delivery") // "delivery" or "pickup"
+  const [selectedCupcakeOption, setSelectedCupcakeOption] = useState(null) // null, "box6", "box12", "box24"
+  const [showAllergens, setShowAllergens] = useState(false) // Allergens collapsible section
 
   // Party bags quantity state - ensure it's always a number
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
@@ -897,10 +900,11 @@ export default function SupplierCustomizationModal({
     })
 
     if (supplierPackages.length > 0) {
-      // For multi-select suppliers, show all items; for others, limit to 3 (except venues which show all)
+      // For multi-select suppliers, show all items; for others, limit to 3 (except venues and cakes which show all)
       const catLower = (supplier?.category || dataObj?.category || '').toLowerCase()
       const isVenueType = catLower.includes('venue') || catLower.includes('function room') || catLower.includes('hall')
-      const packagesToShow = (isMultiSelectSupplier || isVenueType) ? supplierPackages : supplierPackages.slice(0, 3)
+      const isCakeType = catLower.includes('cake') || supplierTypeDetection?.isCake
+      const packagesToShow = (isMultiSelectSupplier || isVenueType || isCakeType) ? supplierPackages : supplierPackages.slice(0, 3)
       return packagesToShow.map((pkg, index) => {
         const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
         return {
@@ -1201,13 +1205,21 @@ export default function SupplierCustomizationModal({
         : cakeFulfillmentOptions.deliveryFee || 0
     }
 
+    // Calculate cupcakes price for cakes
+    let cupcakesPrice = 0
+    if (supplierTypeDetection.isCake && selectedCupcakeOption) {
+      const cupcakePrices = { box6: 20, box12: 30, box24: 50 }
+      cupcakesPrice = cupcakePrices[selectedCupcakeOption] || 0
+    }
+
     // Final totals
-    const totalPrice = packagePrice + addonsTotalPrice + deliveryFee
+    const totalPrice = packagePrice + addonsTotalPrice + deliveryFee + cupcakesPrice
 
     return {
       packagePrice,
       addonsTotalPrice,
       deliveryFee,
+      cupcakesPrice,
       totalPrice,
       hasEnhancedPricing,
       pricingInfo: hasEnhancedPricing
@@ -1220,7 +1232,7 @@ export default function SupplierCustomizationModal({
           }
         : null,
     }
-  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsPackSize, selectedCateringId, cateringGuestCount])
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsPackSize, selectedCateringId, cateringGuestCount, selectedCupcakeOption])
 
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
@@ -1254,12 +1266,17 @@ export default function SupplierCustomizationModal({
         if (existingCakeData.fulfillmentMethod) {
           setFulfillmentMethod(existingCakeData.fulfillmentMethod);
         }
+        // Restore cupcake selection
+        if (existingCakeData.cupcakeOption) {
+          setSelectedCupcakeOption(existingCakeData.cupcakeOption);
+        }
       } else {
         // Set default flavor only on first open
         setSelectedFlavor(availableFlavors[0].id);
         setSelectedDietaryOptions([]);
         setCustomMessage("");
         setFulfillmentMethod("delivery"); // Default to delivery
+        setSelectedCupcakeOption(null); // No cupcakes by default
       }
     }
 
@@ -1268,6 +1285,7 @@ export default function SupplierCustomizationModal({
       setSelectedDietaryOptions([]);
       setCustomMessage("");
       setFulfillmentMethod("delivery");
+      setSelectedCupcakeOption(null);
     }
   }, [isOpen, availableFlavors, supplier])
 
@@ -1435,6 +1453,9 @@ export default function SupplierCustomizationModal({
           fulfillmentMethod: fulfillmentMethod,
           deliveryFee: fulfillmentMethod === "delivery" ? calculateModalPricing.deliveryFee : 0,
           pickupLocation: fulfillmentMethod === "pickup" ? cakeFulfillmentOptions.location : null,
+          // Matching cupcakes
+          cupcakeOption: selectedCupcakeOption,
+          cupcakesPrice: calculateModalPricing.cupcakesPrice || 0,
           // Pricing
           basePrice: selectedPackage.price,
           totalPrice: calculateModalPricing.totalPrice,
@@ -1814,126 +1835,37 @@ export default function SupplierCustomizationModal({
             {/* Cake Suppliers - Single Page Form */}
             {supplierTypeDetection.isCake && (
               <section className="space-y-5">
-                {/* Choose Size - Pill buttons on mobile, cards on desktop */}
+                {/* Choose Size - Dropdown */}
                 <div>
-                  <Label className="text-base font-semibold text-gray-900 mb-3 block">Choose Size</Label>
-
-                  {/* Mobile: Compact pill buttons */}
-                  <div className="sm:hidden">
-                    <div className="flex flex-wrap gap-2">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Cake Size</Label>
+                  <Select
+                    value={selectedPackageId || ''}
+                    onValueChange={(value) => setSelectedPackageId(value)}
+                  >
+                    <SelectTrigger className="w-full h-14 text-base font-medium bg-white border-gray-200 px-4">
+                      <SelectValue placeholder="Select a size">
+                        {selectedPackage && (
+                          <span>
+                            {selectedPackage.name}
+                            {(selectedPackage.serves || selectedPackage.feeds) && ` | Serves ${selectedPackage.serves || selectedPackage.feeds}`}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
                       {packages.map((pkg) => {
-                        const isSelected = selectedPackageId === pkg.id;
-                        return (
-                          <button
-                            key={pkg.id}
-                            type="button"
-                            onClick={() => setSelectedPackageId(pkg.id)}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                              isSelected
-                                ? "bg-primary-500 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
-                          >
-                            {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
-                            {pkg.name} · £{pkg.price}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {/* Show details for selected size */}
-                    {selectedPackage && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        {[
-                          selectedPackage.sizeInches && `${selectedPackage.sizeInches}"`,
-                          (() => {
-                            const tiers = selectedPackage.tiers || (() => {
-                              const name = selectedPackage.name?.toLowerCase() || '';
-                              if (name.includes('small') || name.includes('6"') || name.includes('6 inch')) return 1;
-                              if (name.includes('medium') || name.includes('8"') || name.includes('8 inch')) return 1;
-                              if (name.includes('large') || name.includes('10"') || name.includes('10 inch')) return 2;
-                              if (name.includes('xl') || name.includes('extra') || name.includes('12"') || name.includes('12 inch')) return 2;
-                              return 1;
-                            })();
-                            return `${tiers} ${tiers === 1 ? 'tier' : 'tiers'}`;
-                          })(),
-                          (selectedPackage.serves || selectedPackage.feeds) && `Feeds ${selectedPackage.serves || selectedPackage.feeds}`
-                        ].filter(Boolean).join(' · ')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Desktop: Horizontal scroll cards */}
-                  <div className="hidden sm:block relative -mx-6">
-                    <div
-                      className="flex gap-4 overflow-x-auto scrollbar-hide py-3 px-6 snap-x snap-mandatory"
-                      style={{
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                        WebkitOverflowScrolling: 'touch'
-                      }}
-                    >
-                      {packages.map((pkg) => {
-                        const isSelected = selectedPackageId === pkg.id;
-                        // Get tiers with fallback based on size name
-                        const tiers = pkg.tiers || (() => {
-                          const name = pkg.name?.toLowerCase() || '';
-                          if (name.includes('small') || name.includes('6"') || name.includes('6 inch')) return 1;
-                          if (name.includes('medium') || name.includes('8"') || name.includes('8 inch')) return 1;
-                          if (name.includes('large') || name.includes('10"') || name.includes('10 inch')) return 2;
-                          if (name.includes('xl') || name.includes('extra') || name.includes('12"') || name.includes('12 inch')) return 2;
-                          return 1;
-                        })();
                         const feeds = pkg.serves || pkg.feeds;
-
                         return (
-                          <div
-                            key={pkg.id}
-                            onClick={() => setSelectedPackageId(pkg.id)}
-                            className={`relative flex-shrink-0 w-[150px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
-                              isSelected
-                                ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            {/* Top section */}
-                            <div className="px-4 py-3 bg-white border-b border-gray-100">
-                              <h4 className="font-semibold text-gray-900 text-center text-base">
-                                {pkg.name}
-                              </h4>
-                              <div className="text-gray-500 text-xs text-center mt-0.5">
-                                {tiers} {tiers === 1 ? 'tier' : 'tiers'}
-                              </div>
-                            </div>
-
-                            {/* Bottom white section */}
-                            <div className={`px-4 py-3 ${isSelected ? 'bg-[hsl(var(--primary-50))]' : 'bg-white'}`}>
-                              {/* Price - show base price only, delivery is added separately */}
-                              <div className="text-2xl font-bold text-center text-[hsl(var(--primary-600))]">
-                                £{pkg.price}
-                              </div>
-
-                              {/* Feeds info */}
-                              {feeds && (
-                                <div className="flex items-center justify-center gap-1.5 mt-2 text-sm text-gray-600">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                  </svg>
-                                  <span>Feeds {feeds}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Selected checkmark */}
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 bg-white rounded-full p-0.5 shadow-md">
-                                <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))]" />
-                              </div>
-                            )}
-                          </div>
+                          <SelectItem key={pkg.id} value={pkg.id} className="py-3 px-4">
+                            <span className="font-medium">
+                              {pkg.name}
+                              {feeds && ` | Serves ${feeds}`}
+                            </span>
+                          </SelectItem>
                         );
                       })}
-                    </div>
-                  </div>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Customization Options */}
@@ -1967,41 +1899,35 @@ export default function SupplierCustomizationModal({
                     )}
                   </div>
 
-                  {/* Dietary Requirements - Multi-select */}
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm mb-2">Dietary Requirements</p>
-                    {availableDietaryOptions.length === 0 ? (
-                      <p className="text-sm text-gray-500">Standard (no special options available)</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {availableDietaryOptions.map((option) => {
-                          const isSelected = selectedDietaryOptions.includes(option.id)
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDietaryOptions(prev =>
-                                  isSelected
-                                    ? prev.filter(id => id !== option.id)
-                                    : [...prev, option.id]
-                                )
-                              }}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                isSelected
-                                  ? "bg-primary-500 text-white"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
-                            >
-                              {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
-                              {option.name}
-                            </button>
-                          )
-                        })}
+                  {/* Allergen Information - Collapsible */}
+                  <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllergens(!showAllergens)}
+                      className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <span className="font-medium text-gray-900 text-sm">Allergen Information</span>
+                      <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showAllergens ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showAllergens && (
+                      <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Sponge contains:</p>
+                          <p className="text-sm text-gray-600">Eggs, Milk, Gluten (Wheat)</p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Fillings may contain:</p>
+                          <p className="text-sm text-gray-600">Milk, Soya, Gluten (Wheat), Eggs, Nuts (including hazelnuts, may contain other nuts)</p>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-200">
+                          <p className="text-xs text-gray-500 italic">
+                            Please note: All cakes are made in an environment that handles gluten, milk, eggs, nuts, soya, peanuts, sesame, and sulphites, and may contain traces.
+                          </p>
+                        </div>
                       </div>
-                    )}
-                    {selectedDietaryOptions.length === 0 && availableDietaryOptions.length > 0 && (
-                      <p className="text-xs text-gray-500 mt-2">No dietary requirements selected (standard)</p>
                     )}
                   </div>
 
@@ -2085,72 +2011,61 @@ export default function SupplierCustomizationModal({
                     </div>
 
                     {/* Pickup Location Info */}
-                    {fulfillmentMethod === "pickup" && (cakeFulfillmentOptions.location || cakeFulfillmentOptions.address) && (
-                      <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                        {/* Address */}
-                        <div>
-                          <div className="flex items-start gap-2 text-sm">
-                            <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-gray-900">Collection Address</p>
-                              {cakeFulfillmentOptions.address ? (
-                                <div className="text-gray-600 mt-1">
-                                  {cakeFulfillmentOptions.address.line1 && <p>{cakeFulfillmentOptions.address.line1}</p>}
-                                  {cakeFulfillmentOptions.address.line2 && <p>{cakeFulfillmentOptions.address.line2}</p>}
-                                  {cakeFulfillmentOptions.address.city && <p>{cakeFulfillmentOptions.address.city}</p>}
-                                  {cakeFulfillmentOptions.address.postcode && <p>{cakeFulfillmentOptions.address.postcode}</p>}
-                                </div>
-                              ) : (
-                                <p className="text-gray-600 mt-1">{cakeFulfillmentOptions.location}</p>
-                              )}
-                            </div>
+                    {fulfillmentMethod === "pickup" && (
+                      <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-gray-900">Collection Address</p>
+                            <p className="text-gray-500 mt-1">The collection address will be shared after booking is confirmed.</p>
                           </div>
-                          {/* Map Link */}
-                          {(cakeFulfillmentOptions.address?.postcode || cakeFulfillmentOptions.location) && (
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                cakeFulfillmentOptions.address
-                                  ? `${cakeFulfillmentOptions.address.line1 || ''} ${cakeFulfillmentOptions.address.city || ''} ${cakeFulfillmentOptions.address.postcode || ''}`
-                                  : cakeFulfillmentOptions.location
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 mt-2 ml-6"
-                            >
-                              <span>View on map</span>
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          )}
                         </div>
-
-                        {/* Collection Hours */}
-                        {cakeFulfillmentOptions.collectionHours && (
-                          <div className="border-t border-gray-200 pt-3">
-                            <div className="flex items-start gap-2 text-sm">
-                              <Clock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="font-medium text-gray-900">Collection Hours</p>
-                                <div className="text-gray-600 mt-1 space-y-0.5 text-xs">
-                                  {Object.entries(cakeFulfillmentOptions.collectionHours)
-                                    .filter(([_, hours]) => hours.isOpen)
-                                    .map(([day, hours]) => (
-                                      <div key={day} className="flex justify-between gap-4">
-                                        <span className="capitalize">{day}</span>
-                                        <span>{hours.from} - {hours.to}</span>
-                                      </div>
-                                    ))}
-                                  {Object.values(cakeFulfillmentOptions.collectionHours).every(h => !h.isOpen) && (
-                                    <p className="text-gray-500 italic">Collection times arranged after booking</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
+
+                    {/* Delivery/Collection Note */}
+                    <p className="text-xs text-gray-500 mt-3">
+                      Delivery date and collection details are confirmed after booking.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Matching Cupcakes Add-on */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="font-semibold text-gray-900">Matching Cupcakes</p>
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600"
+                      title="Add matching cupcakes in your chosen flavour"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { id: null, label: 'No cupcakes', price: 0 },
+                      { id: 'box6', label: 'Box Of 6', price: 20 },
+                      { id: 'box12', label: 'Box Of 12', price: 30 },
+                      { id: 'box24', label: '2 x Box of 12', price: 50 },
+                    ].map((option) => (
+                      <label
+                        key={option.id || 'none'}
+                        className="flex items-center gap-3 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={selectedCupcakeOption === option.id}
+                          onCheckedChange={() => setSelectedCupcakeOption(option.id)}
+                          className="w-5 h-5 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700">
+                          {option.label}
+                          {option.price > 0 && (
+                            <span className="text-gray-500 ml-1">(+ £{option.price.toFixed(2)})</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
@@ -2160,12 +2075,15 @@ export default function SupplierCustomizationModal({
                   <Textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
-                    placeholder="E.g. 'Happy 5th Birthday Emma!' or any decorating requests..."
+                    placeholder="Add names, ages, colour preferences, or any other details here."
                     rows={2}
                     className="bg-gray-50 border-gray-200 rounded-lg resize-none text-sm placeholder:text-gray-400"
                     maxLength={500}
                   />
-                  <div className="text-xs text-gray-400 text-right mt-1">{customMessage.length}/500</div>
+                  <div className="flex justify-between items-start mt-1">
+                    <p className="text-xs text-gray-400">We'll confirm all custom details with you after booking.</p>
+                    <span className="text-xs text-gray-400">{customMessage.length}/500</span>
+                  </div>
                 </div>
 
                 {/* Cake Price Summary */}
@@ -2226,6 +2144,14 @@ export default function SupplierCustomizationModal({
                         <span className="font-medium text-gray-900">Free</span>
                       </div>
                     )}
+                    {selectedCupcakeOption && calculateModalPricing.cupcakesPrice > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">
+                          Matching Cupcakes ({selectedCupcakeOption === 'box6' ? 'Box of 6' : selectedCupcakeOption === 'box12' ? 'Box of 12' : '2 x Box of 12'})
+                        </span>
+                        <span className="font-medium text-gray-900">£{calculateModalPricing.cupcakesPrice.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="border-t border-gray-200 pt-2 mt-2">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-gray-900">Total</span>
@@ -2272,12 +2198,13 @@ export default function SupplierCustomizationModal({
                     Let the face painter know about any design preferences or special requirements
                   </p>
                   <Textarea
-                    placeholder="e.g., Birthday child wants a dragon, please avoid glitter, child has sensitive skin..."
+                    placeholder="Add names, ages, colour preferences, or any other details here."
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
                     className="bg-white border-gray-200 text-sm resize-none"
                     rows={3}
                   />
+                  <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
                 </div>
               </section>
             )}
@@ -2319,12 +2246,13 @@ export default function SupplierCustomizationModal({
                     Let the entertainer know about your child's interests or any special requirements
                   </p>
                   <Textarea
-                    placeholder="e.g., Birthday child loves dinosaurs, please avoid loud noises, child has additional needs..."
+                    placeholder="Add names, ages, colour preferences, or any other details here."
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
                     className="bg-white border-gray-200 text-sm resize-none"
                     rows={3}
                   />
+                  <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
                 </div>
 
                 {/* Price Summary */}
@@ -2933,7 +2861,7 @@ export default function SupplierCustomizationModal({
                               </p>
                             )}
                             <ul className="text-[10px] text-gray-600 space-y-0.5">
-                              {pkg.features?.map((feature, i) => (
+                              {(pkg.contents || pkg.features)?.map((feature, i) => (
                                 <li key={i} className="flex items-start gap-1">
                                   <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
                                   <span className="line-clamp-1">{feature}</span>
@@ -3023,7 +2951,7 @@ export default function SupplierCustomizationModal({
                             </p>
                           )}
                           <ul className="text-sm text-gray-600 space-y-1.5 mb-3">
-                            {pkg.features?.map((feature, i) => (
+                            {(pkg.contents || pkg.features)?.map((feature, i) => (
                               <li key={i} className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                                 <span>{feature}</span>
@@ -3786,6 +3714,9 @@ export default function SupplierCustomizationModal({
               </section>
             )}
           </div>
+
+          {/* Category-specific disclaimer note */}
+          <SupplierNote category={supplierType} className="py-3 px-4" />
         </div>
 
         <div className="border-t border-gray-200 p-5 flex-shrink-0 bg-white">

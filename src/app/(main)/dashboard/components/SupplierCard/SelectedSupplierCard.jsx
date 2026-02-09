@@ -302,10 +302,6 @@ export default function SelectedSupplierCard({
                 {/* Supplier info */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="text-white">
-                    {/* Subtle image context - only for non-venues */}
-                    {type !== 'venue' && (
-                      <p className="text-[9px] text-white/50 mb-1 tracking-wide">Typical setup shown</p>
-                    )}
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                       {supplier.name}
                     </h3>
@@ -388,9 +384,9 @@ export default function SelectedSupplierCard({
           </div>
 
           {/* Bottom section with addons */}
-          <div className="p-6 bg-white">
+          <div className="p-4 bg-white">
             {hasAddons && (
-              <div className="mb-6">
+              <div className="mb-4">
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -465,6 +461,16 @@ export default function SelectedSupplierCard({
                 <span className="truncate">Customize</span>
               </Button>
             </div>
+
+            {/* Image disclaimer - all categories except venue are white-labeled */}
+            {/* For venue, add invisible spacer to match height */}
+            {type === 'venue' ? (
+              <div className="h-[18px] mt-2" />
+            ) : type === 'entertainment' ? (
+              <p className="text-[10px] text-gray-400 text-center mt-2">Images show example experiences</p>
+            ) : (
+              <p className="text-[10px] text-gray-400 text-center mt-2">Images show example styles</p>
+            )}
           </div>
         </Card>
 

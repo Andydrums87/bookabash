@@ -163,6 +163,13 @@ export default function MyPlanTabContent({
                     )}
                   </div>
 
+                  {/* Image disclaimer - all categories except venue are white-labeled */}
+                  {type !== 'venue' && (
+                    <p className="text-[10px] text-gray-400 text-center mt-2">
+                      {type === 'entertainment' ? 'Images show example experiences' : 'Images show example styles'}
+                    </p>
+                  )}
+
                   {/* Remove Button for Unpaid Suppliers */}
                   {canRemove && (
                     <button

@@ -575,10 +575,7 @@ export default function MyPartyTabContent({
           {/* Supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
-              {/* Subtle image context - only for non-venues */}
-              {type !== 'venue' && (
-                <p className="text-[9px] text-white/50 mb-1 tracking-wide">Typical setup shown</p>
-              )}
+              {/* Subtle image context removed - now shown below buttons */}
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                 {supplierName}
               </h3>
@@ -628,7 +625,7 @@ export default function MyPartyTabContent({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-4 pt-0 bg-white flex flex-col sm:flex-row gap-3">
+        <div className="px-4 bg-white flex flex-col sm:flex-row gap-3">
           <Button
             onClick={(e) => {
               e.stopPropagation()
@@ -652,6 +649,15 @@ export default function MyPartyTabContent({
             Customize
           </Button>
         </div>
+
+        {/* Image disclaimer - all categories except venue are white-labeled */}
+        {type !== 'venue' ? (
+          <p className="text-[10px] text-gray-400 text-center pt-0.5 pb-2 px-4">
+            {type === 'entertainment' ? 'Images show example experiences' : 'Images show example styles'}
+          </p>
+        ) : (
+          <div className="h-2" />
+        )}
       </Card>
     )
   }

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
-import { X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react"
+import { X, Maximize2, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import useEmblaCarousel from "embla-carousel-react"
 
@@ -12,6 +12,7 @@ import SwipeableSupplierCarousel from '@/components/supplier/SwipableSupplierCar
 
 // Import service display components
 import ServiceDetailsDisplayRouter from '@/components/supplier/display/ServiceDetailsDisplayRouter'
+import SupplierNote from '@/components/SupplierNote'
 
 export default function SupplierQuickViewModal({
   supplier,
@@ -29,6 +30,7 @@ export default function SupplierQuickViewModal({
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
   const [showLightbox, setShowLightbox] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [showAllergens, setShowAllergens] = useState(false)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
   const scrollPositionRef = useRef(0) // Store scroll position in ref to avoid stale closure
@@ -738,15 +740,20 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.
                         </p>
+                        <SupplierNote category="entertainment" className="mt-2" />
                       </div>
                     )
                   }
 
                   // For face painting, show packages with designs
                   if (isFacePainting) {
-                    const packages = displaySupplier?.packages || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
 
                     return (
                       <div className="space-y-6">
@@ -863,6 +870,7 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Kids love choosing their design. We work continuously throughout the party so everyone gets a turn.
                         </p>
+                        <SupplierNote category="facePainting" className="mt-2" />
                       </div>
                     )
                   }
@@ -871,7 +879,11 @@ export default function SupplierQuickViewModal({
                   const isPartyBags = category === 'partybags' || category === 'party bags' || serviceType === 'partybags' || category.includes('party bag')
                   if (isPartyBags) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    const packages = displaySupplier?.packages || []
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
                     const aboutUs = serviceDetails?.aboutUs || displaySupplier?.description || ''
 
                     return (
@@ -967,7 +979,7 @@ export default function SupplierQuickViewModal({
                             {/* Delivery Info */}
                             <div>
                               <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{serviceDetails?.delivery || 'Delivered to your home address within 3-5 working days'}</span>
+                              <span>{'Free delivery included — delivered shortly before your party to ensure everything arrives fresh and ready.'}</span>
                             </div>
 
                             {/* Lead Time */}
@@ -980,7 +992,7 @@ export default function SupplierQuickViewModal({
                             {serviceDetails?.allergenInfo && (
                               <div>
                                 <span className="font-semibold text-gray-900">Allergen info: </span>
-                                <span>{serviceDetails.allergenInfo}</span>
+                                <span>Options available on request. Please share any allergy details when booking.</span>
                               </div>
                             )}
 
@@ -994,10 +1006,10 @@ export default function SupplierQuickViewModal({
                           </div>
                         </div>
 
-                        {/* Delivery Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Free delivery included. Party bags delivered to your home within 3-5 working days.
-                        </p>
+                        {/* Disclaimer Note */}
+                        <div className="pt-4 border-t border-gray-100">
+                          <SupplierNote category="partyBags" />
+                        </div>
                       </div>
                     )
                   }
@@ -1065,6 +1077,7 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           The bouncy castle is included for your entire party duration.
                         </p>
+                        <SupplierNote category="bouncyCastle" className="mt-2" />
                       </div>
                     )
                   }
@@ -1072,9 +1085,13 @@ export default function SupplierQuickViewModal({
                   // For activities/soft play, show items with images
                   const isActivities = category === 'activities' || serviceType === 'activities' || category.includes('soft play')
                   if (isActivities) {
-                    const packages = displaySupplier?.packages || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
 
                     return (
                       <div className="space-y-6">
@@ -1213,6 +1230,7 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Full service hire includes delivery, setup, and collection.
                         </p>
+                        <SupplierNote category="activities" className="mt-2" />
                       </div>
                     )
                   }
@@ -1220,9 +1238,14 @@ export default function SupplierQuickViewModal({
                   // For sweet treats, show available items with multi-select options
                   const isSweetTreats = category === 'sweettreats' || category === 'sweet treats' || serviceType === 'sweettreats' || serviceType === 'sweet treats'
                   if (isSweetTreats) {
-                    const packages = displaySupplier?.packages || displaySupplier?.items || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     displaySupplier?.items ||
+                                     []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
 
                     return (
                       <div className="space-y-6">
@@ -1356,6 +1379,7 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           A fun treat station perfect for keeping energy levels up during the party.
                         </p>
+                        <SupplierNote category="sweetTreats" className="mt-2" />
                       </div>
                     )
                   }
@@ -1363,9 +1387,13 @@ export default function SupplierQuickViewModal({
                   // For catering/lunchboxes, show packages with per-child pricing
                   const isCatering = category === 'catering' || serviceType === 'catering' || category.includes('lunchbox')
                   if (isCatering) {
-                    const packages = displaySupplier?.packages || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const dietaryOptions = displaySupplier?.dietaryOptions || serviceDetails?.dietaryOptions || []
 
                     return (
@@ -1494,6 +1522,7 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Free delivery included. Fresh lunchboxes delivered direct to your party venue.
                         </p>
+                        <SupplierNote category="catering" className="mt-2" />
                       </div>
                     )
                   }
@@ -1501,9 +1530,13 @@ export default function SupplierQuickViewModal({
                   // For decorations, show packages with theme images gallery
                   const isDecorations = category === 'decorations' || serviceType === 'decorations'
                   if (isDecorations) {
-                    const packages = displaySupplier?.packages || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
 
                     // Collect unique theme images from all packages
                     const getThemeImagesGallery = () => {
@@ -1678,15 +1711,21 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Free delivery included. All decorations delivered to your door the evening before your party.
                         </p>
+                        <SupplierNote category="decorations" className="mt-2" />
                       </div>
                     )
                   }
 
                   // For balloons, show packages and delivery info
                   if (isBalloons) {
-                    const packages = displaySupplier?.packages || []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || ''
-                    const deliveryInfo = displaySupplier?.serviceDetails?.deliveryInfo || ''
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const aboutUs = serviceDetails?.aboutUs || ''
+                    const deliveryInfo = serviceDetails?.deliveryInfo || ''
 
                     return (
                       <div className="space-y-6">
@@ -1791,16 +1830,21 @@ export default function SupplierQuickViewModal({
                         <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Balloons are delivered to your home address ready for you to take to your party venue.
                         </p>
+                        <SupplierNote category="balloons" className="mt-2" />
                       </div>
                     )
                   }
 
-                  // For cakes, show flavours/dietary/sizes and delivery options
+                  // For cakes, show flavours/sizes and delivery options
                   if (isCake) {
-                    const cakeFlavours = displaySupplier?.flavours || displaySupplier?.serviceDetails?.flavours || []
-                    const cakeDietary = displaySupplier?.dietaryInfo || displaySupplier?.serviceDetails?.dietaryInfo || []
-                    const packages = displaySupplier?.packages || []
-                    const fulfilment = displaySupplier?.serviceDetails?.fulfilment || {}
+                    const serviceDetails = displaySupplier?.serviceDetails || {}
+                    const cakeFlavours = serviceDetails?.flavours || []
+                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
+                    const packages = displaySupplier?.packages ||
+                                     displaySupplier?.data?.packages ||
+                                     serviceDetails?.packages ||
+                                     []
+                    const fulfilment = serviceDetails?.fulfilment || {}
                     const offersDelivery = fulfilment.offersDelivery !== false
                     const offersCollection = fulfilment.offersCollection !== false
                     const deliveryFee = fulfilment.deliveryFee || 0
@@ -1814,23 +1858,12 @@ export default function SupplierQuickViewModal({
                                               locationString ||
                                               displaySupplier?.postcode || ''
 
-                    // Dietary label helper
-                    const DIETARY_LABELS = {
-                      'vegetarian': 'Vegetarian',
-                      'vegan': 'Vegan',
-                      'gluten-free': 'Gluten Free',
-                      'dairy-free': 'Dairy Free',
-                      'nut-free': 'Nut Free',
-                      'egg-free': 'Egg Free',
-                      'halal': 'Halal',
-                    }
-
                     return (
                       <div className="space-y-6">
                         {/* Available Flavours */}
                         {cakeFlavours.length > 0 && (
                           <div>
-                            <h3 className="font-bold text-lg text-gray-900 mb-3">Available Flavours</h3>
+                            <h3 className="font-bold text-lg text-gray-900 mb-3">Flavour options include:</h3>
                             <div className="flex flex-wrap gap-2">
                               {cakeFlavours.map((flavour, index) => (
                                 <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
@@ -1841,20 +1874,37 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Dietary Options */}
-                        {cakeDietary.length > 0 && (
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-900 mb-3">Dietary Options Available</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {cakeDietary.map((dietary, index) => (
-                                <span key={index} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-base">
-                                  {DIETARY_LABELS[dietary] || dietary}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* Allergen Information - Collapsible */}
+                        <div className="border border-gray-200 rounded-xl overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllergens(!showAllergens)}
+                            className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <span className="font-semibold text-gray-900">Allergen Information</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showAllergens ? 'rotate-180' : ''}`} />
+                          </button>
 
+                          {showAllergens && (
+                            <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Sponge contains:</p>
+                                <p className="text-sm text-gray-600">Eggs, Milk, Gluten (Wheat)</p>
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Fillings may contain:</p>
+                                <p className="text-sm text-gray-600">Milk, Soya, Gluten (Wheat), Eggs, Nuts (including hazelnuts, may contain other nuts)</p>
+                              </div>
+
+                              <div className="pt-2 border-t border-gray-200">
+                                <p className="text-xs text-gray-500 italic">
+                                  Please note: All cakes are made in an environment that handles gluten, milk, eggs, nuts, soya, peanuts, sesame, and sulphites, and may contain traces.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         {/* Sizes & Pricing */}
                         {packages.length > 0 && (
                           <div>
@@ -1869,7 +1919,7 @@ export default function SupplierQuickViewModal({
                                     <span className="font-semibold text-gray-900">£{pkg.price}</span>
                                   </div>
                                   {(pkg.serves || pkg.feeds) && (
-                                    <p className="text-base text-gray-600 mt-2">Feeds {pkg.serves || pkg.feeds} people</p>
+                                    <p className="text-base text-gray-600 mt-2">Feeds approximately {pkg.serves || pkg.feeds} people</p>
                                   )}
                                 </div>
                               ))}
@@ -1888,10 +1938,10 @@ export default function SupplierQuickViewModal({
                                 <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
                                 <div>
                                   <span className="font-medium text-gray-900">Delivery available</span>
-                                  <span className="text-gray-600"> — delivered on Friday before your party</span>
-                                  {deliveryFee > 0 && (
+                                  <span className="text-gray-600"> — delivered shortly before your party to ensure freshness</span>
+                                  {/* {deliveryFee > 0 && (
                                     <span className="text-[hsl(var(--primary-600))]"> (£{deliveryFee})</span>
-                                  )}
+                                  )} */}
                                   {deliveryFee === 0 && (
                                     <span className="text-[hsl(var(--primary-600))]"> (free)</span>
                                   )}
@@ -1903,7 +1953,7 @@ export default function SupplierQuickViewModal({
                                 <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
                                 <div>
                                   <span className="font-medium text-gray-900">Collection available</span>
-                                  <span className="text-gray-600"> — {collectionAddress || 'address provided after booking'}</span>
+                                  <span className="text-gray-600"> — {'Collect from local bakery. Address provided after booking'}</span>
                                 </div>
                               </div>
                             )}
@@ -1920,19 +1970,19 @@ export default function SupplierQuickViewModal({
                             {/* Delivery timing */}
                             <div>
                               <span className="font-semibold text-gray-900">When you'll get it: </span>
-                              <span>Cakes are delivered/ready for collection on the Friday before your party weekend</span>
+                              <span>Cakes are freshly made and delivered or ready for collection shortly before your party.</span>
                             </div>
 
                             {/* Lead Time */}
                             <div>
                               <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7-14 days notice required for custom cakes'}</span>
+                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7–14 days’ notice recommended for themed cakes'}</span>
                             </div>
 
                             {/* Storage tip */}
                             <div>
                               <span className="font-semibold text-gray-900">Storage: </span>
-                              <span>Keep in a cool place (not the fridge!) until party time for best results</span>
+                              <span>Keep in a cool place (not the fridge) until party time for best results</span>
                             </div>
 
                             {/* Customisation */}
@@ -1941,6 +1991,11 @@ export default function SupplierQuickViewModal({
                               <span>Name, age, and theme can be added - just let us know when booking!</span>
                             </div>
                           </div>
+                        </div>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4 border-t border-gray-100">
+                          <SupplierNote category="cakes" />
                         </div>
                       </div>
                     )
