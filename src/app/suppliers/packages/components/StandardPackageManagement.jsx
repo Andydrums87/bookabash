@@ -261,8 +261,8 @@ const StandardPackageManagement = ({
 
   const handleSavePackage = async () => {
     // Validate required fields
-    if (!packageFormData.name || !packageFormData.price || !packageFormData.duration) {
-      alert("Please fill in all required fields (Name, Price, Duration)")
+    if (!packageFormData.name || !packageFormData.price) {
+      alert("Please fill in all required fields (Name, Price)")
       return
     }
 
@@ -563,7 +563,7 @@ const StandardPackageManagement = ({
               {/* Duration */}
               <div>
                 <Label htmlFor="package-duration" className="text-sm font-medium">
-                  Duration *
+                  Duration <span className="text-gray-400 font-normal">(optional)</span>
                 </Label>
                 <Input
                   id="package-duration"

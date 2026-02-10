@@ -159,11 +159,13 @@ class PartyBuilderBackend {
 
         return {
           ...selectedPackage,
+          id: selectedPackage.id, // Store package ID for modal restoration
           price: selectedPackage.price,
           totalPrice: selectedPackage.price + deliveryFee,
           enhancedPrice: selectedPackage.price + deliveryFee,
           deliveryFee: deliveryFee,
           cakeCustomization: {
+            packageId: selectedPackage.id, // Store package ID for modal restoration
             size: selectedPackage.name,
             servings: selectedPackage.serves || selectedPackage.feeds || null,
             tiers: selectedPackage.tiers || 1,
@@ -389,7 +391,49 @@ class PartyBuilderBackend {
 // Replace the selectMultipleVenuesForCarousel method with this updated version:
 
 async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 50) {
-  const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
+  // Calculate total attendees for capacity matching
+  const attendees = calculateTotalAttendees(partyDetails?.guestCount || 10);
+  const requiredCapacity = attendees.forVenueCapacity;
+
+  console.log(`👥 Capacity matching: ${attendees.children} children + ${attendees.adults} adults = ${requiredCapacity} total attendees`);
+
+  // Filter venues by category first
+  let venueSuppliers = suppliers.filter(s => s.category === 'Venues');
+
+  // CAPACITY HARD FILTERS: Remove venues that are clearly wrong size
+  venueSuppliers = venueSuppliers.filter(venue => {
+    // Get capacity from all possible locations in the data structure
+    const capacity = venue.capacity ||
+                     venue.serviceDetails?.capacity ||
+                     venue.data?.serviceDetails?.capacity ||
+                     venue.serviceDetails?.venueDetails?.capacity ||
+                     venue.data?.serviceDetails?.venueDetails?.capacity ||
+                     null;
+
+    // If no capacity data, include the venue (benefit of the doubt)
+    if (!capacity) {
+      return true;
+    }
+
+    const maxCapacity = capacity.max || capacity.maximum || null;
+    const minCapacity = capacity.min || capacity.minimum || null;
+
+    // Filter out venues that are too small (can't fit the party)
+    if (maxCapacity && maxCapacity < requiredCapacity) {
+      console.log(`  ❌ ${venue.name}: Too small (max ${maxCapacity} < ${requiredCapacity} required)`);
+      return false;
+    }
+
+    // Filter out venues where party is too small for their minimum
+    if (minCapacity && minCapacity > requiredCapacity) {
+      console.log(`  ❌ ${venue.name}: Party too small (min ${minCapacity} > ${requiredCapacity} guests)`);
+      return false;
+    }
+
+    return true;
+  });
+
+  console.log(`🏠 After capacity filtering: ${venueSuppliers.length} venues remain`);
 
   // Check if this is a toddler party (ages 1-2)
   const childAge = partyDetails?.childAge || 6;
@@ -502,6 +546,48 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
       compositeScore += ratingBonus;
     }
 
+    // CAPACITY FIT SCORING - "Goldilocks" matching (right-sized venues rank higher)
+    // Get capacity from all possible locations
+    const venueCapacity = venue.capacity ||
+                          venue.serviceDetails?.capacity ||
+                          venue.data?.serviceDetails?.capacity ||
+                          venue.serviceDetails?.venueDetails?.capacity ||
+                          venue.data?.serviceDetails?.venueDetails?.capacity ||
+                          null;
+
+    let capacityFitScore = 0;
+    let capacityFitReason = 'unknown';
+
+    if (venueCapacity) {
+      const maxCapacity = venueCapacity.max || venueCapacity.maximum || null;
+
+      if (maxCapacity) {
+        const capacityRatio = maxCapacity / requiredCapacity;
+
+        if (capacityRatio >= 1 && capacityRatio <= 1.5) {
+          // Ideal: venue is 100-150% of party size (snug fit, good atmosphere)
+          capacityFitScore = 40;
+          capacityFitReason = 'ideal';
+        } else if (capacityRatio > 1.5 && capacityRatio <= 2) {
+          // Good: venue is 150-200% of party size (comfortable with room to spare)
+          capacityFitScore = 20;
+          capacityFitReason = 'good';
+        } else if (capacityRatio > 2 && capacityRatio <= 3) {
+          // Acceptable: venue is 200-300% of party size (a bit big but workable)
+          capacityFitScore = 0;
+          capacityFitReason = 'acceptable';
+        } else if (capacityRatio > 3) {
+          // Too big: venue is 300%+ of party size (wasteful, empty feel)
+          capacityFitScore = -30;
+          capacityFitReason = 'too-large';
+        }
+
+        console.log(`  📐 ${venue.name}: capacity ${maxCapacity} for ${requiredCapacity} guests (${(capacityRatio * 100).toFixed(0)}%) → ${capacityFitReason} (${capacityFitScore > 0 ? '+' : ''}${capacityFitScore})`);
+      }
+    }
+
+    compositeScore += capacityFitScore;
+
     // TODDLER PARTY BONUS: Prioritize venues with catering for ages 1-2
     // Pubs and restaurants with catering packages are ideal for toddler parties
     let hasCatering = false;
@@ -553,7 +639,14 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
       availabilityCheck,
       isAvailable: availabilityCheck.available,
       canServeLocation: locationScore >= 25,
-      hasCatering // Track if venue has catering for toddler party display
+      hasCatering, // Track if venue has catering for toddler party display
+      // Capacity fit info for UI display
+      capacityFit: {
+        score: capacityFitScore,
+        reason: capacityFitReason,
+        venueMax: venueCapacity?.max || venueCapacity?.maximum || null,
+        requiredCapacity
+      }
     };
   }));
   

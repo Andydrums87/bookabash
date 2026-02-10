@@ -286,13 +286,20 @@ export default function SelectedSupplierCard({
                 {(isCakeSupplier || type === 'cakes') && (
                   <div className="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-1.5">
                     {supplier.packageData?.name && (
-                      <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm text-xs">
-                        🎂 {supplier.packageData.name}
-                      </Badge>
-                    )}
-                    {cakeCustomization?.flavorName && (
                       <Badge className="bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm text-xs">
-                        {cakeCustomization.flavorName}
+                        {(() => {
+                          // Extract just the size name (e.g., "Medium", "Large", "Small")
+                          const name = supplier.packageData.name
+                          // Try to get a clean size name - remove serves/feeds info
+                          const sizePart = name.split('|')[0].split('(')[0].trim()
+                          // If it's a simple word like "Medium", "Large", use it
+                          // Otherwise show feeds info if available
+                          const feeds = supplier.packageData.serves || supplier.packageData.feeds
+                          if (feeds) {
+                            return `Feeds ${feeds}`
+                          }
+                          return sizePart || name
+                        })()}
                       </Badge>
                     )}
                   </div>

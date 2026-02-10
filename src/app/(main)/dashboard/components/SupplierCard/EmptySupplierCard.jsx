@@ -247,7 +247,7 @@ export default function EmptySupplierCard({
   const isBalloonSupplier = type === 'balloons'
   const isPartyBagsSupplier = type === 'partyBags'
   const isFacePaintingSupplier = type === 'facePainting'
-  const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
+  const isActivitiesSupplier = type === 'activities' || type === 'softPlay' || type === 'bouncyCastle'
   const isSweetTreatsSupplier = type === 'sweetTreats'
   const isCateringSupplier = type === 'catering'
   const isDecorationsSupplier = type === 'decorations'
@@ -462,7 +462,14 @@ export default function EmptySupplierCard({
 
       // Show toast notification
       const categoryName = getDisplayName(type)
-      const displayPrice = totalPrice || selectedPackage?.totalPrice || selectedPackage?.price || 0
+      const displayPrice = totalPrice || selectedPackage?.totalPrice || selectedPackage?.enhancedPrice || selectedPackage?.price || 0
+      console.log('🎉 handleCustomizationComplete toast:', {
+        type,
+        totalPrice,
+        selectedPackage,
+        displayPrice,
+        customizationData
+      })
       toast.success(`${categoryName} - £${Number(displayPrice).toFixed(2)}`, {
         title: `${selectedPackage?.name || 'Package'} added to your party!`,
         duration: 3000,
@@ -484,7 +491,10 @@ export default function EmptySupplierCard({
 
     // Calculate total price based on pricing model
     const guestCount = partyDetails?.guestCount || 10
-    const basePrice = pkg.price || 0
+    // Check multiple price fields that might be used
+    const basePrice = pkg.price || pkg.basePrice || pkg.enhancedPrice || pkg.totalPrice || 0
+
+    console.log('📦 handleBookPackage:', { type, pkgName: pkg.name, pkg, basePrice })
 
     let totalPrice
     let quantity
@@ -509,8 +519,12 @@ export default function EmptySupplierCard({
       totalPrice = basePrice * guestCount
       quantity = guestCount
       pricePerUnit = basePrice
+    } else if (type === 'activities' || type === 'softPlay' || type === 'bouncyCastle') {
+      // Activities/soft play - fixed price per item
+      totalPrice = basePrice
+      quantity = 1
     } else {
-      // Fixed price items
+      // Fixed price items (entertainment, etc.)
       totalPrice = pkg.totalPrice || pkg.enhancedPrice || basePrice
       quantity = 1
     }

@@ -483,7 +483,7 @@ export default function SupplierQuickViewModal({
                             src={supplierImages[0]}
                             alt="Image 1"
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                             sizes="(min-width: 1024px) 50vw, 100vw"
                           />
                           <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
@@ -502,7 +502,7 @@ export default function SupplierQuickViewModal({
                             src={supplierImages[1]}
                             alt="Image 2"
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                             sizes="(min-width: 1024px) 50vw, 100vw"
                           />
                         </div>
@@ -524,7 +524,7 @@ export default function SupplierQuickViewModal({
                             src={supplierImages[0]}
                             alt="Main image"
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                             sizes="(min-width: 1024px) 66vw, 100vw"
                           />
                           <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
@@ -546,7 +546,7 @@ export default function SupplierQuickViewModal({
                               src={supplierImages[1]}
                               alt="Gallery image 2"
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                               sizes="(min-width: 1024px) 33vw, 100vw"
                             />
                           </div>
@@ -562,7 +562,7 @@ export default function SupplierQuickViewModal({
                               src={supplierImages[2]}
                               alt="Gallery image 3"
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
                               sizes="(min-width: 1024px) 33vw, 100vw"
                             />
                             {/* +X more overlay */}
@@ -745,132 +745,41 @@ export default function SupplierQuickViewModal({
                     )
                   }
 
-                  // For face painting, show packages with designs
+                  // For face painting - simple white-label description
                   if (isFacePainting) {
-                    const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
-                    const packages = displaySupplier?.packages ||
-                                     displaySupplier?.data?.packages ||
-                                     serviceDetails?.packages ||
-                                     []
-                    const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
-
                     return (
                       <div className="space-y-6">
-                        {/* About */}
-                        {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Face Painting
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Design Collections / Packages */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Design Collections
-                                                          </h2>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
-                                  </div>
-                                  {pkg.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                  )}
-                                  {pkg.designs && pkg.designs.length > 0 && (
-                                    <div className="mb-3">
-                                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Includes designs:</p>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {pkg.designs.map((design, dIndex) => (
-                                          <span key={dIndex} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                            {design}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {pkg.features && pkg.features.length > 0 && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  {/* Book button */}
-                                  {(onBookPackage || onCustomize) && (
-                                    <button
-                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                        bookingPackageId === (pkg.id || pkg.name)
-                                          ? 'opacity-70 cursor-not-allowed'
-                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                      }`}
-                                    >
-                                      {bookingPackageId === (pkg.id || pkg.name) ? (
-                                        <span className="flex items-center justify-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </span>
-                                      ) : 'Book'}
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Time per child */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Time per design: </span>
-                              <span>{serviceDetails?.avgTimePerChild || '3-5 minutes per child for most designs'}</span>
-                            </div>
-
-                            {/* Capacity */}
-                            <div>
-                              <span className="font-semibold text-gray-900">How many kids: </span>
-                              <span>{serviceDetails?.maxChildren || 'Can paint approximately 10-15 children per hour'}</span>
-                            </div>
-
-                            {/* Paints used */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Paints used: </span>
-                              <span>{serviceDetails?.paintsUsed || 'Professional, hypoallergenic face paints safe for sensitive skin'}</span>
-                            </div>
-
-                            {/* Setup */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Setup: </span>
-                              <span>Just need a table and chair - we bring everything else!</span>
-                            </div>
-                          </div>
+                        {/* Simple description */}
+                        <div className="prose prose-sm sm:prose max-w-none">
+                          <p className="text-base text-gray-700 leading-relaxed">
+                            A fully vetted, professional face painter will attend your party with everything needed - paints, brushes, glitter, and a range of designs kids love. They'll tailor designs to match your party theme.
+                          </p>
                         </div>
 
-                        {/* Info Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Kids love choosing their design. We work continuously throughout the party so everyone gets a turn.
-                        </p>
-                        <SupplierNote category="facePainting" className="mt-2" />
+                        {/* What's included */}
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900 mb-3">What's included</h2>
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2 text-base text-gray-700">
+                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                              <span>Vetted, professional face painter for your party</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-base text-gray-700">
+                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                              <span>All paints, brushes and glitter included</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-base text-gray-700">
+                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                              <span>Designs to match your party theme</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-base text-gray-700">
+                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                              <span>Child-safe, hypoallergenic paints</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <SupplierNote category="facePainting" />
                       </div>
                     )
                   }
@@ -912,37 +821,39 @@ export default function SupplierQuickViewModal({
                                 const guestCount = partyDetails?.guestCount || 10
                                 const totalPrice = (pkg.price * guestCount).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <div className="text-right">
-                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                      <p className="text-xs text-gray-500">£{pkg.price} per bag</p>
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
+                                  <div className="flex-grow">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <div className="text-right">
+                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
+                                        <p className="text-xs text-gray-500">£{pkg.price} per bag</p>
+                                      </div>
                                     </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.contents && pkg.contents.length > 0 && (
+                                      <ul className="space-y-1.5">
+                                        {pkg.contents.map((item, cIndex) => (
+                                          <li key={cIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                            <span>{item}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && !pkg.contents && (
+                                      <ul className="space-y-1.5">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </div>
-                                  {pkg.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                  )}
-                                  {pkg.contents && pkg.contents.length > 0 && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.contents.map((item, cIndex) => (
-                                        <li key={cIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{item}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  {pkg.features && pkg.features.length > 0 && !pkg.contents && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
                                   {/* Book button */}
                                   {(onBookPackage || onCustomize) && (
                                     <button
@@ -1107,47 +1018,26 @@ export default function SupplierQuickViewModal({
                           </div>
                         )}
 
-                        {/* Equipment Items */}
+                        {/* Equipment Items - text only, hero gallery shows images */}
                         {packages.length > 0 && (
                           <div>
                             <h2 className="text-xl font-semibold text-gray-900 mb-4">
                               Available Equipment
-                                                          </h2>
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            </h2>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => {
-                                const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
                                 return (
-                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden">
-                                    {/* Item Image with View button */}
-                                    {pkg.image && (
-                                      <div className="relative h-32 w-full">
-                                        <Image
-                                          src={imageUrl}
-                                          alt={pkg.name}
-                                          fill
-                                          className="object-cover"
-                                          sizes="(max-width: 640px) 100vw, 50vw"
-                                        />
-                                        {/* View button overlay */}
-                                        <button
-                                          onClick={() => setExpandedPackageImage(imageUrl)}
-                                          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all"
-                                        >
-                                          <Maximize2 className="w-3 h-3 text-gray-600" />
-                                          <span className="text-[10px] font-medium text-gray-600">View</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                    <div className="p-4">
+                                  <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
+                                    <div className="flex-grow">
                                       <div className="flex justify-between items-start mb-2">
                                         <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                        <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                        <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
                                       </div>
                                       {pkg.description && (
                                         <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
                                       )}
                                       {pkg.features && pkg.features.length > 0 && (
-                                        <ul className="space-y-1">
+                                        <ul className="space-y-1.5">
                                           {pkg.features.map((feature, fIndex) => (
                                             <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
                                               <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
@@ -1159,27 +1049,27 @@ export default function SupplierQuickViewModal({
                                       {pkg.duration && (
                                         <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
                                       )}
-                                      {/* Book button */}
-                                      {(onBookPackage || onCustomize) && (
-                                        <button
-                                          onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                          disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                          className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                            bookingPackageId === (pkg.id || pkg.name)
-                                              ? 'opacity-70 cursor-not-allowed'
-                                              : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                          }`}
-                                        >
-                                          {bookingPackageId === (pkg.id || pkg.name) ? (
-                                            <span className="flex items-center justify-center gap-1">
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                            </span>
-                                          ) : 'Book'}
-                                        </button>
-                                      )}
                                     </div>
+                                    {/* Book button */}
+                                    {(onBookPackage || onCustomize) && (
+                                      <button
+                                        onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
+                                        disabled={bookingPackageId === (pkg.id || pkg.name)}
+                                        className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
+                                          bookingPackageId === (pkg.id || pkg.name)
+                                            ? 'opacity-70 cursor-not-allowed'
+                                            : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
+                                        }`}
+                                      >
+                                        {bookingPackageId === (pkg.id || pkg.name) ? (
+                                          <span className="flex items-center justify-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                          </span>
+                                        ) : 'Book'}
+                                      </button>
+                                    )}
                                   </div>
                                 )
                               })}
@@ -1272,10 +1162,10 @@ export default function SupplierQuickViewModal({
                               {packages.map((pkg, index) => {
                                 const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
                                 return (
-                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden">
+                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden flex flex-col">
                                     {/* Item Image with View button */}
                                     {pkg.image && (
-                                      <div className="relative h-32 w-full">
+                                      <div className="relative h-32 w-full flex-shrink-0">
                                         <Image
                                           src={imageUrl}
                                           alt={pkg.name}
@@ -1293,27 +1183,29 @@ export default function SupplierQuickViewModal({
                                         </button>
                                       </div>
                                     )}
-                                    <div className="p-4">
-                                      <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                        <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    <div className="p-4 flex flex-col flex-grow">
+                                      <div className="flex-grow">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                          <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                        </div>
+                                        {pkg.description && (
+                                          <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                        )}
+                                        {pkg.features && pkg.features.length > 0 && (
+                                          <ul className="space-y-1">
+                                            {pkg.features.map((feature, fIndex) => (
+                                              <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                                <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                                <span>{feature}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                        {pkg.duration && (
+                                          <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
+                                        )}
                                       </div>
-                                      {pkg.description && (
-                                        <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                      )}
-                                      {pkg.features && pkg.features.length > 0 && (
-                                        <ul className="space-y-1">
-                                          {pkg.features.map((feature, fIndex) => (
-                                            <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                              <span>{feature}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                      {pkg.duration && (
-                                        <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
-                                      )}
                                       {/* Book button */}
                                       {(onBookPackage || onCustomize) && (
                                         <button
@@ -1422,27 +1314,29 @@ export default function SupplierQuickViewModal({
                                 const guestCount = partyDetails?.guestCount || 10
                                 const totalPrice = (pkg.price * guestCount).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <div className="text-right">
-                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                      <p className="text-xs text-gray-500">£{pkg.price} per child</p>
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
+                                  <div className="flex-grow">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <div className="text-right">
+                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
+                                        <p className="text-xs text-gray-500">£{pkg.price} per child</p>
+                                      </div>
                                     </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && (
+                                      <ul className="space-y-1.5">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </div>
-                                  {pkg.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                  )}
-                                  {pkg.features && pkg.features.length > 0 && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
                                   {/* Book button */}
                                   {(onBookPackage || onCustomize) && (
                                     <button
@@ -1625,27 +1519,29 @@ export default function SupplierQuickViewModal({
                                 const packSize = packSizes.find(size => size >= guestCount) || packSizes[packSizes.length - 1]
                                 const totalPrice = (pkg.price * packSize).toFixed(2)
                                 return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <div className="text-right">
-                                      <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                      <p className="text-xs text-gray-500">£{pkg.price}/set × {packSize} sets</p>
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
+                                  <div className="flex-grow">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <div className="text-right">
+                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
+                                        <p className="text-xs text-gray-500">£{pkg.price}/set × {packSize} sets</p>
+                                      </div>
                                     </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && (
+                                      <ul className="space-y-1.5">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </div>
-                                  {pkg.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                  )}
-                                  {pkg.features && pkg.features.length > 0 && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
                                   {/* Book button */}
                                   {(onBookPackage || onCustomize) && (
                                     <button
@@ -1682,7 +1578,7 @@ export default function SupplierQuickViewModal({
                             {/* Delivery */}
                             <div>
                               <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{serviceDetails?.delivery || 'Delivered to your home the evening before your party (5-8pm)'}</span>
+                              <span>{serviceDetails?.delivery || 'Delivered to your home address the evening before your party (delivery time may vary)'}</span>
                             </div>
 
                             {/* Lead Time */}
@@ -1749,24 +1645,26 @@ export default function SupplierQuickViewModal({
                                                           </h2>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                    <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
+                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
+                                  <div className="flex-grow">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                      <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
+                                    </div>
+                                    {pkg.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                                    )}
+                                    {pkg.features && pkg.features.length > 0 && (
+                                      <ul className="space-y-1.5">
+                                        {pkg.features.map((feature, fIndex) => (
+                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </div>
-                                  {pkg.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                  )}
-                                  {pkg.features && pkg.features.length > 0 && (
-                                    <ul className="space-y-1.5">
-                                      {pkg.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                          <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
                                   {/* Book button */}
                                   {(onBookPackage || onCustomize) && (
                                     <button
@@ -1803,7 +1701,7 @@ export default function SupplierQuickViewModal({
                             {/* Delivery */}
                             <div>
                               <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{deliveryInfo || 'Balloons delivered to your home address on the morning of your party'}</span>
+                              <span>{deliveryInfo || 'Balloons are delivered pre-inflated to your home address shortly before your party, ready to use or take with you to your venue.'}</span>
                             </div>
 
                             {/* Lead Time */}
@@ -1815,21 +1713,21 @@ export default function SupplierQuickViewModal({
                             {/* Customisation */}
                             <div>
                               <span className="font-semibold text-gray-900">Customisation: </span>
-                              <span>Colours can be matched to your party theme - just let us know when booking</span>
+                              <span>Colours and styling are matched to your chosen party theme and age. You can share any preferences during booking.</span>
                             </div>
 
                             {/* Duration */}
                             <div>
                               <span className="font-semibold text-gray-900">How long they last: </span>
-                              <span>Helium balloons stay inflated for 12-24 hours - perfect for your party day</span>
+                              <span>Helium balloons typically stay inflated for 12–24 hours, making them ideal for party day celebrations.</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Delivery Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                        {/* <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
                           Balloons are delivered to your home address ready for you to take to your party venue.
-                        </p>
+                        </p> */}
                         <SupplierNote category="balloons" className="mt-2" />
                       </div>
                     )
@@ -1860,143 +1758,89 @@ export default function SupplierQuickViewModal({
 
                     return (
                       <div className="space-y-6">
-                        {/* Available Flavours */}
-                        {cakeFlavours.length > 0 && (
+                        {/* Sizes & Pricing - Clean table layout */}
+                        {packages.length > 0 && (
                           <div>
-                            <h3 className="font-bold text-lg text-gray-900 mb-3">Flavour options include:</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {cakeFlavours.map((flavour, index) => (
-                                <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
-                                  {flavour}
-                                </span>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                              Sizes & Pricing
+                            </h2>
+                            <div className="space-y-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                                  <div>
+                                    <span className="text-gray-900">{pkg.name}</span>
+                                    {(pkg.serves || pkg.feeds) && (
+                                      <span className="text-gray-500 text-sm ml-2">· feeds {pkg.serves || pkg.feeds}</span>
+                                    )}
+                                  </div>
+                                  <span className="font-medium text-gray-900">£{pkg.price}</span>
+                                </div>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        {/* Allergen Information - Collapsible */}
-                        <div className="border border-gray-200 rounded-xl overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => setShowAllergens(!showAllergens)}
-                            className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
-                          >
-                            <span className="font-semibold text-gray-900">Allergen Information</span>
-                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showAllergens ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {showAllergens && (
-                            <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">Sponge contains:</p>
-                                <p className="text-sm text-gray-600">Eggs, Milk, Gluten (Wheat)</p>
-                              </div>
-
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">Fillings may contain:</p>
-                                <p className="text-sm text-gray-600">Milk, Soya, Gluten (Wheat), Eggs, Nuts (including hazelnuts, may contain other nuts)</p>
-                              </div>
-
-                              <div className="pt-2 border-t border-gray-200">
-                                <p className="text-xs text-gray-500 italic">
-                                  Please note: All cakes are made in an environment that handles gluten, milk, eggs, nuts, soya, peanuts, sesame, and sulphites, and may contain traces.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {/* Sizes & Pricing */}
-                        {packages.length > 0 && (
+                        {/* Available Flavours */}
+                        {cakeFlavours.length > 0 && (
                           <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Sizes & Pricing
-                                                          </h2>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => (
-                                <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                                  <div className="flex justify-between items-start">
-                                    <span className="font-medium text-gray-900">{pkg.name}</span>
-                                    <span className="font-semibold text-gray-900">£{pkg.price}</span>
-                                  </div>
-                                  {(pkg.serves || pkg.feeds) && (
-                                    <p className="text-base text-gray-600 mt-2">Feeds approximately {pkg.serves || pkg.feeds} people</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-3">Flavours</h2>
+                            <p className="text-gray-600">{cakeFlavours.join(', ')}</p>
                           </div>
                         )}
 
                         {/* Delivery & Collection Options */}
                         <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                          <h2 className="text-xl font-semibold text-gray-900 mb-3">
                             Delivery & Collection
                           </h2>
-                          <div className="space-y-3">
+                          <div className="space-y-2 text-gray-600">
                             {offersDelivery && (
-                              <div className="flex items-start gap-3">
-                                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
-                                <div>
-                                  <span className="font-medium text-gray-900">Delivery available</span>
-                                  <span className="text-gray-600"> — delivered shortly before your party to ensure freshness</span>
-                                  {/* {deliveryFee > 0 && (
-                                    <span className="text-[hsl(var(--primary-600))]"> (£{deliveryFee})</span>
-                                  )} */}
-                                  {deliveryFee === 0 && (
-                                    <span className="text-[hsl(var(--primary-600))]"> (free)</span>
-                                  )}
-                                </div>
-                              </div>
+                              <p>
+                                <span className="text-gray-900">Delivery</span> — delivered shortly before your party
+                                {deliveryFee === 0 && <span className="text-primary-600"> (free)</span>}
+                              </p>
                             )}
                             {offersCollection && (
-                              <div className="flex items-start gap-3">
-                                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2.5 flex-shrink-0"></div>
-                                <div>
-                                  <span className="font-medium text-gray-900">Collection available</span>
-                                  <span className="text-gray-600"> — {'Collect from local bakery. Address provided after booking'}</span>
-                                </div>
-                              </div>
+                              <p>
+                                <span className="text-gray-900">Collection</span> — address provided after booking
+                              </p>
                             )}
                           </div>
                         </div>
 
                         {/* What You Need to Know */}
                         <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                          <h2 className="text-xl font-semibold text-gray-900 mb-3">
                             What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Delivery timing */}
-                            <div>
-                              <span className="font-semibold text-gray-900">When you'll get it: </span>
-                              <span>Cakes are freshly made and delivered or ready for collection shortly before your party.</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7–14 days’ notice recommended for themed cakes'}</span>
-                            </div>
-
-                            {/* Storage tip */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Storage: </span>
-                              <span>Keep in a cool place (not the fridge) until party time for best results</span>
-                            </div>
-
-                            {/* Customisation */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Customisation: </span>
-                              <span>Name, age, and theme can be added - just let us know when booking!</span>
-                            </div>
+                          </h2>
+                          <div className="space-y-2 text-gray-600">
+                            <p><span className="text-gray-900">Lead time:</span> {displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7–14 days recommended'}</p>
+                            <p><span className="text-gray-900">Storage:</span> Keep in a cool place until party time</p>
+                            <p><span className="text-gray-900">Customisation:</span> Name, age, and theme can be added when booking</p>
                           </div>
                         </div>
 
-                        {/* Disclaimer Note */}
+                        {/* Allergens - Subtle link style */}
                         <div className="pt-4 border-t border-gray-100">
-                          <SupplierNote category="cakes" />
+                          <button
+                            type="button"
+                            onClick={() => setShowAllergens(!showAllergens)}
+                            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            <span className={`transition-transform duration-200 ${showAllergens ? 'rotate-45' : ''}`}>+</span>
+                            <span>Allergen information</span>
+                          </button>
+                          {showAllergens && (
+                            <div className="mt-3 text-sm text-gray-500 space-y-1">
+                              <p><span className="text-gray-600">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
+                              <p><span className="text-gray-600">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
+                              <p className="text-xs italic text-gray-400 mt-2">Made in environment handling gluten, milk, eggs, nuts, soya, peanuts, sesame, sulphites.</p>
+                            </div>
+                          )}
                         </div>
+
+                        {/* Disclaimer Note */}
+                        <SupplierNote category="cakes" />
                       </div>
                     )
                   }

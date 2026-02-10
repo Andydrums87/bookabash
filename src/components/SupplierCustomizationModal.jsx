@@ -893,6 +893,8 @@ export default function SupplierCustomizationModal({
       serviceDetailsPackages: serviceDetails?.packages,
       found: supplierPackages?.length,
       firstPackage: supplierPackages?.[0],
+      firstPackageWhatsIncluded: supplierPackages?.[0]?.whatsIncluded,
+      firstPackageFeatures: supplierPackages?.[0]?.features,
       isMultiSelect: isMultiSelectSupplier,
       supplierTypeDetectionIsMultiSelect: supplierTypeDetection?.isMultiSelect,
       supplierType,
@@ -1328,7 +1330,29 @@ export default function SupplierCustomizationModal({
   // ✅ Initialize selected package when modal opens or supplier changes
   useEffect(() => {
     if (isOpen && packages.length > 0) {
-      // Check if supplier already has a selected package
+      // ✅ For multi-select (soft play/activities): Restore previously selected items
+      if (supplierTypeDetection.isMultiSelect) {
+        const existingSelectedIds = supplier?.packageData?.selectedItemIds ||
+                                     supplier?.packageData?.selectedItems?.map(item => item.id) ||
+                                     [];
+
+        if (existingSelectedIds.length > 0) {
+          // Verify the items still exist in packages
+          const validIds = existingSelectedIds.filter(id =>
+            packages.some(pkg => pkg.id === id)
+          );
+          if (validIds.length > 0) {
+            console.log('🎯 [Auto-Select] Restoring multi-select items:', validIds)
+            setSelectedPackageIds(validIds);
+            return;
+          }
+        }
+        // Don't set any default for multi-select - let user choose
+        setSelectedPackageIds([]);
+        return;
+      }
+
+      // Check if supplier already has a selected package by ID
       const existingPackageId = supplier?.packageData?.id || supplier?.packageId;
 
       if (existingPackageId) {
@@ -1340,7 +1364,37 @@ export default function SupplierCustomizationModal({
         }
       }
 
-      // ✅ NEW: For face painting and balloons, try to auto-select based on party theme
+      // ✅ For cakes: Check if party builder selected a package via cakeCustomization
+      if (supplierTypeDetection.isCake) {
+        const cakeCustomization = supplier?.packageData?.cakeCustomization;
+
+        // First try to match by packageId (new format)
+        if (cakeCustomization?.packageId) {
+          const packageExists = packages.some(pkg => pkg.id === cakeCustomization.packageId);
+          if (packageExists) {
+            console.log('🎂 [Auto-Select] Setting cake package based on cakeCustomization.packageId:', cakeCustomization.packageId)
+            setSelectedPackageId(cakeCustomization.packageId);
+            return;
+          }
+        }
+
+        // Fallback: match by size/name (legacy format)
+        const existingCakeSize = cakeCustomization?.size;
+        if (existingCakeSize) {
+          // Find the package by name
+          const matchingPackage = packages.find(pkg =>
+            pkg.name === existingCakeSize ||
+            pkg.name?.toLowerCase() === existingCakeSize?.toLowerCase()
+          );
+          if (matchingPackage) {
+            console.log('🎂 [Auto-Select] Setting cake package based on cakeCustomization.size:', existingCakeSize, '->', matchingPackage.id)
+            setSelectedPackageId(matchingPackage.id);
+            return;
+          }
+        }
+      }
+
+      // ✅ For face painting and balloons, try to auto-select based on party theme
       if (supplierTypeDetection.isFacePainting || supplierTypeDetection.isBalloons) {
         const partyTheme = databasePartyData?.theme || partyDetails?.theme
         if (partyTheme) {
@@ -1360,10 +1414,11 @@ export default function SupplierCustomizationModal({
     // Reset when modal closes
     if (!isOpen) {
       setSelectedPackageId(null);
+      setSelectedPackageIds([]);
       setSelectedCateringId(null);
       setCateringGuestCount(20);
     }
-  }, [isOpen, packages, supplier, supplierTypeDetection.isFacePainting, supplierTypeDetection.isBalloons, databasePartyData?.theme, partyDetails?.theme])
+  }, [isOpen, packages, supplier, supplierTypeDetection.isFacePainting, supplierTypeDetection.isBalloons, supplierTypeDetection.isCake, supplierTypeDetection.isMultiSelect, databasePartyData?.theme, partyDetails?.theme])
 
   // ✅ Restore previously selected addons when modal opens/closes
   useEffect(() => {
@@ -1396,6 +1451,13 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Handle add to plan with unified pricing data
   const handleAddToPlan = () => {
+    console.log('🚀 [CustomizationModal] handleAddToPlan called', {
+      supplierTypeDetection,
+      selectedPackageIds,
+      selectedPackageId,
+      calculateModalPricing,
+    })
+
     // Get selected addon objects
     const selectedAddonObjects = selectedAddons
       .map((addonId) => {
@@ -1667,6 +1729,13 @@ export default function SupplierCustomizationModal({
       }
     }
 
+    console.log('🎯 [CustomizationModal] handleConfirm - finalPackage:', {
+      finalPackage,
+      calculateModalPricing,
+      supplierTypeDetection,
+      selectedPackageIds,
+    })
+
     const dataToSend = {
       supplier: {
         ...supplier,
@@ -1837,17 +1906,17 @@ export default function SupplierCustomizationModal({
               <section className="space-y-5">
                 {/* Choose Size - Dropdown */}
                 <div>
-                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Cake Size</Label>
+                  <p className="text-sm text-gray-600 mb-2">Cake Size</p>
                   <Select
                     value={selectedPackageId || ''}
                     onValueChange={(value) => setSelectedPackageId(value)}
                   >
-                    <SelectTrigger className="w-full h-14 text-base font-medium bg-white border-gray-200 px-4">
+                    <SelectTrigger className="w-full h-12 text-sm bg-white border-gray-200 px-3">
                       <SelectValue placeholder="Select a size">
                         {selectedPackage && (
-                          <span>
+                          <span className="text-gray-900">
                             {selectedPackage.name}
-                            {(selectedPackage.serves || selectedPackage.feeds) && ` | Serves ${selectedPackage.serves || selectedPackage.feeds}`}
+                            {(selectedPackage.serves || selectedPackage.feeds) && ` · Serves ${selectedPackage.serves || selectedPackage.feeds}`}
                           </span>
                         )}
                       </SelectValue>
@@ -1856,10 +1925,10 @@ export default function SupplierCustomizationModal({
                       {packages.map((pkg) => {
                         const feeds = pkg.serves || pkg.feeds;
                         return (
-                          <SelectItem key={pkg.id} value={pkg.id} className="py-3 px-4">
-                            <span className="font-medium">
+                          <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 px-3 text-sm">
+                            <span className="text-gray-900">
                               {pkg.name}
-                              {feeds && ` | Serves ${feeds}`}
+                              {feeds && ` · Serves ${feeds}`}
                             </span>
                           </SelectItem>
                         );
@@ -1872,7 +1941,7 @@ export default function SupplierCustomizationModal({
                 <div className="space-y-4">
                   {/* Flavour Selection - Pills like dietary */}
                   <div>
-                    <p className="font-medium text-gray-900 text-sm mb-2">Cake Flavour</p>
+                    <p className="text-sm text-gray-600 mb-2">Cake Flavour</p>
                     {availableFlavors.length === 0 ? (
                       <span className="text-sm text-gray-500">Contact baker</span>
                     ) : (
@@ -1884,7 +1953,7 @@ export default function SupplierCustomizationModal({
                               key={flavor.id}
                               type="button"
                               onClick={() => setSelectedFlavor(flavor.id)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                              className={`px-3 py-2 rounded-lg text-sm transition-all ${
                                 isSelected
                                   ? "bg-primary-500 text-white"
                                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1898,155 +1967,25 @@ export default function SupplierCustomizationModal({
                       </div>
                     )}
                   </div>
-
-                  {/* Allergen Information - Collapsible */}
-                  <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setShowAllergens(!showAllergens)}
-                      className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <span className="font-medium text-gray-900 text-sm">Allergen Information</span>
-                      <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showAllergens ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {showAllergens && (
-                      <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Sponge contains:</p>
-                          <p className="text-sm text-gray-600">Eggs, Milk, Gluten (Wheat)</p>
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Fillings may contain:</p>
-                          <p className="text-sm text-gray-600">Milk, Soya, Gluten (Wheat), Eggs, Nuts (including hazelnuts, may contain other nuts)</p>
-                        </div>
-
-                        <div className="pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 italic">
-                            Please note: All cakes are made in an environment that handles gluten, milk, eggs, nuts, soya, peanuts, sesame, and sulphites, and may contain traces.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Delivery Method */}
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm mb-3">Delivery Method</p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Delivery Option */}
-                      {cakeFulfillmentOptions.offersDelivery && (
-                        <button
-                          type="button"
-                          onClick={() => setFulfillmentMethod("delivery")}
-                          className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
-                            fulfillmentMethod === "delivery"
-                              ? "border-[hsl(var(--primary-300))] bg-primary-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
-                        >
-                          {/* Header row */}
-                          <div className="flex items-center justify-between w-full mb-2">
-                            <span className={`font-semibold ${fulfillmentMethod === "delivery" ? "text-gray-900" : "text-gray-700"}`}>
-                              Delivery
-                            </span>
-                            {fulfillmentMethod === "delivery" && (
-                              <CheckCircle className="w-5 h-5 text-primary-500" />
-                            )}
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-xs text-gray-500 mb-3">Delivered 1-2 days before your party</p>
-
-                          {/* Price row */}
-                          <div className="flex items-center justify-between w-full mt-auto">
-                            {(() => {
-                              // Get delivery fee for currently selected package
-                              const pkgDeliveryFee = selectedPackage?.deliveryFee
-                              const effectiveDeliveryFee = pkgDeliveryFee !== undefined && pkgDeliveryFee !== null && pkgDeliveryFee !== ''
-                                ? parseFloat(pkgDeliveryFee) || 0
-                                : cakeFulfillmentOptions.deliveryFee || 0
-                              return (
-                                <span className={`text-base font-bold ${effectiveDeliveryFee > 0 ? "text-gray-900" : "text-gray-900"}`}>
-                                  {effectiveDeliveryFee > 0 ? `+£${effectiveDeliveryFee.toFixed(2)}` : "Free"}
-                                </span>
-                              )
-                            })()}
-                          </div>
-                        </button>
-                      )}
-
-                      {/* Pickup Option */}
-                      {cakeFulfillmentOptions.offersPickup && (
-                        <button
-                          type="button"
-                          onClick={() => setFulfillmentMethod("pickup")}
-                          className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
-                            fulfillmentMethod === "pickup"
-                              ? "border-[hsl(var(--primary-300))] bg-primary-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
-                        >
-                          {/* Header row */}
-                          <div className="flex items-center justify-between w-full mb-2">
-                            <span className={`font-semibold ${fulfillmentMethod === "pickup" ? "text-gray-900" : "text-gray-700"}`}>
-                              Pickup
-                            </span>
-                            {fulfillmentMethod === "pickup" && (
-                              <CheckCircle className="w-5 h-5 text-primary-500" />
-                            )}
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-xs text-gray-500 mb-3">Collect from the baker's location</p>
-
-                          {/* Price row */}
-                          <div className="flex items-center w-full mt-auto">
-                            <span className="text-base font-bold text-gray-900">Free</span>
-                          </div>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Pickup Location Info */}
-                    {fulfillmentMethod === "pickup" && (
-                      <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <div className="flex items-start gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-medium text-gray-900">Collection Address</p>
-                            <p className="text-gray-500 mt-1">The collection address will be shared after booking is confirmed.</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Delivery/Collection Note */}
-                    <p className="text-xs text-gray-500 mt-3">
-                      Delivery date and collection details are confirmed after booking.
-                    </p>
-                  </div>
                 </div>
 
                 {/* Matching Cupcakes Add-on */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <p className="font-semibold text-gray-900">Matching Cupcakes</p>
+                    <p className="text-sm text-gray-600">Matching Cupcakes</p>
                     <button
                       type="button"
                       className="text-gray-400 hover:text-gray-600"
                       title="Add matching cupcakes in your chosen flavour"
                     >
-                      <Info className="w-4 h-4" />
+                      <Info className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="space-y-2">
                     {[
                       { id: null, label: 'No cupcakes', price: 0 },
-                      { id: 'box6', label: 'Box Of 6', price: 20 },
-                      { id: 'box12', label: 'Box Of 12', price: 30 },
+                      { id: 'box6', label: 'Box of 6', price: 20 },
+                      { id: 'box12', label: 'Box of 12', price: 30 },
                       { id: 'box24', label: '2 x Box of 12', price: 50 },
                     ].map((option) => (
                       <label
@@ -2056,12 +1995,12 @@ export default function SupplierCustomizationModal({
                         <Checkbox
                           checked={selectedCupcakeOption === option.id}
                           onCheckedChange={() => setSelectedCupcakeOption(option.id)}
-                          className="w-5 h-5 rounded border-gray-300"
+                          className="w-4 h-4 rounded border-gray-300"
                         />
-                        <span className="text-gray-700">
+                        <span className="text-sm text-gray-700">
                           {option.label}
                           {option.price > 0 && (
-                            <span className="text-gray-500 ml-1">(+ £{option.price.toFixed(2)})</span>
+                            <span className="text-gray-500 ml-1">(+£{option.price.toFixed(2)})</span>
                           )}
                         </span>
                       </label>
@@ -2071,19 +2010,136 @@ export default function SupplierCustomizationModal({
 
                 {/* Special Requests */}
                 <div>
-                  <p className="font-medium text-gray-900 text-sm mb-2">Special Requests <span className="font-normal text-gray-400">(optional)</span></p>
+                  <p className="text-sm text-gray-600 mb-2">Special Requests <span className="text-gray-400">(optional)</span></p>
                   <Textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     placeholder="Add names, ages, colour preferences, or any other details here."
                     rows={2}
-                    className="bg-gray-50 border-gray-200 rounded-lg resize-none text-sm placeholder:text-gray-400"
+                    className="bg-white border-gray-200 rounded-lg resize-none text-sm placeholder:text-xs placeholder:text-gray-400"
                     maxLength={500}
                   />
                   <div className="flex justify-between items-start mt-1">
                     <p className="text-xs text-gray-400">We'll confirm all custom details with you after booking.</p>
                     <span className="text-xs text-gray-400">{customMessage.length}/500</span>
                   </div>
+                </div>
+
+                {/* Allergen Information - Subtle expandable */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllergens(!showAllergens)}
+                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <span className={`transition-transform duration-200 ${showAllergens ? 'rotate-45' : ''}`}>+</span>
+                    <span>Allergens</span>
+                  </button>
+                  {showAllergens && (
+                    <div className="mt-2 text-xs text-gray-500 space-y-1.5">
+                      <p><span className="text-gray-600">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
+                      <p><span className="text-gray-600">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
+                      <p className="italic text-gray-400">Made in environment handling gluten, milk, eggs, nuts, soya, peanuts, sesame, sulphites.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Delivery Method */}
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">Delivery Method</p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Collection Option */}
+                    {cakeFulfillmentOptions.offersPickup && (
+                      <button
+                        type="button"
+                        onClick={() => setFulfillmentMethod("pickup")}
+                        className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
+                          fulfillmentMethod === "pickup"
+                            ? "border-[hsl(var(--primary-300))] bg-primary-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        {/* Header row */}
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className={`text-sm ${fulfillmentMethod === "pickup" ? "text-gray-900" : "text-gray-700"}`}>
+                            Collection
+                          </span>
+                          {fulfillmentMethod === "pickup" && (
+                            <CheckCircle className="w-5 h-5 text-primary-500" />
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-xs text-gray-500 mb-3">Collect from the baker's location</p>
+
+                        {/* Price row */}
+                        <div className="flex items-center w-full mt-auto">
+                          <span className="text-sm text-gray-900">Free</span>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Delivery Option */}
+                    {cakeFulfillmentOptions.offersDelivery && (
+                      <button
+                        type="button"
+                        onClick={() => setFulfillmentMethod("delivery")}
+                        className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
+                          fulfillmentMethod === "delivery"
+                            ? "border-[hsl(var(--primary-300))] bg-primary-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        {/* Header row */}
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className={`text-sm ${fulfillmentMethod === "delivery" ? "text-gray-900" : "text-gray-700"}`}>
+                            Delivery
+                          </span>
+                          {fulfillmentMethod === "delivery" && (
+                            <CheckCircle className="w-5 h-5 text-primary-500" />
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-xs text-gray-500 mb-3">Delivered 1-2 days before your party</p>
+
+                        {/* Price row */}
+                        <div className="flex items-center justify-between w-full mt-auto">
+                          {(() => {
+                            // Get delivery fee for currently selected package
+                            const pkgDeliveryFee = selectedPackage?.deliveryFee
+                            const effectiveDeliveryFee = pkgDeliveryFee !== undefined && pkgDeliveryFee !== null && pkgDeliveryFee !== ''
+                              ? parseFloat(pkgDeliveryFee) || 0
+                              : cakeFulfillmentOptions.deliveryFee || 0
+                            return (
+                              <span className="text-sm text-gray-900">
+                                {effectiveDeliveryFee > 0 ? `+£${effectiveDeliveryFee.toFixed(2)}` : "Free"}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Pickup Location Info */}
+                  {fulfillmentMethod === "pickup" && (
+                    <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-gray-900">Collection Address</p>
+                          <p className="text-xs text-gray-500 mt-1">The collection address will be shared after booking is confirmed.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delivery/Collection Note */}
+                  <p className="text-xs text-gray-500 mt-3">
+                    Delivery date and collection details are confirmed after booking.
+                  </p>
                 </div>
 
                 {/* Cake Price Summary */}
@@ -2104,58 +2160,40 @@ export default function SupplierCustomizationModal({
                       </p>
                     </div>
                   )}
-                  <h4 className="font-semibold text-gray-900 text-base mb-3">Price Summary</h4>
+                  <h4 className="text-sm text-gray-600 mb-3">Price Summary</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-start text-sm">
-                      <div>
-                        <span className="text-gray-600">{selectedPackage?.name || 'Select a size'}</span>
-                        {selectedPackage && (
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {(() => {
-                              const tiers = selectedPackage.tiers || (() => {
-                                const name = selectedPackage.name?.toLowerCase() || '';
-                                if (name.includes('small') || name.includes('6"') || name.includes('6 inch')) return 1;
-                                if (name.includes('medium') || name.includes('8"') || name.includes('8 inch')) return 1;
-                                if (name.includes('large') || name.includes('10"') || name.includes('10 inch')) return 2;
-                                if (name.includes('xl') || name.includes('extra') || name.includes('12"') || name.includes('12 inch')) return 2;
-                                return 1;
-                              })();
-                              const feeds = selectedPackage.serves || selectedPackage.feeds;
-                              return `${tiers} ${tiers === 1 ? 'tier' : 'tiers'}${feeds ? ` · Feeds ${feeds}` : ''}`;
-                            })()}
-                          </div>
-                        )}
-                      </div>
-                      <span className="font-medium text-gray-900">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700">{selectedPackage?.name || 'Select a size'}</span>
+                      <span className="text-gray-900">
                         {selectedPackage ? `£${selectedPackage.price}` : '-'}
                       </span>
                     </div>
                     {fulfillmentMethod === "delivery" && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">Delivery</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-700">Delivery</span>
+                        <span className="text-gray-900">
                           {calculateModalPricing.deliveryFee > 0 ? `£${calculateModalPricing.deliveryFee.toFixed(2)}` : 'Free'}
                         </span>
                       </div>
                     )}
                     {fulfillmentMethod === "pickup" && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">Pickup</span>
-                        <span className="font-medium text-gray-900">Free</span>
+                        <span className="text-gray-700">Collection</span>
+                        <span className="text-gray-900">Free</span>
                       </div>
                     )}
                     {selectedCupcakeOption && calculateModalPricing.cupcakesPrice > 0 && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">
-                          Matching Cupcakes ({selectedCupcakeOption === 'box6' ? 'Box of 6' : selectedCupcakeOption === 'box12' ? 'Box of 12' : '2 x Box of 12'})
+                        <span className="text-gray-700">
+                          Cupcakes ({selectedCupcakeOption === 'box6' ? 'Box of 6' : selectedCupcakeOption === 'box12' ? 'Box of 12' : '2 x Box of 12'})
                         </span>
-                        <span className="font-medium text-gray-900">£{calculateModalPricing.cupcakesPrice.toFixed(2)}</span>
+                        <span className="text-gray-900">£{calculateModalPricing.cupcakesPrice.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="border-t border-gray-200 pt-2 mt-2">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900">Total</span>
-                        <span className="font-bold text-xl text-gray-900">
+                        <span className="text-sm text-gray-900">Total</span>
+                        <span className="font-semibold text-lg text-gray-900">
                           {selectedPackage ? `£${calculateModalPricing.totalPrice}` : '-'}
                         </span>
                       </div>
@@ -2165,46 +2203,41 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Face Painting - Simplified view with what's included + special requests */}
+            {/* Face Painting - Simple flat rate */}
             {supplierTypeDetection.isFacePainting && (
               <section className="space-y-4">
-                {/* What's Included */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">What's included:</h4>
-                  <ul className="space-y-2 text-sm text-gray-600">
+                <div className="bg-gray-50 rounded-xl p-5">
+                  <h4 className="font-semibold text-gray-900 mb-3">What's included</h4>
+                  <ul className="space-y-2 text-sm text-gray-700">
                     <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Professional face painter for 2 hours
+                      <span className="text-[hsl(var(--primary-500))]">✓</span>
+                      Vetted, professional face painter for your party
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      FDA-approved, hypoallergenic paints
+                      <span className="text-[hsl(var(--primary-500))]">✓</span>
+                      All paints, brushes and glitter included
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Theme-specific + classic designs
+                      <span className="text-[hsl(var(--primary-500))]">✓</span>
+                      Designs to match your party theme
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      All equipment provided
+                      <span className="text-[hsl(var(--primary-500))]">✓</span>
+                      Child-safe, hypoallergenic paints
                     </li>
                   </ul>
                 </div>
 
                 {/* Special Requests */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Let the face painter know about any design preferences or special requirements
-                  </p>
                   <Textarea
-                    placeholder="Add names, ages, colour preferences, or any other details here."
+                    placeholder="Any specific designs or requests? e.g. butterflies, superheroes, birthday child's name..."
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
                     className="bg-white border-gray-200 text-sm resize-none"
-                    rows={3}
+                    rows={2}
                   />
-                  <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
                 </div>
               </section>
             )}
@@ -2406,15 +2439,6 @@ export default function SupplierCustomizationModal({
                     )
                   })}
                 </div>
-
-                {/* Selected Items Summary */}
-                {selectedPackageIds.length > 0 && (
-                  <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-100">
-                    <p className="text-sm text-green-800 font-medium">
-                      {selectedPackageIds.length} item{selectedPackageIds.length > 1 ? 's' : ''} selected - £{calculateModalPricing.packagePrice}
-                    </p>
-                  </div>
-                )}
 
                 {/* Minimum Selection Warning */}
                 {selectedPackageIds.length === 0 && (
@@ -2782,10 +2806,10 @@ export default function SupplierCustomizationModal({
                   <h3 className="text-lg font-semibold text-gray-900">Choose Your Package</h3>
                 </div>
 
-                {/* Mobile: Horizontal scroll */}
+                {/* Mobile: Horizontal scroll with larger cards */}
                 <div className="sm:hidden relative -mx-6">
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    className="flex gap-4 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
                     style={{
                       scrollbarWidth: 'none',
                       msOverflowStyle: 'none',
@@ -2796,75 +2820,75 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const isPremium = index === packages.length - 1
                       const isMiddle = index === 1
+                      const hasBadge = isPremium || (isMiddle && pkg.popular)
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
+                          className={`relative flex-shrink-0 w-[280px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300"
+                              ? "ring-2 ring-[hsl(var(--primary-500))] border-2 border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
+                              : "border border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Selected overlay glow */}
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-[hsl(var(--primary-500))]/5 pointer-events-none z-10" />
-                          )}
                           {/* Package Image */}
-                          <div className="relative w-full h-28">
+                          <div className="relative w-full h-40">
                             {pkg.image || pkg.imageUrl ? (
                               <Image
                                 src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="200px"
+                                sizes="280px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-10 h-10 text-purple-300" />
+                                <Package className="w-12 h-12 text-purple-300" />
                               </div>
                             )}
-                            {/* Badge overlay */}
-                            {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-medium py-1 text-center">
-                                BEST VALUE
+
+                            {/* Badge overlay - positioned at bottom of image */}
+                            {hasBadge && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-semibold py-1.5 text-center">
+                                {isPremium ? 'BEST VALUE' : 'POPULAR'}
                               </div>
                             )}
-                            {isMiddle && !isPremium && pkg.popular && (
-                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-bold py-1 text-center">
-                                POPULAR
-                              </div>
-                            )}
-                            {/* Selection checkmark */}
+
+                            {/* Selection indicator on image */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center">
-                                <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                              <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
+                                <Check className="w-5 h-5 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
-                          <div className="p-3 bg-white">
-                            <h4 className="font-bold text-gray-800 text-sm mb-1">
-                              {pkg.name}
-                            </h4>
-                            <p className="font-bold text-[hsl(var(--primary-600))] text-xl mb-0.5">
-                              £{supplierTypeDetection.isPartyBags ? (pkg.price * partyBagsQuantity).toFixed(2) : pkg.enhancedPrice}
-                            </p>
+
+                          <div className={`p-4 ${isSelected ? 'bg-[hsl(var(--primary-50))]' : 'bg-white'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-gray-900 text-base">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-[hsl(var(--primary-600))] text-xl">
+                                £{supplierTypeDetection.isPartyBags ? (pkg.price * partyBagsQuantity).toFixed(2) : pkg.enhancedPrice}
+                              </p>
+                            </div>
+
                             {supplierTypeDetection.isPartyBags && (
-                              <p className="text-[10px] text-gray-500 mb-2">
-                                {partyBagsQuantity} bags
+                              <p className="text-xs text-gray-500 mb-2">
+                                {partyBagsQuantity} bags included
                               </p>
                             )}
+
                             {pkg.description && (
-                              <p className="text-[10px] text-gray-500 mb-2 line-clamp-2">
+                              <p className="text-sm text-gray-600 mb-3">
                                 {pkg.description}
                               </p>
                             )}
-                            <ul className="text-[10px] text-gray-600 space-y-0.5">
-                              {(pkg.contents || pkg.features)?.map((feature, i) => (
-                                <li key={i} className="flex items-start gap-1">
-                                  <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span className="line-clamp-1">{feature}</span>
+
+                            <ul className="text-sm text-gray-600 space-y-1.5">
+                              {(pkg.features || pkg.contents)?.map((feature, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                  <span>{feature}</span>
                                 </li>
                               ))}
                             </ul>
@@ -2910,20 +2934,20 @@ export default function SupplierCustomizationModal({
                               <Package className="w-12 h-12 text-purple-300" />
                             </div>
                           )}
-                          {/* Badge overlay */}
+                          {/* Badge overlay - at bottom of image */}
                           {isPremium && (
-                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
+                            <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
                               BEST VALUE
                             </div>
                           )}
                           {isMiddle && !isPremium && pkg.popular && (
-                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-bold py-1.5 text-center">
+                            <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-bold py-1.5 text-center">
                               MOST POPULAR
                             </div>
                           )}
                           {/* Selection checkmark */}
                           {isSelected && (
-                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-20">
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-20 shadow-md">
                               <Check className="w-4 h-4 text-white" strokeWidth={3} />
                             </div>
                           )}
@@ -2940,18 +2964,18 @@ export default function SupplierCustomizationModal({
                               {partyBagsQuantity} bags included
                             </p>
                           )}
-                          {!supplierTypeDetection.isPartyBags && (
+                          {!supplierTypeDetection.isPartyBags && !supplierTypeDetection.isBalloons && (
                             <p className="text-xs text-gray-500 mb-3">
                               {pkg.duration || 'Full party duration'}
                             </p>
                           )}
-                          {pkg.description && (
+                          {!supplierTypeDetection.isPartyBags && !supplierTypeDetection.isBalloons && pkg.description && (
                             <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                               {pkg.description}
                             </p>
                           )}
                           <ul className="text-sm text-gray-600 space-y-1.5 mb-3">
-                            {(pkg.contents || pkg.features)?.map((feature, i) => (
+                            {(pkg.features || pkg.contents)?.map((feature, i) => (
                               <li key={i} className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                                 <span>{feature}</span>
@@ -2973,220 +2997,118 @@ export default function SupplierCustomizationModal({
             )}
 
             {supplierTypeDetection.isPartyBags && selectedPackage && (
-              <section className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Number of Party Bags</h4>
-                  <p className="text-xs text-gray-600">
-                    Pre-set to match your guest count ({partyDetails?.guestCount || 10}), adjust if needed
-                  </p>
+              <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900">Number of Party Bags</h4>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <Button
+                <div className="flex items-center justify-center gap-6">
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
+                      Number(partyBagsQuantity) <= 1
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
+                    }`}
                     disabled={Number(partyBagsQuantity) <= 1}
                   >
-                    <span className="text-lg">−</span>
-                  </Button>
+                    −
+                  </button>
 
-                  <div className="text-center">
-                    <div className="text-2xl font-semibold text-gray-900">{partyBagsQuantity}</div>
-                    <div className="text-xs text-gray-500">bags</div>
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                    <div className="text-sm text-gray-500 font-medium">bags</div>
+                    <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
+                      £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                    </div>
                   </div>
 
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
                   >
-                    <span className="text-lg">+</span>
-                  </Button>
-                </div>
-
-                <div className="bg-white rounded p-3 border border-gray-200">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="font-medium text-gray-900">{partyBagsQuantity} bags</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900 text-sm">Total:</span>
-                        <span className="font-bold text-xl text-gray-900">
-                          £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    +
+                  </button>
                 </div>
               </section>
             )}
 
             {supplierTypeDetection.isCatering && selectedPackage && (
-              <section className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Number of Lunchboxes</h4>
-                  <p className="text-xs text-gray-600">
-                    Pre-set to match your guest count ({partyDetails?.guestCount || 10}), adjust if needed
-                  </p>
+              <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900">Number of Lunchboxes</h4>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <Button
+                <div className="flex items-center justify-center gap-6">
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Math.max(supplier?.minimumOrder || 10, Number(partyBagsQuantity) - 1))}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
+                      Number(partyBagsQuantity) <= (supplier?.minimumOrder || 10)
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
+                    }`}
                     disabled={Number(partyBagsQuantity) <= (supplier?.minimumOrder || 10)}
                   >
-                    <span className="text-lg">−</span>
-                  </Button>
+                    −
+                  </button>
 
-                  <div className="text-center">
-                    <div className="text-2xl font-semibold text-gray-900">{partyBagsQuantity}</div>
-                    <div className="text-xs text-gray-500">lunchboxes</div>
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                    <div className="text-sm text-gray-500 font-medium">lunchboxes</div>
+                    <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
+                      £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                    </div>
                   </div>
 
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
                   >
-                    <span className="text-lg">+</span>
-                  </Button>
+                    +
+                  </button>
                 </div>
-
-                <div className="bg-white rounded p-3 border border-gray-200">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="font-medium text-gray-900">{partyBagsQuantity} lunchboxes</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Price per lunchbox:</span>
-                      <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900 text-sm">Total:</span>
-                        <span className="font-bold text-xl text-gray-900">
-                          £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Delivery info */}
-                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-start gap-2">
-                    <Truck className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-green-800">Free Delivery Included</p>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        Delivered the evening before your party (5-8pm). You&apos;ll be emailed delivery details in advance.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Minimum order note */}
-                {(supplier?.minimumOrder || supplier?.data?.minimumOrder) && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Minimum order: {supplier?.minimumOrder || supplier?.data?.minimumOrder} lunchboxes
-                  </p>
-                )}
               </section>
             )}
 
             {supplierTypeDetection.isDecorations && selectedPackage && (
-              <section className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Guest Count</h4>
-                  <p className="text-xs text-gray-600">
-                    Tableware is supplied in packs - we'll round up to ensure you have enough
-                  </p>
+              <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-1">Guest Count</h4>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <Button
+                <div className="flex items-center justify-center gap-6">
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
+                      Number(partyBagsQuantity) <= 1
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
+                    }`}
                     disabled={Number(partyBagsQuantity) <= 1}
                   >
-                    <span className="text-lg">−</span>
-                  </Button>
+                    −
+                  </button>
 
-                  <div className="text-center">
-                    <div className="text-2xl font-semibold text-gray-900">{partyBagsQuantity}</div>
-                    <div className="text-xs text-gray-500">guests</div>
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                    <div className="text-sm text-gray-500 font-medium">guests</div>
+                    <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
+                      £{(selectedPackage.price * decorationsPackSize).toFixed(2)}
+                    </div>
                   </div>
 
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
+                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
                   >
-                    <span className="text-lg">+</span>
-                  </Button>
-                </div>
-
-                <div className="bg-white rounded p-3 border border-gray-200">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Guest count:</span>
-                      <span className="font-medium text-gray-900">{partyBagsQuantity} guests</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Pack size supplied:</span>
-                      <span className="font-medium text-gray-900">{decorationsPackSize} sets</span>
-                    </div>
-                    {decorationsPackSize > partyBagsQuantity && (
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-green-600">Buffer included:</span>
-                        <span className="font-medium text-green-600">+{decorationsPackSize - partyBagsQuantity} spare</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Price per set:</span>
-                      <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900 text-sm">Total:</span>
-                        <span className="font-bold text-xl text-gray-900">
-                          £{(selectedPackage.price * decorationsPackSize).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Delivery info */}
-                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-start gap-2">
-                    <Truck className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-green-800">Free Delivery Included</p>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        Delivered to your home the evening before (5-8pm)
-                      </p>
-                    </div>
-                  </div>
+                    +
+                  </button>
                 </div>
               </section>
             )}

@@ -43,10 +43,10 @@ const CATEGORY_NOTES = {
   "Sweet Treats": "Selection may vary based on availability. Always a delicious variety to match your theme.",
 
   // Activities / Soft Play
-  activities: "Equipment shown is representative. Exact items may vary based on availability.",
-  Activities: "Equipment shown is representative. Exact items may vary based on availability.",
-  softPlay: "Equipment shown is representative. Exact items may vary based on availability.",
-  "soft play": "Equipment shown is representative. Exact items may vary based on availability.",
+  activities: "Equipment shown is representative. Exact items and colours may vary slightly based on availability.",
+  Activities: "Equipment shown is representative. Exact items and colours may vary slightly based on availability.",
+  softPlay: "Equipment shown is representative. Exact items and colours may vary slightly based on availability.",
+  "soft play": "Equipment shown is representative. Exact items and colours may vary slightly based on availability.",
 
   // Catering
   catering: "Menu items may vary slightly based on seasonal availability.",

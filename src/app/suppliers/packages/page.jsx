@@ -218,9 +218,8 @@ const Packages = () => {
     } else {
       if (!packageFormData.name ||
           !packageFormData.description ||
-          !packageFormData.price ||
-          !packageFormData.duration) {
-        alert("Please fill in all required fields (Name, Description, Price, Duration)")
+          !packageFormData.price) {
+        alert("Please fill in all required fields (Name, Description, Price)")
         return
       }
     }
@@ -1103,7 +1102,7 @@ const Packages = () => {
                     </div>
                     <div>
                       <Label htmlFor="package-duration" className="text-sm font-medium">
-                        Duration *
+                        Duration <span className="text-gray-400 font-normal">(optional)</span>
                       </Label>
                       <Input
                         id="package-duration"
@@ -1111,7 +1110,6 @@ const Packages = () => {
                         onChange={(e) => handleFormChange("duration", e.target.value)}
                         placeholder="e.g., 2 hours"
                         className="mt-1 px-4 py-3 text-sm"
-                        required
                       />
                     </div>
                   </div>
