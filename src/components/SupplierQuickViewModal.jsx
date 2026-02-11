@@ -481,11 +481,11 @@ export default function SupplierQuickViewModal({
                   if (!displaySupplier?.serviceDetails?.aboutUs) return null
 
                   return (
-                    <div className="prose prose-sm sm:prose max-w-none">
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    <div>
+                      <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">
                         What to Expect
-                                              </h2>
-                      <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                      </h2>
+                      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                         {displaySupplier.serviceDetails.aboutUs}
                       </p>
                     </div>
@@ -1026,136 +1026,93 @@ export default function SupplierQuickViewModal({
                                      []
                     const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const dietaryOptions = displaySupplier?.dietaryOptions || serviceDetails?.dietaryOptions || []
+                    const leadTime = serviceDetails?.leadTime
+
+                    // Accordion section component for catering
+                    const CateringAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
+                        </div>
+                      )
+                    }
 
                     return (
-                      <div className="space-y-6">
-                        {/* About */}
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
                         {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Catering
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
                           </div>
                         )}
 
-                        {/* Lunchbox Packages */}
+                        {/* Lunchbox Options as cards */}
                         {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Lunchbox Options
-                                                          </h2>
-                            <p className="text-sm text-gray-500 mb-4">Price per child - order for each guest</p>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => {
-                                const guestCount = partyDetails?.guestCount || 10
-                                const totalPrice = (pkg.price * guestCount).toFixed(2)
-                                return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
-                                  <div className="flex-grow">
-                                    <div className="flex justify-between items-start mb-3">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <div className="text-right">
-                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                        <p className="text-xs text-gray-500">£{pkg.price} per child</p>
-                                      </div>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && (
-                                      <ul className="space-y-1.5">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                  {/* Book button */}
-                                  {(onBookPackage || onCustomize) && (
-                                    <button
-                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                        bookingPackageId === (pkg.id || pkg.name)
-                                          ? 'opacity-70 cursor-not-allowed'
-                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                      }`}
-                                    >
-                                      {bookingPackageId === (pkg.id || pkg.name) ? (
-                                        <span className="flex items-center justify-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </span>
-                                      ) : 'Book'}
-                                    </button>
-                                  )}
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Lunchbox Options</h2>
+                            <p className="text-xs text-gray-500 mb-3">Price per child</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
                                 </div>
-                              )})}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Dietary Options */}
-                        {dietaryOptions.length > 0 && (
-                          <div className="mb-4">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Dietary options available</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {dietaryOptions.map((option, index) => (
-                                <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm">
-                                  {typeof option === 'object' ? option.name : option}
-                                </span>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Delivery */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{serviceDetails?.delivery || 'Lunchboxes delivered chilled to your venue on the morning of your party'}</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{serviceDetails?.leadTime || '5 days notice required'}</span>
-                            </div>
-
-                            {/* Minimum Order */}
-                            {serviceDetails?.minimumOrder && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Minimum order: </span>
-                                <span>{serviceDetails.minimumOrder}</span>
-                              </div>
-                            )}
-
-                            {/* Dietary note */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Dietary requirements: </span>
-                              <span>Let us know any allergies or dietary needs when you book and we'll take care of it</span>
-                            </div>
+                        {/* Delivery Information */}
+                        <CateringAccordion id="catering-delivery" title="Delivery Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.delivery || 'Lunchboxes delivered chilled to your venue on the morning of your party.'}</p>
+                            <p>Free delivery included.</p>
                           </div>
-                        </div>
+                        </CateringAccordion>
 
-                        {/* Delivery Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Free delivery included. Fresh lunchboxes delivered direct to your party venue.
-                        </p>
-                        <SupplierNote category="catering" className="mt-2" />
+                        {/* Lead Time */}
+                        <CateringAccordion id="catering-leadtime" title="Lead Time">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{leadTime ? `${leadTime} days notice required` : '5 days notice required'}</p>
+                          </div>
+                        </CateringAccordion>
+
+                        {/* Dietary Requirements */}
+                        <CateringAccordion id="catering-dietary" title="Dietary Requirements">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            {dietaryOptions.length > 0 ? (
+                              <>
+                                <p>Options available:</p>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {dietaryOptions.map((option, index) => (
+                                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                                      {typeof option === 'object' ? option.name : option}
+                                    </span>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <p>Let us know any allergies or dietary needs when you book and we'll take care of it.</p>
+                            )}
+                          </div>
+                        </CateringAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="catering" />
+                        </div>
                       </div>
                     )
                   }
@@ -1384,26 +1341,34 @@ export default function SupplierQuickViewModal({
 
                     return (
                       <div className="divide-y divide-gray-200">
-                        {/* Sizes & Pricing - Cards layout */}
+                        {/* Sizes & Pricing - Collapsible Table */}
                         {packages.length > 0 && (
-                          <div className="pb-4">
-                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Sizes & Pricing</h2>
-                            <div className="grid grid-cols-2 gap-2">
-                              {packages.map((pkg, index) => {
-                                const size = extractSize(pkg.name)
-                                const serves = pkg.serves || pkg.feeds
-                                return (
-                                  <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
-                                    <div className="font-semibold text-gray-900 text-base">{size}</div>
-                                    {serves && (
-                                      <div className="text-gray-500 text-xs mt-0.5">serves {serves}</div>
-                                    )}
-                                    <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
-                                  </div>
-                                )
-                              })}
+                          <AccordionSection id="sizes" title="Sizes & Pricing">
+                            <div className="bg-gray-50 rounded-lg overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-gray-200">
+                                    <th className="text-left py-2.5 px-3 text-gray-500 font-medium">Size</th>
+                                    <th className="text-left py-2.5 px-3 text-gray-500 font-medium">Serves</th>
+                                    <th className="text-right py-2.5 px-3 text-gray-500 font-medium">Price</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {packages.map((pkg, index) => {
+                                    const size = extractSize(pkg.name)
+                                    const serves = pkg.serves || pkg.feeds
+                                    return (
+                                      <tr key={index} className={index !== packages.length - 1 ? "border-b border-gray-200" : ""}>
+                                        <td className="py-2.5 px-3 text-gray-900 font-medium">{size}</td>
+                                        <td className="py-2.5 px-3 text-gray-600">{serves || '—'}</td>
+                                        <td className="py-2.5 px-3 text-gray-900 font-medium text-right">£{pkg.price}</td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
                             </div>
-                          </div>
+                          </AccordionSection>
                         )}
 
                         {/* Flavours accordion */}

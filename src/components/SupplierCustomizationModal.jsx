@@ -335,9 +335,9 @@ export default function SupplierCustomizationModal({
   const [selectedFlavor, setSelectedFlavor] = useState("vanilla")
   const [selectedDietaryOptions, setSelectedDietaryOptions] = useState([]) // Array for multiple selections
   const [customMessage, setCustomMessage] = useState("")
+  const [showSpecialRequests, setShowSpecialRequests] = useState(false) // Collapsible special requests
   const [fulfillmentMethod, setFulfillmentMethod] = useState("delivery") // "delivery" or "pickup"
   const [selectedCupcakeOption, setSelectedCupcakeOption] = useState(null) // null, "box6", "box12", "box24"
-  const [showAllergens, setShowAllergens] = useState(false) // Allergens collapsible section
 
   // Party bags quantity state - ensure it's always a number
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
@@ -1911,28 +1911,23 @@ export default function SupplierCustomizationModal({
                     value={selectedPackageId || ''}
                     onValueChange={(value) => setSelectedPackageId(value)}
                   >
-                    <SelectTrigger className="w-full h-12 text-sm bg-white border-gray-200 px-3">
+                    <SelectTrigger className="w-full h-12 text-sm bg-white border-gray-200 px-3 font-normal">
                       <SelectValue placeholder="Select a size">
                         {selectedPackage && (
-                          <span className="text-gray-900">
+                          <span className="text-gray-700 font-normal">
                             {selectedPackage.name}
-                            {(selectedPackage.serves || selectedPackage.feeds) && ` · Serves ${selectedPackage.serves || selectedPackage.feeds}`}
                           </span>
                         )}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {packages.map((pkg) => {
-                        const feeds = pkg.serves || pkg.feeds;
-                        return (
-                          <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 px-3 text-sm">
-                            <span className="text-gray-900">
-                              {pkg.name}
-                              {feeds && ` · Serves ${feeds}`}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
+                      {packages.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 px-3 text-sm font-normal">
+                          <span className="text-gray-700">
+                            {pkg.name}
+                          </span>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2008,38 +2003,31 @@ export default function SupplierCustomizationModal({
                   </div>
                 </div>
 
-                {/* Special Requests */}
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Special Requests <span className="text-gray-400">(optional)</span></p>
-                  <Textarea
-                    value={customMessage}
-                    onChange={(e) => setCustomMessage(e.target.value)}
-                    placeholder="Add names, ages, colour preferences, or any other details here."
-                    rows={2}
-                    className="bg-white border-gray-200 rounded-lg resize-none text-sm placeholder:text-xs placeholder:text-gray-400"
-                    maxLength={500}
-                  />
-                  <div className="flex justify-between items-start mt-1">
-                    <p className="text-xs text-gray-400">We'll confirm all custom details with you after booking.</p>
-                    <span className="text-xs text-gray-400">{customMessage.length}/500</span>
-                  </div>
-                </div>
-
-                {/* Allergen Information - Subtle expandable */}
+                {/* Special Requests - Collapsible */}
                 <div>
                   <button
                     type="button"
-                    onClick={() => setShowAllergens(!showAllergens)}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                    onClick={() => setShowSpecialRequests(!showSpecialRequests)}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
                   >
-                    <span className={`transition-transform duration-200 ${showAllergens ? 'rotate-45' : ''}`}>+</span>
-                    <span>Allergens</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showSpecialRequests ? 'rotate-180' : ''}`} />
+                    <span>Special Requests</span>
+                    <span className="text-gray-400">(optional)</span>
                   </button>
-                  {showAllergens && (
-                    <div className="mt-2 text-xs text-gray-500 space-y-1.5">
-                      <p><span className="text-gray-600">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
-                      <p><span className="text-gray-600">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
-                      <p className="italic text-gray-400">Made in environment handling gluten, milk, eggs, nuts, soya, peanuts, sesame, sulphites.</p>
+                  {showSpecialRequests && (
+                    <div className="mt-3">
+                      <Textarea
+                        value={customMessage}
+                        onChange={(e) => setCustomMessage(e.target.value)}
+                        placeholder="Add names, ages, colour preferences, or any other details here."
+                        rows={2}
+                        className="bg-white border-gray-200 rounded-lg resize-none text-sm placeholder:text-xs placeholder:text-gray-400"
+                        maxLength={500}
+                      />
+                      <div className="flex justify-between items-start mt-1">
+                        <p className="text-xs text-gray-400">We'll confirm all custom details with you after booking.</p>
+                        <span className="text-xs text-gray-400">{customMessage.length}/500</span>
+                      </div>
                     </div>
                   )}
                 </div>
