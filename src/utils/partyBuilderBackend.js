@@ -546,8 +546,9 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
       compositeScore += ratingBonus;
     }
 
-    // CAPACITY FIT SCORING - "Goldilocks" matching (right-sized venues rank higher)
-    // Get capacity from all possible locations
+    // CAPACITY FIT SCORING - Only check minimum capacity (max capacity doesn't matter - extra room is fine)
+    // Minimum capacity check is done earlier in the hard filter (lines 404-434)
+    // No scoring penalty for large venues - extra space is a bonus, not a problem
     const venueCapacity = venue.capacity ||
                           venue.serviceDetails?.capacity ||
                           venue.data?.serviceDetails?.capacity ||
@@ -556,37 +557,15 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
                           null;
 
     let capacityFitScore = 0;
-    let capacityFitReason = 'unknown';
+    let capacityFitReason = 'fits';
 
     if (venueCapacity) {
       const maxCapacity = venueCapacity.max || venueCapacity.maximum || null;
 
       if (maxCapacity) {
-        const capacityRatio = maxCapacity / requiredCapacity;
-
-        if (capacityRatio >= 1 && capacityRatio <= 1.5) {
-          // Ideal: venue is 100-150% of party size (snug fit, good atmosphere)
-          capacityFitScore = 40;
-          capacityFitReason = 'ideal';
-        } else if (capacityRatio > 1.5 && capacityRatio <= 2) {
-          // Good: venue is 150-200% of party size (comfortable with room to spare)
-          capacityFitScore = 20;
-          capacityFitReason = 'good';
-        } else if (capacityRatio > 2 && capacityRatio <= 3) {
-          // Acceptable: venue is 200-300% of party size (a bit big but workable)
-          capacityFitScore = 0;
-          capacityFitReason = 'acceptable';
-        } else if (capacityRatio > 3) {
-          // Too big: venue is 300%+ of party size (wasteful, empty feel)
-          capacityFitScore = -30;
-          capacityFitReason = 'too-large';
-        }
-
-        console.log(`  📐 ${venue.name}: capacity ${maxCapacity} for ${requiredCapacity} guests (${(capacityRatio * 100).toFixed(0)}%) → ${capacityFitReason} (${capacityFitScore > 0 ? '+' : ''}${capacityFitScore})`);
+        console.log(`  📐 ${venue.name}: capacity ${maxCapacity} for ${requiredCapacity} guests → fits ✓`);
       }
     }
-
-    compositeScore += capacityFitScore;
 
     // TODDLER PARTY BONUS: Prioritize venues with catering for ages 1-2
     // Pubs and restaurants with catering packages are ideal for toddler parties
