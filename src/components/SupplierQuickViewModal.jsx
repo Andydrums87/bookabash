@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
-import { X, Maximize2, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
+import { X, Maximize2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import useEmblaCarousel from "embla-carousel-react"
 
@@ -32,6 +32,7 @@ export default function SupplierQuickViewModal({
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [showAllergens, setShowAllergens] = useState(false)
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [openAccordion, setOpenAccordion] = useState(null) // Track which accordion section is open
   const [expandedPackageImage, setExpandedPackageImage] = useState(null) // NEW: For expanded package images
   const scrollPositionRef = useRef(0) // Store scroll position in ref to avoid stale closure
 
@@ -327,255 +328,113 @@ export default function SupplierQuickViewModal({
               </div>
             ) : (
               <>
-                {/* Mobile: Carousel | Desktop: Gallery Grid */}
-                <div className="relative">
-                  {/* Mobile carousel with Embla for swipe support (hidden on lg+) */}
-                  <div className="lg:hidden relative h-56 sm:h-64 md:h-72 overflow-hidden">
-                    {/* Blurred background fill */}
-                    {supplierImages.length > 0 && (
-                      <div
-                        className="absolute inset-0 scale-110 z-0"
-                        style={{
-                          backgroundImage: `url(${supplierImages[carouselIndex] || supplierImages[0]})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          filter: 'blur(20px)',
-                        }}
-                      />
-                    )}
-                    {/* Dark overlay for better contrast */}
-                    <div className="absolute inset-0 bg-black/20 z-[1]" />
+                {/* Unified Carousel for both Mobile and Desktop */}
+                <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
+                  {/* Blurred background fill */}
+                  {supplierImages.length > 0 && (
+                    <div
+                      className="absolute inset-0 scale-110 z-0"
+                      style={{
+                        backgroundImage: `url(${supplierImages[carouselIndex] || supplierImages[0]})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(20px)',
+                      }}
+                    />
+                  )}
+                  {/* Dark overlay for better contrast */}
+                  <div className="absolute inset-0 bg-black/20 z-[1]" />
 
-                    {/* Embla Carousel */}
-                    <div className="overflow-hidden h-full relative z-[2]" ref={emblaRef}>
-                      <div className="flex h-full">
-                        {supplierImages.map((img, index) => (
-                          <div key={index} className="flex-[0_0_100%] min-w-0 relative h-full">
-                            <Image
-                              src={img}
-                              alt={`Image ${index + 1}`}
-                              fill
-                              className="object-contain"
-                              sizes="100vw"
-                            />
-                          </div>
-                        ))}
-                      </div>
+                  {/* Embla Carousel */}
+                  <div className="overflow-hidden h-full relative z-[2]" ref={emblaRef}>
+                    <div className="flex h-full">
+                      {supplierImages.map((img, index) => (
+                        <div key={index} className="flex-[0_0_100%] min-w-0 relative h-full">
+                          <Image
+                            src={img}
+                            alt={`Image ${index + 1}`}
+                            fill
+                            className="object-contain"
+                            sizes="100vw"
+                          />
+                        </div>
+                      ))}
                     </div>
+                  </div>
 
-                    {/* Navigation arrows */}
-                    {supplierImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={scrollPrev}
-                          className={`
-                            absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full
-                            shadow-lg flex items-center justify-center active:scale-95
-                            transition-all duration-200 z-20
-                            ${carouselIndex > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-                          `}
-                          aria-label="Previous image"
-                        >
-                          <ChevronLeft className="w-5 h-5 text-gray-800" />
-                        </button>
-                        <button
-                          onClick={scrollNext}
-                          className={`
-                            absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full
-                            shadow-lg flex items-center justify-center active:scale-95
-                            transition-all duration-200 z-20
-                            ${carouselIndex < supplierImages.length - 1 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-                          `}
-                          aria-label="Next image"
-                        >
-                          <ChevronRight className="w-5 h-5 text-gray-800" />
-                        </button>
-                      </>
-                    )}
-
-                    {/* Navigation dots */}
-                    {supplierImages.length > 1 && (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-                        {supplierImages.map((_, idx) => (
-                          <div
-                            key={idx}
-                            className={`
-                              w-1.5 h-1.5 rounded-full transition-all duration-200
-                              ${idx === carouselIndex
-                                ? "bg-white"
-                                : "bg-white/50"
-                              }
-                            `}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Maximize button */}
-                    {supplierImages.length > 0 && (
+                  {/* Navigation arrows */}
+                  {supplierImages.length > 1 && (
+                    <>
                       <button
-                        onClick={() => {
-                          setLightboxIndex(carouselIndex)
-                          setShowLightbox(true)
-                        }}
-                        className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
+                        onClick={scrollPrev}
+                        className={`
+                          absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 lg:w-10 lg:h-10 bg-white/90 backdrop-blur-sm rounded-full
+                          shadow-lg flex items-center justify-center active:scale-95 hover:bg-white
+                          transition-all duration-200 z-20
+                          ${carouselIndex > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                        `}
+                        aria-label="Previous image"
                       >
-                        <Maximize2 className="w-4 h-4 text-white" />
-                        <span className="text-white text-xs font-medium">View</span>
+                        <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-gray-800" />
                       </button>
-                    )}
-
-                    {/* Image counter */}
-                    {supplierImages.length > 1 && (
-                      <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full">
-                        <span className="text-white text-xs font-medium">{carouselIndex + 1}/{supplierImages.length}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Desktop gallery grid (hidden below lg) - adapts to image count */}
-                  <div className="hidden lg:block">
-                    {/* Single image - full width with blurred background */}
-                    {supplierImages.length === 1 && (
-                      <div
-                        className="relative h-80 rounded-b-2xl overflow-hidden cursor-pointer group"
-                        onClick={() => {
-                          setLightboxIndex(0)
-                          setShowLightbox(true)
-                        }}
+                      <button
+                        onClick={scrollNext}
+                        className={`
+                          absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 lg:w-10 lg:h-10 bg-white/90 backdrop-blur-sm rounded-full
+                          shadow-lg flex items-center justify-center active:scale-95 hover:bg-white
+                          transition-all duration-200 z-20
+                          ${carouselIndex < supplierImages.length - 1 ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                        `}
+                        aria-label="Next image"
                       >
-                        {/* Blurred background fill */}
-                        <div
-                          className="absolute inset-0 scale-110"
-                          style={{
-                            backgroundImage: `url(${supplierImages[0]})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'blur(20px)',
+                        <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-gray-800" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Navigation dots */}
+                  {supplierImages.length > 1 && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                      {supplierImages.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            emblaApi?.scrollTo(idx)
                           }}
+                          className={`
+                            w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-full transition-all duration-200 hover:scale-110
+                            ${idx === carouselIndex
+                              ? "bg-white"
+                              : "bg-white/50 hover:bg-white/70"
+                            }
+                          `}
+                          aria-label={`Go to image ${idx + 1}`}
                         />
-                        {/* Main image with contain */}
-                        <Image
-                          src={supplierImages[0]}
-                          alt="Main image"
-                          fill
-                          className="object-contain group-hover:scale-105 transition-transform duration-300 relative z-10"
-                          sizes="(min-width: 1024px) 100vw, 100vw"
-                        />
-                        <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
-                          <Maximize2 className="w-4 h-4 text-white" />
-                          <span className="text-white text-xs font-medium">View</span>
-                        </button>
-                      </div>
-                    )}
+                      ))}
+                    </div>
+                  )}
 
-                    {/* Two images - side by side */}
-                    {supplierImages.length === 2 && (
-                      <div className="grid grid-cols-2 gap-2 h-80">
-                        <div
-                          className="relative rounded-bl-2xl overflow-hidden cursor-pointer group"
-                          onClick={() => {
-                            setLightboxIndex(0)
-                            setShowLightbox(true)
-                          }}
-                        >
-                          <Image
-                            src={supplierImages[0]}
-                            alt="Image 1"
-                            fill
-                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                            sizes="(min-width: 1024px) 50vw, 100vw"
-                          />
-                          <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
-                            <Maximize2 className="w-4 h-4 text-white" />
-                            <span className="text-white text-xs font-medium">View</span>
-                          </button>
-                        </div>
-                        <div
-                          className="relative rounded-br-2xl overflow-hidden cursor-pointer group"
-                          onClick={() => {
-                            setLightboxIndex(1)
-                            setShowLightbox(true)
-                          }}
-                        >
-                          <Image
-                            src={supplierImages[1]}
-                            alt="Image 2"
-                            fill
-                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                            sizes="(min-width: 1024px) 50vw, 100vw"
-                          />
-                        </div>
-                      </div>
-                    )}
+                  {/* Maximize button */}
+                  {supplierImages.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setLightboxIndex(carouselIndex)
+                        setShowLightbox(true)
+                      }}
+                      className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
+                    >
+                      <Maximize2 className="w-4 h-4 text-white" />
+                      <span className="text-white text-xs font-medium">View</span>
+                    </button>
+                  )}
 
-                    {/* Three or more images - original layout */}
-                    {supplierImages.length >= 3 && (
-                      <div className="grid grid-cols-3 gap-2 h-80">
-                        {/* Main large image */}
-                        <div
-                          className="col-span-2 relative rounded-bl-2xl overflow-hidden cursor-pointer group"
-                          onClick={() => {
-                            setLightboxIndex(0)
-                            setShowLightbox(true)
-                          }}
-                        >
-                          <Image
-                            src={supplierImages[0]}
-                            alt="Main image"
-                            fill
-                            className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                            sizes="(min-width: 1024px) 66vw, 100vw"
-                          />
-                          <button className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg">
-                            <Maximize2 className="w-4 h-4 text-white" />
-                            <span className="text-white text-xs font-medium">View</span>
-                          </button>
-                        </div>
-
-                        {/* Side images stack */}
-                        <div className="flex flex-col gap-2">
-                          <div
-                            className="relative flex-1 overflow-hidden cursor-pointer group"
-                            onClick={() => {
-                              setLightboxIndex(1)
-                              setShowLightbox(true)
-                            }}
-                          >
-                            <Image
-                              src={supplierImages[1]}
-                              alt="Gallery image 2"
-                              fill
-                              className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                              sizes="(min-width: 1024px) 33vw, 100vw"
-                            />
-                          </div>
-
-                          <div
-                            className="relative flex-1 rounded-br-2xl overflow-hidden cursor-pointer group"
-                            onClick={() => {
-                              setLightboxIndex(2)
-                              setShowLightbox(true)
-                            }}
-                          >
-                            <Image
-                              src={supplierImages[2]}
-                              alt="Gallery image 3"
-                              fill
-                              className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                              sizes="(min-width: 1024px) 33vw, 100vw"
-                            />
-                            {/* +X more overlay */}
-                            {supplierImages.length > 3 && (
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <span className="text-white text-2xl font-bold">+{supplierImages.length - 3}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Image counter */}
+                  {supplierImages.length > 1 && (
+                    <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full">
+                      <span className="text-white text-xs font-medium">{carouselIndex + 1}/{supplierImages.length}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content with padding */}
@@ -607,11 +466,11 @@ export default function SupplierQuickViewModal({
                     if (!cakeDescription) return null
 
                     return (
-                      <div className="prose prose-sm sm:prose max-w-none">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                      <div>
+                        <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">
                           About This Cake
-                                                  </h2>
-                        <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                        </h2>
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                           {cakeDescription}
                         </p>
                       </div>
@@ -642,7 +501,7 @@ export default function SupplierQuickViewModal({
                   const isFacePainting = category === 'facepainting' || serviceType === 'facepainting' || category.includes('face')
                   const isEntertainment = category === 'entertainment' || category === 'entertainer' || serviceType === 'entertainment' || serviceType === 'entertainer'
 
-                  // For entertainers, show "What You Need to Know" with timing info
+                  // For entertainers, show accordion-style details
                   if (isEntertainment) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
                     const ageGroups = serviceDetails?.ageGroups || []
@@ -661,125 +520,159 @@ export default function SupplierQuickViewModal({
                       return `${min}-${max} years`
                     }
 
-                    return (
-                      <div className="space-y-6">
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Age Range */}
-                            {ageGroups.length > 0 && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Perfect for: </span>
-                                <span>{formatAgeRange(ageGroups)}</span>
-                              </div>
-                            )}
-
-                            {/* Space Requirements */}
-                            {serviceDetails.performanceSpecs?.spaceRequired && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Space needed: </span>
-                                <span>{serviceDetails.performanceSpecs.spaceRequired}</span>
-                              </div>
-                            )}
-
-                            {/* Travel Radius */}
-                            {serviceDetails.travelRadius && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Coverage area: </span>
-                                <span>Up to {serviceDetails.travelRadius} miles</span>
-                              </div>
-                            )}
-
-                            {/* Timings */}
-                            <div>
-                              <span className="font-semibold text-gray-900 block mb-2">Timings:</span>
-                              <div className="pl-4 space-y-1.5">
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                                  <span>Entertainer typically arrives 15-30 minutes before to setup</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                                  <span>First hour of games and activities</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                                  <span>20 minutes for food and refreshments</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                                  <span>Final 40 minutes of more entertainment</span>
-                                </div>
-                              </div>
-                            </div>
+                    // Accordion section component for entertainer
+                    const EntertainerAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
                           </div>
                         </div>
+                      )
+                    }
 
-                        {/* Meet the Entertainer */}
-                        {serviceDetails.personalBio?.personalStory && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Meet the Entertainer
-                                                          </h2>
-                            {serviceDetails.personalBio.yearsExperience && (
-                              <p className="text-base text-gray-700 mb-3">
-                                <span className="font-semibold">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties
-                              </p>
-                            )}
-                            <p className="text-base text-gray-700 leading-relaxed">
-                              {serviceDetails.personalBio.personalStory}
+                    return (
+                      <div className="space-y-4">
+                        {/* About - Always visible */}
+                        <div className="pb-4 border-b border-gray-200">
+                          <h3 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h3>
+                          <p className="text-sm text-gray-600">
+                            Professional children's entertainer providing fun-filled party entertainment with games, activities, and magical moments that keep kids engaged throughout.
+                          </p>
+                        </div>
+
+                        {/* Accordion Sections */}
+                        {ageGroups.length > 0 && (
+                          <EntertainerAccordion id="entertainer-ages" title="Suitable Ages">
+                            <p className="text-sm text-gray-600">
+                              Perfect for children aged {formatAgeRange(ageGroups)}.
                             </p>
-                          </div>
+                          </EntertainerAccordion>
                         )}
 
-                        {/* Info Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.
-                        </p>
-                        <SupplierNote category="entertainment" className="mt-2" />
+                        {serviceDetails.performanceSpecs?.spaceRequired && (
+                          <EntertainerAccordion id="entertainer-space" title="Space Required">
+                            <p className="text-sm text-gray-600">
+                              {serviceDetails.performanceSpecs.spaceRequired}
+                            </p>
+                          </EntertainerAccordion>
+                        )}
+
+                        {serviceDetails.travelRadius && (
+                          <EntertainerAccordion id="entertainer-coverage" title="Coverage Area">
+                            <p className="text-sm text-gray-600">
+                              Available for bookings up to {serviceDetails.travelRadius} miles from their location.
+                            </p>
+                          </EntertainerAccordion>
+                        )}
+
+                        <EntertainerAccordion id="entertainer-schedule" title="Party Schedule">
+                          <div className="text-sm text-gray-600 space-y-2">
+                            <p>• Entertainer arrives 15-30 minutes before to setup</p>
+                            <p>• First hour of games and activities</p>
+                            <p>• 20 minutes for food and refreshments</p>
+                            <p>• Final 40 minutes of more entertainment</p>
+                          </div>
+                        </EntertainerAccordion>
+
+                        {serviceDetails.personalBio?.personalStory && (
+                          <EntertainerAccordion id="entertainer-bio" title="Meet the Entertainer">
+                            <div className="text-sm text-gray-600">
+                              {serviceDetails.personalBio.yearsExperience && (
+                                <p className="mb-2">
+                                  <span className="font-semibold">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties.
+                                </p>
+                              )}
+                              <p>{serviceDetails.personalBio.personalStory}</p>
+                            </div>
+                          </EntertainerAccordion>
+                        )}
+
+                        <EntertainerAccordion id="entertainer-equipment" title="What's Included">
+                          <p className="text-sm text-gray-600">
+                            Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.
+                          </p>
+                        </EntertainerAccordion>
+
+                        <SupplierNote category="entertainment" className="mt-4" />
                       </div>
                     )
                   }
 
                   // For face painting - simple white-label description
                   if (isFacePainting) {
+                    // Accordion section component for face painting
+                    const FacePaintAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
-                      <div className="space-y-6">
-                        {/* Simple description */}
-                        <div className="prose prose-sm sm:prose max-w-none">
-                          <p className="text-base text-gray-700 leading-relaxed">
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
+                        <div className="pb-4">
+                          <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                          <p className="text-sm text-gray-600 leading-relaxed">
                             A fully vetted, professional face painter will attend your party with everything needed - paints, brushes, glitter, and a range of designs kids love. They'll tailor designs to match your party theme.
                           </p>
                         </div>
 
-                        {/* What's included */}
-                        <div>
-                          <h2 className="text-lg font-semibold text-gray-900 mb-3">What's included</h2>
+                        {/* What's Included */}
+                        <FacePaintAccordion id="fp-included" title="What's Included">
                           <ul className="space-y-2">
-                            <li className="flex items-start gap-2 text-base text-gray-700">
+                            <li className="flex items-start gap-2 text-sm text-gray-600">
                               <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                               <span>Vetted, professional face painter for your party</span>
                             </li>
-                            <li className="flex items-start gap-2 text-base text-gray-700">
+                            <li className="flex items-start gap-2 text-sm text-gray-600">
                               <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                               <span>All paints, brushes and glitter included</span>
                             </li>
-                            <li className="flex items-start gap-2 text-base text-gray-700">
+                            <li className="flex items-start gap-2 text-sm text-gray-600">
                               <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                               <span>Designs to match your party theme</span>
                             </li>
-                            <li className="flex items-start gap-2 text-base text-gray-700">
+                            <li className="flex items-start gap-2 text-sm text-gray-600">
                               <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
                               <span>Child-safe, hypoallergenic paints</span>
                             </li>
                           </ul>
-                        </div>
+                        </FacePaintAccordion>
 
-                        <SupplierNote category="facePainting" />
+                        {/* How It Works */}
+                        <FacePaintAccordion id="fp-howworks" title="How It Works">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Your face painter will arrive at your venue ready to set up. They'll work through guests throughout the party, creating designs that match your theme.</p>
+                          </div>
+                        </FacePaintAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="facePainting" />
+                        </div>
                       </div>
                     )
                   }
@@ -788,137 +681,82 @@ export default function SupplierQuickViewModal({
                   const isPartyBags = category === 'partybags' || category === 'party bags' || serviceType === 'partybags' || category.includes('party bag')
                   if (isPartyBags) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
                     const packages = displaySupplier?.packages ||
                                      displaySupplier?.data?.packages ||
                                      serviceDetails?.packages ||
                                      []
                     const aboutUs = serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const leadTime = serviceDetails?.leadTime
 
-                    return (
-                      <div className="space-y-6">
-                        {/* About */}
-                        {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Party Bags
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Packages */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Party Bag Options
-                                                          </h2>
-                            <p className="text-sm text-gray-500 mb-4">Price per bag - order one for each guest</p>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => {
-                                const guestCount = partyDetails?.guestCount || 10
-                                const totalPrice = (pkg.price * guestCount).toFixed(2)
-                                return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
-                                  <div className="flex-grow">
-                                    <div className="flex justify-between items-start mb-3">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <div className="text-right">
-                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                        <p className="text-xs text-gray-500">£{pkg.price} per bag</p>
-                                      </div>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.contents && pkg.contents.length > 0 && (
-                                      <ul className="space-y-1.5">
-                                        {pkg.contents.map((item, cIndex) => (
-                                          <li key={cIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{item}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && !pkg.contents && (
-                                      <ul className="space-y-1.5">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                  {/* Book button */}
-                                  {(onBookPackage || onCustomize) && (
-                                    <button
-                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                        bookingPackageId === (pkg.id || pkg.name)
-                                          ? 'opacity-70 cursor-not-allowed'
-                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                      }`}
-                                    >
-                                      {bookingPackageId === (pkg.id || pkg.name) ? (
-                                        <span className="flex items-center justify-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </span>
-                                      ) : 'Book'}
-                                    </button>
-                                  )}
-                                </div>
-                              )})}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Delivery Info */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{'Free delivery included — delivered shortly before your party to ensure everything arrives fresh and ready.'}</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '5 days notice required'}</span>
-                            </div>
-
-                            {/* Allergen Info */}
-                            {serviceDetails?.allergenInfo && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Allergen info: </span>
-                                <span>Options available on request. Please share any allergy details when booking.</span>
-                              </div>
-                            )}
-
-                            {/* Minimum Order */}
-                            {serviceDetails?.minimumOrder && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Minimum order: </span>
-                                <span>{serviceDetails.minimumOrder} bags</span>
-                              </div>
-                            )}
+                    // Accordion section component for party bags
+                    const PartyBagAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
                           </div>
                         </div>
+                      )
+                    }
+
+                    return (
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
+                        {aboutUs && (
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
+                          </div>
+                        )}
+
+                        {/* Packages as cards */}
+                        {packages.length > 0 && (
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Options & Pricing</h2>
+                            <p className="text-xs text-gray-500 mb-3">Price per bag</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Delivery Information */}
+                        <PartyBagAccordion id="pb-delivery" title="Delivery Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Free delivery included — delivered shortly before your party to ensure everything arrives fresh and ready.</p>
+                          </div>
+                        </PartyBagAccordion>
+
+                        {/* Lead Time */}
+                        <PartyBagAccordion id="pb-leadtime" title="Lead Time">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{leadTime ? `${leadTime} days notice required` : '5 days notice required'}</p>
+                          </div>
+                        </PartyBagAccordion>
+
+                        {/* Allergens */}
+                        <PartyBagAccordion id="pb-allergens" title="Allergens">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Options available on request. Please share any allergy details when booking.</p>
+                          </div>
+                        </PartyBagAccordion>
 
                         {/* Disclaimer Note */}
-                        <div className="pt-4 border-t border-gray-100">
+                        <div className="pt-4">
                           <SupplierNote category="partyBags" />
                         </div>
                       </div>
@@ -931,64 +769,69 @@ export default function SupplierQuickViewModal({
                     const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
                     const serviceDetails = displaySupplier?.serviceDetails || {}
 
+                    // Accordion section component for bouncy castle
+                    const BouncyAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
-                      <div className="space-y-6">
-                        {/* About */}
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
                         {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Bouncy Castle
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
                           </div>
                         )}
 
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Hire Duration */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Hire duration: </span>
-                              <span>Included for the full duration of your party</span>
-                            </div>
-
-                            {/* Space Required */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Space needed: </span>
-                              <span>{serviceDetails?.spaceRequired || 'Flat outdoor area or large indoor space with high ceiling'}</span>
-                            </div>
-
-                            {/* Setup */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Setup: </span>
-                              <span>We arrive 30-45 minutes before to inflate and secure the castle</span>
-                            </div>
-
-                            {/* Collection */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Collection: </span>
-                              <span>We pack away after your party - you don't need to do anything!</span>
-                            </div>
-
-                            {/* Safety */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Safety: </span>
-                              <span>All castles are safety-tested and we provide safety mats</span>
-                            </div>
+                        {/* Hire Duration */}
+                        <BouncyAccordion id="bc-duration" title="Hire Duration">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Included for the full duration of your party.</p>
                           </div>
-                        </div>
+                        </BouncyAccordion>
 
-                        {/* Info Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          The bouncy castle is included for your entire party duration.
-                        </p>
-                        <SupplierNote category="bouncyCastle" className="mt-2" />
+                        {/* Space Required */}
+                        <BouncyAccordion id="bc-space" title="Space Required">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.spaceRequired || 'Flat outdoor area or large indoor space with high ceiling.'}</p>
+                          </div>
+                        </BouncyAccordion>
+
+                        {/* Setup & Collection */}
+                        <BouncyAccordion id="bc-setup" title="Setup & Collection">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p><span className="font-medium text-gray-900">Setup:</span> We arrive 30-45 minutes before to inflate and secure the castle.</p>
+                            <p><span className="font-medium text-gray-900">Collection:</span> We pack away after your party - you don't need to do anything!</p>
+                          </div>
+                        </BouncyAccordion>
+
+                        {/* Safety */}
+                        <BouncyAccordion id="bc-safety" title="Safety Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>All castles are safety-tested and we provide safety mats.</p>
+                          </div>
+                        </BouncyAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="bouncyCastle" />
+                        </div>
                       </div>
                     )
                   }
@@ -997,130 +840,90 @@ export default function SupplierQuickViewModal({
                   const isActivities = category === 'activities' || serviceType === 'activities' || category.includes('soft play')
                   if (isActivities) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
                     const packages = displaySupplier?.packages ||
                                      displaySupplier?.data?.packages ||
                                      serviceDetails?.packages ||
                                      []
                     const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
 
-                    return (
-                      <div className="space-y-6">
-                        {/* About */}
-                        {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Soft Play
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Equipment Items - text only, hero gallery shows images */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Available Equipment
-                            </h2>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => {
-                                return (
-                                  <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
-                                    <div className="flex-grow">
-                                      <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                        <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
-                                      </div>
-                                      {pkg.description && (
-                                        <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                      )}
-                                      {pkg.features && pkg.features.length > 0 && (
-                                        <ul className="space-y-1.5">
-                                          {pkg.features.map((feature, fIndex) => (
-                                            <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                              <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                              <span>{feature}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                      {pkg.duration && (
-                                        <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
-                                      )}
-                                    </div>
-                                    {/* Book button */}
-                                    {(onBookPackage || onCustomize) && (
-                                      <button
-                                        onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                        disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                        className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                          bookingPackageId === (pkg.id || pkg.name)
-                                            ? 'opacity-70 cursor-not-allowed'
-                                            : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                        }`}
-                                      >
-                                        {bookingPackageId === (pkg.id || pkg.name) ? (
-                                          <span className="flex items-center justify-center gap-1">
-                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                          </span>
-                                        ) : 'Book'}
-                                      </button>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Age Range */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Perfect for: </span>
-                              <span>{serviceDetails?.ageRange || 'Ages 1-6 years'}</span>
-                            </div>
-
-                            {/* Space Required */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Space needed: </span>
-                              <span>{serviceDetails?.spaceRequired || 'Minimum 3m x 3m clear floor area'}</span>
-                            </div>
-
-                            {/* Setup & Collection */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Delivery & setup: </span>
-                              <span>{serviceDetails?.setupTime || 'We deliver and set up 30-60 mins before your party starts'}</span>
-                            </div>
-
-                            {/* Collection */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Collection: </span>
-                              <span>{serviceDetails?.collectionTime || 'Collected after your party - no need to pack anything away!'}</span>
-                            </div>
-
-                            {/* Safety */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Safety: </span>
-                              <span>All equipment is cleaned and safety-checked before every hire</span>
-                            </div>
+                    // Accordion section component for activities
+                    const ActivityAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
                           </div>
                         </div>
+                      )
+                    }
 
-                        {/* Info Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Full service hire includes delivery, setup, and collection.
-                        </p>
-                        <SupplierNote category="activities" className="mt-2" />
+                    return (
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
+                        {aboutUs && (
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
+                          </div>
+                        )}
+
+                        {/* Equipment as cards */}
+                        {packages.length > 0 && (
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Equipment & Pricing</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Age Range */}
+                        <ActivityAccordion id="act-age" title="Suitable Ages">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.ageRange || 'Ages 1-6 years'}</p>
+                          </div>
+                        </ActivityAccordion>
+
+                        {/* Space Required */}
+                        <ActivityAccordion id="act-space" title="Space Required">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.spaceRequired || 'Minimum 3m x 3m clear floor area'}</p>
+                          </div>
+                        </ActivityAccordion>
+
+                        {/* Setup & Collection */}
+                        <ActivityAccordion id="act-setup" title="Setup & Collection">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p><span className="font-medium text-gray-900">Delivery:</span> {serviceDetails?.setupTime || 'We deliver and set up 30-60 mins before your party starts'}</p>
+                            <p><span className="font-medium text-gray-900">Collection:</span> {serviceDetails?.collectionTime || 'Collected after your party - no need to pack anything away!'}</p>
+                          </div>
+                        </ActivityAccordion>
+
+                        {/* Safety */}
+                        <ActivityAccordion id="act-safety" title="Safety Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>All equipment is cleaned and safety-checked before every hire.</p>
+                          </div>
+                        </ActivityAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="activities" />
+                        </div>
                       </div>
                     )
                   }
@@ -1129,149 +932,85 @@ export default function SupplierQuickViewModal({
                   const isSweetTreats = category === 'sweettreats' || category === 'sweet treats' || serviceType === 'sweettreats' || serviceType === 'sweet treats'
                   if (isSweetTreats) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
                     const packages = displaySupplier?.packages ||
                                      displaySupplier?.data?.packages ||
                                      serviceDetails?.packages ||
                                      displaySupplier?.items ||
                                      []
                     const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const leadTime = serviceDetails?.leadTime
 
-                    return (
-                      <div className="space-y-6">
-                        {/* About */}
-                        {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Sweet Treats
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Available Items */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Available Treats
-                                                          </h2>
-                            <p className="text-sm text-gray-500 mb-4">Pick and choose from our range - mix and match for your perfect party!</p>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {packages.map((pkg, index) => {
-                                const imageUrl = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
-                                return (
-                                  <div key={index} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors overflow-hidden flex flex-col">
-                                    {/* Item Image with View button */}
-                                    {pkg.image && (
-                                      <div className="relative h-32 w-full flex-shrink-0">
-                                        <Image
-                                          src={imageUrl}
-                                          alt={pkg.name}
-                                          fill
-                                          className="object-cover"
-                                          sizes="(max-width: 640px) 100vw, 50vw"
-                                        />
-                                        {/* View button overlay */}
-                                        <button
-                                          onClick={() => setExpandedPackageImage(imageUrl)}
-                                          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all"
-                                        >
-                                          <Maximize2 className="w-3 h-3 text-gray-600" />
-                                          <span className="text-[10px] font-medium text-gray-600">View</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                    <div className="p-4 flex flex-col flex-grow">
-                                      <div className="flex-grow">
-                                        <div className="flex justify-between items-start mb-2">
-                                          <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                          <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                        </div>
-                                        {pkg.description && (
-                                          <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                        )}
-                                        {pkg.features && pkg.features.length > 0 && (
-                                          <ul className="space-y-1">
-                                            {pkg.features.map((feature, fIndex) => (
-                                              <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                                <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                                <span>{feature}</span>
-                                              </li>
-                                            ))}
-                                          </ul>
-                                        )}
-                                        {pkg.duration && (
-                                          <p className="text-xs text-gray-500 mt-2">Duration: {pkg.duration}</p>
-                                        )}
-                                      </div>
-                                      {/* Book button */}
-                                      {(onBookPackage || onCustomize) && (
-                                        <button
-                                          onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                          disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                          className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                            bookingPackageId === (pkg.id || pkg.name)
-                                              ? 'opacity-70 cursor-not-allowed'
-                                              : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                          }`}
-                                        >
-                                          {bookingPackageId === (pkg.id || pkg.name) ? (
-                                            <span className="flex items-center justify-center gap-1">
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                            </span>
-                                          ) : 'Book'}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Setup */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Setup: </span>
-                              <span>{serviceDetails?.setupTime || 'We arrive 30-60 minutes before your party to set up'}</span>
-                            </div>
-
-                            {/* Space Required */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Space needed: </span>
-                              <span>{serviceDetails?.spaceRequired || 'One table for the treats station'}</span>
-                            </div>
-
-                            {/* Staffing */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Staffing: </span>
-                              <span>{serviceDetails?.staffIncluded ? 'Staff member included to serve the treats' : 'Self-service - we set it up and you help yourselves!'}</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{serviceDetails?.leadTime || '5 days notice required'}</span>
-                            </div>
+                    // Accordion section component for sweet treats
+                    const SweetAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
                           </div>
                         </div>
+                      )
+                    }
 
-                        {/* Info Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          A fun treat station perfect for keeping energy levels up during the party.
-                        </p>
-                        <SupplierNote category="sweetTreats" className="mt-2" />
+                    return (
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
+                        {aboutUs && (
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
+                          </div>
+                        )}
+
+                        {/* Treats as cards */}
+                        {packages.length > 0 && (
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Available Treats</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Setup & Delivery */}
+                        <SweetAccordion id="sweet-setup" title="Setup & Delivery">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.setupTime || 'We arrive 30-60 minutes before your party to set up.'}</p>
+                            <p><span className="font-medium text-gray-900">Space needed:</span> {serviceDetails?.spaceRequired || 'One table for the treats station.'}</p>
+                          </div>
+                        </SweetAccordion>
+
+                        {/* Service Style */}
+                        <SweetAccordion id="sweet-service" title="Service Style">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.staffIncluded ? 'Staff member included to serve the treats.' : 'Self-service - we set it up and you help yourselves!'}</p>
+                          </div>
+                        </SweetAccordion>
+
+                        {/* Lead Time */}
+                        <SweetAccordion id="sweet-leadtime" title="Lead Time">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{leadTime || '5 days notice required'}</p>
+                          </div>
+                        </SweetAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="sweetTreats" />
+                        </div>
                       </div>
                     )
                   }
@@ -1425,189 +1164,85 @@ export default function SupplierQuickViewModal({
                   const isDecorations = category === 'decorations' || serviceType === 'decorations'
                   if (isDecorations) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
                     const packages = displaySupplier?.packages ||
                                      displaySupplier?.data?.packages ||
                                      serviceDetails?.packages ||
                                      []
                     const aboutUs = displaySupplier?.serviceDetails?.aboutUs || displaySupplier?.description || ''
+                    const leadTime = serviceDetails?.leadTime
 
-                    // Collect unique theme images from all packages
-                    const getThemeImagesGallery = () => {
-                      const themeImages = {}
-                      packages.forEach(pkg => {
-                        if (pkg.themeImages) {
-                          Object.entries(pkg.themeImages).forEach(([theme, url]) => {
-                            if (!themeImages[theme]) {
-                              themeImages[theme] = url
-                            }
-                          })
-                        }
-                      })
-                      return themeImages
-                    }
-
-                    const themeImagesGallery = getThemeImagesGallery()
-                    const themeNames = {
-                      pirate: 'Pirate',
-                      princess: 'Princess',
-                      superhero: 'Superhero',
-                      dinosaur: 'Dinosaur',
-                      unicorn: 'Unicorn',
-                      safari: 'Safari',
-                      space: 'Space',
-                      mermaid: 'Mermaid',
-                      science: 'Science',
-                      frozen: 'Frozen',
-                      'paw-patrol': 'Paw Patrol',
-                      football: 'Football'
+                    // Accordion section component for decorations
+                    const DecoAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
+                        </div>
+                      )
                     }
 
                     return (
-                      <div className="space-y-6">
-                        {/* About */}
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
                         {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Decorations
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
                           </div>
                         )}
 
-                        {/* Theme Gallery */}
-                        {Object.keys(themeImagesGallery).length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Available Themes
-                                                          </h2>
-                            <p className="text-sm text-gray-500 mb-4">Our tableware and decorations are available in these popular themes</p>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                              {Object.entries(themeImagesGallery).map(([theme, imageUrl]) => (
-                                <div key={theme} className="relative aspect-square rounded-xl overflow-hidden group">
-                                  <Image
-                                    src={imageUrl}
-                                    alt={`${themeNames[theme] || theme} theme`}
-                                    fill
-                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                  <span className="absolute bottom-2 left-2 right-2 text-white text-xs font-semibold text-center truncate">
-                                    {themeNames[theme] || theme.charAt(0).toUpperCase() + theme.slice(1)}
-                                  </span>
+                        {/* Packages as cards */}
+                        {packages.length > 0 && (
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Packages & Pricing</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
+                                  <div className="text-xs text-gray-500">per set</div>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        {/* Packages */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Packages
-                                                          </h2>
-                            <p className="text-sm text-gray-500 mb-4">Priced per set - we round up to pack sizes to ensure you have enough</p>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              {packages.map((pkg, index) => {
-                                const guestCount = partyDetails?.guestCount || 10
-                                const packSizes = pkg.packSizes || [8, 16, 24, 32, 40, 48]
-                                // Find smallest pack size that covers guest count
-                                const packSize = packSizes.find(size => size >= guestCount) || packSizes[packSizes.length - 1]
-                                const totalPrice = (pkg.price * packSize).toFixed(2)
-                                return (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
-                                  <div className="flex-grow">
-                                    <div className="flex justify-between items-start mb-3">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <div className="text-right">
-                                        <span className="font-semibold text-lg text-gray-900">£{totalPrice}</span>
-                                        <p className="text-xs text-gray-500">£{pkg.price}/set × {packSize} sets</p>
-                                      </div>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && (
-                                      <ul className="space-y-1.5">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                  {/* Book button */}
-                                  {(onBookPackage || onCustomize) && (
-                                    <button
-                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                        bookingPackageId === (pkg.id || pkg.name)
-                                          ? 'opacity-70 cursor-not-allowed'
-                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                      }`}
-                                    >
-                                      {bookingPackageId === (pkg.id || pkg.name) ? (
-                                        <span className="flex items-center justify-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </span>
-                                      ) : 'Book'}
-                                    </button>
-                                  )}
-                                </div>
-                              )})}
-                            </div>
+                        {/* Delivery Information */}
+                        <DecoAccordion id="deco-delivery" title="Delivery Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{serviceDetails?.delivery || 'Delivered to your home address the evening before your party.'}</p>
+                            <p>Free delivery included.</p>
                           </div>
-                        )}
+                        </DecoAccordion>
 
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Delivery */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{serviceDetails?.delivery || 'Delivered to your home address the evening before your party (delivery time may vary)'}</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{serviceDetails?.leadTime ? `${serviceDetails.leadTime} days notice required` : '5 days notice required'}</span>
-                            </div>
-
-                            {/* Pack sizes */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Pack sizes: </span>
-                              <span>Tableware comes in packs of 8 - we'll round up your guest count to ensure you have enough</span>
-                            </div>
-
-                            {/* Eco-friendly */}
-                            {serviceDetails?.ecoOptions && (
-                              <div>
-                                <span className="font-semibold text-gray-900">Eco-friendly: </span>
-                                <span>{serviceDetails.ecoOptions}</span>
-                              </div>
-                            )}
+                        {/* Pack Sizes */}
+                        <DecoAccordion id="deco-packs" title="Pack Sizes">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Tableware comes in packs of 8 - we'll round up your guest count to ensure you have enough.</p>
                           </div>
+                        </DecoAccordion>
+
+                        {/* Lead Time */}
+                        <DecoAccordion id="deco-leadtime" title="Lead Time">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{leadTime ? `${leadTime} days notice required` : '5 days notice required'}</p>
+                          </div>
+                        </DecoAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="decorations" />
                         </div>
-
-                        {/* Delivery Note */}
-                        <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Free delivery included. All decorations delivered to your door the evening before your party.
-                        </p>
-                        <SupplierNote category="decorations" className="mt-2" />
                       </div>
                     )
                   }
@@ -1615,125 +1250,95 @@ export default function SupplierQuickViewModal({
                   // For balloons, show packages and delivery info
                   if (isBalloons) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
-                    // Check multiple locations for packages (consistent with SupplierCustomizationModal)
                     const packages = displaySupplier?.packages ||
                                      displaySupplier?.data?.packages ||
                                      serviceDetails?.packages ||
                                      []
                     const aboutUs = serviceDetails?.aboutUs || ''
-                    const deliveryInfo = serviceDetails?.deliveryInfo || ''
+                    const leadTime = serviceDetails?.leadTime
+
+                    // Accordion section component for balloons
+                    const BalloonAccordion = ({ id, title, children }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
+                          >
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
+                        </div>
+                      )
+                    }
 
                     return (
-                      <div className="space-y-6">
-                        {/* About */}
+                      <div className="divide-y divide-gray-200">
+                        {/* About - always visible */}
                         {aboutUs && (
-                          <div className="prose prose-sm sm:prose max-w-none">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              About Our Balloons
-                                                          </h2>
-                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                              {aboutUs}
-                            </p>
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-3">About</h2>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{aboutUs}</p>
                           </div>
                         )}
 
-                        {/* Packages */}
+                        {/* Packages as cards */}
                         {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Packages
-                                                          </h2>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="py-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Packages</h2>
+                            <div className="grid grid-cols-2 gap-2">
                               {packages.map((pkg, index) => (
-                                <div key={index} className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex flex-col">
-                                  <div className="flex-grow">
-                                    <div className="flex justify-between items-start mb-3">
-                                      <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
-                                      <span className="font-semibold text-lg text-gray-900">£{pkg.price}</span>
-                                    </div>
-                                    {pkg.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                                    )}
-                                    {pkg.features && pkg.features.length > 0 && (
-                                      <ul className="space-y-1.5">
-                                        {pkg.features.map((feature, fIndex) => (
-                                          <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <span className="text-[hsl(var(--primary-500))] mt-0.5">✓</span>
-                                            <span>{feature}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                  {/* Book button */}
-                                  {(onBookPackage || onCustomize) && (
-                                    <button
-                                      onClick={() => onBookPackage ? onBookPackage(pkg) : onCustomize()}
-                                      disabled={bookingPackageId === (pkg.id || pkg.name)}
-                                      className={`mt-3 w-full py-2 px-4 text-white font-semibold rounded-xl transition-all text-sm bg-[hsl(var(--primary-500))] ${
-                                        bookingPackageId === (pkg.id || pkg.name)
-                                          ? 'opacity-70 cursor-not-allowed'
-                                          : 'hover:bg-[hsl(var(--primary-600))] hover:scale-[1.02] active:scale-95'
-                                      }`}
-                                    >
-                                      {bookingPackageId === (pkg.id || pkg.name) ? (
-                                        <span className="flex items-center justify-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </span>
-                                      ) : 'Book'}
-                                    </button>
-                                  )}
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="font-semibold text-gray-900 text-sm">{pkg.name}</div>
+                                  <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            What You Need to Know
-                                                      </h2>
-
-                          <div className="space-y-4 text-base text-gray-700">
-                            {/* Delivery */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Delivery: </span>
-                              <span>{deliveryInfo || 'Balloons are delivered pre-inflated to your home address shortly before your party, ready to use or take with you to your venue.'}</span>
-                            </div>
-
-                            {/* Lead Time */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Lead time: </span>
-                              <span>{displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7 days notice required'}</span>
-                            </div>
-
-                            {/* Customisation */}
-                            <div>
-                              <span className="font-semibold text-gray-900">Customisation: </span>
-                              <span>Colours and styling are matched to your chosen party theme and age. You can share any preferences during booking.</span>
-                            </div>
-
-                            {/* Duration */}
-                            <div>
-                              <span className="font-semibold text-gray-900">How long they last: </span>
-                              <span>Helium balloons typically stay inflated for 12–24 hours, making them ideal for party day celebrations.</span>
-                            </div>
+                        {/* Delivery Information */}
+                        <BalloonAccordion id="balloon-delivery" title="Delivery Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Balloons are delivered pre-inflated to your home address shortly before your party, ready to use or take with you to your venue.</p>
                           </div>
-                        </div>
+                        </BalloonAccordion>
 
-                        {/* Delivery Note */}
-                        {/* <p className="text-sm text-gray-500 pt-4 border-t border-gray-100">
-                          Balloons are delivered to your home address ready for you to take to your party venue.
-                        </p> */}
-                        <SupplierNote category="balloons" className="mt-2" />
+                        {/* Customisation */}
+                        <BalloonAccordion id="balloon-customisation" title="Customisation">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Colours and styling are matched to your chosen party theme and age. You can share any preferences during booking.</p>
+                          </div>
+                        </BalloonAccordion>
+
+                        {/* How Long They Last */}
+                        <BalloonAccordion id="balloon-duration" title="How Long They Last">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Helium balloons typically stay inflated for 12–24 hours, making them ideal for party day celebrations.</p>
+                          </div>
+                        </BalloonAccordion>
+
+                        {/* Lead Time */}
+                        <BalloonAccordion id="balloon-leadtime" title="Lead Time">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>{leadTime ? `${leadTime} days notice required` : '7 days notice required'}</p>
+                          </div>
+                        </BalloonAccordion>
+
+                        {/* Disclaimer Note */}
+                        <div className="pt-4">
+                          <SupplierNote category="balloons" />
+                        </div>
                       </div>
                     )
                   }
 
-                  // For cakes, show flavours/sizes and delivery options
+                  // For cakes, show accordion-style collapsible sections
                   if (isCake) {
                     const serviceDetails = displaySupplier?.serviceDetails || {}
                     const cakeFlavours = serviceDetails?.flavours || []
@@ -1746,101 +1351,118 @@ export default function SupplierQuickViewModal({
                     const offersDelivery = fulfilment.offersDelivery !== false
                     const offersCollection = fulfilment.offersCollection !== false
                     const deliveryFee = fulfilment.deliveryFee || 0
-                    // Build collection address from available location data
-                    const locationData = displaySupplier?.location
-                    const locationString = typeof locationData === 'string' ? locationData :
-                                           locationData?.address || locationData?.postcode || ''
-                    const collectionAddress = displaySupplier?.serviceDetails?.businessAddress ||
-                                              displaySupplier?.businessAddress ||
-                                              displaySupplier?.address ||
-                                              locationString ||
-                                              displaySupplier?.postcode || ''
+                    const leadTime = displaySupplier?.serviceDetails?.leadTime
 
-                    return (
-                      <div className="space-y-6">
-                        {/* Sizes & Pricing - Clean table layout */}
-                        {packages.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                              Sizes & Pricing
-                            </h2>
-                            <div className="space-y-2">
-                              {packages.map((pkg, index) => (
-                                <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                                  <div>
-                                    <span className="text-gray-900">{pkg.name}</span>
-                                    {(pkg.serves || pkg.feeds) && (
-                                      <span className="text-gray-500 text-sm ml-2">· feeds {pkg.serves || pkg.feeds}</span>
-                                    )}
-                                  </div>
-                                  <span className="font-medium text-gray-900">£{pkg.price}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Available Flavours */}
-                        {cakeFlavours.length > 0 && (
-                          <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-3">Flavours</h2>
-                            <p className="text-gray-600">{cakeFlavours.join(', ')}</p>
-                          </div>
-                        )}
-
-                        {/* Delivery & Collection Options */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-3">
-                            Delivery & Collection
-                          </h2>
-                          <div className="space-y-2 text-gray-600">
-                            {offersDelivery && (
-                              <p>
-                                <span className="text-gray-900">Delivery</span> — delivered shortly before your party
-                                {deliveryFee === 0 && <span className="text-primary-600"> (free)</span>}
-                              </p>
-                            )}
-                            {offersCollection && (
-                              <p>
-                                <span className="text-gray-900">Collection</span> — address provided after booking
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* What You Need to Know */}
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-3">
-                            What You Need to Know
-                          </h2>
-                          <div className="space-y-2 text-gray-600">
-                            <p><span className="text-gray-900">Lead time:</span> {displaySupplier?.serviceDetails?.leadTime ? `${displaySupplier.serviceDetails.leadTime} days notice required` : '7–14 days recommended'}</p>
-                            <p><span className="text-gray-900">Storage:</span> Keep in a cool place until party time</p>
-                            <p><span className="text-gray-900">Customisation:</span> Name, age, and theme can be added when booking</p>
-                          </div>
-                        </div>
-
-                        {/* Allergens - Subtle link style */}
-                        <div className="pt-4 border-t border-gray-100">
+                    // Accordion section component
+                    const AccordionSection = ({ id, title, children, defaultOpen = false }) => {
+                      const isOpen = openAccordion === id
+                      return (
+                        <div className="border-b border-gray-200">
                           <button
                             type="button"
-                            onClick={() => setShowAllergens(!showAllergens)}
-                            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                            onClick={() => setOpenAccordion(isOpen ? null : id)}
+                            className="w-full flex items-center justify-between py-4 text-left"
                           >
-                            <span className={`transition-transform duration-200 ${showAllergens ? 'rotate-45' : ''}`}>+</span>
-                            <span>Allergen information</span>
+                            <span className="font-semibold text-gray-800 uppercase text-sm tracking-wide">{title}</span>
+                            <ChevronDown
+                              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                            />
                           </button>
-                          {showAllergens && (
-                            <div className="mt-3 text-sm text-gray-500 space-y-1">
-                              <p><span className="text-gray-600">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
-                              <p><span className="text-gray-600">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
-                              <p className="text-xs italic text-gray-400 mt-2">Made in environment handling gluten, milk, eggs, nuts, soya, peanuts, sesame, sulphites.</p>
-                            </div>
-                          )}
+                          <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-4' : 'max-h-0'}`}>
+                            {children}
+                          </div>
                         </div>
+                      )
+                    }
+
+                    // Helper to extract just the size from package name (e.g., "6"" from "6" (serves 12-15 | 3 layers)")
+                    const extractSize = (name) => {
+                      // Match patterns like "6"", "8"", "10"", "2 tier"
+                      const sizeMatch = name.match(/^(\d+"|2 tier[^)]*)/i)
+                      return sizeMatch ? sizeMatch[1] : name.split('(')[0].trim()
+                    }
+
+                    return (
+                      <div className="divide-y divide-gray-200">
+                        {/* Sizes & Pricing - Cards layout */}
+                        {packages.length > 0 && (
+                          <div className="pb-4">
+                            <h2 className="font-semibold text-gray-800 uppercase text-sm tracking-wide mb-4">Sizes & Pricing</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                              {packages.map((pkg, index) => {
+                                const size = extractSize(pkg.name)
+                                const serves = pkg.serves || pkg.feeds
+                                return (
+                                  <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
+                                    <div className="font-semibold text-gray-900 text-base">{size}</div>
+                                    {serves && (
+                                      <div className="text-gray-500 text-xs mt-0.5">serves {serves}</div>
+                                    )}
+                                    <div className="font-semibold text-gray-900 mt-1">£{pkg.price}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Flavours accordion */}
+                        {cakeFlavours.length > 0 && (
+                          <AccordionSection id="flavours" title="Flavours">
+                            <p className="text-gray-600 text-sm">{cakeFlavours.join(', ')}</p>
+                          </AccordionSection>
+                        )}
+
+                        {/* Delivery Information accordion */}
+                        {offersDelivery && (
+                          <AccordionSection id="delivery" title="Delivery Information">
+                            <div className="space-y-2 text-gray-600 text-sm">
+                              <p><span className="font-medium text-gray-900">Delivery days:</span> Tuesday – Saturday</p>
+                              <p><span className="font-medium text-gray-900">Delivery times:</span> You'll receive an email with a 2-hour delivery window</p>
+                              <p><span className="font-medium text-gray-900">Delivery charge:</span> {deliveryFee === 0 ? 'Free' : `From £${deliveryFee}`}</p>
+                            </div>
+                          </AccordionSection>
+                        )}
+
+                        {/* Collection Information accordion */}
+                        {offersCollection && (
+                          <AccordionSection id="collection" title="Collection Information">
+                            <div className="space-y-2 text-gray-600 text-sm">
+                              <p>Collection available — address provided after booking confirmation.</p>
+                            </div>
+                          </AccordionSection>
+                        )}
+
+                        {/* Allergens accordion */}
+                        <AccordionSection id="allergens" title="Allergens">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p><span className="font-medium text-gray-900">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
+                            <p><span className="font-medium text-gray-900">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
+                            <p className="text-xs italic text-gray-400 mt-2">Made in an environment handling gluten, milk, eggs, nuts, soya, peanuts, sesame, sulphites.</p>
+                          </div>
+                        </AccordionSection>
+
+                        {/* Important Cake Care Guide accordion */}
+                        <AccordionSection id="care" title="Important Cake Care Guide">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p>Store in a cool, dry place away from direct sunlight.</p>
+                            <p>Keep refrigerated if not serving within 24 hours.</p>
+                            <p>Best served at room temperature — remove from fridge 1 hour before serving.</p>
+                          </div>
+                        </AccordionSection>
+
+                        {/* Lead Time / Ordering accordion */}
+                        <AccordionSection id="ordering" title="Ordering Information">
+                          <div className="space-y-2 text-gray-600 text-sm">
+                            <p><span className="font-medium text-gray-900">Lead time:</span> {leadTime ? `${leadTime} days notice required` : '7–14 days recommended'}</p>
+                            <p><span className="font-medium text-gray-900">Customisation:</span> Name, age, and theme can be added when booking</p>
+                          </div>
+                        </AccordionSection>
 
                         {/* Disclaimer Note */}
-                        <SupplierNote category="cakes" />
+                        <div className="pt-4">
+                          <SupplierNote category="cakes" />
+                        </div>
                       </div>
                     )
                   }
