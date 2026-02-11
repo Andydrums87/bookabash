@@ -299,8 +299,9 @@ export default function SupplierQuickViewModal({
         </button>
 
         {/* ✅ MAXIMUM HEIGHT: Scrollable Content Area with background image */}
+        {/* Desktop: Side-by-side layout | Mobile: Stacked layout */}
         <div
-          className="flex-1 overflow-y-auto relative"
+          className="flex-1 overflow-y-auto lg:overflow-hidden relative"
           style={{
             minHeight: 0
           }}
@@ -317,10 +318,10 @@ export default function SupplierQuickViewModal({
               }}
             />
           )}
-          {/* Supplier Details - No tabs needed, just show content */}
-          <div className="relative z-10">
+          {/* Supplier Details - Side by side on desktop, stacked on mobile */}
+          <div className="relative z-10 lg:flex lg:h-full">
             {isLoadingSupplier ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center py-12 lg:w-full">
                 <div className="text-center">
                   <div className="w-8 h-8 border-4 border-[hsl(var(--primary-500))] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                   <p className="text-sm text-gray-600">Loading full details...</p>
@@ -328,8 +329,10 @@ export default function SupplierQuickViewModal({
               </div>
             ) : (
               <>
-                {/* Unified Carousel for both Mobile and Desktop */}
-                <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
+                {/* Image Section - Left side on desktop, top on mobile */}
+                <div className="lg:w-[45%] lg:flex-shrink-0 lg:h-full lg:relative">
+                  {/* Unified Carousel for both Mobile and Desktop */}
+                  <div className="relative h-56 sm:h-64 md:h-72 lg:h-full overflow-hidden">
                   {/* Blurred background fill */}
                   {supplierImages.length > 0 && (
                     <div
@@ -435,10 +438,13 @@ export default function SupplierQuickViewModal({
                       <span className="text-white text-xs font-medium">{carouselIndex + 1}/{supplierImages.length}</span>
                     </div>
                   )}
+                  </div>
                 </div>
 
-                {/* Content with padding */}
-                <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
+                {/* Content Section - Right side on desktop, below on mobile */}
+                <div className="lg:flex-1 lg:overflow-y-auto lg:h-full">
+                  {/* Content with padding */}
+                  <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
 
                 {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for categories that have their own aboutUs section */}
                 {(() => {
@@ -1539,6 +1545,7 @@ export default function SupplierQuickViewModal({
                   onToggleAddon={handleToggleVenueAddon}
                   isInteractive={isVenue && isAlreadyAdded && !!onSaveVenueAddons}
                 />
+                </div>
                 </div>
               </>
             )}

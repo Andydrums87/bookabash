@@ -342,6 +342,9 @@ export default function SupplierCustomizationModal({
   // Party bags quantity state - ensure it's always a number
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
 
+  // Track which balloon/party bags packages have expanded "What's included" details
+  const [expandedPackageDetails, setExpandedPackageDetails] = useState({})
+
   // Helper function to round up to nearest pack size for decorations
   const getDecorationsPackSize = (guestCount, packSizes = [8, 16, 24, 32, 40, 48]) => {
     const count = Number(guestCount) || 10
@@ -2726,7 +2729,7 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Balloons/Party Bags - Compact Card Layout */}
+            {/* Balloons/Party Bags - Cards with description inside */}
             {(supplierTypeDetection.isBalloons || supplierTypeDetection.isPartyBags) && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
               <section>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
@@ -2745,43 +2748,58 @@ export default function SupplierCustomizationModal({
                   >
                     {packages.map((pkg, index) => {
                       const isSelected = selectedPackageId === pkg.id
-                      const isPremium = index === packages.length - 1
-                      const isMiddle = index === 1
                       const packageImage = pkg.image || pkg.images?.[0]
+
+                      // Short descriptions for balloons
+                      const getBalloonProse = (packageName, idx) => {
+                        if (supplierTypeDetection.isPartyBags) return null
+                        const prose = {
+                          'Accent': 'A beautifully styled display. Perfect for cake tables.',
+                          'Statement': 'Two coordinated displays. Ideal for entrances and photo areas.',
+                          'Showpiece': 'The full celebration look. Three displays for maximum impact.'
+                        }
+                        const fallback = [
+                          'A beautifully styled display.',
+                          'Two coordinated displays.',
+                          'The full celebration look.'
+                        ]
+                        return prose[packageName] || fallback[idx] || fallback[0]
+                      }
+
+                      // Prose for party bags
+                      const getPartyBagsProse = () => {
+                        const features = pkg?.features || pkg?.contents || []
+                        if (features.length === 0) return pkg.description || null
+                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
+                      }
+
+                      const prose = supplierTypeDetection.isBalloons
+                        ? getBalloonProse(pkg.name, index)
+                        : getPartyBagsProse()
+
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[140px] sm:w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
                               ? "border-primary-500 bg-primary-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Package Image - compact */}
-                          <div className="relative w-full h-20 sm:h-24">
+                          {/* Package Image */}
+                          <div className="relative w-full h-24 sm:h-28">
                             {packageImage ? (
                               <Image
                                 src={packageImage}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="160px"
+                                sizes="220px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                 <Package className="w-6 h-6 text-gray-300" />
-                              </div>
-                            )}
-                            {/* Badge overlay */}
-                            {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
-                                BEST VALUE
-                              </div>
-                            )}
-                            {isMiddle && !isPremium && pkg.popular && (
-                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
-                                POPULAR
                               </div>
                             )}
                             {/* Selection checkmark */}
@@ -2791,51 +2809,70 @@ export default function SupplierCustomizationModal({
                               </div>
                             )}
                           </div>
-                          <div className="p-2.5 bg-white">
-                            <h4 className="font-medium text-gray-800 text-xs mb-1 truncate">
-                              {pkg.name}
-                            </h4>
-                            <p className="font-bold text-primary-600 text-base">
-                              £{supplierTypeDetection.isPartyBags
-                                ? (pkg.price * partyBagsQuantity).toFixed(0)
-                                : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(0)}
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              {supplierTypeDetection.isPartyBags
-                                ? `${partyBagsQuantity} bags`
-                                : pkg.description || 'Package'}
-                            </p>
+
+                          {/* Content */}
+                          <div className="p-3 bg-white">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                                £{supplierTypeDetection.isPartyBags
+                                  ? (pkg.price * partyBagsQuantity).toFixed(0)
+                                  : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(0)}
+                              </p>
+                            </div>
+
+                            {/* Description prose */}
+                            {prose && (
+                              <p className="text-xs text-gray-500 leading-relaxed">
+                                {prose}
+                              </p>
+                            )}
+
+                            {/* Party bags quantity */}
+                            {supplierTypeDetection.isPartyBags && (
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                {partyBagsQuantity} bags
+                              </p>
+                            )}
+
+                            {/* Collapsible What's Included */}
+                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setExpandedPackageDetails(prev => ({
+                                      ...prev,
+                                      [pkg.id]: !prev[pkg.id]
+                                    }))
+                                  }}
+                                  className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                  <span>What&apos;s included</span>
+                                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedPackageDetails[pkg.id] ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {expandedPackageDetails[pkg.id] && (
+                                  <ul className="mt-1.5 space-y-0.5">
+                                    {(pkg.features || pkg.contents).map((item, idx) => (
+                                      <li key={idx} className="flex items-start gap-1.5 text-[10px] text-gray-600">
+                                        <Check className="w-2.5 h-2.5 text-primary-500 mt-0.5 flex-shrink-0" />
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
-
-                {/* Selected package features shown below */}
-                {selectedPackageId && (() => {
-                  const selectedPkg = packages.find(p => p.id === selectedPackageId)
-                  const features = selectedPkg?.features || selectedPkg?.contents || []
-                  if (!features.length) return null
-                  return (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {features.map((feature, i) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2 py-1 rounded border border-gray-200">
-                            <Check className="w-3 h-3 text-green-500" />
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                      {selectedPkg.fixedItems && selectedPkg.fixedItems.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Also includes: {selectedPkg.fixedItems.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })()}
               </section>
             )}
 
