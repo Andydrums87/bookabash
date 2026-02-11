@@ -293,9 +293,9 @@ export default function SupplierQuickViewModal({
         {/* Close Button - Floating over carousel */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 w-8 h-8 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all shadow-lg"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 w-9 h-9 sm:w-10 sm:h-10 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center transition-all shadow-lg border border-gray-200"
         >
-          <X className="w-4 h-4 text-gray-700" />
+          <X className="w-5 h-5 text-gray-600" />
         </button>
 
         {/* ✅ MAXIMUM HEIGHT: Scrollable Content Area with background image */}
@@ -1545,8 +1545,8 @@ export default function SupplierQuickViewModal({
           </div>
         </div>
 
-        {/* ✅ COMPACT: Sticky Footer - Less padding on mobile */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-2 sm:p-3 flex-shrink-0">
+        {/* ✅ COMPACT: Sticky Footer - Book CTA */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-3 sm:p-4 flex-shrink-0">
           {/* Show save button when venue addons are selected */}
           {isVenue && isAlreadyAdded && onSaveVenueAddons && selectedVenueAddons.length > 0 ? (
             <div className="space-y-2">
@@ -1573,10 +1573,32 @@ export default function SupplierQuickViewModal({
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : isAlreadyAdded ? (
+            /* Already added - show close button */
             <Button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-semibold text-sm py-3"
+              variant="outline"
+              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm h-12"
+            >
+              Close
+            </Button>
+          ) : onCustomize ? (
+            /* Not added yet - show Book CTA */
+            <Button
+              onClick={() => {
+                onClose()
+                onCustomize(displaySupplier)
+              }}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-semibold text-base h-12 shadow-md"
+            >
+              Add to Party
+            </Button>
+          ) : (
+            /* Fallback close button */
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm h-12"
             >
               Close
             </Button>
