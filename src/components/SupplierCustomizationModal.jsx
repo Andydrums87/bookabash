@@ -2624,18 +2624,17 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Decorations - Special card layout for package selection */}
+            {/* Decorations - Compact Card Layout */}
             {supplierTypeDetection.isDecorations && (
               <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Package</h3>
-                </div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                  Choose Package
+                </label>
 
-                {/* Mobile: Horizontal scroll */}
-                <div className="sm:hidden relative -mx-6">
+                {/* Horizontal scroll on all screens */}
+                <div className="relative -mx-6">
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 overflow-x-auto scrollbar-hide py-1 px-6 snap-x snap-mandatory"
                     style={{
                       scrollbarWidth: 'none',
                       msOverflowStyle: 'none',
@@ -2649,15 +2648,15 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
+                          className={`relative flex-shrink-0 w-[140px] sm:w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              ? "border-primary-500 bg-primary-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Package Image - uses theme-based image if available */}
-                          <div className="relative w-full h-32">
+                          {/* Package Image - compact */}
+                          <div className="relative w-full h-20 sm:h-24">
                             {getDecorationsPackageImage(pkg) ? (
                               <Image
                                 src={getDecorationsPackageImage(pkg)}
@@ -2668,45 +2667,37 @@ export default function SupplierCustomizationModal({
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-8 h-8 text-purple-300" />
+                                <Package className="w-6 h-6 text-purple-300" />
                               </div>
                             )}
                             {/* Badge overlay */}
                             {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-medium py-1 text-center">
+                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
                                 BEST VALUE
                               </div>
                             )}
                             {isMiddle && !isPremium && pkg.popular && (
-                              <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-bold py-1 text-center">
+                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
                                 POPULAR
                               </div>
                             )}
                             {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
-                                <Check className="w-3 h-3 text-white" />
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
-                          <div className="p-3 bg-white">
-                            <h4 className="font-bold text-gray-800 text-sm mb-1">
+                          <div className="p-2.5 bg-white">
+                            <h4 className="font-medium text-gray-800 text-xs mb-1 truncate">
                               {pkg.name}
                             </h4>
-                            <p className="font-bold text-[hsl(var(--primary-600))] text-xl mb-0.5">
-                              £{(pkg.price * decorationsPackSize).toFixed(2)}
+                            <p className="font-bold text-primary-600 text-base">
+                              £{(pkg.price * decorationsPackSize).toFixed(0)}
                             </p>
-                            <p className="text-[10px] text-gray-500 mb-2">
-                              {decorationsPackSize} sets incl. delivery
+                            <p className="text-[10px] text-gray-500">
+                              {decorationsPackSize} sets
                             </p>
-                            <ul className="text-[10px] text-gray-600 space-y-0.5">
-                              {pkg.features?.map((feature, i) => (
-                                <li key={i} className="flex items-start gap-1">
-                                  <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span className="line-clamp-1">{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
                           </div>
                         </div>
                       )
@@ -2714,93 +2705,38 @@ export default function SupplierCustomizationModal({
                   </div>
                 </div>
 
-                {/* Desktop: Grid layout with images and full details */}
-                <div className="hidden sm:grid sm:grid-cols-3 gap-4">
-                  {packages.map((pkg, index) => {
-                    const isSelected = selectedPackageId === pkg.id
-                    const isPremium = index === packages.length - 1
-                    const isMiddle = index === 1
-                    return (
-                      <div
-                        key={pkg.id}
-                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
-                          isSelected
-                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        onClick={() => setSelectedPackageId(pkg.id)}
-                      >
-                        {/* Package Image - uses theme-based image if available */}
-                        <div className="relative w-full h-44">
-                          {getDecorationsPackageImage(pkg) ? (
-                            <Image
-                              src={getDecorationsPackageImage(pkg)}
-                              alt={pkg.name}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 33vw"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <Package className="w-12 h-12 text-purple-300" />
-                            </div>
-                          )}
-                          {/* Badge overlay */}
-                          {isPremium && (
-                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
-                              BEST VALUE
-                            </div>
-                          )}
-                          {isMiddle && !isPremium && (
-                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-bold py-1.5 text-center">
-                              MOST POPULAR
-                            </div>
-                          )}
-                          {/* Selection checkmark */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md z-20">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4 bg-white">
-                          <h4 className="font-bold text-gray-800 text-base mb-1">
-                            {pkg.name}
-                          </h4>
-                          <p className="font-bold text-[hsl(var(--primary-600))] text-2xl mb-0.5">
-                            £{(pkg.price * decorationsPackSize).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-500 mb-3">
-                            {decorationsPackSize} sets incl. free delivery
-                          </p>
-                          <ul className="text-sm text-gray-600 space-y-1.5">
-                            {pkg.features?.map((feature, i) => (
-                              <li key={i} className="flex items-start gap-2">
-                                <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                {/* Selected package features shown below */}
+                {selectedPackageId && (() => {
+                  const selectedPkg = packages.find(p => p.id === selectedPackageId)
+                  if (!selectedPkg?.features?.length) return null
+                  return (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedPkg.features.map((feature, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2 py-1 rounded border border-gray-200">
+                            <Check className="w-3 h-3 text-green-500" />
+                            {feature}
+                          </span>
+                        ))}
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+                  )
+                })()}
               </section>
             )}
 
-            {/* Balloons/Party Bags - Card Grid Package Selection */}
+            {/* Balloons/Party Bags - Compact Card Layout */}
             {(supplierTypeDetection.isBalloons || supplierTypeDetection.isPartyBags) && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
               <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Package</h3>
-                </div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                  Choose Package
+                </label>
 
-                {/* Mobile: Horizontal scroll with larger cards */}
-                <div className="sm:hidden relative -mx-6">
+                {/* Horizontal scroll on all screens */}
+                <div className="relative -mx-6">
                   <div
-                    className="flex gap-4 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 overflow-x-auto scrollbar-hide py-1 px-6 snap-x snap-mandatory"
                     style={{
                       scrollbarWidth: 'none',
                       msOverflowStyle: 'none',
@@ -2811,78 +2747,64 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const isPremium = index === packages.length - 1
                       const isMiddle = index === 1
-                      const hasBadge = isPremium || (isMiddle && pkg.popular)
+                      const packageImage = pkg.image || pkg.images?.[0]
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[280px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden ${
+                          className={`relative flex-shrink-0 w-[140px] sm:w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
-                              ? "ring-2 ring-[hsl(var(--primary-500))] border-2 border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
-                              : "border border-gray-200 hover:border-gray-300"
+                              ? "border-primary-500 bg-primary-50"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Package Image */}
-                          <div className="relative w-full h-40">
-                            {pkg.image || pkg.imageUrl ? (
+                          {/* Package Image - compact */}
+                          <div className="relative w-full h-20 sm:h-24">
+                            {packageImage ? (
                               <Image
-                                src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)}
+                                src={packageImage}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="280px"
+                                sizes="160px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-12 h-12 text-purple-300" />
+                                <Package className="w-6 h-6 text-gray-300" />
                               </div>
                             )}
-
-                            {/* Badge overlay - positioned at bottom of image */}
-                            {hasBadge && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-semibold py-1.5 text-center">
-                                {isPremium ? 'BEST VALUE' : 'POPULAR'}
+                            {/* Badge overlay */}
+                            {isPremium && (
+                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
+                                BEST VALUE
                               </div>
                             )}
-
-                            {/* Selection indicator on image */}
+                            {isMiddle && !isPremium && pkg.popular && (
+                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
+                                POPULAR
+                              </div>
+                            )}
+                            {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
-                                <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
-
-                          <div className={`p-4 ${isSelected ? 'bg-[hsl(var(--primary-50))]' : 'bg-white'}`}>
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-gray-900 text-base">
-                                {pkg.name}
-                              </h4>
-                              <p className="font-bold text-[hsl(var(--primary-600))] text-xl">
-                                £{supplierTypeDetection.isPartyBags ? (pkg.price * partyBagsQuantity).toFixed(2) : pkg.enhancedPrice}
-                              </p>
-                            </div>
-
-                            {supplierTypeDetection.isPartyBags && (
-                              <p className="text-xs text-gray-500 mb-2">
-                                {partyBagsQuantity} bags included
-                              </p>
-                            )}
-
-                            {pkg.description && (
-                              <p className="text-sm text-gray-600 mb-3">
-                                {pkg.description}
-                              </p>
-                            )}
-
-                            <ul className="text-sm text-gray-600 space-y-1.5">
-                              {(pkg.features || pkg.contents)?.map((feature, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span>{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
+                          <div className="p-2.5 bg-white">
+                            <h4 className="font-medium text-gray-800 text-xs mb-1 truncate">
+                              {pkg.name}
+                            </h4>
+                            <p className="font-bold text-primary-600 text-base">
+                              £{supplierTypeDetection.isPartyBags
+                                ? (pkg.price * partyBagsQuantity).toFixed(0)
+                                : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(0)}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {supplierTypeDetection.isPartyBags
+                                ? `${partyBagsQuantity} bags`
+                                : pkg.description || 'Package'}
+                            </p>
                           </div>
                         </div>
                       )
@@ -2890,100 +2812,30 @@ export default function SupplierCustomizationModal({
                   </div>
                 </div>
 
-                {/* Desktop: Grid layout with full details */}
-                <div className="hidden sm:grid sm:grid-cols-3 gap-4">
-                  {packages.map((pkg, index) => {
-                    const isSelected = selectedPackageId === pkg.id
-                    const isPremium = index === packages.length - 1
-                    const isMiddle = index === 1
-                    return (
-                      <div
-                        key={pkg.id}
-                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
-                          isSelected
-                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        onClick={() => setSelectedPackageId(pkg.id)}
-                      >
-                        {/* Selected overlay glow */}
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-[hsl(var(--primary-500))]/5 pointer-events-none z-10" />
-                        )}
-                        {/* Package Image */}
-                        <div className="relative w-full h-32">
-                          {pkg.image || pkg.imageUrl ? (
-                            <Image
-                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)}
-                              alt={pkg.name}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 33vw"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <Package className="w-12 h-12 text-purple-300" />
-                            </div>
-                          )}
-                          {/* Badge overlay - at bottom of image */}
-                          {isPremium && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-medium py-1.5 text-center">
-                              BEST VALUE
-                            </div>
-                          )}
-                          {isMiddle && !isPremium && pkg.popular && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-bold py-1.5 text-center">
-                              MOST POPULAR
-                            </div>
-                          )}
-                          {/* Selection checkmark */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-20 shadow-md">
-                              <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4 bg-white">
-                          <h4 className="font-bold text-gray-800 text-base mb-1">
-                            {pkg.name}
-                          </h4>
-                          <p className="font-bold text-[hsl(var(--primary-600))] text-2xl mb-0.5">
-                            £{supplierTypeDetection.isPartyBags ? (pkg.price * partyBagsQuantity).toFixed(2) : pkg.enhancedPrice}
-                          </p>
-                          {supplierTypeDetection.isPartyBags && (
-                            <p className="text-xs text-gray-500 mb-3">
-                              {partyBagsQuantity} bags included
-                            </p>
-                          )}
-                          {!supplierTypeDetection.isPartyBags && !supplierTypeDetection.isBalloons && (
-                            <p className="text-xs text-gray-500 mb-3">
-                              {pkg.duration || 'Full party duration'}
-                            </p>
-                          )}
-                          {!supplierTypeDetection.isPartyBags && !supplierTypeDetection.isBalloons && pkg.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                              {pkg.description}
-                            </p>
-                          )}
-                          <ul className="text-sm text-gray-600 space-y-1.5 mb-3">
-                            {(pkg.features || pkg.contents)?.map((feature, i) => (
-                              <li key={i} className="flex items-start gap-2">
-                                <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                          {pkg.fixedItems && pkg.fixedItems.length > 0 && (
-                            <div className="pt-2 border-t border-gray-100">
-                              <p className="text-xs text-gray-500 font-medium mb-1">Also includes:</p>
-                              <p className="text-xs text-gray-600">{pkg.fixedItems.join(', ')}</p>
-                            </div>
-                          )}
-                        </div>
+                {/* Selected package features shown below */}
+                {selectedPackageId && (() => {
+                  const selectedPkg = packages.find(p => p.id === selectedPackageId)
+                  const features = selectedPkg?.features || selectedPkg?.contents || []
+                  if (!features.length) return null
+                  return (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {features.map((feature, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2 py-1 rounded border border-gray-200">
+                            <Check className="w-3 h-3 text-green-500" />
+                            {feature}
+                          </span>
+                        ))}
                       </div>
-                    )
-                  })}
-                </div>
+                      {selectedPkg.fixedItems && selectedPkg.fixedItems.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Also includes: {selectedPkg.fixedItems.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
               </section>
             )}
 
