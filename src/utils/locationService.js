@@ -142,16 +142,36 @@ export class LocationService {
         return 100;
       }
 
-      // Same area (first 1-2 letters match)
+      // Same area (first 1-2 letters match) but different district
+      // e.g., AL1 vs AL3 - same area "AL" but different neighborhoods (can be 10-15km apart)
       const supplierArea = this.getPostcodeArea(supplierPostcode);
       const targetArea = this.getPostcodeArea(targetPostcode);
 
       if (supplierArea === targetArea) {
+        // Extract the district numbers to see how close they are
+        const supplierNum = parseInt(supplierOutward.replace(/[A-Z]/g, ''), 10);
+        const targetNum = parseInt(targetOutward.replace(/[A-Z]/g, ''), 10);
+
+        // Adjacent districts (e.g., AL2 vs AL3) score higher than distant ones (AL1 vs AL5)
+        if (!isNaN(supplierNum) && !isNaN(targetNum)) {
+          const districtDiff = Math.abs(supplierNum - targetNum);
+          if (districtDiff === 1) {
+            // Adjacent districts - likely close (2-5km)
+            console.log(`   📍 Adjacent districts: ${supplierOutward} vs ${targetOutward}`);
+            return 60;
+          } else {
+            // Same area but non-adjacent districts - could be far apart (5-15km)
+            console.log(`   📍 Same area, different districts: ${supplierOutward} vs ${targetOutward} (diff: ${districtDiff})`);
+            return 40;
+          }
+        }
+
+        // Fallback for same area
         console.log(`   📍 Same area: ${supplierArea}`);
-        return 75;
+        return 45;
       }
 
-      // Different area
+      // Different area entirely
       console.log(`   ❌ Different area: ${supplierArea} vs ${targetArea}`);
       return 25;
     }
