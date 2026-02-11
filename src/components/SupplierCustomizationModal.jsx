@@ -1906,12 +1906,14 @@ export default function SupplierCustomizationModal({
               <section className="space-y-5">
                 {/* Choose Size - Dropdown */}
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Cake Size</p>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                    Cake Size
+                  </label>
                   <Select
                     value={selectedPackageId || ''}
                     onValueChange={(value) => setSelectedPackageId(value)}
                   >
-                    <SelectTrigger className="w-full h-12 text-sm bg-white border-gray-200 px-3 font-normal">
+                    <SelectTrigger className="w-full h-11 text-sm font-normal bg-white border-gray-200 rounded-lg px-4">
                       <SelectValue placeholder="Select a size">
                         {selectedPackage && (
                           <span className="text-gray-700 font-normal">
@@ -1922,85 +1924,84 @@ export default function SupplierCustomizationModal({
                     </SelectTrigger>
                     <SelectContent>
                       {packages.map((pkg) => (
-                        <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 px-3 text-sm font-normal">
-                          <span className="text-gray-700">
-                            {pkg.name}
-                          </span>
+                        <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 text-sm font-normal">
+                          <span className="text-gray-700">{pkg.name}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Customization Options */}
-                <div className="space-y-4">
-                  {/* Flavour Selection - Pills like dietary */}
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Cake Flavour</p>
-                    {availableFlavors.length === 0 ? (
-                      <span className="text-sm text-gray-500">Contact baker</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {availableFlavors.map((flavor) => {
-                          const isSelected = selectedFlavor === flavor.id
-                          return (
-                            <button
-                              key={flavor.id}
-                              type="button"
-                              onClick={() => setSelectedFlavor(flavor.id)}
-                              className={`px-3 py-2 rounded-lg text-sm transition-all ${
-                                isSelected
-                                  ? "bg-primary-500 text-white"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
-                            >
-                              {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
-                              {flavor.name}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+                {/* Flavour Selection - Dropdown */}
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                    Cake Flavour
+                  </label>
+                  {availableFlavors.length === 0 ? (
+                    <p className="text-sm text-gray-500">Contact baker for flavour options</p>
+                  ) : (
+                    <Select
+                      value={selectedFlavor || ''}
+                      onValueChange={(value) => setSelectedFlavor(value)}
+                    >
+                      <SelectTrigger className="w-full h-11 text-sm font-normal bg-white border-gray-200 rounded-lg px-4">
+                        <SelectValue placeholder="Select a flavour">
+                          {selectedFlavor && (
+                            <span className="text-gray-700 font-normal">
+                              {availableFlavors.find(f => f.id === selectedFlavor)?.name || selectedFlavor}
+                            </span>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableFlavors.map((flavor) => (
+                          <SelectItem key={flavor.id} value={flavor.id} className="py-2.5 text-sm font-normal">
+                            <span className="text-gray-700">{flavor.name}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
-                {/* Matching Cupcakes Add-on */}
+                {/* Matching Cupcakes - Dropdown */}
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <p className="text-sm text-gray-600">Matching Cupcakes</p>
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600"
-                      title="Add matching cupcakes in your chosen flavour"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {[
-                      { id: null, label: 'No cupcakes', price: 0 },
-                      { id: 'box6', label: 'Box of 6', price: 20 },
-                      { id: 'box12', label: 'Box of 12', price: 30 },
-                      { id: 'box24', label: '2 x Box of 12', price: 50 },
-                    ].map((option) => (
-                      <label
-                        key={option.id || 'none'}
-                        className="flex items-center gap-3 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedCupcakeOption === option.id}
-                          onCheckedChange={() => setSelectedCupcakeOption(option.id)}
-                          className="w-4 h-4 rounded border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">
-                          {option.label}
-                          {option.price > 0 && (
-                            <span className="text-gray-500 ml-1">(+£{option.price.toFixed(2)})</span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                    Matching Cupcakes
+                    <span className="font-normal normal-case tracking-normal ml-1">(optional)</span>
+                  </label>
+                  <Select
+                    value={selectedCupcakeOption || 'none'}
+                    onValueChange={(value) => setSelectedCupcakeOption(value === 'none' ? null : value)}
+                  >
+                    <SelectTrigger className="w-full h-11 text-sm font-normal bg-white border-gray-200 rounded-lg px-4">
+                      <SelectValue>
+                        {selectedCupcakeOption === null || selectedCupcakeOption === 'none' ? (
+                          <span className="text-gray-700 font-normal">No cupcakes</span>
+                        ) : selectedCupcakeOption === 'box6' ? (
+                          <span className="text-gray-700 font-normal">Box of 6 (+£20)</span>
+                        ) : selectedCupcakeOption === 'box12' ? (
+                          <span className="text-gray-700 font-normal">Box of 12 (+£30)</span>
+                        ) : (
+                          <span className="text-gray-700 font-normal">2 x Box of 12 (+£50)</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="py-2.5 text-sm font-normal">
+                        <span className="text-gray-700">No cupcakes</span>
+                      </SelectItem>
+                      <SelectItem value="box6" className="py-2.5 text-sm font-normal">
+                        <span className="text-gray-700">Box of 6 <span className="text-gray-400">(+£20)</span></span>
+                      </SelectItem>
+                      <SelectItem value="box12" className="py-2.5 text-sm font-normal">
+                        <span className="text-gray-700">Box of 12 <span className="text-gray-400">(+£30)</span></span>
+                      </SelectItem>
+                      <SelectItem value="box24" className="py-2.5 text-sm font-normal">
+                        <span className="text-gray-700">2 x Box of 12 <span className="text-gray-400">(+£50)</span></span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Special Requests - Collapsible */}
@@ -2008,11 +2009,11 @@ export default function SupplierCustomizationModal({
                   <button
                     type="button"
                     onClick={() => setShowSpecialRequests(!showSpecialRequests)}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    className="flex items-center gap-2 text-[11px] font-medium text-gray-400 uppercase tracking-wide hover:text-gray-600 transition-colors"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showSpecialRequests ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showSpecialRequests ? 'rotate-180' : ''}`} />
                     <span>Special Requests</span>
-                    <span className="text-gray-400">(optional)</span>
+                    <span className="font-normal normal-case tracking-normal">(optional)</span>
                   </button>
                   {showSpecialRequests && (
                     <div className="mt-3">
@@ -2021,12 +2022,12 @@ export default function SupplierCustomizationModal({
                         onChange={(e) => setCustomMessage(e.target.value)}
                         placeholder="Add names, ages, colour preferences, or any other details here."
                         rows={2}
-                        className="bg-white border-gray-200 rounded-lg resize-none text-sm placeholder:text-xs placeholder:text-gray-400"
+                        className="bg-white border-gray-200 rounded-lg resize-none text-sm font-normal placeholder:text-gray-400 px-4 py-3"
                         maxLength={500}
                       />
-                      <div className="flex justify-between items-start mt-1">
-                        <p className="text-xs text-gray-400">We'll confirm all custom details with you after booking.</p>
-                        <span className="text-xs text-gray-400">{customMessage.length}/500</span>
+                      <div className="flex justify-between items-start mt-1.5">
+                        <p className="text-[11px] text-gray-400">We'll confirm all custom details with you after booking.</p>
+                        <span className="text-[11px] text-gray-400">{customMessage.length}/500</span>
                       </div>
                     </div>
                   )}
@@ -2034,7 +2035,9 @@ export default function SupplierCustomizationModal({
 
                 {/* Delivery Method */}
                 <div>
-                  <p className="text-sm text-gray-600 mb-3">Delivery Method</p>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2.5">
+                    Delivery Method
+                  </label>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* Collection Option */}
