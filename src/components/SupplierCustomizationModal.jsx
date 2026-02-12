@@ -58,8 +58,8 @@ const DIETARY_LABELS = {
   'halal': 'Halal'
 }
 
-// Package Details Modal (Drawer on mobile)
-const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected, isPartyBags, isCake, partyBagsQuantity, formattedDuration, supplier }) => {
+// Package Details Modal - Simple "What's Included" view
+const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   // Disable body scroll when modal is open (iOS Safari compatible)
   useEffect(() => {
     if (isOpen) {
@@ -74,186 +74,63 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
         document.body.style.top = ''
         document.body.style.width = ''
         document.body.style.overflow = ''
-        // Use instant behavior to avoid smooth scroll causing visible jump
         window.scrollTo({ top: scrollY, behavior: 'instant' })
       }
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || !pkg) return null
 
-  const handleChoosePackage = () => {
-    onChoosePackage(pkg.id)
-    onClose()
-  }
-
-  // Calculate display price for party bags
-  const displayPrice = isPartyBags ? (pkg.price * (partyBagsQuantity || 1)).toFixed(2) : (pkg.enhancedPrice || pkg.price)
-
-  // Get cake-specific data from supplier
-  const cakeDescription = supplier?.description || supplier?.serviceDetails?.description || ''
-  const cakeFlavours = supplier?.flavours || supplier?.serviceDetails?.flavours || []
-  const cakeDietary = supplier?.dietaryInfo || supplier?.serviceDetails?.dietaryInfo || []
-  const feedsInfo = pkg.serves || pkg.feeds
-
-  // Dietary labels for display
-  const dietaryLabels = {
-    'vegetarian': 'Vegetarian',
-    'vegan': 'Vegan',
-    'gluten-free': 'Gluten Free',
-    'dairy-free': 'Dairy Free',
-    'nut-free': 'Nut Free',
-    'egg-free': 'Egg Free',
-    'halal': 'Halal'
-  }
+  const items = pkg.features?.length > 0 ? pkg.features : (pkg.contents?.length > 0 ? pkg.contents : (pkg.whatsIncluded || []))
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
-      onTouchMove={(e) => e.preventDefault()}
-      style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm overflow-hidden animate-in slide-in-from-bottom duration-200"
         onClick={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.stopPropagation()}
-        style={{ touchAction: 'auto' }}
       >
-        {/* Modal Header */}
-        <div className="relative h-48 sm:h-64 flex-shrink-0 bg-gray-100">
-          <Image
-            src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
-            alt={pkg.name}
-            fill
-            className="object-contain"
-          />
-          {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <h3 className="font-semibold text-gray-900">{pkg.name}</h3>
+            <p className="text-sm text-[hsl(var(--primary-600))] font-medium">£{pkg.price}</p>
+          </div>
           <button
             onClick={onClose}
-            className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-white hover:bg-gray-100 rounded-full p-1.5 sm:p-2 shadow-md transition-colors z-10"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
-            <X size={18} className="sm:w-5 sm:h-5 text-gray-600" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
-
-          {/* Package info directly on image */}
-          <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10">
-            <h2 className="text-xl sm:text-2xl font-semibold text-white mb-1">{pkg.name}</h2>
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-              <div>
-                <span className="text-2xl sm:text-3xl font-bold text-white">
-                  £{displayPrice}
-                </span>
-              </div>
-              {isCake && feedsInfo && (
-                <div className="flex items-center text-white/90 text-sm sm:text-base">
-                  <span className="font-medium">Feeds {feedsInfo} people</span>
-                </div>
-              )}
-              {!isPartyBags && !isCake && (
-                <div className="flex items-center text-white/90 text-sm sm:text-base">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" />
-                  <span className="font-medium">{formattedDuration || pkg.duration}</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ minHeight: 0 }}>
-          {/* For cakes: Show About this cake */}
-          {isCake && cakeDescription && (
-            <div className="mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">About This Cake</h3>
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed">
-                  {cakeDescription}
-                </div>
-              </div>
-            </div>
+        {/* Content - Simple bullet list */}
+        <div className="p-4">
+          <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">What&apos;s Included</h4>
+          {items.length > 0 ? (
+            <ul className="space-y-2">
+              {items.map((item, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-[hsl(var(--primary-500))] mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700 text-sm">{item}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">Package details not available.</p>
           )}
-
-          {/* For cakes: Show available flavours */}
-          {isCake && cakeFlavours.length > 0 && (
-            <div className="mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Available Flavours</h3>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {cakeFlavours.map((flavour, i) => (
-                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-md">
-                    {flavour}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* For cakes: Show dietary options */}
-          {isCake && cakeDietary.length > 0 && (
-            <div className="mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Dietary Options Available</h3>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {cakeDietary.map((option, i) => (
-                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
-                    {dietaryLabels[option] || option}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* For non-cakes: What's Included */}
-          {!isCake && (pkg.contents?.length > 0 || pkg.features?.length > 0) && (
-            <div className="mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">What's Included</h3>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {(pkg.contents || pkg.features).map((item, i) => (
-                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-md">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Package Description (for non-cakes or if cake has package-specific description) */}
-          {!isCake && pkg.description && (
-            <div className="mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Package Details</h3>
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed">
-                  {pkg.description}
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
 
-        {/* Footer with CTA */}
-        <div className="border-t border-gray-200 p-4 sm:p-6 bg-white flex-shrink-0">
-          <Button
-            onClick={handleChoosePackage}
-            className={`w-full h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl transition-all ${
-              isSelected
-                ? "bg-primary-500 hover:bg-primary-600 text-white"
-                : "bg-primary-500 hover:bg-primary-600 text-white shadow-lg"
-            }`}
+        {/* Close button */}
+        <div className="p-4 pt-2">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
           >
-            {isSelected ? (
-              <>
-                <Check className="w-5 h-5 mr-2" />
-                {isCake ? 'Size Selected' : 'Package Selected'}
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-5 h-5 mr-2" />
-                {isCake ? 'Choose This Size' : 'Choose This Package'}
-              </>
-            )}
-          </Button>
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -342,8 +219,6 @@ export default function SupplierCustomizationModal({
   // Party bags quantity state - ensure it's always a number
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
 
-  // Track which balloon/party bags packages have expanded "What's included" details
-  const [expandedPackageDetails, setExpandedPackageDetails] = useState({})
 
   // Helper function to round up to nearest pack size for decorations
   const getDecorationsPackSize = (guestCount, packSizes = [8, 16, 24, 32, 40, 48]) => {
@@ -1048,21 +923,6 @@ export default function SupplierCustomizationModal({
   const dietaryDisplayName = selectedDietaryOptions.length === 0
     ? 'Standard'
     : selectedDietaryNames.join(', ')
-
-  // Helper to format duration for venues
-  const formatDurationText = (duration) => {
-    if (!duration) return duration
-
-    // Check if this is a venue
-    const isVenue = supplier?.category?.toLowerCase() === 'venue' ||
-                    supplier?.type?.toLowerCase() === 'venue'
-
-    if (isVenue && duration.toLowerCase().includes('hour')) {
-      return `${duration} booking (inc. setup & cleanup)`
-    }
-
-    return duration
-  }
 
   // ✅ UPDATED: Unified pricing calculation for modal totals
   const calculateModalPricing = useMemo(() => {
@@ -2646,42 +2506,40 @@ export default function SupplierCustomizationModal({
                   >
                     {packages.map((pkg, index) => {
                       const isSelected = selectedPackageId === pkg.id
-                      const isPremium = index === packages.length - 1
-                      const isMiddle = index === 1
+                      const packageImage = getDecorationsPackageImage(pkg) || pkg.image || pkg.images?.[0]
+
+                      // Short descriptions for decorations
+                      const getDecorationsProse = () => {
+                        const features = pkg?.features || pkg?.contents || []
+                        if (features.length === 0) return pkg.description || null
+                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
+                      }
+
+                      const prose = getDecorationsProse()
+
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[140px] sm:w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
-                              ? "border-primary-500 bg-primary-50"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Package Image - compact */}
-                          <div className="relative w-full h-20 sm:h-24">
-                            {getDecorationsPackageImage(pkg) ? (
+                          {/* Package Image */}
+                          <div className="relative w-full h-24 sm:h-28">
+                            {packageImage ? (
                               <Image
-                                src={getDecorationsPackageImage(pkg)}
+                                src={packageImage}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="160px"
+                                sizes="220px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-6 h-6 text-purple-300" />
-                              </div>
-                            )}
-                            {/* Badge overlay */}
-                            {isPremium && (
-                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
-                                BEST VALUE
-                              </div>
-                            )}
-                            {isMiddle && !isPremium && pkg.popular && (
-                              <div className="absolute top-0 left-0 right-0 bg-primary-500 text-white text-[9px] font-semibold py-0.5 text-center">
-                                POPULAR
+                                <Package className="w-6 h-6 text-gray-300" />
                               </div>
                             )}
                             {/* Selection checkmark */}
@@ -2691,41 +2549,55 @@ export default function SupplierCustomizationModal({
                               </div>
                             )}
                           </div>
-                          <div className="p-2.5 bg-white">
-                            <h4 className="font-medium text-gray-800 text-xs mb-1 truncate">
-                              {pkg.name}
-                            </h4>
-                            <p className="font-bold text-primary-600 text-base">
-                              £{(pkg.price * decorationsPackSize).toFixed(0)}
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              {decorationsPackSize} sets
-                            </p>
+
+                          {/* Content */}
+                          <div className="p-3 bg-white flex flex-col h-[165px]">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                                £{(pkg.price * decorationsPackSize).toFixed(0)}
+                              </p>
+                            </div>
+
+                            {/* Description prose - fixed height area */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {prose && (
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                  {prose}
+                                </p>
+                              )}
+
+                              {/* Pack size info */}
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                {decorationsPackSize} sets
+                              </p>
+                            </div>
+
+                            {/* What's Included - opens modal - always at bottom */}
+                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
+                              <div className="pt-2 border-t border-gray-100 mt-auto">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
-
-                {/* Selected package features shown below */}
-                {selectedPackageId && (() => {
-                  const selectedPkg = packages.find(p => p.id === selectedPackageId)
-                  if (!selectedPkg?.features?.length) return null
-                  return (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedPkg.features.map((feature, i) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2 py-1 rounded border border-gray-200">
-                            <Check className="w-3 h-3 text-green-500" />
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
               </section>
             )}
 
@@ -2782,7 +2654,7 @@ export default function SupplierCustomizationModal({
                           key={pkg.id}
                           className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
-                              ? "border-primary-500 bg-primary-50"
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
@@ -2811,9 +2683,9 @@ export default function SupplierCustomizationModal({
                           </div>
 
                           {/* Content */}
-                          <div className="p-3 bg-white">
+                          <div className="p-3 bg-white flex flex-col h-[165px]">
                             <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="font-semibold text-gray-900 text-sm">
+                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
                                 {pkg.name}
                               </h4>
                               <p className="font-bold text-primary-600 text-base flex-shrink-0">
@@ -2823,48 +2695,37 @@ export default function SupplierCustomizationModal({
                               </p>
                             </div>
 
-                            {/* Description prose */}
-                            {prose && (
-                              <p className="text-xs text-gray-500 leading-relaxed">
-                                {prose}
-                              </p>
-                            )}
+                            {/* Description prose - fixed height area */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {prose && (
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                  {prose}
+                                </p>
+                              )}
 
-                            {/* Party bags quantity */}
-                            {supplierTypeDetection.isPartyBags && (
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                {partyBagsQuantity} bags
-                              </p>
-                            )}
+                              {/* Party bags quantity */}
+                              {supplierTypeDetection.isPartyBags && (
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                  {partyBagsQuantity} bags
+                                </p>
+                              )}
+                            </div>
 
-                            {/* Collapsible What's Included */}
+                            {/* What's Included - opens modal - always at bottom */}
                             {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="mt-2 pt-2 border-t border-gray-100">
+                              <div className="pt-2 border-t border-gray-100 mt-auto">
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    setExpandedPackageDetails(prev => ({
-                                      ...prev,
-                                      [pkg.id]: !prev[pkg.id]
-                                    }))
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
                                   }}
-                                  className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
+                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
                                 >
+                                  <Info className="w-3.5 h-3.5" />
                                   <span>What&apos;s included</span>
-                                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedPackageDetails[pkg.id] ? 'rotate-180' : ''}`} />
                                 </button>
-
-                                {expandedPackageDetails[pkg.id] && (
-                                  <ul className="mt-1.5 space-y-0.5">
-                                    {(pkg.features || pkg.contents).map((item, idx) => (
-                                      <li key={idx} className="flex items-start gap-1.5 text-[10px] text-gray-600">
-                                        <Check className="w-2.5 h-2.5 text-primary-500 mt-0.5 flex-shrink-0" />
-                                        <span>{item}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
                               </div>
                             )}
                           </div>
@@ -3573,24 +3434,15 @@ export default function SupplierCustomizationModal({
         </div>
       </div>
 
-      {/* Package Details Modal */}
-      {showPackageModal && selectedPackageForModal && (
-        <PackageDetailsModal
-          pkg={selectedPackageForModal}
-          isOpen={showPackageModal}
-          onClose={() => {
-            setShowPackageModal(false)
-            setSelectedPackageForModal(null)
-          }}
-          onChoosePackage={setSelectedPackageId}
-          isSelected={selectedPackageId === selectedPackageForModal.id}
-          isPartyBags={supplierTypeDetection.isPartyBags}
-          isCake={supplierTypeDetection.isCake}
-          partyBagsQuantity={partyBagsQuantity}
-          formattedDuration={formatDurationText(selectedPackageForModal.duration)}
-          supplier={supplier}
-        />
-      )}
+      {/* Package Details Modal - Simple what's included view */}
+      <PackageDetailsModal
+        pkg={selectedPackageForModal}
+        isOpen={showPackageModal}
+        onClose={() => {
+          setShowPackageModal(false)
+          setSelectedPackageForModal(null)
+        }}
+      />
     </div>
   )
 }
