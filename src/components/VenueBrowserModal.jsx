@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import Image from "next/image"
-import { X, Building, ArrowLeft, SlidersHorizontal, Zap, ChevronDown, Check } from "lucide-react"
+import { X, Building, ArrowLeft, SlidersHorizontal, Zap, ChevronDown, Check, Map, List } from "lucide-react"
 import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
@@ -240,6 +240,9 @@ export default function VenueBrowserModal({
   const [venueCoordinates, setVenueCoordinates] = useState({})
   const [userCoordinates, setUserCoordinates] = useState(null)
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
+
+  // View mode state (map = split view with map, list = full-width list)
+  const [viewMode, setViewMode] = useState('map')
 
   // Filter state
   const [instantBookOnly, setInstantBookOnly] = useState(false)
@@ -535,18 +538,34 @@ export default function VenueBrowserModal({
                 <ArrowLeft className="w-5 h-5 text-gray-700" />
               </button>
 
-              <div className="flex-1 mx-3">
-                <div className="bg-gray-100 rounded-full px-4 py-2 text-center">
-                  <span className="text-sm font-medium text-gray-900">
-                    {venues.length} venues available
-                  </span>
-                  {partyDetails?.date && (
-                    <span className="text-xs text-gray-500 block">
-                      {new Date(partyDetails.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      {partyDetails.guestCount && ` · ${partyDetails.guestCount} guests`}
-                    </span>
-                  )}
-                </div>
+              {/* View Toggle */}
+              <div className="flex items-center bg-gray-100 rounded-full p-0.5">
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`
+                    flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all
+                    ${viewMode === 'map'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500'
+                    }
+                  `}
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  Map
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`
+                    flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all
+                    ${viewMode === 'list'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500'
+                    }
+                  `}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  List
+                </button>
               </div>
 
               <button
@@ -768,43 +787,89 @@ export default function VenueBrowserModal({
               </div>
             )}
 
-            {/* Map Area */}
-            <div className="flex-1 relative">
-              {isLoading ? (
-                <MapSkeleton />
-              ) : (
-                <VenueMapView
-                  venues={venues}
-                  coordinates={venueCoordinates}
-                  userCoordinates={userCoordinates}
-                  selectedVenueId={selectedVenueId}
-                  hoveredVenueId={hoveredVenueId}
-                  onSelectVenue={handleMarkerClick}
-                  onHoverVenue={setHoveredVenueId}
-                  onViewDetails={handleViewDetails}
-                  onConfirmSelect={handleConfirmSelect}
-                  showPopupCard={false}
-                  partyDetails={partyDetails}
-                />
-              )}
+            {/* Map or List Area */}
+            <div className="flex-1 relative overflow-hidden">
+              {viewMode === 'map' ? (
+                // Map View
+                <>
+                  {isLoading ? (
+                    <MapSkeleton />
+                  ) : (
+                    <VenueMapView
+                      venues={venues}
+                      coordinates={venueCoordinates}
+                      userCoordinates={userCoordinates}
+                      selectedVenueId={selectedVenueId}
+                      hoveredVenueId={hoveredVenueId}
+                      onSelectVenue={handleMarkerClick}
+                      onHoverVenue={setHoveredVenueId}
+                      onViewDetails={handleViewDetails}
+                      onConfirmSelect={handleConfirmSelect}
+                      showPopupCard={false}
+                      partyDetails={partyDetails}
+                    />
+                  )}
 
-              {/* Venue count badge */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-full px-4 py-2 shadow-lg">
-                <span className="text-sm font-medium text-gray-900">
-                  {venues.length} venues
-                </span>
-              </div>
+                  {/* Venue count badge */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-full px-4 py-2 shadow-lg">
+                    <span className="text-sm font-medium text-gray-900">
+                      {venues.length} venues
+                    </span>
+                  </div>
+                </>
+              ) : (
+                // List View
+                <div className="h-full overflow-y-auto px-4 py-4">
+                  {isLoading ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[...Array(6)].map((_, i) => (
+                        <VenueCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  ) : venues.length === 0 ? (
+                    <div className="text-center py-20">
+                      <Building className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        No venues available
+                      </h3>
+                      <p className="text-gray-600">
+                        Try adjusting your filters.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {venues.map((venue) => (
+                        <VenueMapListItem
+                          key={venue.id}
+                          venue={venue}
+                          isSelected={selectedVenueId === venue.id}
+                          isHovered={false}
+                          isCurrentlySelected={selectedVenue?.id === venue.id}
+                          onClick={() => handleListItemClick(venue)}
+                          onHover={() => {}}
+                          onSelect={() => handleSelectVenue(venue)}
+                          onViewDetails={() => handleViewDetails(venue)}
+                          partyDetails={partyDetails}
+                          isLoading={isSelectingVenue}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Mobile Bottom Sheet */}
-            <VenueMobileBottomSheet
-              venue={selectedMapVenue}
-              isOpen={isBottomSheetOpen}
-              onClose={handleCloseBottomSheet}
-              onViewDetails={() => handleViewDetails(selectedMapVenue)}
-              onSelect={() => handleConfirmSelect(selectedMapVenue)}
-              partyDetails={partyDetails}
-            />
+            {/* Mobile Bottom Sheet - only show in map view */}
+            {viewMode === 'map' && (
+              <VenueMobileBottomSheet
+                venue={selectedMapVenue}
+                isOpen={isBottomSheetOpen}
+                onClose={handleCloseBottomSheet}
+                onViewDetails={() => handleViewDetails(selectedMapVenue)}
+                onSelect={() => handleConfirmSelect(selectedMapVenue)}
+                partyDetails={partyDetails}
+              />
+            )}
           </div>
         ) : (
           // DESKTOP LAYOUT: Airbnb-style split view
@@ -820,14 +885,46 @@ export default function VenueBrowserModal({
                   <ArrowLeft className="w-5 h-5" />
                   <span className="text-sm font-medium">Back to dashboard</span>
                 </button>
-                {/* Logo */}
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-                  alt="BookABash"
-                  width={130}
-                  height={28}
-                  className="h-auto w-auto"
-                />
+                {/* View Toggle + Logo */}
+                <div className="flex items-center gap-4">
+                  {/* View Toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-full p-1">
+                    <button
+                      onClick={() => setViewMode('map')}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                        ${viewMode === 'map'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                        }
+                      `}
+                    >
+                      <Map className="w-4 h-4" />
+                      Map
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                        ${viewMode === 'list'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                        }
+                      `}
+                    >
+                      <List className="w-4 h-4" />
+                      List
+                    </button>
+                  </div>
+                  {/* Logo */}
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                    alt="BookABash"
+                    width={130}
+                    height={28}
+                    className="h-auto w-auto"
+                  />
+                </div>
               </div>
             </div>
 
@@ -839,10 +936,10 @@ export default function VenueBrowserModal({
               />
             )}
 
-            {/* Main content: Left panel (venues) + Right panel (map) */}
+            {/* Main content: Left panel (venues) + Right panel (map) OR full-width list */}
             <div className="flex-1 flex overflow-hidden">
               {/* Left Panel: Venue List */}
-              <div className="w-[58%] overflow-y-auto px-6 pt-4 pb-6">
+              <div className={`${viewMode === 'list' ? 'w-full' : 'w-[58%]'} overflow-y-auto px-6 pt-4 pb-6`}>
                 {/* Heading */}
                 <h1 className="text-xl font-semibold text-gray-900 mb-3">
                   {venues.length} venues available
@@ -1021,7 +1118,7 @@ export default function VenueBrowserModal({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-8">
+                  <div className={`grid gap-x-6 gap-y-8 ${viewMode === 'list' ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-2'}`}>
                     {venues.map((venue) => (
                       <VenueMapListItem
                         key={venue.id}
@@ -1041,7 +1138,8 @@ export default function VenueBrowserModal({
                 )}
               </div>
 
-              {/* Right Panel: Map */}
+              {/* Right Panel: Map - only show in map view mode */}
+              {viewMode === 'map' && (
               <div className="w-[42%] p-4 pl-0">
                 <div className="h-full rounded-2xl overflow-hidden shadow-sm border border-gray-200">
                   {isLoading ? (
@@ -1064,6 +1162,7 @@ export default function VenueBrowserModal({
                   )}
                 </div>
               </div>
+              )}
             </div>
           </div>
         )}
