@@ -186,9 +186,6 @@ export default function CustomerAuthCallback() {
         // Link email to party tracking session (for CRM)
         await linkEmail(user.email)
 
-        setProgress(100)
-        await new Promise((resolve) => setTimeout(resolve, 300))
-
         // Determine where to redirect
         const currentOrigin = window.location.origin
         let redirectUrl = `${currentOrigin}/`
