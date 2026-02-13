@@ -1360,8 +1360,8 @@ export default function SnappyChatReviewPage() {
                     {/* Supplier Messages */}
                     {currentStepData.showSupplierMessages && (
                       <div className="space-y-3">
-                        <p className="text-sm text-gray-600 mb-4">
-                          Tap a supplier to add a personalised message for them.
+                        <p className="text-xs text-gray-500 mb-3">
+                          Tap to add a message (optional)
                         </p>
 
                         {/* Simple list of all suppliers */}
@@ -1377,12 +1377,12 @@ export default function SnappyChatReviewPage() {
                               return (
                                 <div
                                   key={supplierId}
-                                  className={`border rounded-xl overflow-hidden transition-all duration-200 ${
+                                  className={`border rounded-lg overflow-hidden transition-all duration-200 ${
                                     isExpanded
-                                      ? 'border-primary-400 bg-primary-50/50'
+                                      ? 'border-gray-300 bg-white shadow-sm'
                                       : hasMessage
-                                        ? 'border-green-300 bg-green-50/30'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                        ? 'border-green-200 bg-green-50/50'
+                                        : 'border-gray-200 bg-white'
                                   }`}
                                 >
                                   {/* Supplier header - always visible */}
@@ -1391,29 +1391,22 @@ export default function SnappyChatReviewPage() {
                                     onClick={() => setSelectedMessageSupplier(isExpanded ? '' : supplierId)}
                                     className="w-full p-3 flex items-center justify-between text-left"
                                   >
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-gray-900">{supplierName}</span>
-                                      <span className="text-xs text-gray-500 capitalize">({supplierType})</span>
-                                    </div>
+                                    <span className="font-medium text-gray-900 text-sm">{supplierName}</span>
                                     <div className="flex items-center gap-2">
                                       {hasMessage && !isExpanded && (
-                                        <span className="text-xs text-green-600 flex items-center gap-1">
-                                          <CheckCircle className="w-3 h-3" /> Message added
-                                        </span>
+                                        <CheckCircle className="w-4 h-4 text-green-500" />
                                       )}
-                                      <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                      </span>
+                                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
                                     </div>
                                   </button>
 
                                   {/* Expanded message input */}
                                   {isExpanded && (
-                                    <div className="px-3 pb-3 space-y-2">
+                                    <div className="px-3 pb-3">
                                       <Textarea
-                                        placeholder="e.g., 'Please arrive 30 mins early', 'We'd love a Frozen theme', 'Child is sensitive to loud noises'..."
+                                        placeholder="Add a note for this supplier..."
                                         value={supplierMessages[supplierId]?.message || ''}
                                         onChange={(e) => {
                                           setSupplierMessages(prev => ({
@@ -1426,14 +1419,11 @@ export default function SnappyChatReviewPage() {
                                             }
                                           }));
                                         }}
-                                        className="min-h-[80px] placeholder:text-gray-400 placeholder:text-xs text-sm border-gray-200 focus:border-primary-400 resize-none rounded-lg bg-white"
+                                        className="min-h-[100px] text-sm placeholder:text-gray-400 placeholder:text-sm border-gray-200 focus:border-gray-300 resize-none rounded-lg bg-gray-50"
                                         autoFocus
                                       />
                                       {hasMessage && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-xs text-green-600 flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" /> Saved
-                                          </span>
+                                        <div className="flex items-center justify-end mt-2">
                                           <button
                                             type="button"
                                             onClick={() => {
@@ -1445,7 +1435,7 @@ export default function SnappyChatReviewPage() {
                                             }}
                                             className="text-xs text-gray-400 hover:text-red-500"
                                           >
-                                            Clear message
+                                            Clear
                                           </button>
                                         </div>
                                       )}
@@ -1492,7 +1482,7 @@ export default function SnappyChatReviewPage() {
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-full font-medium text-gray-700 text-base"
+                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-xl font-medium text-gray-700 text-base"
                               onClick={async () => {
                                 try {
                                   setOauthLoading('google');
@@ -1536,7 +1526,7 @@ export default function SnappyChatReviewPage() {
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-full font-medium text-gray-700 text-base"
+                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-xl font-medium text-gray-700 text-base"
                               onClick={async () => {
                                 try {
                                   setOauthLoading('apple');
@@ -1572,6 +1562,20 @@ export default function SnappyChatReviewPage() {
                                 </>
                               )}
                             </Button>
+
+                            {/* Passive T&Cs acceptance notice */}
+                            <p className="text-[11px] text-center text-gray-400">
+                              By continuing, you agree to PartySnap's{" "}
+                              <BookingTermsModal partyDetails={partyDetails}>
+                                <button type="button" className="text-[hsl(var(--primary-500))] hover:underline">
+                                  Terms & Conditions
+                                </button>
+                              </BookingTermsModal>
+                              {" "}and{" "}
+                              <a href="/privacy-policy" target="_blank" className="text-[hsl(var(--primary-500))] hover:underline">
+                                Privacy Policy
+                              </a>
+                            </p>
 
                             <div className="relative py-2">
                               <div className="absolute inset-0 flex items-center">
@@ -1726,7 +1730,7 @@ export default function SnappyChatReviewPage() {
                           </div>
                           )}
 
-                          {/* T&Cs and Marketing (signup only) */}
+                          {/* T&Cs and Marketing Preferences (signup only) */}
                           {authMode === "signup" && (
                             <div className="space-y-3 pt-4">
                               {/* Booking Terms */}
@@ -1823,25 +1827,27 @@ export default function SnappyChatReviewPage() {
                   </div>
 
                   {/* Navigation Buttons */}
-                  <div className={`pt-5 mt-5 border-t border-gray-200 ${currentStepData.showSignupForm ? "max-w-md mx-auto" : ""}`}>
-                    <div className="flex justify-between items-center">
+                  <div className={`pt-4 mt-4 border-t border-gray-200 ${currentStepData.showSignupForm ? "max-w-md mx-auto" : ""}`}>
+                    <div className="flex justify-between items-center gap-3">
                       {currentStep > 0 && (
-                        <Button
-                          variant="outline"
+                        <button
+                          type="button"
                           onClick={handleBack}
-                          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md font-medium text-sm"
+                          className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
                         >
-                          Back
-                        </Button>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
                       )}
 
-                      <div className={currentStep === 0 && !user ? "w-full" : "ml-auto"}>
+                      <div className={currentStep === 0 && !user ? "w-full" : "flex-1"}>
                       <Button
                           onClick={currentStepData.showSignupForm
                             ? handleSignupButtonClick
                             : handleNext}
                           disabled={isSubmitting}
-                          className={`bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white h-12 text-base font-semibold rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ${currentStep === 0 && !user ? "w-full" : "px-5"}`}
+                          className={`w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white h-10 text-sm font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 px-4`}
                         >
                         {isSubmitting ? (
                           <div className="flex items-center justify-center">
