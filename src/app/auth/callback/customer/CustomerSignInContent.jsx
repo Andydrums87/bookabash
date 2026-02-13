@@ -281,5 +281,13 @@ export default function CustomerAuthCallback() {
     )
   }
 
-  return null
+  // Default: show loading state (shouldn't reach here, but prevents blank screen)
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
+        <p className="text-gray-500 text-sm">Signing you in...</p>
+      </div>
+    </div>
+  )
 }
