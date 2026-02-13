@@ -51,7 +51,11 @@ class PartyDatabaseBackend {
       const userId = authUser?.user?.id
       if (!userId) throw new Error("No authenticated user")
 
-      const userEmail = userData.email || authUser.user.email
+      // Don't use auth email if it's an Apple private relay - user needs to enter real email
+      const authEmail = authUser.user.email
+      const isPrivateRelay = authEmail?.includes('@privaterelay.appleid.com')
+      // If private relay and no email provided, use empty string (will be updated at checkout)
+      const userEmail = userData.email || (isPrivateRelay ? '' : authEmail)
 
       // Check if user profile exists for THIS auth user
       const { data: existingUserByAuth, error: fetchError } = await supabase
@@ -64,8 +68,15 @@ class PartyDatabaseBackend {
 
       if (existingUserByAuth) {
         // Update the existing profile with any new data
+        // Only update email if the new email is valid (not empty, not private relay)
+        // Keep existing email if new one is worse
+        const existingEmail = existingUserByAuth.email
+        const existingIsPrivateRelay = existingEmail?.includes('@privaterelay.appleid.com')
+        const newEmailIsValid = userEmail && !userEmail.includes('@privaterelay.appleid.com')
+        const emailToUse = newEmailIsValid ? userEmail : (existingIsPrivateRelay ? '' : existingEmail)
+
         const updateData = {
-          email: userEmail,
+          email: emailToUse,
           first_name: userData.firstName || existingUserByAuth.first_name,
           last_name: userData.lastName || existingUserByAuth.last_name,
           phone: userData.phone || existingUserByAuth.phone,

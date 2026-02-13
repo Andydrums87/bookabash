@@ -167,12 +167,22 @@ export default function CustomerAuthCallback() {
         const lastName = getLastName()
         console.log("👤 Extracted name:", { firstName, lastName })
 
+        // Check if email is an Apple private relay email
+        // If so, don't save it to the database - user will need to enter their real email
+        const isPrivateRelayEmail = user.email?.includes('@privaterelay.appleid.com')
+        const emailToSave = isPrivateRelayEmail ? undefined : user.email
+
+        if (isPrivateRelayEmail) {
+          console.log("📧 Apple private relay email detected - will not save to database")
+        }
+
         // Create or get customer profile
         // Only pass name values if they exist (avoid overwriting with empty strings)
+        // Don't save private relay emails - user will enter real email during checkout
         const userResult = await partyDatabaseBackend.createOrGetUser({
           firstName: firstName || undefined,
           lastName: lastName || undefined,
-          email: user.email,
+          email: emailToSave,
           phone: user.user_metadata?.phone || undefined,
           postcode: undefined
         })
