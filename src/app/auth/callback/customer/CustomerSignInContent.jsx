@@ -10,35 +10,9 @@ import { AlertCircle, Loader2 } from "lucide-react"
 export default function CustomerAuthCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const videoRef = useRef(null)
   const [status, setStatus] = useState("processing")
-  const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
   const isProcessingRef = useRef(false) // Prevent duplicate processing
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (video) {
-      const handleLoaded = () => {
-        video.currentTime = 1
-        video.play().catch(console.error)
-      }
-      video.addEventListener("loadedmetadata", handleLoaded)
-      return () => video.removeEventListener("loadedmetadata", handleLoaded)
-    }
-  }, [])
-
-  // Smooth progress animation
-  useEffect(() => {
-    if (status !== "processing") return
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 90) return prev + 2
-        return prev
-      })
-    }, 100)
-    return () => clearInterval(interval)
-  }, [status])
 
   useEffect(() => {
     console.log("👤 Processing customer OAuth callback...")
@@ -275,106 +249,37 @@ export default function CustomerAuthCallback() {
 
   if (status === "processing") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center p-4">
-        <div className="w-full max-w-md mx-auto text-center">
-          
-          {/* Snappy Animation */}
-          <div className="w-48 h-36 mx-auto mb-6 animate-fade-in-up">
-            <video
-              ref={videoRef}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="rounded-xl shadow-lg w-full h-full object-cover"
-              poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753133136/ra6l3fe9lb45gejgvgms.png"
-              onLoadedMetadata={(e) => {
-                e.target.currentTime = 1;
-                e.target.play();
-              }}
-            >
-              <source
-                src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
-                type="video/mp4"
-              />
-            </video>
-          </div>
-
-          {/* Welcome Message */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">
-            Welcome to PartySnap!
-          </h1>
-
-          <p className="text-gray-600 mb-8 text-sm sm:text-base leading-relaxed">
-            Setting up your party planning dashboard...
-          </p>
-
-          {/* Progress Bar */}
-          <div className="w-full max-w-md bg-gray-200 h-4 rounded-full overflow-hidden mb-4">
-            <div
-              className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] h-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="text-xl font-bold text-primary-600 mb-6">{Math.round(progress)}%</div>
-
-          <div className="flex items-center justify-center mb-6">
-            <Loader2 className="w-6 h-6 text-[hsl(var(--primary-500))] animate-spin" />
-          </div>
-
-          <p className="text-xs text-gray-500 italic">
-            Preparing your party planning magic... ✨
-          </p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">Signing you in...</p>
         </div>
-
-        <style jsx>{`
-          @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fade-in-up { animation: fade-in-up 0.6s ease-out; }
-        `}</style>
       </div>
     )
   }
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md mx-auto text-center animate-fade-in-up">
-          
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <AlertCircle className="w-10 h-10 text-red-600" />
-          </div>
-
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Authentication Failed</h2>
-          
-          <p className="text-red-600 mb-8 text-sm leading-relaxed">{errorMessage}</p>
-
-          <div className="space-y-3">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm mx-auto text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Sign in failed</h2>
+          <p className="text-gray-500 text-sm mb-6">{errorMessage}</p>
+          <div className="space-y-2">
             <button
               onClick={() => window.location.href = `${window.location.origin}/review-book`}
-              className="w-full bg-[hsl(var(--primary-500))] text-white py-3 px-6 rounded-xl hover:bg-[hsl(var(--primary-600))] transition-colors font-semibold shadow-lg"
+              className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
             >
-              Back to Review & Book
+              Try again
             </button>
-            
             <button
               onClick={() => window.location.href = window.location.origin}
-              className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors"
+              className="w-full text-gray-500 py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-colors text-sm"
             >
-              Return Home
+              Go home
             </button>
           </div>
         </div>
-
-        <style jsx>{`
-          @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fade-in-up { animation: fade-in-up 0.6s ease-out; }
-        `}</style>
       </div>
     )
   }
