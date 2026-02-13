@@ -70,6 +70,11 @@ import { trackCheckoutStarted, trackReviewBookStarted, linkEmail } from '@/utils
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
 
+// Check if email is an Apple private relay email
+const isApplePrivateRelayEmail = (email) => {
+  return email?.includes('@privaterelay.appleid.com')
+}
+
 export default function SnappyChatReviewPage() {
   const router = useRouter();
   const { removeSupplier } = usePartyPlan();
@@ -418,10 +423,13 @@ export default function SnappyChatReviewPage() {
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
           setCustomerProfile(result.user);
+          // Only auto-fill email if it's not a private relay email
+          const emailToUse = result.user.email || user.email;
+          const shouldAutoFillEmail = emailToUse && !isApplePrivateRelayEmail(emailToUse);
           setFormData((prev) => ({
             ...prev,
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
-            email: result.user.email || user.email || prev.email,
+            email: shouldAutoFillEmail ? emailToUse : prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
             addressLine1: result.user.address_line_1 || prev.addressLine1,
             addressLine2: result.user.address_line_2 || prev.addressLine2,
@@ -430,9 +438,11 @@ export default function SnappyChatReviewPage() {
 
           }));
         } else {
+          // Only auto-fill email if it's not a private relay email
+          const shouldAutoFillEmail = user.email && !isApplePrivateRelayEmail(user.email);
           setFormData((prev) => ({
             ...prev,
-            email: user.email || prev.email,
+            email: shouldAutoFillEmail ? user.email : prev.email,
             parentName: user.user_metadata?.full_name || prev.parentName,
             phoneNumber: user.user_metadata?.phone || prev.phoneNumber,
           }));
@@ -495,7 +505,7 @@ export default function SnappyChatReviewPage() {
       const userResult = await partyDatabaseBackend.createOrGetUser({
         firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
         lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
-        email: authenticatedUser.email,
+        email: formData.email, // Use the email from the form (user may have entered their real email)
         phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
         addressLine1: formData.addressLine1,
         addressLine2: formData.addressLine2 || "",
@@ -642,20 +652,24 @@ export default function SnappyChatReviewPage() {
     setUser(authenticatedUser);
 
     if (userData) {
+      // Only auto-fill email if it's not a private relay email
+      const shouldAutoFillEmail = userData.email && !isApplePrivateRelayEmail(userData.email);
       setFormData((prev) => ({
         ...prev,
         parentName: userData.firstName && userData.lastName
           ? `${userData.firstName} ${userData.lastName}`.trim()
           : userData.firstName || prev.parentName,
-        email: userData.email || prev.email,
+        email: shouldAutoFillEmail ? userData.email : prev.email,
         phoneNumber: userData.phone || prev.phoneNumber,
       }));
     } else {
       const fullName = authenticatedUser.user_metadata?.full_name;
+      // Only auto-fill email if it's not a private relay email
+      const shouldAutoFillEmail = authenticatedUser.email && !isApplePrivateRelayEmail(authenticatedUser.email);
       setFormData((prev) => ({
         ...prev,
         parentName: fullName || prev.parentName,
-        email: authenticatedUser.email || prev.email,
+        email: shouldAutoFillEmail ? authenticatedUser.email : prev.email,
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
       }));
     }
@@ -970,7 +984,9 @@ export default function SnappyChatReviewPage() {
       const addressValid = formData.addressLine1.trim().length > 0 &&
                           formData.city.trim().length > 0 &&
                           formData.postcode.trim().length > 0;
-      return formData.parentName.trim().length > 0 && phoneValid && formData.email.trim().length > 0 && addressValid;
+      // Email must not be a private relay email - user must enter their real email
+      const emailValid = formData.email.trim().length > 0 && !isApplePrivateRelayEmail(formData.email);
+      return formData.parentName.trim().length > 0 && phoneValid && emailValid && addressValid;
     }
     if (step.id === 'create-account') {
       if (authMode === "signin") {
@@ -1474,11 +1490,11 @@ export default function SnappyChatReviewPage() {
                         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                           {/* Social Login Options - Full width stacked buttons */}
                           <div className="space-y-3">
-                            {/* Google - Outlined with primary border */}
+                            {/* Google - Outlined */}
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-primary-500 rounded-full font-medium text-gray-700 text-base"
+                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-full font-medium text-gray-700 text-base"
                               onClick={async () => {
                                 try {
                                   localStorage.setItem('oauth_return_to', '/review-book');
@@ -1507,10 +1523,11 @@ export default function SnappyChatReviewPage() {
                               Continue with Google
                             </Button>
 
-                            {/* Apple - Dark solid */}
+                            {/* Apple - White with black logo */}
                             <Button
                               type="button"
-                              className="w-full h-12 bg-gray-800 hover:bg-gray-700 text-white rounded-full font-medium text-base"
+                              variant="outline"
+                              className="w-full h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-full font-medium text-gray-700 text-base"
                               onClick={async () => {
                                 try {
                                   localStorage.setItem('oauth_return_to', '/review-book');
@@ -1531,7 +1548,7 @@ export default function SnappyChatReviewPage() {
                               disabled={isSubmitting}
                             >
                               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#FFFFFF" />
+                                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#000000" />
                               </svg>
                               Continue with Apple
                             </Button>

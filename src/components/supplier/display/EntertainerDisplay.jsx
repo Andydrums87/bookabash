@@ -165,19 +165,19 @@ const renderAddOnServices = (addOnServices) => {
             <div className="pl-4 space-y-1.5">
               <div className="flex items-start gap-2">
                 <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                <span>Entertainer typically arrives 15-30 minutes before to setup</span>
+                <span>Entertainer arrives shortly before the party to prepare</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                <span>First hour of games and activities</span>
+                <span>First session of games and interactive activities</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                <span>20 minutes for food and refreshments</span>
+                <span>Break for food and refreshments</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
-                <span>Final 40 minutes of more entertainment</span>
+                <span>Final session of games, challenges, and character fun</span>
               </div>
             </div>
           </div>
