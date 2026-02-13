@@ -7,7 +7,6 @@ import { getServerUser } from "@/lib/auth-server"
 import { AuthButtons } from "./AuthButtons"
 import { CartIndicator } from "./CartIndicator"
 import { DashboardDropdown } from "./DashboardDropdown"
-import { SearchWidget } from "./SearchWidget"
 import { MobileNavWrapper } from "./MobileNavWrapper"
 
 export async function NavServer() {
@@ -45,11 +44,8 @@ export async function NavServer() {
             </Link>
           </nav>
 
-          {/* Right side - Search + Auth */}
+          {/* Right side - Auth */}
           <div className="flex items-center space-x-4">
-            {/* Client component for search */}
-            <SearchWidget />
-
             {/* Desktop CTAs - Client component */}
             <div className="hidden lg:flex items-center space-x-2">
               <AuthButtons initialUser={user} />

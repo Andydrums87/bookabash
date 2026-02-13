@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Menu, X, Calendar, User, Home, Search, Heart, BookOpen, Mail, Gift, Users, ShoppingCart, Briefcase, PartyPopper } from "lucide-react"
+import { Menu, X, Calendar, User, BookOpen, Mail, Gift, Users, ShoppingCart, Briefcase, PartyPopper } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -237,13 +237,6 @@ useEffect(() => {
     }
   }
 
-  // Basic nav items
-  const navItems = [
-    { href: "/", label: "Home", icon: Home },
-    // Dashboard will be inserted here as expandable
-    { href: "/blog", label: "Snapspiration", icon: BookOpen },
-  ]
-
   // Dashboard items with same logic as desktop
   const dashboardItems = [
     { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
@@ -371,12 +364,12 @@ useEffect(() => {
         className={`
           fixed top-0 right-0 h-full w-80 z-[300] lg:hidden
           transform transition-all duration-300 ease-out flex flex-col
-          bg-primary-500
+          bg-white/95 backdrop-blur-md shadow-xl
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
         {/* Profile Section */}
-        <div className="flex-shrink-0 pt-8 pb-4 px-8 text-center">
+        <div className="flex-shrink-0 pt-8 pb-6 px-8 text-center border-b border-gray-100">
           {!loading && user ? (
             <>
               {/* Profile Avatar - clickable for account settings */}
@@ -385,9 +378,9 @@ useEffect(() => {
                   closeMenu()
                   router.push("/profile")
                 }}
-                className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 mx-auto mb-2 flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
+                className="w-12 h-12 rounded-full bg-primary-100 border-2 border-primary-200 mx-auto mb-2 flex items-center justify-center hover:bg-primary-200 transition-colors duration-200"
               >
-                <User className="w-5 h-5 text-white" />
+                <User className="w-5 h-5 text-primary-600" />
               </button>
 
               {/* User Name - also clickable for account settings */}
@@ -396,39 +389,31 @@ useEffect(() => {
                   closeMenu()
                   router.push("/profile")
                 }}
-                className="block w-full hover:text-white/80 transition-colors duration-200"
+                className="block w-full hover:opacity-80 transition-colors duration-200"
               >
-                <h2 className="text-lg font-bold text-white mb-1">{getUserDisplayName()}</h2>
-                <p className="text-white/80 text-xs">{isSupplier ? "Business Owner" : "Party Planner"} • Tap for settings</p>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">{getUserDisplayName()}</h2>
+                <p className="text-gray-500 text-xs">{isSupplier ? "Business Owner" : "Party Planner"} • Tap for settings</p>
               </button>
             </>
           ) : (
             <>
               {/* PartySnap Logo for non-authenticated users */}
-              <div className="bg-white rounded-full p-2">
-                {/* <Image
+              <div className="flex justify-center">
+                <img
                   src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
                   alt="PartySnap"
-                  width={100}
-                  height={100}
-                  className="object-cover h-auto w-auto"
-                /> */}
-                <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png" alt="" />
-              
-
+                  className="h-12 w-auto"
+                />
               </div>
-
-              {/* <h2 className="text-xl font-bold text-white mb-1">Welcome to PartySnap</h2> */}
-              {/* <p className="text-white/80 text-xs">Start planning your perfect party</p> */}
             </>
           )}
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 px-8 space-y-5">
+        <div className="flex-1 px-8 space-y-1 pt-6">
           <Link
             href="/"
-            className="block py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+            className="block py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
             onClick={closeMenu}
           >
             Home
@@ -441,17 +426,17 @@ useEffect(() => {
                 closeMenu()
                 router.push("/suppliers/dashboard")
               }}
-              className="flex items-center py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+              className="flex items-center py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600 w-full"
             >
               <Briefcase className="w-5 h-5 mr-3" />
               Business Dashboard
             </button>
           ) : (
             /* Customer: Expandable My Snapboard menu */
-            <div className="space-y-3">
+            <div>
               <button
                 onClick={() => setDashboardExpanded(!dashboardExpanded)}
-                className="flex items-center justify-between w-full py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+                className="flex items-center justify-between w-full py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
               >
                 <span>My Snapboard</span>
                 <svg
@@ -465,12 +450,12 @@ useEffect(() => {
               </button>
 
               {dashboardExpanded && (
-                <div className="pl-4 space-y-3">
+                <div className="pl-4 space-y-1 pb-2">
                   {dashboardItems.map((item) => (
                     <button
                       key={item.href}
                       onClick={() => handleDashboardNavigation(item)}
-                      className="block w-full text-left py-1 text-white/80 hover:text-white text-base font-light transition-colors duration-200"
+                      className="block w-full text-left py-2 text-gray-600 hover:text-primary-500 text-base font-normal transition-colors duration-200"
                     >
                       {item.label}
                     </button>
@@ -481,7 +466,7 @@ useEffect(() => {
                         closeMenu()
                         router.push("/dashboard?view=parties")
                       }}
-                      className="flex items-center w-full text-left py-1 text-white/80 hover:text-white text-base font-light transition-colors duration-200"
+                      className="flex items-center w-full text-left py-2 text-gray-600 hover:text-primary-500 text-base font-normal transition-colors duration-200"
                     >
                       <PartyPopper className="w-4 h-4 mr-2" />
                       My Planned Parties
@@ -494,57 +479,55 @@ useEffect(() => {
 
           <Link
             href="/blog"
-            className="block py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+            className="block py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
             onClick={closeMenu}
           >
             Snapspiration
           </Link>
 
           {!user && (
-            <>
-              <div className="space-y-3 pt-2">
-                <button
-                  onClick={() => {
-                    closeMenu()
-                    router.push("/signin")
-                  }}
-                  className="w-full py-3 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-white text-base font-medium transition-all duration-200 hover:bg-white/30 hover:scale-105"
-                >
-                  Sign In
-                </button>
+            <div className="space-y-3 pt-6 border-t border-gray-100 mt-4">
+              <button
+                onClick={() => {
+                  closeMenu()
+                  router.push("/signin")
+                }}
+                className="w-full py-3 px-4 bg-primary-500 rounded-lg text-white text-base font-semibold transition-all duration-200 hover:bg-primary-600"
+              >
+                Sign In
+              </button>
 
-                <button
-                  onClick={() => {
-                    closeMenu()
-                    router.push("/suppliers/onboarding")
-                  }}
-                  className="w-full py-3 px-4 bg-white text-primary-500 rounded-lg text-base font-medium transition-all duration-200 hover:bg-white/90 hover:scale-105"
-                >
-                  Business Sign Up
-                </button>
-              </div>
-            </>
+              <button
+                onClick={() => {
+                  closeMenu()
+                  router.push("/suppliers/onboarding")
+                }}
+                className="w-full py-3 px-4 bg-white border-2 border-primary-500 text-primary-500 rounded-lg text-base font-semibold transition-all duration-200 hover:bg-primary-50"
+              >
+                List Your Business
+              </button>
+            </div>
           )}
         </div>
 
         {/* Bottom Section */}
-        <div className="flex-shrink-0 pb-4 px-8">
+        <div className="flex-shrink-0 pb-6 px-8 border-t border-gray-100">
           {user && (
             <button
               onClick={handleSignOut}
-              className="block w-full text-left py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80 mb-4"
+              className="block w-full text-left py-3 text-gray-500 text-base font-medium transition-colors duration-200 hover:text-primary-500 mt-4"
             >
               Sign Out
             </button>
           )}
 
           {/* Close Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-4">
             <button
               onClick={closeMenu}
-              className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
+              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
         </div>
