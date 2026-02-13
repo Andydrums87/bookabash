@@ -40,68 +40,74 @@ export default function CustomerAuthCallback() {
   }, [status])
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    console.log("👤 Processing customer OAuth callback...")
+
+    // Get URL parameters
+    const returnToParam = searchParams.get("return_to")
+    const preservePartyParam = searchParams.get("preserve_party")
+    const contextParam = searchParams.get("context")
+    const userType = searchParams.get("user_type")
+
+    // CRITICAL: Check localStorage first (survives OAuth redirect)
+    const storedReturnTo = localStorage.getItem('oauth_return_to')
+    const storedPreserveParty = localStorage.getItem('oauth_preserve_party')
+    const storedContext = localStorage.getItem('oauth_context')
+
+    // Use stored values with fallback to URL params
+    const returnTo = storedReturnTo || returnToParam
+    const preserveParty = storedPreserveParty || preservePartyParam
+    const context = storedContext || contextParam
+
+    console.log("📋 Callback parameters:", {
+      returnTo,
+      preserveParty,
+      context,
+      userType,
+      source: storedReturnTo ? 'localStorage' : 'url'
+    })
+
+    // Clean up localStorage after reading
+    localStorage.removeItem('oauth_return_to')
+    localStorage.removeItem('oauth_preserve_party')
+    localStorage.removeItem('oauth_context')
+
+    // Use onAuthStateChange to reliably catch the session
+    // This works for both Google (hash) and Apple (POST) OAuth flows
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("🔔 Auth state change:", event)
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        await handleSuccessfulAuth(session.user, { returnTo, preserveParty, context })
+      }
+    })
+
+    // Also check if session already exists (in case onAuthStateChange already fired)
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        console.log("✅ Found existing session:", session.user.email)
+        await handleSuccessfulAuth(session.user, { returnTo, preserveParty, context })
+      }
+    }
+
+    // Small delay to let Supabase process the callback first
+    const timer = setTimeout(checkExistingSession, 200)
+
+    // Timeout fallback - if no session after 10 seconds, show error
+    const timeout = setTimeout(() => {
+      setStatus("error")
+      setErrorMessage("Authentication timed out. Please try signing in again.")
+    }, 10000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timer)
+      clearTimeout(timeout)
+    }
+
+    async function handleSuccessfulAuth(user, { returnTo, preserveParty, context }) {
       try {
-        console.log("👤 Processing customer OAuth callback...")
-        
-        // Get URL parameters
-        const returnToParam = searchParams.get("return_to")
-        const preservePartyParam = searchParams.get("preserve_party")
-        const contextParam = searchParams.get("context")
-        const userType = searchParams.get("user_type")
-        
-        // CRITICAL: Check localStorage first (survives OAuth redirect)
-        const storedReturnTo = localStorage.getItem('oauth_return_to')
-        const storedPreserveParty = localStorage.getItem('oauth_preserve_party')
-        const storedContext = localStorage.getItem('oauth_context')
-        
-        // Use stored values with fallback to URL params
-        const returnTo = storedReturnTo || returnToParam
-        const preserveParty = storedPreserveParty || preservePartyParam
-        const context = storedContext || contextParam
-        
-        console.log("📋 Callback parameters:", {
-          returnTo,
-          preserveParty,
-          context,
-          userType,
-          source: storedReturnTo ? 'localStorage' : 'url'
-        })
-        
-        // Clean up localStorage after reading
-        localStorage.removeItem('oauth_return_to')
-        localStorage.removeItem('oauth_preserve_party')
-        localStorage.removeItem('oauth_context')
-  
-        // Let Supabase handle the OAuth session
-        console.log("🔍 Checking for Supabase session...")
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error("❌ Session error:", sessionError)
-          throw new Error(`Authentication failed: ${sessionError.message}`)
-        }
-  
-        if (!session || !session.user) {
-          console.log("⏳ No session found, trying getSessionFromUrl...")
-          
-          const { data, error: urlError } = await supabase.auth.getSessionFromUrl()
-          
-          if (urlError) {
-            console.error("❌ URL session error:", urlError)
-            throw new Error(`URL authentication failed: ${urlError.message}`)
-          }
-          
-          if (!data.session || !data.session.user) {
-            throw new Error("No authentication session found")
-          }
-          
-          console.log("✅ Found session from URL:", data.session.user.email)
-          var user = data.session.user
-        } else {
-          console.log("✅ Found existing session:", session.user.email)
-          var user = session.user
-        }
+        console.log("✅ Found session:", user.email)
   
         // CRITICAL: Check if this is a business account
         console.log("🔍 Checking if this is a business account...")
@@ -224,12 +230,6 @@ export default function CustomerAuthCallback() {
         setErrorMessage(error.message || "Authentication failed")
       }
     }
-  
-    const timer = setTimeout(() => {
-      handleAuthCallback()
-    }, 100)
-  
-    return () => clearTimeout(timer)
   }, [searchParams, router])
 
   if (status === "processing") {
