@@ -70,9 +70,10 @@ import { trackCheckoutStarted, trackReviewBookStarted, linkEmail } from '@/utils
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
 
-// Check if email is an Apple private relay email
-const isApplePrivateRelayEmail = (email) => {
-  return email?.includes('@privaterelay.appleid.com')
+// Check if user signed in via Google (to prefill email)
+const isGoogleUser = (user) => {
+  return user?.app_metadata?.provider === 'google' ||
+         user?.identities?.some(i => i.provider === 'google')
 }
 
 export default function SnappyChatReviewPage() {
@@ -423,13 +424,12 @@ export default function SnappyChatReviewPage() {
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
           setCustomerProfile(result.user);
-          // Only auto-fill email if it's not a private relay email
+          // Only auto-fill email if user signed in via Google
           const emailToUse = result.user.email || user.email;
-          const shouldAutoFillEmail = emailToUse && !isApplePrivateRelayEmail(emailToUse);
           setFormData((prev) => ({
             ...prev,
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
-            email: shouldAutoFillEmail ? emailToUse : prev.email,
+            email: isGoogleUser(user) ? emailToUse : prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
             addressLine1: result.user.address_line_1 || prev.addressLine1,
             addressLine2: result.user.address_line_2 || prev.addressLine2,
@@ -438,11 +438,10 @@ export default function SnappyChatReviewPage() {
 
           }));
         } else {
-          // Only auto-fill email if it's not a private relay email
-          const shouldAutoFillEmail = user.email && !isApplePrivateRelayEmail(user.email);
+          // Only auto-fill email if user signed in via Google
           setFormData((prev) => ({
             ...prev,
-            email: shouldAutoFillEmail ? user.email : prev.email,
+            email: isGoogleUser(user) ? user.email : prev.email,
             parentName: user.user_metadata?.full_name || prev.parentName,
             phoneNumber: user.user_metadata?.phone || prev.phoneNumber,
           }));
@@ -652,24 +651,22 @@ export default function SnappyChatReviewPage() {
     setUser(authenticatedUser);
 
     if (userData) {
-      // Only auto-fill email if it's not a private relay email
-      const shouldAutoFillEmail = userData.email && !isApplePrivateRelayEmail(userData.email);
+      // Only auto-fill email if user signed in via Google
       setFormData((prev) => ({
         ...prev,
         parentName: userData.firstName && userData.lastName
           ? `${userData.firstName} ${userData.lastName}`.trim()
           : userData.firstName || prev.parentName,
-        email: shouldAutoFillEmail ? userData.email : prev.email,
+        email: isGoogleUser(authenticatedUser) ? userData.email : prev.email,
         phoneNumber: userData.phone || prev.phoneNumber,
       }));
     } else {
       const fullName = authenticatedUser.user_metadata?.full_name;
-      // Only auto-fill email if it's not a private relay email
-      const shouldAutoFillEmail = authenticatedUser.email && !isApplePrivateRelayEmail(authenticatedUser.email);
+      // Only auto-fill email if user signed in via Google
       setFormData((prev) => ({
         ...prev,
         parentName: fullName || prev.parentName,
-        email: shouldAutoFillEmail ? authenticatedUser.email : prev.email,
+        email: isGoogleUser(authenticatedUser) ? authenticatedUser.email : prev.email,
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
       }));
     }
@@ -984,8 +981,7 @@ export default function SnappyChatReviewPage() {
       const addressValid = formData.addressLine1.trim().length > 0 &&
                           formData.city.trim().length > 0 &&
                           formData.postcode.trim().length > 0;
-      // Email must not be a private relay email - user must enter their real email
-      const emailValid = formData.email.trim().length > 0 && !isApplePrivateRelayEmail(formData.email);
+      const emailValid = formData.email.trim().length > 0;
       return formData.parentName.trim().length > 0 && phoneValid && emailValid && addressValid;
     }
     if (step.id === 'create-account') {
@@ -1232,15 +1228,10 @@ export default function SnappyChatReviewPage() {
                               <Input
                                 placeholder="your.email@example.com"
                                 type="email"
-                                value={isApplePrivateRelayEmail(formData.email) ? '' : formData.email}
+                                value={formData.email}
                                 onChange={(e) => updateFormData('email', e.target.value)}
                                 className="h-12 text-gray-900 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                               />
-                              {isApplePrivateRelayEmail(customerProfile?.email) && (
-                                <p className="text-xs text-amber-600 mt-1">
-                                  You signed in with Apple's private email. Please enter your contact email.
-                                </p>
-                              )}
                             </div>
                           </div>
                         </div>
