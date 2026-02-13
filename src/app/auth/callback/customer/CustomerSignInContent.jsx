@@ -14,6 +14,7 @@ export default function CustomerAuthCallback() {
   const [status, setStatus] = useState("processing")
   const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
+  const isProcessingRef = useRef(false) // Prevent duplicate processing
 
   useEffect(() => {
     const video = videoRef.current
@@ -132,6 +133,13 @@ export default function CustomerAuthCallback() {
     }
 
     async function handleSuccessfulAuth(user, { returnTo, preserveParty, context }) {
+      // Prevent duplicate processing from multiple auth events
+      if (isProcessingRef.current) {
+        console.log("⏭️ Already processing auth, skipping duplicate call")
+        return
+      }
+      isProcessingRef.current = true
+
       try {
         console.log("✅ Found session:", user.email)
   
@@ -252,6 +260,7 @@ export default function CustomerAuthCallback() {
   
       } catch (error) {
         console.error("❌ Customer callback error:", error)
+        isProcessingRef.current = false // Allow retry on error
         setStatus("error")
         setErrorMessage(error.message || "Authentication failed")
       }

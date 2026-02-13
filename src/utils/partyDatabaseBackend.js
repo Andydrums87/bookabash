@@ -47,75 +47,105 @@ class PartyDatabaseBackend {
     try {
       const { data: authUser, error: authError } = await supabase.auth.getUser()
       if (authError) throw authError
-      
+
       const userId = authUser?.user?.id
       if (!userId) throw new Error("No authenticated user")
-  
+
+      const userEmail = userData.email || authUser.user.email
+
       // Check if user profile exists for THIS auth user
-      const { data: existingUser, error: fetchError } = await supabase
+      const { data: existingUserByAuth, error: fetchError } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', userId)  // Filter by current user's ID
+        .eq('auth_user_id', userId)
         .maybeSingle()
-  
-      if (fetchError) throw fetchError
-  
-      if (existingUser) {
 
-        
+      if (fetchError) throw fetchError
+
+      if (existingUserByAuth) {
         // Update the existing profile with any new data
         const updateData = {
-          email: userData.email || authUser.user.email,
-
-          first_name: userData.firstName || existingUser.first_name,
-          last_name: userData.lastName || existingUser.last_name,
-          phone: userData.phone || existingUser.phone,
-          postcode: userData.postcode || existingUser.postcode,
-           // NEW: Address fields
-        address_line_1: userData.addressLine1 || existingUser.address_line_1,
-        address_line_2: userData.addressLine2 || existingUser.address_line_2,
-        city: userData.city || existingUser.city,
-        child_photo: userData.child_photo || existingUser.child_photo, // Changed from childPhoto to child_photo
+          email: userEmail,
+          first_name: userData.firstName || existingUserByAuth.first_name,
+          last_name: userData.lastName || existingUserByAuth.last_name,
+          phone: userData.phone || existingUserByAuth.phone,
+          postcode: userData.postcode || existingUserByAuth.postcode,
+          address_line_1: userData.addressLine1 || existingUserByAuth.address_line_1,
+          address_line_2: userData.addressLine2 || existingUserByAuth.address_line_2,
+          city: userData.city || existingUserByAuth.city,
+          child_photo: userData.child_photo || existingUserByAuth.child_photo,
           updated_at: new Date().toISOString()
         }
-        
+
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
           .update(updateData)
-          .eq('id', existingUser.id)
+          .eq('id', existingUserByAuth.id)
           .select()
           .single()
-        
+
         if (updateError) throw updateError
-        
 
         return { success: true, user: updatedUser }
       }
-  
+
+      // Check if user exists by EMAIL (may have been created before auth linking)
+      const { data: existingUserByEmail, error: emailFetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userEmail)
+        .maybeSingle()
+
+      if (emailFetchError) throw emailFetchError
+
+      if (existingUserByEmail) {
+        // Link existing email-based user to this auth account
+        console.log("🔗 Linking existing user by email to auth account")
+        const updateData = {
+          auth_user_id: userId, // Link to current auth user
+          first_name: userData.firstName || existingUserByEmail.first_name,
+          last_name: userData.lastName || existingUserByEmail.last_name,
+          phone: userData.phone || existingUserByEmail.phone,
+          postcode: userData.postcode || existingUserByEmail.postcode,
+          address_line_1: userData.addressLine1 || existingUserByEmail.address_line_1,
+          address_line_2: userData.addressLine2 || existingUserByEmail.address_line_2,
+          city: userData.city || existingUserByEmail.city,
+          child_photo: userData.child_photo || existingUserByEmail.child_photo,
+          updated_at: new Date().toISOString()
+        }
+
+        const { data: linkedUser, error: linkError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', existingUserByEmail.id)
+          .select()
+          .single()
+
+        if (linkError) throw linkError
+
+        return { success: true, user: linkedUser }
+      }
+
       // Create new user profile
       const newUserData = {
-        auth_user_id: userId,  // Link to current auth user
-        email: userData.email || authUser.user.email,
+        auth_user_id: userId,
+        email: userEmail,
         first_name: userData.firstName || 'User',
         last_name: userData.lastName || '',
         phone: userData.phone || '',
         postcode: userData.postcode || '',
-           
-      // NEW: Address fields for new users
-      address_line_1: userData.addressLine1 || '',
-      address_line_2: userData.addressLine2 || '',
-      city: userData.city || '',
-      child_photo: userData.child_photo || null, // Changed from childPhoto to child_photo
+        address_line_1: userData.addressLine1 || '',
+        address_line_2: userData.addressLine2 || '',
+        city: userData.city || '',
+        child_photo: userData.child_photo || null,
       }
-      
 
-  
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert(newUserData)
         .select()
         .single()
-  
+
       if (createError) throw createError
   
 
