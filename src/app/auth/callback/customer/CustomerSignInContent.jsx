@@ -164,6 +164,7 @@ export default function CustomerAuthCallback() {
         }
   
         console.log("✅ User account verified, creating customer profile...")
+        console.log("📝 User metadata from OAuth:", JSON.stringify(user.user_metadata, null, 2))
 
         // Extract name from OAuth metadata
         // Google uses: given_name, family_name, full_name
@@ -188,13 +189,18 @@ export default function CustomerAuthCallback() {
           return ''
         }
 
+        const firstName = getFirstName()
+        const lastName = getLastName()
+        console.log("👤 Extracted name:", { firstName, lastName })
+
         // Create or get customer profile
+        // Only pass name values if they exist (avoid overwriting with empty strings)
         const userResult = await partyDatabaseBackend.createOrGetUser({
-          firstName: getFirstName(),
-          lastName: getLastName(),
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
           email: user.email,
-          phone: user.user_metadata?.phone || '',
-          postcode: ''
+          phone: user.user_metadata?.phone || undefined,
+          postcode: undefined
         })
   
         if (!userResult.success) {
