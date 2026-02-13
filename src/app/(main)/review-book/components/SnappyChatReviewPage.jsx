@@ -70,19 +70,13 @@ import { trackCheckoutStarted, trackReviewBookStarted, linkEmail } from '@/utils
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
 
-// Check if we should prefill email (Google users or Apple users who shared their real email)
-const shouldPrefillEmail = (user, email) => {
-  // Always prefill for Google users
-  const isGoogle = user?.app_metadata?.provider === 'google' ||
-                   user?.identities?.some(i => i.provider === 'google')
-  if (isGoogle) return true
-
-  // For Apple users, only prefill if they shared their real email (not private relay)
-  const isApple = user?.app_metadata?.provider === 'apple' ||
-                  user?.identities?.some(i => i.provider === 'apple')
-  if (isApple && email && !email.includes('@privaterelay.appleid.com')) return true
-
-  return false
+// Check if we should prefill email
+// Prefill if email exists and is NOT a private relay email
+const shouldPrefillEmail = (email) => {
+  if (!email) return false
+  // Don't prefill Apple private relay emails - user needs to enter their real email
+  if (email.includes('@privaterelay.appleid.com')) return false
+  return true
 }
 
 export default function SnappyChatReviewPage() {
@@ -434,12 +428,12 @@ export default function SnappyChatReviewPage() {
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
           setCustomerProfile(result.user);
-          // Prefill email for Google users or Apple users who shared their real email
+          // Prefill email if it's not a private relay email
           const emailToUse = result.user.email || user.email;
           setFormData((prev) => ({
             ...prev,
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
-            email: shouldPrefillEmail(user, emailToUse) ? emailToUse : prev.email,
+            email: shouldPrefillEmail(emailToUse) ? emailToUse : prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
             addressLine1: result.user.address_line_1 || prev.addressLine1,
             addressLine2: result.user.address_line_2 || prev.addressLine2,
@@ -448,10 +442,10 @@ export default function SnappyChatReviewPage() {
 
           }));
         } else {
-          // Prefill email for Google users or Apple users who shared their real email
+          // Prefill email if it's not a private relay email
           setFormData((prev) => ({
             ...prev,
-            email: shouldPrefillEmail(user, user.email) ? user.email : prev.email,
+            email: shouldPrefillEmail(user.email) ? user.email : prev.email,
             parentName: user.user_metadata?.full_name || prev.parentName,
             phoneNumber: user.user_metadata?.phone || prev.phoneNumber,
           }));
@@ -661,22 +655,22 @@ export default function SnappyChatReviewPage() {
     setUser(authenticatedUser);
 
     if (userData) {
-      // Prefill email for Google users or Apple users who shared their real email
+      // Prefill email if it's not a private relay email
       setFormData((prev) => ({
         ...prev,
         parentName: userData.firstName && userData.lastName
           ? `${userData.firstName} ${userData.lastName}`.trim()
           : userData.firstName || prev.parentName,
-        email: shouldPrefillEmail(authenticatedUser, userData.email) ? userData.email : prev.email,
+        email: shouldPrefillEmail(userData.email) ? userData.email : prev.email,
         phoneNumber: userData.phone || prev.phoneNumber,
       }));
     } else {
       const fullName = authenticatedUser.user_metadata?.full_name;
-      // Prefill email for Google users or Apple users who shared their real email
+      // Prefill email if it's not a private relay email
       setFormData((prev) => ({
         ...prev,
         parentName: fullName || prev.parentName,
-        email: shouldPrefillEmail(authenticatedUser, authenticatedUser.email) ? authenticatedUser.email : prev.email,
+        email: shouldPrefillEmail(authenticatedUser.email) ? authenticatedUser.email : prev.email,
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
       }));
     }
