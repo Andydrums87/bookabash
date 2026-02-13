@@ -42,6 +42,32 @@ export default function CustomerAuthCallback() {
   useEffect(() => {
     console.log("👤 Processing customer OAuth callback...")
 
+    // Check for OAuth errors in URL (returned by Supabase/provider)
+    const errorParam = searchParams.get("error")
+    const errorDescription = searchParams.get("error_description")
+    const errorCode = searchParams.get("error_code")
+
+    if (errorParam) {
+      console.error("❌ OAuth error from provider:", { errorParam, errorCode, errorDescription })
+
+      // Clean up localStorage
+      localStorage.removeItem('oauth_return_to')
+      localStorage.removeItem('oauth_preserve_party')
+      localStorage.removeItem('oauth_context')
+
+      // Show user-friendly error message
+      let userMessage = "Authentication failed. Please try again."
+      if (errorDescription?.includes("exchange external code")) {
+        userMessage = "Apple Sign In configuration error. Please try Google sign in or email instead."
+      } else if (errorDescription) {
+        userMessage = decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+      }
+
+      setStatus("error")
+      setErrorMessage(userMessage)
+      return
+    }
+
     // Get URL parameters
     const returnToParam = searchParams.get("return_to")
     const preservePartyParam = searchParams.get("preserve_party")
