@@ -1232,12 +1232,15 @@ export default function SnappyChatReviewPage() {
                               <Input
                                 placeholder="your.email@example.com"
                                 type="email"
-                                value={formData.email}
+                                value={isApplePrivateRelayEmail(formData.email) ? '' : formData.email}
                                 onChange={(e) => updateFormData('email', e.target.value)}
                                 className="h-12 text-gray-900 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
-                                disabled={!!user}
                               />
-                              {user && <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>}
+                              {isApplePrivateRelayEmail(customerProfile?.email) && (
+                                <p className="text-xs text-amber-600 mt-1">
+                                  You signed in with Apple's private email. Please enter your contact email.
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
