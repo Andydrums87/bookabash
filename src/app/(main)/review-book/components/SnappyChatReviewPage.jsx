@@ -70,10 +70,19 @@ import { trackCheckoutStarted, trackReviewBookStarted, linkEmail } from '@/utils
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
 
-// Check if user signed in via Google (to prefill email)
-const isGoogleUser = (user) => {
-  return user?.app_metadata?.provider === 'google' ||
-         user?.identities?.some(i => i.provider === 'google')
+// Check if we should prefill email (Google users or Apple users who shared their real email)
+const shouldPrefillEmail = (user, email) => {
+  // Always prefill for Google users
+  const isGoogle = user?.app_metadata?.provider === 'google' ||
+                   user?.identities?.some(i => i.provider === 'google')
+  if (isGoogle) return true
+
+  // For Apple users, only prefill if they shared their real email (not private relay)
+  const isApple = user?.app_metadata?.provider === 'apple' ||
+                  user?.identities?.some(i => i.provider === 'apple')
+  if (isApple && email && !email.includes('@privaterelay.appleid.com')) return true
+
+  return false
 }
 
 export default function SnappyChatReviewPage() {
@@ -424,12 +433,12 @@ export default function SnappyChatReviewPage() {
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
           setCustomerProfile(result.user);
-          // Only auto-fill email if user signed in via Google
+          // Prefill email for Google users or Apple users who shared their real email
           const emailToUse = result.user.email || user.email;
           setFormData((prev) => ({
             ...prev,
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
-            email: isGoogleUser(user) ? emailToUse : prev.email,
+            email: shouldPrefillEmail(user, emailToUse) ? emailToUse : prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
             addressLine1: result.user.address_line_1 || prev.addressLine1,
             addressLine2: result.user.address_line_2 || prev.addressLine2,
@@ -438,10 +447,10 @@ export default function SnappyChatReviewPage() {
 
           }));
         } else {
-          // Only auto-fill email if user signed in via Google
+          // Prefill email for Google users or Apple users who shared their real email
           setFormData((prev) => ({
             ...prev,
-            email: isGoogleUser(user) ? user.email : prev.email,
+            email: shouldPrefillEmail(user, user.email) ? user.email : prev.email,
             parentName: user.user_metadata?.full_name || prev.parentName,
             phoneNumber: user.user_metadata?.phone || prev.phoneNumber,
           }));
@@ -651,22 +660,22 @@ export default function SnappyChatReviewPage() {
     setUser(authenticatedUser);
 
     if (userData) {
-      // Only auto-fill email if user signed in via Google
+      // Prefill email for Google users or Apple users who shared their real email
       setFormData((prev) => ({
         ...prev,
         parentName: userData.firstName && userData.lastName
           ? `${userData.firstName} ${userData.lastName}`.trim()
           : userData.firstName || prev.parentName,
-        email: isGoogleUser(authenticatedUser) ? userData.email : prev.email,
+        email: shouldPrefillEmail(authenticatedUser, userData.email) ? userData.email : prev.email,
         phoneNumber: userData.phone || prev.phoneNumber,
       }));
     } else {
       const fullName = authenticatedUser.user_metadata?.full_name;
-      // Only auto-fill email if user signed in via Google
+      // Prefill email for Google users or Apple users who shared their real email
       setFormData((prev) => ({
         ...prev,
         parentName: fullName || prev.parentName,
-        email: isGoogleUser(authenticatedUser) ? authenticatedUser.email : prev.email,
+        email: shouldPrefillEmail(authenticatedUser, authenticatedUser.email) ? authenticatedUser.email : prev.email,
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
       }));
     }
