@@ -104,7 +104,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
             <h3 className="font-semibold text-gray-900">{pkg.name}</h3>
-            <p className="text-sm text-[hsl(var(--primary-600))] font-medium">£{pkg.price}</p>
+            <p className="text-sm text-[hsl(var(--primary-600))] font-medium">£{(pkg.price || 0).toFixed(2)}</p>
           </div>
           <button
             onClick={onClose}
@@ -1710,35 +1710,37 @@ export default function SupplierCustomizationModal({
       return "Save Changes"
     }
 
+    const formattedPrice = totalPrice.toFixed(2)
+
     if (supplierTypeDetection.isCake) {
-      return `Book Cake - £${totalPrice}`
+      return `Book Cake - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isBalloons) {
-      return `Book Balloons - £${totalPrice}`
+      return `Book Balloons - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isFacePainting) {
-      return `Book Face Painting - £${totalPrice}`
+      return `Book Face Painting - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isSoftPlay) {
-      return `Book Soft Play - £${totalPrice}`
+      return `Book Soft Play - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isSweetTreats) {
-      return `Book Sweet Treats - £${totalPrice}`
+      return `Book Sweet Treats - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isCatering) {
-      return `Book Catering - £${totalPrice}`
+      return `Book Catering - £${formattedPrice}`
     }
 
     if (supplierTypeDetection.isMultiSelect) {
-      return `Book Selection - £${totalPrice}`
+      return `Book Selection - £${formattedPrice}`
     }
 
-    return `Book Service - £${totalPrice}`
+    return `Book Service - £${formattedPrice}`
   }
 
   if (!isOpen) return null
@@ -2132,10 +2134,6 @@ export default function SupplierCustomizationModal({
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
-                      Balloon modelling
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
                       20 min break for food
                     </li>
                   </ul>
@@ -2161,7 +2159,7 @@ export default function SupplierCustomizationModal({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-gray-900">Total</span>
-                    <span className="font-bold text-2xl text-gray-900">£{totalPrice}</span>
+                    <span className="font-bold text-2xl text-gray-900">£{totalPrice.toFixed(2)}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Flat rate for 2-hour party</p>
                 </div>
@@ -2234,7 +2232,7 @@ export default function SupplierCustomizationModal({
                               {pkg.name}
                             </h4>
                             <p className="font-bold text-[hsl(var(--primary-600))] text-base">
-                              £{pkg.price}
+                              £{(pkg.price || 0).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -2287,7 +2285,7 @@ export default function SupplierCustomizationModal({
                               {pkg.name}
                             </h4>
                             <p className="font-bold text-[hsl(var(--primary-600))] text-lg">
-                              £{pkg.price}
+                              £{(pkg.price || 0).toFixed(2)}
                             </p>
                           </div>
 
@@ -2832,6 +2830,10 @@ export default function SupplierCustomizationModal({
                     +
                   </button>
                 </div>
+
+                <p className="text-xs text-gray-500 text-center mt-4 italic">
+                  Don't worry about exact numbers or themes yet - we'll confirm details closer to your party date.
+                </p>
               </section>
             )}
 
@@ -3004,7 +3006,7 @@ export default function SupplierCustomizationModal({
                         </div>
                         <p className="text-sm text-gray-600">{addon.description}</p>
                       </div>
-                      <div className="font-semibold text-primary-600 text-lg flex-shrink-0">+£{addon.price}</div>
+                      <div className="font-semibold text-primary-600 text-lg flex-shrink-0">+£{(addon.price || 0).toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
@@ -3356,7 +3358,7 @@ export default function SupplierCustomizationModal({
                               <p className="text-sm text-gray-600">{addon.description}</p>
                             )}
                           </div>
-                          <div className="font-bold text-[hsl(var(--primary-500))] text-lg flex-shrink-0">+£{addon.price}</div>
+                          <div className="font-bold text-[hsl(var(--primary-500))] text-lg flex-shrink-0">+£{(addon.price || 0).toFixed(2)}</div>
                         </div>
                       ))}
                     </div>
@@ -3374,7 +3376,7 @@ export default function SupplierCustomizationModal({
                           <p className="font-medium text-gray-900">{selectedPackage.name}</p>
                           <p className="text-sm text-gray-500">{selectedPackage.duration}</p>
                         </div>
-                        <span className="font-semibold text-gray-900">£{getVenuePackagePrice(selectedPackage)}</span>
+                        <span className="font-semibold text-gray-900">£{(getVenuePackagePrice(selectedPackage) || 0).toFixed(2)}</span>
                       </div>
 
                       {/* Catering (if selected) */}
@@ -3403,7 +3405,7 @@ export default function SupplierCustomizationModal({
                             return (
                               <div key={addonId} className="flex justify-between items-center">
                                 <p className="font-medium text-gray-900">{addon.name}</p>
-                                <span className="font-semibold text-gray-900">£{addon.price}</span>
+                                <span className="font-semibold text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
                               </div>
                             )
                           })}
@@ -3472,14 +3474,14 @@ export default function SupplierCustomizationModal({
                     return addon ? (
                       <div key={addonId} className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">{addon.name}</span>
-                        <span className="font-medium text-gray-900">£{addon.price}</span>
+                        <span className="font-medium text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
                       </div>
                     ) : null
                   })}
 
                   <div className="border-t border-gray-300 pt-3 mt-3 flex justify-between items-center">
                     <span className="font-bold text-gray-900">Total</span>
-                    <span className="font-bold text-2xl text-gray-900">£{totalPrice}</span>
+                    <span className="font-bold text-2xl text-gray-900">£{totalPrice.toFixed(2)}</span>
                   </div>
 
                   {calculateModalPricing.hasEnhancedPricing && (

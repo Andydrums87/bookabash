@@ -25,7 +25,7 @@ export default function SelectedAddonsCard({ selectedAddons = [], suppliers = {}
   
   // Combine standalone addons and supplier add-ons
   const allAddons = [...selectedAddons, ...supplierAddons]
-  const totalAddonsPrice = allAddons.reduce((total, addon) => total + (addon.price || 0), 0)
+  const totalAddonsPrice = allAddons.reduce((total, addon) => total + (addon.price || 0), 0).toFixed(2)
 
   // Don't render if no addons at all
   if (!allAddons || allAddons.length === 0) {
@@ -130,7 +130,7 @@ export default function SelectedAddonsCard({ selectedAddons = [], suppliers = {}
                   <span className={`text-lg font-bold ${
                     addon.attachedToSupplier ? 'text-blue-600' : 'text-amber-600'
                   }`}>
-                    £{addon.price}
+                    £{(addon.price || 0).toFixed(2)}
                   </span>
                   {addon.supplierName && (
                     <span className="text-xs text-gray-500">

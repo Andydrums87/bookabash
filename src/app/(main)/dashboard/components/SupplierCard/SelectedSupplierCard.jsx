@@ -454,7 +454,7 @@ export default function SelectedSupplierCard({
                 data-tour={`view-supplier-${type}`}
               >
                 <Eye className="w-4 h-4 mr-1.5" />
-                <span className="truncate">View</span>
+                <span className="truncate">Details</span>
               </Button>
               <Button
                 onClick={(e) => {
@@ -465,7 +465,7 @@ export default function SelectedSupplierCard({
                 disabled={isDeleting}
               >
                 <Wand2 className="w-4 h-4 mr-1.5" />
-                <span className="truncate">Customize</span>
+                <span className="truncate">Options</span>
               </Button>
             </div>
 

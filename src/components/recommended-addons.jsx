@@ -468,7 +468,7 @@ export default function RecommendedAddons({
                               </div>
                               {showPricing && (() => {
                                 const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
-                                const displayPrice = isPartyBags ? (supplier.priceFrom * guestCount).toFixed(2) : supplier.priceFrom
+                                const displayPrice = isPartyBags ? (supplier.priceFrom * guestCount).toFixed(2) : (supplier.priceFrom || 0).toFixed(2)
 
                                 return (
                                   <div className="text-lg md:text-xl font-bold text-[hsl(var(--primary-600))] flex-shrink-0">

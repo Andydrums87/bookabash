@@ -741,7 +741,7 @@ export default function EmptySupplierCard({
                 <div className="absolute top-2 left-2 z-10">
                   <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
                     <Eye className="w-3 h-3 text-gray-600" />
-                    <span className="text-[10px] font-medium text-gray-600">View</span>
+                    <span className="text-[10px] font-medium text-gray-600">Details</span>
                   </div>
                 </div>
               )}

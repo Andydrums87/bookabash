@@ -1247,7 +1247,7 @@ export default function SnappyChatReviewPage() {
                             Delivery Address
                           </h3>
                           <p className="text-xs text-gray-600 mb-3">
-                            Where should suppliers deliver and set up?
+                          Where should items be delivered?
                           </p>
                           
                           <div className="space-y-3">
@@ -2002,7 +2002,7 @@ export default function SnappyChatReviewPage() {
                             </div>
                             <span className="text-xs text-gray-700 truncate">{addon.name}</span>
                           </div>
-                          <span className="font-bold text-blue-600 text-xs">£{addon.price || 0}</span>
+                          <span className="font-bold text-blue-600 text-xs">£{(addon.price || 0).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
