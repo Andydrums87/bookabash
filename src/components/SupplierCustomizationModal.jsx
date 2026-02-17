@@ -3007,20 +3007,11 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const packageImage = pkg.image || pkg.images?.[0]
 
-                      // Short descriptions for balloons
-                      const getBalloonProse = (packageName, idx) => {
+                      // Short descriptions for balloons - use package description
+                      const getBalloonProse = () => {
                         if (supplierTypeDetection.isPartyBags) return null
-                        const prose = {
-                          'Accent': 'A beautifully styled display. Perfect for cake tables.',
-                          'Statement': 'Two coordinated displays. Ideal for entrances and photo areas.',
-                          'Showpiece': 'The full celebration look. Three displays for maximum impact.'
-                        }
-                        const fallback = [
-                          'A beautifully styled display.',
-                          'Two coordinated displays.',
-                          'The full celebration look.'
-                        ]
-                        return prose[packageName] || fallback[idx] || fallback[0]
+                        // Use the description from the package data
+                        return pkg.description || null
                       }
 
                       // Prose for party bags
@@ -3031,7 +3022,7 @@ export default function SupplierCustomizationModal({
                       }
 
                       const prose = supplierTypeDetection.isBalloons
-                        ? getBalloonProse(pkg.name, index)
+                        ? getBalloonProse()
                         : getPartyBagsProse()
 
                       return (
