@@ -276,12 +276,11 @@ export default function SupplierCustomizationModal({
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
 
-  // Get all supplier images for carousel
-  // Get supplier images with packageId mapping
-  const getSupplierImagesWithPackageIds = (supplier) => {
+  // Get all supplier images for carousel with packageId mapping (memoized)
+  const { images: supplierImages, packageIdToIndex } = useMemo(() => {
     if (!supplier) return { images: [], packageIdToIndex: new Map() }
     const imageList = []
-    const packageIdToIndex = new Map()
+    const pkgIdToIndex = new Map()
     const seenUrls = new Set()
     const urlToIndex = new Map() // Track URL to index mapping
 
@@ -295,13 +294,13 @@ export default function SupplierCustomizationModal({
         seenUrls.add(url)
         urlToIndex.set(url, index)
         if (packageId) {
-          packageIdToIndex.set(packageId, index)
+          pkgIdToIndex.set(packageId, index)
         }
       } else if (packageId) {
         // URL already exists but we have a packageId - map it to the existing index
         const existingIndex = urlToIndex.get(url)
         if (existingIndex !== undefined) {
-          packageIdToIndex.set(packageId, existingIndex)
+          pkgIdToIndex.set(packageId, existingIndex)
         }
       }
     }
@@ -337,18 +336,17 @@ export default function SupplierCustomizationModal({
       }
     })
 
-    return { images: imageList.slice(0, 6), packageIdToIndex }
-  }
-
-  const { images: supplierImages, packageIdToIndex } = getSupplierImagesWithPackageIds(supplier)
+    return { images: imageList.slice(0, 6), packageIdToIndex: pkgIdToIndex }
+  }, [supplier])
 
   // Function to scroll carousel to a package's linked image
   const scrollToPackageImage = useCallback((packageId) => {
     const imageIndex = packageIdToIndex.get(packageId)
-    if (imageIndex !== undefined && imageIndex !== carouselIndex) {
+    if (imageIndex !== undefined) {
       setCarouselIndex(imageIndex)
+      if (emblaApi) emblaApi.scrollTo(imageIndex)
     }
-  }, [packageIdToIndex, carouselIndex])
+  }, [packageIdToIndex, emblaApi])
 
   // Embla carousel callbacks
   const onEmblaSelect = useCallback(() => {
@@ -367,15 +365,32 @@ export default function SupplierCustomizationModal({
     }
   }, [emblaApi, onEmblaSelect])
 
-  // Reset carousel when supplier changes
+  // Reset carousel when supplier changes - scroll to first package's image if available
   useEffect(() => {
-    if (emblaApi && supplier?.id) {
-      emblaApi.scrollTo(0)
-      setCarouselIndex(0)
+    if (supplier?.id) {
+      // For suppliers with packages, try to scroll to the first package's image
+      const supplierPackages = supplier.packages || supplier.serviceDetails?.packages || []
+      if (supplierPackages.length > 0) {
+        const firstPackageId = supplierPackages[0].id
+        const imageIndex = packageIdToIndex.get(firstPackageId)
+        if (imageIndex !== undefined) {
+          if (emblaApi) emblaApi.scrollTo(imageIndex)
+          setCarouselIndex(imageIndex)
+        } else {
+          // No linked image for first package, default to index 0
+          if (emblaApi) emblaApi.scrollTo(0)
+          setCarouselIndex(0)
+        }
+      } else {
+        // No packages, default to index 0
+        if (emblaApi) emblaApi.scrollTo(0)
+        setCarouselIndex(0)
+      }
     }
     // Reset about section expanded state when supplier changes
     setIsAboutExpanded(false)
-  }, [supplier?.id, emblaApi])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplier?.id, emblaApi]) // Intentionally exclude packageIdToIndex - it's a new Map each render
 
   const scrollPrev = useCallback((e) => {
     e.stopPropagation()
