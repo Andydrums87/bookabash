@@ -2011,13 +2011,26 @@ export default function SupplierCustomizationModal({
             >
               {supplierImages.length > 0 ? (
                 <>
-                  {/* Main image - full bleed, no padding */}
+                  {/* Blurred background image - fills the space with colors */}
                   <div className="absolute inset-0">
+                    <Image
+                      src={supplierImages[carouselIndex] || supplierImages[0]}
+                      alt=""
+                      fill
+                      className="object-cover blur-2xl scale-110"
+                      sizes="100vw"
+                      priority={false}
+                    />
+                    {/* Dark overlay to ensure image pops */}
+                    <div className="absolute inset-0 bg-black/30" />
+                  </div>
+                  {/* Main image - full visible with contain */}
+                  <div className="absolute inset-0 z-10">
                     <Image
                       src={supplierImages[carouselIndex] || supplierImages[0]}
                       alt={`${supplier.name} - Image ${carouselIndex + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       sizes="100vw"
                     />
                   </div>
