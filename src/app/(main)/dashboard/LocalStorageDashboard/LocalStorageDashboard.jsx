@@ -49,7 +49,7 @@ import { usePartyPlan } from '@/utils/partyPlanBackend'
 import useDisableScroll from "@/hooks/useDisableScroll"
 import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
-import { calculateFinalPrice, calculatePartyTotal, getDisplayPrice, getPriceBreakdownText } from '@/utils/unifiedPricing'
+import { calculateFinalPrice, calculatePartyTotal, getDisplayPrice, getPriceBreakdownText, roundMoney } from '@/utils/unifiedPricing'
 
 
 
@@ -645,10 +645,15 @@ useEffect(() => {
         const { suppliersAPI } = await import('@/utils/mockBackend')
         const { scoreSupplierWithTheme } = await import('@/utils/partyBuilderBackend')
         const { checkSupplierAvailability } = await import('@/utils/availabilityChecker')
+        const { LocationService } = await import('@/utils/locationService')
         const allSuppliers = await suppliersAPI.getAllSuppliers()
 
-        const partyTheme = partyDetails?.theme || 'no-theme'
+        // Get user's postcode for proximity scoring
+        const userPostcode = partyDetails?.postcode || partyDetails?.location?.postcode || null
 
+        const partyTheme = partyDetails?.theme || 'no-theme'
+        // Get gender for no-theme parties (used for colour matching)
+        const partyGender = partyDetails?.gender || null
 
         const categoryMap = {
           venue: 'Venues',
@@ -706,16 +711,49 @@ useEffect(() => {
               }
 
               if (availableSuppliers.length > 0) {
-                // ✅ Sort by theme score and pick the best match
-                const sortedByTheme = availableSuppliers
-                  .map(supplier => ({
-                    supplier,
-                    themeScore: scoreSupplierWithTheme(supplier, partyTheme)
-                  }))
-                  .sort((a, b) => b.themeScore - a.themeScore)
+                // ✅ For venues: prioritize proximity to user's postcode
+                // For other suppliers: sort by theme score
+                if (categoryKey === 'venue') {
+                  // Sort venues by proximity (closest first) if user postcode available
+                  const sortedByProximity = availableSuppliers
+                    .map(supplier => {
+                      // Get venue postcode from various possible locations
+                      const venuePostcode = supplier.location?.postcode ||
+                                           supplier.venueAddress?.postcode ||
+                                           supplier.serviceDetails?.location?.postcode ||
+                                           supplier.postcode ||
+                                           null
+                      const proximityScore = LocationService.scoreByPostcode(venuePostcode, userPostcode)
+                      return {
+                        supplier,
+                        proximityScore,
+                        themeScore: scoreSupplierWithTheme(supplier, partyTheme, 'afternoon', 2, partyGender)
+                      }
+                    })
+                    // Sort by proximity first, then by theme score as tiebreaker
+                    .sort((a, b) => {
+                      if (b.proximityScore !== a.proximityScore) {
+                        return b.proximityScore - a.proximityScore
+                      }
+                      return b.themeScore - a.themeScore
+                    })
 
-                const bestMatch = sortedByTheme[0].supplier
-                newRecommendations[categoryKey] = bestMatch
+                  const bestMatch = sortedByProximity[0].supplier
+                  newRecommendations[categoryKey] = bestMatch
+                  console.log(`🏠 Venue recommendation: ${bestMatch.name} (proximity: ${sortedByProximity[0].proximityScore}, theme: ${sortedByProximity[0].themeScore})`)
+                } else {
+                  // For non-venue suppliers: sort by theme score and pick the best match
+                  // Pass gender for no-theme parties so colour-based suppliers rank correctly
+                  const sortedByTheme = availableSuppliers
+                    .map(supplier => ({
+                      supplier,
+                      themeScore: scoreSupplierWithTheme(supplier, partyTheme, 'afternoon', 2, partyGender)
+                    }))
+                    .sort((a, b) => b.themeScore - a.themeScore)
+
+                  const bestMatch = sortedByTheme[0].supplier
+                  newRecommendations[categoryKey] = bestMatch
+                }
 
         
               } else if (allUnavailable) {
@@ -786,6 +824,8 @@ const handleNameSubmit = async (nameData) => {
           firstName: nameData.firstName,
           lastName: nameData.lastName,
           childAge: nameData.childAge,
+          // Include gender if provided (for no-theme parties)
+          ...(nameData.gender && { gender: nameData.gender }),
           welcomeCompleted: true,
           welcomeCompletedAt: new Date().toISOString()
         }
@@ -1154,29 +1194,36 @@ const handleNameSubmit = async (nameData) => {
 
   const handleRemoveAddon = async (addonId) => {
     try {
+      // Track if we removed from anywhere
+      let removedFromGlobal = false
+      let removedFromSupplier = false
 
-      
-      let result = await removeAddon(addonId)
-      
-      if (!result.success) {
-        const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'sweetTreats']
-        
-        for (const supplierType of supplierTypes) {
-          const supplier = suppliers[supplierType]
-          if (supplier && supplier.selectedAddons) {
-            const hasAddon = supplier.selectedAddons.some(addon => addon.id === addonId)
-            if (hasAddon) {
-              result = await removeAddonFromSupplier(supplierType, addonId)
-              break
+      // 1. Try to remove from global addons
+      const globalResult = await removeAddon(addonId)
+      removedFromGlobal = globalResult.success
+
+      // 2. ALWAYS also check and remove from supplier.selectedAddons
+      // (addon may exist in BOTH places, so we need to remove from both)
+      const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'sweetTreats']
+
+      for (const supplierType of supplierTypes) {
+        const supplier = suppliers[supplierType]
+        if (supplier && supplier.selectedAddons) {
+          const hasAddon = supplier.selectedAddons.some(addon => addon.id === addonId)
+          if (hasAddon) {
+            const supplierResult = await removeAddonFromSupplier(supplierType, addonId)
+            if (supplierResult.success) {
+              removedFromSupplier = true
             }
+            // Don't break - addon could theoretically be in multiple suppliers
           }
         }
       }
-      
-      if (result.success) {
-        console.log("✅ Add-on removed successfully!")
+
+      if (removedFromGlobal || removedFromSupplier) {
+        console.log("✅ Add-on removed successfully!", { removedFromGlobal, removedFromSupplier })
       } else {
-        console.error("❌ Failed to remove addon:", result.error)
+        console.error("❌ Failed to remove addon: not found in global or supplier addons")
       }
     } catch (error) {
       console.error("💥 Error removing addon:", error)
@@ -1407,19 +1454,37 @@ const handleNameSubmit = async (nameData) => {
     const packages = supplier?.packages || supplier?.data?.packages || []
     if (packages.length === 0) return null
 
+    // Helper to parse serving size from strings like "12-15" or "24-28"
+    // Returns the minimum value for sorting, and max value for capacity check
+    const parseServings = (value) => {
+      if (typeof value === 'number') return { min: value, max: value }
+      if (!value) return { min: 10, max: 10 }
+
+      const str = String(value).replace(/[^\d-]/g, '') // Remove non-numeric except dash
+      const parts = str.split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n))
+
+      if (parts.length >= 2) {
+        return { min: Math.min(...parts), max: Math.max(...parts) }
+      } else if (parts.length === 1) {
+        return { min: parts[0], max: parts[0] }
+      }
+      return { min: 10, max: 10 }
+    }
+
     // Find the best package that feeds at least the guest count
-    // Sort by serves/feeds to find the smallest one that fits
+    // Sort by minimum serves to find the smallest one that fits
     const sortedPackages = [...packages].sort((a, b) => {
-      const aServes = a.serves || a.feeds || 10
-      const bServes = b.serves || b.feeds || 10
-      return aServes - bServes
+      const aServes = parseServings(a.serves || a.feeds)
+      const bServes = parseServings(b.serves || b.feeds)
+      return aServes.min - bServes.min
     })
 
-    // Find first package that can feed the guest count (or largest if none fit)
+    // Find first package where the MAX serving capacity >= guest count
+    // This ensures the cake can definitely feed everyone
     let selectedPackage = sortedPackages.find(pkg => {
-      const serves = pkg.serves || pkg.feeds || 10
-      return serves >= guestCount
-    }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest
+      const serves = parseServings(pkg.serves || pkg.feeds)
+      return serves.max >= guestCount
+    }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest if none fit
 
     // Get first available flavor
     const flavours = supplier?.serviceDetails?.flavours || supplier?.flavours || []
@@ -1546,6 +1611,26 @@ const handleNameSubmit = async (nameData) => {
           setShowVenueConflictModal(true)
           setIsSelectingVenue(false)
           return // Don't proceed until user makes a choice
+        }
+      }
+    }
+
+    // ✅ FIX: Clear old venue addons before adding new venue
+    // Remove any addons associated with the previous venue
+    if (suppliers.venue) {
+      const oldVenueId = suppliers.venue.id
+      const venueAddons = addons.filter(addon =>
+        addon.supplierId === oldVenueId ||
+        addon.supplierType === 'venue' ||
+        addon.attachedToSupplier === 'venue'
+      )
+      for (const addon of venueAddons) {
+        await removeAddon(addon.id)
+      }
+      // Also clear selectedAddons from old venue supplier
+      if (suppliers.venue.selectedAddons?.length > 0) {
+        for (const addon of suppliers.venue.selectedAddons) {
+          await removeAddonFromSupplier('venue', addon.id)
         }
       }
     }
@@ -1684,13 +1769,18 @@ const handleCustomizationComplete = async (customizationData) => {
         pricePerBag: selectedPackage.pricePerBag,
         // ✅ CRITICAL: Include partyBagsMetadata with totalPrice for pricing calculations
         partyBagsMetadata: selectedPackage.partyBagsMetadata,
-        // ✅ Include totalPrice for party bags
-        totalPrice: selectedPackage.partyBagsMetadata?.totalPrice || totalPrice,
+        // ✅ Include cateringMetadata for catering suppliers
+        cateringMetadata: selectedPackage.cateringMetadata,
+        // ✅ Include totalPrice - use metadata's BASE price (no addons) to avoid double-counting
+        // Addons are handled separately by unifiedPricing's calculateFinalPrice
+        totalPrice: selectedPackage.partyBagsMetadata?.totalPrice || selectedPackage.cateringMetadata?.totalPrice || selectedPackage.totalPrice || totalPrice,
         // Include any other special customizations
         features: selectedPackage.features,
         description: selectedPackage.description,
         // ✅ Preserve image for balloons/face painting theme-based display
         image: selectedPackage.image,
+        // ✅ Include selected addons so they persist when modal reopens
+        selectedAddons: selectedAddons || [],
       }
 
 
@@ -1705,15 +1795,29 @@ const handleCustomizationComplete = async (customizationData) => {
 
     }
 
+    // ✅ Handle addon sync: add new ones and remove deselected ones
+    // Get previously selected addons for this supplier
+    const previousAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || []
+    const previousAddonIds = previousAddons.map(a => a.id)
+    const newAddonIds = (selectedAddons || []).map(a => a.id)
+
+    // Remove addons that were deselected
+    for (const prevAddon of previousAddons) {
+      if (!newAddonIds.includes(prevAddon.id)) {
+        console.log('🗑️ Removing deselected addon:', prevAddon.name)
+        await handleRemoveAddon(prevAddon.id)
+      }
+    }
+
     // Add any new addons that were selected
     if (selectedAddons && selectedAddons.length > 0) {
       for (const addon of selectedAddons) {
         // Check if addon already exists
-        if (!hasAddon(addon.id)) {
+        if (!hasAddon(addon.id) && !previousAddonIds.includes(addon.id)) {
           await handleAddAddon(addon, supplier.id)
         }
       }
-      console.log('✅ Addons added successfully')
+      console.log('✅ Addons synced successfully')
     }
 
     await new Promise(resolve => setTimeout(resolve, 200))
@@ -2239,6 +2343,7 @@ const handleChildPhotoUpload = async (file) => {
             setShowWelcomePopup(false)
           }}
           onNameSubmit={handleNameSubmit}
+          partyTheme={partyDetails?.theme}
         />
       )}
 
@@ -2373,7 +2478,7 @@ const handleChildPhotoUpload = async (file) => {
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-250px)] p-6">
+            <div className="overflow-y-auto max-h-[calc(90vh-300px)] p-6 pb-4">
               {/* Party Info - Simple List */}
               <div className="space-y-2 text-sm text-gray-700 mb-6">
                 {partyDetails?.childName && (
@@ -2434,7 +2539,7 @@ const handleChildPhotoUpload = async (file) => {
                         displayPrice = supplier.partyBagsMetadata?.totalPrice ||
                                       supplier.packageData?.totalPrice ||
                                       (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                                        ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                                        ? roundMoney(supplier.packageData.price * supplier.packageData.partyBagsQuantity)
                                         : null)
 
                         if (!displayPrice) {

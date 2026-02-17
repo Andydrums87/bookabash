@@ -1,7 +1,8 @@
 // Enhanced SupplierCustomizationModal with unified pricing system integration
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
+import useEmblaCarousel from "embla-carousel-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -24,9 +25,13 @@ import {
   Info,
   MapPin,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
 } from "lucide-react"
 import Image from "next/image"
 import SupplierNote from '@/components/SupplierNote'
+import VenueDisplay from '@/components/supplier/display/VenueDisplay'
 
 // ✅ UPDATED: Import unified pricing system
 import {
@@ -35,6 +40,7 @@ import {
   isTimeBasedSupplier,
   getPartyDuration,
   formatDuration,
+  roundMoney,
 } from "@/utils/unifiedPricing"
 
 // Default cake flavors (only used if supplier hasn't specified any)
@@ -246,8 +252,96 @@ export default function SupplierCustomizationModal({
   // Special requests for entertainment suppliers
   const [specialRequests, setSpecialRequests] = useState("")
 
+  // Image carousel state
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [showLightbox, setShowLightbox] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
+
+  // Info accordion state
+  const [openAccordion, setOpenAccordion] = useState(null)
+
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
+
+  // Get all supplier images for carousel
+  const getSupplierImages = (supplier) => {
+    if (!supplier) return []
+    const imageList = []
+    const seenUrls = new Set()
+
+    const addImage = (url) => {
+      if (url && !seenUrls.has(url)) {
+        imageList.push(url)
+        seenUrls.add(url)
+      }
+    }
+
+    // Add cover photo first
+    if (supplier.coverPhoto) addImage(supplier.coverPhoto)
+    else if (supplier.originalSupplier?.coverPhoto) addImage(supplier.originalSupplier.coverPhoto)
+    else if (supplier.image) addImage(typeof supplier.image === 'object' ? supplier.image.src : supplier.image)
+    else if (supplier.originalSupplier?.image) addImage(supplier.originalSupplier.image)
+    else if (supplier.imageUrl) addImage(supplier.imageUrl)
+
+    // Process images from various fields
+    const processImage = (img) => {
+      if (typeof img === 'string') addImage(img)
+      else if (img?.src) addImage(img.src)
+      else if (img?.url) addImage(img.url)
+      else if (img?.image) addImage(img.image)
+    }
+
+    // Add portfolio images
+    const portfolioFields = ['portfolioImages', 'portfolio_images', 'images', 'gallery', 'photos']
+    portfolioFields.forEach(field => {
+      if (supplier[field] && Array.isArray(supplier[field])) {
+        supplier[field].forEach(processImage)
+      }
+      if (supplier.originalSupplier?.[field] && Array.isArray(supplier.originalSupplier[field])) {
+        supplier.originalSupplier[field].forEach(processImage)
+      }
+    })
+
+    return imageList.slice(0, 6)
+  }
+
+  const supplierImages = getSupplierImages(supplier)
+
+  // Embla carousel callbacks
+  const onEmblaSelect = useCallback(() => {
+    if (!emblaApi) return
+    setCarouselIndex(emblaApi.selectedScrollSnap())
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    onEmblaSelect()
+    emblaApi.on("select", onEmblaSelect)
+    emblaApi.on("reInit", onEmblaSelect)
+    return () => {
+      emblaApi.off("select", onEmblaSelect)
+      emblaApi.off("reInit", onEmblaSelect)
+    }
+  }, [emblaApi, onEmblaSelect])
+
+  // Reset carousel when supplier changes
+  useEffect(() => {
+    if (emblaApi && supplier?.id) {
+      emblaApi.scrollTo(0)
+      setCarouselIndex(0)
+    }
+  }, [supplier?.id, emblaApi])
+
+  const scrollPrev = useCallback((e) => {
+    e.stopPropagation()
+    emblaApi?.scrollPrev()
+  }, [emblaApi])
+
+  const scrollNext = useCallback((e) => {
+    e.stopPropagation()
+    emblaApi?.scrollNext()
+  }, [emblaApi])
 
   // Disable body scroll when main modal is open (iOS Safari compatible)
   useEffect(() => {
@@ -305,7 +399,7 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Detect supplier types using unified system
   const supplierTypeDetection = useMemo(() => {
-    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false, isBalloons: false, isFacePainting: false, isSoftPlay: false, isMultiSelect: false, isCatering: false, isSweetTreats: false, isDecorations: false, isEntertainment: false }
+    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false, isBalloons: false, isFacePainting: false, isSoftPlay: false, isBouncyCastle: false, isMultiSelect: false, isCatering: false, isSweetTreats: false, isDecorations: false, isEntertainment: false }
 
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
@@ -323,6 +417,7 @@ export default function SupplierCustomizationModal({
       const isBalloonsFromType = supplierType === 'balloons' || supplierType.toLowerCase().includes('balloon')
       const isFacePaintingFromType = supplierType === 'facePainting' || supplierType.toLowerCase().includes('face') || supplierType.toLowerCase().includes('painting')
       const isSoftPlayFromType = supplierType === 'activities' || supplierType === 'softPlay' || supplierType.toLowerCase().includes('soft play')
+      const isBouncyCastleFromType = supplierType === 'bouncyCastle' || supplierType.toLowerCase().includes('bouncy') || supplierType.toLowerCase().includes('inflatable')
       const isCateringFromType = supplierType === 'catering' || supplierType.toLowerCase().includes('catering') || supplierType.toLowerCase().includes('lunchbox')
       const isSweetTreatsFromType = supplierType === 'sweetTreats' || supplierType.toLowerCase().includes('sweet') || supplierType.toLowerCase().includes('candy')
       const isDecorationsFromType = supplierType === 'decorations' || supplierType.toLowerCase().includes('decoration') || supplierType.toLowerCase().includes('tableware')
@@ -346,6 +441,7 @@ export default function SupplierCustomizationModal({
         isBalloons: isBalloonsFromType,
         isFacePainting: isFacePaintingFromType,
         isSoftPlay: isSoftPlayFromType,
+        isBouncyCastle: isBouncyCastleFromType,
         isCatering: isCateringFromType,
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
@@ -363,6 +459,7 @@ export default function SupplierCustomizationModal({
         isBalloons: isBalloonsFromType,
         isFacePainting: isFacePaintingFromType,
         isSoftPlay: isSoftPlayFromType,
+        isBouncyCastle: isBouncyCastleFromType,
         isCatering: isCateringFromType,
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
@@ -434,6 +531,17 @@ export default function SupplierCustomizationModal({
       supplier?.serviceType === 'activities' ||
       dataObj?.serviceType === 'activities'
 
+    // Detect if this is a bouncy castle supplier
+    const isBouncyCastleSupplier =
+      categoryStr.includes("bouncy castle") ||
+      categoryStr.includes("bouncy-castle") ||
+      categoryStr.includes("bouncycastle") ||
+      categoryStr.includes("inflatable") ||
+      supplier?.serviceType === 'bouncyCastle' ||
+      dataObj?.serviceType === 'bouncyCastle' ||
+      supplier?.category === 'Bouncy Castle' ||
+      dataObj?.category === 'Bouncy Castle'
+
     // Detect if this is a catering supplier (per-child pricing like lunchboxes)
     const isCateringSupplier =
       categoryStr.includes("catering") ||
@@ -502,6 +610,7 @@ export default function SupplierCustomizationModal({
       isBalloons: isBalloonsSupplier,
       isFacePainting: isFacePaintingSupplier,
       isSoftPlay: isSoftPlaySupplier,
+      isBouncyCastle: isBouncyCastleSupplier,
       isCatering: isCateringSupplier,
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
@@ -522,6 +631,7 @@ export default function SupplierCustomizationModal({
       isBalloons: isBalloonsSupplier,
       isFacePainting: isFacePaintingSupplier,
       isSoftPlay: isSoftPlaySupplier,
+      isBouncyCastle: isBouncyCastleSupplier,
       isCatering: isCateringSupplier,
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
@@ -826,45 +936,9 @@ export default function SupplierCustomizationModal({
       })
     }
 
-    const basePrice = supplier.priceFrom || 100
-    const priceUnit = supplier.priceUnit || "per event"
-
-    const basicPrice = Math.round(basePrice * 1.0)
-    const premiumPrice = Math.round(basePrice * 1.5)
-    const deluxePrice = Math.round(basePrice * 2.0)
-
-    return [
-      {
-        id: "basic",
-        name: "Basic Package",
-        price: basicPrice,
-        enhancedPrice: calculatePackageEnhancedPrice(basicPrice),
-        duration: priceUnit,
-        features: ["Standard service", "Up to 15 children", "Basic setup"],
-        description: `Basic ${supplier.category?.toLowerCase()} package`,
-        popular: false,
-      },
-      {
-        id: "premium",
-        name: "Premium Package",
-        price: premiumPrice,
-        enhancedPrice: calculatePackageEnhancedPrice(premiumPrice),
-        duration: priceUnit,
-        features: ["Enhanced service", "Professional setup", "Up to 25 children"],
-        description: `Enhanced ${supplier.category?.toLowerCase()} package`,
-        popular: true,
-      },
-      {
-        id: "deluxe",
-        name: "Deluxe Package",
-        price: deluxePrice,
-        enhancedPrice: calculatePackageEnhancedPrice(deluxePrice),
-        duration: priceUnit,
-        features: ["Premium service", "Full setup & cleanup", "Up to 35 children"],
-        description: `Complete ${supplier.category?.toLowerCase()} package`,
-        popular: false,
-      },
-    ]
+    // No real packages found - return empty array (no fallback packages)
+    console.log('📦 [Packages] No packages found for supplier, returning empty array')
+    return []
   }, [supplier, calculatePackageEnhancedPrice])
 
   // Check multiple locations for add-on services (database stores in data JSONB)
@@ -971,6 +1045,49 @@ export default function SupplierCustomizationModal({
     }
 
     if (!selectedPackage || !supplier) {
+      // For venues without packages, calculate based on hourly rate × hours
+      if (supplierTypeDetection.isVenue && supplier) {
+        const hourlyRate = supplier.priceFrom || supplier.data?.priceFrom || 0
+        const priceUnit = supplier.priceUnit || supplier.data?.priceUnit || 'per event'
+        const serviceDetails = supplier.serviceDetails || supplier.data?.serviceDetails || {}
+        const minimumHours = serviceDetails.pricing?.minimumBookingHours ||
+                            serviceDetails.availability?.minimumBookingHours || 4
+
+        // Calculate venue price: hourly rate × party duration (or minimum hours)
+        const partyDuration = effectivePartyDetails?.duration || minimumHours
+        const hoursToCharge = Math.max(partyDuration, minimumHours)
+
+        // If priceUnit is "per hour", multiply by hours; otherwise use as flat rate
+        const isHourlyRate = priceUnit?.toLowerCase().includes('hour')
+        const venueBasePrice = isHourlyRate ? (hourlyRate * hoursToCharge) : hourlyRate
+
+        console.log('🏠 Venue without packages - pricing:', {
+          hourlyRate,
+          priceUnit,
+          isHourlyRate,
+          minimumHours,
+          partyDuration,
+          hoursToCharge,
+          venueBasePrice,
+        })
+
+        const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
+          const addon = availableAddons.find((a) => a.id === addonId)
+          return sum + (addon?.price || 0)
+        }, 0)
+        return {
+          packagePrice: venueBasePrice,
+          addonsTotalPrice,
+          totalPrice: venueBasePrice + addonsTotalPrice,
+          hasEnhancedPricing: false,
+          pricingInfo: {
+            isHourlyRate,
+            hourlyRate,
+            hoursCharged: hoursToCharge,
+            minimumHours,
+          },
+        }
+      }
       return {
         packagePrice: 0,
         addonsTotalPrice: 0,
@@ -991,7 +1108,7 @@ export default function SupplierCustomizationModal({
     if (supplierTypeDetection.isPartyBags) {
       // selectedPackage.price is ALREADY the per-bag price
       const pricePerBag = selectedPackage.price
-      packagePrice = pricePerBag * partyBagsQuantity
+      packagePrice = roundMoney(pricePerBag * partyBagsQuantity)
       console.log("🎒 Party Bags custom quantity pricing:", {
         originalPrice: selectedPackage.price,
         pricePerBag,
@@ -1003,7 +1120,7 @@ export default function SupplierCustomizationModal({
     // ✅ CATERING: Adjust price based on number of children (uses same quantity state as party bags)
     if (supplierTypeDetection.isCatering) {
       const pricePerChild = selectedPackage.price
-      packagePrice = pricePerChild * partyBagsQuantity
+      packagePrice = roundMoney(pricePerChild * partyBagsQuantity)
       console.log("🍱 Catering per-child pricing:", {
         originalPrice: selectedPackage.price,
         pricePerChild,
@@ -1015,7 +1132,7 @@ export default function SupplierCustomizationModal({
     // ✅ DECORATIONS: Adjust price based on pack size (rounds up to nearest pack)
     if (supplierTypeDetection.isDecorations) {
       const pricePerSet = selectedPackage.price
-      packagePrice = pricePerSet * decorationsPackSize
+      packagePrice = roundMoney(pricePerSet * decorationsPackSize)
       console.log("🎨 Decorations pack-size pricing:", {
         originalPrice: selectedPackage.price,
         pricePerSet,
@@ -1045,7 +1162,7 @@ export default function SupplierCustomizationModal({
       const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
       const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
       const cateringPrice = selectedCatering
-        ? selectedCatering.pricePerHead * cateringGuestCount
+        ? roundMoney(selectedCatering.pricePerHead * cateringGuestCount)
         : 0
 
       packagePrice = venueBasePrice + cateringPrice
@@ -1068,9 +1185,10 @@ export default function SupplierCustomizationModal({
       if (!addon) return sum
 
       // Check if addon is per-child pricing (for catering)
-      const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_head'
+      // Note: data may use snake_case (per_child, per_head, per_item) or camelCase (perChild, perHead, perItem)
+      const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_child' || addon.priceType === 'per_head' || addon.priceType === 'perItem' || addon.priceType === 'per_item'
       if (isPerChild && supplierTypeDetection.isCatering) {
-        return sum + (addon.price * Number(partyBagsQuantity))
+        return sum + roundMoney(addon.price * Number(partyBagsQuantity))
       }
       return sum + (addon.price || 0)
     }, 0)
@@ -1092,8 +1210,8 @@ export default function SupplierCustomizationModal({
       cupcakesPrice = cupcakePrices[selectedCupcakeOption] || 0
     }
 
-    // Final totals
-    const totalPrice = packagePrice + addonsTotalPrice + deliveryFee + cupcakesPrice
+    // Final totals - use roundMoney to prevent floating point issues
+    const totalPrice = roundMoney(packagePrice + addonsTotalPrice + deliveryFee + cupcakesPrice)
 
     return {
       packagePrice,
@@ -1321,6 +1439,22 @@ export default function SupplierCustomizationModal({
     }
   }, [isOpen, supplier])
 
+  // ✅ Restore venue catering selection when modal opens
+  useEffect(() => {
+    if (isOpen && supplier && supplierTypeDetection.isVenue) {
+      // Check if supplier has previously selected catering via venueMetadata
+      const venueMetadata = supplier?.packageData?.venueMetadata || supplier?.venueMetadata
+
+      if (venueMetadata?.selectedCateringId) {
+        console.log('🏠 [Venue] Restoring catering selection:', venueMetadata)
+        setSelectedCateringId(venueMetadata.selectedCateringId)
+        if (venueMetadata.cateringGuestCount) {
+          setCateringGuestCount(venueMetadata.cateringGuestCount)
+        }
+      }
+    }
+  }, [isOpen, supplier, supplierTypeDetection.isVenue])
+
   if (!supplier) return null
 
   const handleAddonToggle = (addonId) => {
@@ -1440,8 +1574,8 @@ export default function SupplierCustomizationModal({
         ...selectedPackage,
         price: pricePerBag, // Store per-bag price
         originalPrice: pricePerBag,
-        enhancedPrice: calculateModalPricing.packagePrice,
-        totalPrice: calculateModalPricing.packagePrice,
+        enhancedPrice: calculateModalPricing.totalPrice, // Total including addons for display
+        totalPrice: calculateModalPricing.totalPrice, // Total including addons for display
         // Override image with theme-based image if available
         image: partyBagsThemeImage || selectedPackage.image,
         // Preserve themeImages for dynamic theme switching on card
@@ -1452,11 +1586,14 @@ export default function SupplierCustomizationModal({
         partyBagsQuantity: partyBagsQuantity,
         guestCount: partyDetails?.guestCount || 10,
         pricePerBag: pricePerBag,
-        // ✅ CRITICAL FIX: Include partyBagsMetadata for pricing calculations
+        // ✅ CRITICAL: Include partyBagsMetadata for pricing calculations
+        // totalPrice should be BASE price (without addons) for unifiedPricing
+        // Addons are handled separately by calculateFinalPrice
         partyBagsMetadata: {
           quantity: partyBagsQuantity,
           pricePerBag: pricePerBag,
-          totalPrice: calculateModalPricing.packagePrice,
+          totalPrice: calculateModalPricing.packagePrice, // ✅ BASE price only (no addons)
+          addonsTotal: calculateModalPricing.addonsTotalPrice, // Track addons separately for reference
         },
         enhancedPricing: calculateModalPricing.pricingInfo,
         partyDuration: effectivePartyDetails?.duration,
@@ -1470,17 +1607,20 @@ export default function SupplierCustomizationModal({
         ...selectedPackage,
         price: pricePerChild, // Store per-child price
         originalPrice: pricePerChild,
-        enhancedPrice: calculateModalPricing.packagePrice,
-        totalPrice: calculateModalPricing.packagePrice,
+        enhancedPrice: calculateModalPricing.totalPrice, // Total including addons for display
+        totalPrice: calculateModalPricing.totalPrice, // Total including addons for display
         // Catering specific data
         cateringQuantity: partyBagsQuantity,
         guestCount: partyDetails?.guestCount || 10,
         pricePerChild: pricePerChild,
         // Include cateringMetadata for pricing calculations
+        // ✅ IMPORTANT: totalPrice should be BASE price (without addons) for unifiedPricing
+        // Addons are handled separately by calculateFinalPrice
         cateringMetadata: {
           quantity: partyBagsQuantity,
           pricePerChild: pricePerChild,
-          totalPrice: calculateModalPricing.packagePrice,
+          totalPrice: calculateModalPricing.packagePrice, // ✅ BASE price only (no addons)
+          addonsTotal: calculateModalPricing.addonsTotalPrice, // Track addons separately for reference
           deliveryIncluded: true,
           deliveryTiming: 'Evening before party (5-8pm)',
         },
@@ -1591,15 +1731,66 @@ export default function SupplierCustomizationModal({
         isLeadBased: true,
         isMultiSelect: true,
       }
+    } else if (supplierTypeDetection.isVenue) {
+      // ✅ VENUE: Include catering selection and guest count
+      const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+      const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
+
+      // Handle venues without packages - calculate based on hourly rate × hours
+      const serviceDetails = supplier.serviceDetails || supplier.data?.serviceDetails || {}
+      const hourlyRate = supplier.priceFrom || supplier.data?.priceFrom || 0
+      const priceUnit = supplier.priceUnit || supplier.data?.priceUnit || 'per event'
+      const minimumHours = serviceDetails.pricing?.minimumBookingHours ||
+                          serviceDetails.availability?.minimumBookingHours || 4
+      const partyDuration = effectivePartyDetails?.duration || minimumHours
+      const hoursToCharge = Math.max(partyDuration, minimumHours)
+      const isHourlyRate = priceUnit?.toLowerCase().includes('hour')
+
+      // Use package price if available, otherwise calculate from hourly rate
+      const venueBasePrice = selectedPackage?.price ||
+                            (isHourlyRate ? (hourlyRate * hoursToCharge) : hourlyRate)
+
+      // Build package name based on hours if no package
+      const packageName = selectedPackage?.name ||
+                         (isHourlyRate ? `${hoursToCharge} Hour Venue Hire` : 'Venue Hire')
+
+      finalPackage = {
+        ...(selectedPackage || {}),
+        id: selectedPackage?.id || 'venue-base',
+        name: packageName,
+        price: venueBasePrice,
+        originalPrice: venueBasePrice,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        // ✅ FIX: Use packagePrice (base only) not totalPrice (which includes addons)
+        // Addons are handled separately by unifiedPricing's calculateFinalPrice
+        totalPrice: calculateModalPricing.packagePrice,
+        enhancedPricing: calculateModalPricing.pricingInfo,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased,
+        // ✅ Store venue pricing metadata for hourly venues
+        venueMetadata: {
+          selectedCateringId: selectedCateringId,
+          cateringGuestCount: cateringGuestCount,
+          selectedCateringName: selectedCatering?.name || null,
+          cateringPricePerHead: selectedCatering?.pricePerHead || 0,
+          cateringTotalPrice: selectedCatering ? (selectedCatering.pricePerHead * cateringGuestCount) : 0,
+          // Hourly rate info for venues without packages
+          isHourlyRate: !selectedPackage && isHourlyRate,
+          hourlyRate: !selectedPackage ? hourlyRate : null,
+          hoursCharged: !selectedPackage ? hoursToCharge : null,
+          minimumHours: !selectedPackage ? minimumHours : null,
+        },
+      }
     } else {
       // ✅ UPDATED: For non-cake, non-party-bags suppliers, still apply unified pricing
-      // ✅ FIX: Use totalPrice (includes add-ons) not just packagePrice
+      // ✅ FIX: Use packagePrice (base only) - addons are handled separately by calculateFinalPrice
       finalPackage = {
         ...selectedPackage,
         price: selectedPackage.price, // Keep original price
         originalPrice: selectedPackage.price,
         enhancedPrice: calculateModalPricing.packagePrice, // Store enhanced price separately
-        totalPrice: calculateModalPricing.totalPrice, // ✅ FIXED: Include add-ons in total
+        totalPrice: calculateModalPricing.packagePrice, // ✅ FIXED: Base price only, addons handled by unifiedPricing
         enhancedPricing: calculateModalPricing.pricingInfo,
         partyDuration: effectivePartyDetails?.duration,
         isTimeBased: supplierTypeDetection.isTimeBased,
@@ -1666,6 +1857,19 @@ export default function SupplierCustomizationModal({
             specialRequests: specialRequests.trim(),
             partyTheme: databasePartyData?.theme || partyDetails?.theme || 'general',
             duration: 2, // Standardised 2-hour party
+            totalPrice: calculateModalPricing.totalPrice,
+          },
+        }),
+        // ✅ Add venueMetadata for catering selection
+        ...(supplierTypeDetection.isVenue && {
+          venueMetadata: {
+            selectedCateringId: selectedCateringId,
+            cateringGuestCount: cateringGuestCount,
+            selectedCateringName: (() => {
+              const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+              const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
+              return selectedCatering?.name || null
+            })(),
             totalPrice: calculateModalPricing.totalPrice,
           },
         }),
@@ -1747,40 +1951,235 @@ export default function SupplierCustomizationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-0 sm:p-4 sm:flex sm:items-center sm:justify-center"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-0 lg:p-4 lg:flex lg:items-center lg:justify-center"
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-2xl sm:rounded-xl max-w-3xl w-full md:max-h-[85vh] max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom sm:fade-in duration-200`}
+        className={`fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mx-auto bg-white rounded-t-2xl lg:rounded-xl max-w-5xl w-full max-h-[90vh] lg:max-h-[85vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom lg:fade-in duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 sm:p-5 flex items-center justify-between flex-shrink-0 bg-white border-b border-gray-200">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
-              <Image
-                src={typeof supplier.image === 'object' ? supplier.image.src : (supplier.image || supplier.imageUrl || "/placeholder.png")}
-                alt={supplier.name}
-                width={56}
-                height={56}
-                className="w-full h-full object-cover"
-              />
+        {/* Split Layout Container */}
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+
+          {/* Left Side - Image (sticky on desktop) */}
+          <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
+            {/* Mobile: taller image at top with overlaid header */}
+            <div className="lg:hidden relative w-full h-56 bg-gray-900 overflow-hidden">
+              {supplierImages.length > 0 ? (
+                <>
+                  {/* Main image - full bleed, no padding */}
+                  <div className="absolute inset-0">
+                    <Image
+                      src={supplierImages[carouselIndex] || supplierImages[0]}
+                      alt={`${supplier.name} - Image ${carouselIndex + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                    />
+                  </div>
+                  {/* Mobile navigation arrows */}
+                  {supplierImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setCarouselIndex(prev => prev === 0 ? supplierImages.length - 1 : prev - 1)
+                        }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setCarouselIndex(prev => prev === supplierImages.length - 1 ? 0 : prev + 1)
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
+                      >
+                        <ChevronRight className="w-5 h-5 text-white" />
+                      </button>
+                    </>
+                  )}
+                  {/* Mobile bottom gradient with supplier name */}
+                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 via-black/40 to-transparent pt-8 pb-3 px-4">
+                    <h2 className="text-white font-bold text-lg truncate">{supplier.name}</h2>
+                    {supplierImages.length > 1 && (
+                      <div className="flex gap-2 mt-2">
+                        {supplierImages.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCarouselIndex(idx)
+                            }}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${idx === carouselIndex ? "bg-white scale-110" : "bg-white/50"}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Mobile close button */}
+                  <button
+                    onClick={onClose}
+                    className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                  {/* Mobile fullscreen button with image counter */}
+                  <button
+                    onClick={() => {
+                      setLightboxIndex(carouselIndex)
+                      setShowLightbox(true)
+                    }}
+                    className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5"
+                  >
+                    <Maximize2 className="w-4 h-4 text-white" />
+                    <span className="text-white text-xs font-medium">
+                      {supplierImages.length > 1 ? `${carouselIndex + 1}/${supplierImages.length}` : 'View'}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <span className="text-gray-400">No image</span>
+                </div>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                {supplier.name || supplier.data?.name || 'Supplier'}
-              </h2>
+
+            {/* Desktop: taller image panel with blurred background */}
+            <div className="hidden lg:block relative w-full h-full min-h-[500px] bg-gray-900 overflow-hidden">
+              {supplierImages.length > 0 ? (
+                <>
+                  {/* Blurred background image */}
+                  <Image
+                    src={supplierImages[carouselIndex] || supplierImages[0]}
+                    alt=""
+                    fill
+                    className="object-cover blur-xl scale-110 opacity-50"
+                    sizes="50vw"
+                  />
+
+                  {/* Main centered image */}
+                  <Image
+                    src={supplierImages[carouselIndex] || supplierImages[0]}
+                    alt={`${supplier.name} - Image ${carouselIndex + 1}`}
+                    fill
+                    className="object-contain"
+                    sizes="45vw"
+                    priority
+                  />
+
+                  {/* Desktop navigation arrows */}
+                  {supplierImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCarouselIndex(prev => prev > 0 ? prev - 1 : supplierImages.length - 1)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center active:scale-95 hover:bg-white transition-all duration-200 z-20"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-gray-800" />
+                      </button>
+                      <button
+                        onClick={() => setCarouselIndex(prev => prev < supplierImages.length - 1 ? prev + 1 : 0)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center active:scale-95 hover:bg-white transition-all duration-200 z-20"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-800" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Desktop navigation dots */}
+                  {supplierImages.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                      {supplierImages.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCarouselIndex(idx)
+                          }}
+                          className={`w-2.5 h-2.5 rounded-full transition-all duration-200 hover:scale-110 ${idx === carouselIndex ? "bg-white" : "bg-white/50 hover:bg-white/70"}`}
+                          aria-label={`Go to image ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Image counter */}
+                  {supplierImages.length > 1 && (
+                    <div className="absolute top-4 right-4 z-20 px-2.5 py-1 bg-black/50 backdrop-blur-sm rounded-full">
+                      <span className="text-white text-xs font-medium">{carouselIndex + 1}/{supplierImages.length}</span>
+                    </div>
+                  )}
+
+                  {/* Fullscreen button */}
+                  <button
+                    onClick={() => {
+                      setLightboxIndex(carouselIndex)
+                      setShowLightbox(true)
+                    }}
+                    className="absolute top-4 left-4 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
+                  >
+                    <Maximize2 className="w-4 h-4 text-white" />
+                    <span className="text-white text-xs font-medium">View</span>
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <span className="text-gray-400">No image</span>
+                </div>
+              )}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-          <div className="p-6 space-y-6">
+          {/* Right Side - Content (scrollable) */}
+          <div className="flex-1 flex flex-col lg:border-l border-gray-200 min-w-0" style={{ minHeight: 0 }}>
+            {/* Desktop Header with action buttons */}
+            <div className="hidden lg:flex p-4 items-center justify-between flex-shrink-0 bg-white border-b border-gray-200">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {supplier.name || supplier.data?.name || 'Supplier'}
+                </h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onClose}
+                  className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto min-w-0" style={{ minHeight: 0 }}>
+
+            {/* About Section - Skip for venues (VenueDisplay has its own) */}
+            {!supplierTypeDetection.isVenue && (() => {
+              // Prioritize serviceDetails.aboutUs as it contains the detailed about content
+              const description = supplier?.serviceDetails?.aboutUs ||
+                                 supplier?.serviceDetails?.description ||
+                                 supplier?.description ||
+                                 supplier?.businessDescription || ''
+
+              if (!description) return null
+
+              const aboutTitle = supplierTypeDetection.isCake ? 'About This Cake' : 'About'
+
+              return (
+                <div className="px-5 lg:px-6 pt-5 pb-4 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-800 uppercase text-xs tracking-wide mb-2">
+                    {aboutTitle}
+                  </h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              )
+            })()}
+
+            <div className="p-5 lg:p-6 space-y-6 min-w-0">
             {/* Cake Suppliers - Single Page Form */}
             {supplierTypeDetection.isCake && (
               <section className="space-y-5">
@@ -2175,12 +2574,10 @@ export default function SupplierCustomizationModal({
                 </div>
 
                 {/* Mobile: Horizontal scroll */}
-                <div className="sm:hidden relative -mx-6">
+                <div className="sm:hidden -mx-5 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 py-2 px-5 snap-x snap-mandatory w-max"
                     style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
                       WebkitOverflowScrolling: 'touch'
                     }}
                   >
@@ -2307,239 +2704,117 @@ export default function SupplierCustomizationModal({
                   })}
                 </div>
 
-                {/* Minimum Selection Warning */}
-                {selectedPackageIds.length === 0 && (
-                  <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                    <p className="text-sm text-amber-700">
-                      Please select at least one item to continue
-                    </p>
-                  </div>
-                )}
               </section>
             )}
 
-            {/* Catering Suppliers - Lunchbox Selection with Contents */}
+            {/* Catering Suppliers - Same card style as party bags/decorations */}
             {supplierTypeDetection.isCatering && (
               <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Package className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Lunchbox</h3>
-                </div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                  Choose Lunchbox
+                </label>
 
-                {/* Mobile: Horizontal scroll */}
-                <div className="sm:hidden relative -mx-6">
+                {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
                     style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
                       WebkitOverflowScrolling: 'touch'
                     }}
                   >
                     {packages.map((pkg) => {
                       const isSelected = selectedPackageId === pkg.id
+                      const packageImage = typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)
+
+                      // Prose for catering
+                      const getCateringProse = () => {
+                        const features = pkg?.features || pkg?.contents || []
+                        if (features.length === 0) return pkg.description || null
+                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
+                      }
+
+                      const prose = getCateringProse()
+
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[160px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border ${
+                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => setSelectedPackageId(pkg.id)}
                         >
-                          {/* Lunchbox Image */}
-                          <div className="relative w-full h-28">
-                            <Image
-                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
-                              alt={pkg.name}
-                              fill
-                              className="object-cover"
-                              sizes="160px"
-                            />
-                            {/* Selection checkmark overlay */}
+                          {/* Package Image */}
+                          <div className="relative w-full h-24 sm:h-28">
+                            {packageImage ? (
+                              <Image
+                                src={packageImage}
+                                alt={pkg.name}
+                                fill
+                                className="object-cover"
+                                sizes="220px"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Package className="w-6 h-6 text-gray-300" />
+                              </div>
+                            )}
+                            {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
-                          {/* Lunchbox Info */}
-                          <div className="p-2.5 bg-white">
-                            <h4 className="font-bold text-gray-800 text-sm mb-1 truncate">
-                              {pkg.name}
-                            </h4>
-                            <div className="flex items-center gap-1">
-                              <span className="font-bold text-[hsl(var(--primary-600))] text-base">
-                                £{pkg.price.toFixed(2)}
-                              </span>
-                              <span className="text-[10px] text-gray-400">per child</span>
+
+                          {/* Content */}
+                          <div className="p-3 bg-white flex flex-col h-[165px]">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                                £{roundMoney(pkg.price * partyBagsQuantity).toFixed(2)}
+                              </p>
                             </div>
-                            {/* What's Included link - opens modal */}
-                            {(pkg.contents?.length > 0 || pkg.features?.length > 0) && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedPackageForModal(pkg)
-                                  setShowPackageModal(true)
-                                }}
-                                className="flex items-center gap-1 text-[10px] text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium mt-1.5 transition-colors"
-                              >
-                                <Info className="w-3 h-3" />
-                                <span>What&apos;s included</span>
-                              </button>
+
+                            {/* Description prose - fixed height area */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {prose && (
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                  {prose}
+                                </p>
+                              )}
+
+                              {/* Guest count info */}
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                {partyBagsQuantity} guests × £{pkg.price.toFixed(2)} each
+                              </p>
+                            </div>
+
+                            {/* What's Included - opens modal - always at bottom */}
+                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
+                              <div className="pt-2 border-t border-gray-100 mt-auto">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
                       )
                     })}
                   </div>
-                </div>
-
-                {/* Desktop: Vertical list with full details */}
-                <div className="hidden sm:block space-y-4">
-                  {packages.map((pkg) => {
-                    const isSelected = selectedPackageId === pkg.id
-                    return (
-                      <div
-                        key={pkg.id}
-                        className={`bg-white rounded-lg overflow-hidden transition-all duration-200 cursor-pointer group border ${
-                          isSelected
-                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        onClick={() => setSelectedPackageId(pkg.id)}
-                      >
-                        {/* Header with Image, Title, Price and Checkbox */}
-                        <div className="flex items-center p-3 gap-3">
-                          {/* Lunchbox Image */}
-                          <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
-                            <Image
-                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
-                              alt={pkg.name}
-                              fill
-                              className="object-cover group-hover:brightness-110 transition-all duration-300"
-                              sizes="80px"
-                            />
-                          </div>
-
-                          {/* Title and Price */}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 text-base">{pkg.name}</h4>
-                            <p className="text-xs text-gray-500 mt-0.5">{pkg.description}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="font-bold text-[hsl(var(--primary-600))] text-lg">
-                                £{pkg.price.toFixed(2)}
-                              </span>
-                              <span className="text-xs text-gray-400">per child</span>
-                            </div>
-                          </div>
-
-                          {/* Selection Indicator */}
-                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                            isSelected
-                              ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
-                              : 'bg-white border-gray-300'
-                          }`}>
-                            {isSelected && (
-                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Contents - Compact when not selected, full when selected */}
-                        {/* Show contents if available, or fallback message for catering */}
-                        {(pkg.contents && pkg.contents.length > 0) ? (
-                          <div className={`border-t border-gray-100 px-3 pb-3 pt-2 ${isSelected ? 'bg-green-50' : 'bg-gray-50'}`}>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {/* Show first 3 items when not selected, all items when selected */}
-                              {(isSelected ? pkg.contents : pkg.contents.slice(0, 3)).map((item, idx) => (
-                                <span
-                                  key={idx}
-                                  className={`text-xs px-2 py-1 rounded-full ${
-                                    isSelected
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-white text-gray-600 border border-gray-200'
-                                  }`}
-                                >
-                                  {item}
-                                </span>
-                              ))}
-                              {/* Show "+X more" badge when not selected and there are more items */}
-                              {!isSelected && pkg.contents.length > 3 && (
-                                <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-500 font-medium">
-                                  +{pkg.contents.length - 3} more
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Features badges - show when selected */}
-                            {isSelected && pkg.features && pkg.features.length > 0 && (
-                              <div className="mt-3 pt-2 border-t border-green-200">
-                                <div className="flex flex-wrap gap-2">
-                                  {pkg.features.map((feature, idx) => (
-                                    <span key={idx} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-medium">
-                                      <Check className="w-3 h-3" />
-                                      {feature}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : supplierTypeDetection.isCatering && (pkg.features?.length > 0) ? (
-                          <div className={`border-t border-gray-100 px-3 pb-3 pt-2 ${isSelected ? 'bg-green-50' : 'bg-gray-50'}`}>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
-                            <div className="flex flex-wrap gap-1.5 mb-2">
-                              {(isSelected ? pkg.features : pkg.features.slice(0, 3)).map((item, idx) => (
-                                <span
-                                  key={idx}
-                                  className={`text-xs px-2 py-1 rounded-full ${
-                                    isSelected
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-white text-gray-600 border border-gray-200'
-                                  }`}
-                                >
-                                  {item}
-                                </span>
-                              ))}
-                              {!isSelected && pkg.features.length > 3 && (
-                                <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-500 font-medium">
-                                  +{pkg.features.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                            {/* What's Included link - opens modal with full details */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedPackageForModal(pkg)
-                                setShowPackageModal(true)
-                              }}
-                              className="flex items-center gap-1 text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
-                            >
-                              <Info className="w-3.5 h-3.5" />
-                              <span>View full details</span>
-                            </button>
-                          </div>
-                        ) : supplierTypeDetection.isCatering && (
-                          <div className={`border-t border-gray-100 px-3 pb-3 pt-2 ${isSelected ? 'bg-green-50' : 'bg-gray-50'}`}>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What&apos;s included:</p>
-                            <p className="text-xs text-gray-500 italic">
-                              Full menu details confirmed after booking
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
                 </div>
               </section>
             )}
@@ -2551,13 +2826,11 @@ export default function SupplierCustomizationModal({
                   Choose Package
                 </label>
 
-                {/* Horizontal scroll on all screens */}
-                <div className="relative -mx-6">
+                {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-1 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
                     style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
                       WebkitOverflowScrolling: 'touch'
                     }}
                   >
@@ -2614,7 +2887,7 @@ export default function SupplierCustomizationModal({
                                 {pkg.name}
                               </h4>
                               <p className="font-bold text-primary-600 text-base flex-shrink-0">
-                                £{(pkg.price * decorationsPackSize).toFixed(0)}
+                                £{roundMoney(pkg.price * decorationsPackSize).toFixed(2)}
                               </p>
                             </div>
 
@@ -2665,13 +2938,11 @@ export default function SupplierCustomizationModal({
                   Choose Package
                 </label>
 
-                {/* Horizontal scroll on all screens */}
-                <div className="relative -mx-6">
+                {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
-                    className="flex gap-3 overflow-x-auto scrollbar-hide py-1 px-6 snap-x snap-mandatory"
+                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
                     style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
                       WebkitOverflowScrolling: 'touch'
                     }}
                   >
@@ -2747,8 +3018,8 @@ export default function SupplierCustomizationModal({
                               </h4>
                               <p className="font-bold text-primary-600 text-base flex-shrink-0">
                                 £{supplierTypeDetection.isPartyBags
-                                  ? (pkg.price * partyBagsQuantity).toFixed(0)
-                                  : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(0)}
+                                  ? roundMoney(pkg.price * partyBagsQuantity).toFixed(2)
+                                  : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
                               </p>
                             </div>
 
@@ -2818,7 +3089,7 @@ export default function SupplierCustomizationModal({
                     <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
                     <div className="text-sm text-gray-500 font-medium">bags</div>
                     <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
-                      £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                      £{roundMoney(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
                     </div>
                   </div>
 
@@ -2846,7 +3117,8 @@ export default function SupplierCustomizationModal({
                 </div>
                 <div className="space-y-3">
                   {availableAddons.map((addon) => {
-                    const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_head' || addon.priceType === 'perItem'
+                    // Note: data may use snake_case (per_child, per_head, per_item) or camelCase (perChild, perHead, perItem)
+                    const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_child' || addon.priceType === 'per_head' || addon.priceType === 'perItem' || addon.priceType === 'per_item'
                     const displayPrice = formatPriceCompact(addon.price)
 
                     return (
@@ -2916,7 +3188,7 @@ export default function SupplierCustomizationModal({
                     <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
                     <div className="text-sm text-gray-500 font-medium">lunchboxes</div>
                     <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
-                      £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                      £{roundMoney(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
                     </div>
                   </div>
 
@@ -2935,6 +3207,7 @@ export default function SupplierCustomizationModal({
               <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-900 mb-1">Guest Count</h4>
+                  <p className="text-sm text-gray-500">Decoration sets come in packs of 8</p>
                 </div>
 
                 <div className="flex items-center justify-center gap-6">
@@ -2955,7 +3228,10 @@ export default function SupplierCustomizationModal({
                     <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
                     <div className="text-sm text-gray-500 font-medium">guests</div>
                     <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
-                      £{(selectedPackage.price * decorationsPackSize).toFixed(2)}
+                      £{roundMoney(selectedPackage.price * decorationsPackSize).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      ({decorationsPackSize} sets @ £{selectedPackage.price.toFixed(2)} each)
                     </div>
                   </div>
 
@@ -3013,94 +3289,227 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Venue Suppliers - Room Selection + Catering Add-on */}
+            {/* Venue Suppliers - What's Included + VenueDisplay + Room Selection + Catering */}
             {console.log('🏠 [Venue Check] isVenue:', supplierTypeDetection.isVenue, 'packages:', packages.length)}
             {supplierTypeDetection.isVenue && (
               <section className="space-y-6">
-                {/* Room Package Cards - Grid like party bags */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {packages.map((pkg, index) => {
-                    const isSelected = selectedPackageId === pkg.id
-                    const displayPrice = getVenuePackagePrice(pkg)
-                    const hasWeekendPricing = pkg.weekendPrice && pkg.weekendPrice !== pkg.price
+                {/* What's Included - Show features from package OR generate from venue data */}
+                {(() => {
+                  const activePackage = selectedPackage || packages[0]
+                  let features = activePackage?.features || activePackage?.whatsIncluded || []
 
-                    return (
-                      <div
-                        key={pkg.id}
-                        className={`relative rounded-xl cursor-pointer transition-all duration-200 overflow-hidden border ${
-                          isSelected
-                            ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        onClick={() => setSelectedPackageId(pkg.id)}
-                      >
-                        {/* Popular badge */}
-                        {pkg.popular && (
-                          <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-xs font-semibold text-center py-1.5 uppercase tracking-wide z-10">
-                            Most Popular
+                  // If no package features, generate from venue serviceDetails
+                  if (features.length === 0) {
+                    const serviceDetails = supplier?.serviceDetails || supplier?.data?.serviceDetails || {}
+                    const pricing = serviceDetails?.pricing || {}
+                    const capacity = serviceDetails?.capacity || {}
+                    const generatedFeatures = []
+
+                    // Add booking duration
+                    const minimumHours = pricing.minimumBookingHours ||
+                                        serviceDetails?.availability?.minimumBookingHours || 4
+                    generatedFeatures.push(`${minimumHours} hour${minimumHours > 1 ? 's' : ''} venue hire`)
+
+                    // Add setup/cleanup time if available
+                    if (pricing.setupTime && pricing.cleanupTime) {
+                      generatedFeatures.push(`${pricing.setupTime} mins setup + ${pricing.cleanupTime} mins cleanup included`)
+                    } else if (pricing.setupTime) {
+                      generatedFeatures.push(`${pricing.setupTime} mins setup time included`)
+                    }
+
+                    // Add capacity info
+                    if (capacity.standing || capacity.max) {
+                      generatedFeatures.push(`Capacity up to ${capacity.standing || capacity.max} guests`)
+                    }
+
+                    // Add key facilities
+                    const facilities = serviceDetails?.facilities || []
+                    const keyFacilities = facilities.filter(f =>
+                      f.toLowerCase().includes('kitchen') ||
+                      f.toLowerCase().includes('parking') ||
+                      f.toLowerCase().includes('toilet') ||
+                      f.toLowerCase().includes('accessible')
+                    ).slice(0, 3)
+                    keyFacilities.forEach(f => generatedFeatures.push(f))
+
+                    // Add tables/chairs if available
+                    const equipment = serviceDetails?.equipment || {}
+                    if (equipment.chairs > 0 || equipment.tables > 0) {
+                      const items = []
+                      if (equipment.tables > 0) items.push(`${equipment.tables} tables`)
+                      if (equipment.chairs > 0) items.push(`${equipment.chairs} chairs`)
+                      if (items.length > 0) generatedFeatures.push(`${items.join(' & ')} available`)
+                    }
+
+                    features = generatedFeatures
+                  }
+
+                  if (features.length === 0) return null
+
+                  return (
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-3">What's Included</h3>
+                      <div className="space-y-2">
+                        {features.map((feature, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5">
+                            <Check className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                            <span className="text-gray-700 text-sm">{feature}</span>
                           </div>
-                        )}
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
 
-                        {/* Selection checkmark */}
-                        {isSelected && (
-                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center z-10">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
+                {/* VenueDisplay - Shows about, capacity, facilities, location, rules, etc. */}
+                <VenueDisplay
+                  supplier={supplier}
+                  serviceDetails={supplier?.serviceDetails || supplier?.service_details || supplier?.data?.serviceDetails || {}}
+                  selectedAddons={selectedAddons}
+                  onToggleAddon={(addon) => {
+                    const addonId = addon.id || `addon-${addon.name}`
+                    const isSelected = selectedAddons.some(a => (a.id || a) === addonId)
+                    if (isSelected) {
+                      setSelectedAddons(selectedAddons.filter(a => (a.id || a) !== addonId))
+                    } else {
+                      setSelectedAddons([...selectedAddons, { ...addon, id: addonId }])
+                    }
+                  }}
+                  isInteractive={true}
+                />
 
-                        {/* Package Image */}
-                        {pkg.image && (
-                          <div className={`relative w-full h-36 ${pkg.popular ? 'mt-7' : ''}`}>
-                            <Image
-                              src={typeof pkg.image === 'object' ? pkg.image.src : pkg.image}
-                              alt={pkg.name}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 640px) 100vw, 50vw"
-                            />
-                          </div>
-                        )}
+                {/* Room/Package Selection - Only show if more than 1 package OR has catering */}
+                {(() => {
+                  const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
+                  const hasMultipleOptions = packages.length > 1 || cateringPackages.length > 0
 
-                        {/* Package Content */}
-                        <div className="p-4 bg-white">
-                          <h4 className="font-bold text-gray-900 text-lg">{pkg.name}</h4>
+                  if (!hasMultipleOptions) return null
 
-                          {/* Price */}
-                          <div className="mt-2">
-                            <span className="text-2xl font-bold text-[hsl(var(--primary-500))]">
-                              £{displayPrice}
-                            </span>
-                          </div>
+                  return (
+                    <>
+                      {packages.length > 1 && (
+                        <div className="pt-4 border-t border-gray-200">
+                          <h3 className="text-lg font-bold text-gray-900 mb-4">Choose Your Room</h3>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
 
-                          {/* Capacity & Duration */}
-                          {(pkg.minGuests || pkg.maxGuests || pkg.duration) && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              {pkg.minGuests && pkg.maxGuests && `${pkg.minGuests}-${pkg.maxGuests} guests`}
-                              {pkg.duration && ` • ${pkg.duration}`}
-                            </p>
-                          )}
+                {/* Room Package Cards - Compact horizontal scroll style */}
+                {packages.length > 1 && (
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div
+                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageId === pkg.id
+                      const displayPrice = getVenuePackagePrice(pkg)
+                      const packageImage = typeof pkg.image === 'object' ? pkg.image.src : pkg.image
 
-                          {/* Description */}
-                          {pkg.description && (
-                            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{pkg.description}</p>
-                          )}
+                      // Prose for venue
+                      const getVenueProse = () => {
+                        if (pkg.description) return pkg.description
+                        const features = pkg?.features || []
+                        if (features.length === 0) return null
+                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
+                      }
 
-                          {/* Features */}
-                          {pkg.features && pkg.features.length > 0 && (
-                            <div className="mt-3 space-y-1.5">
-                              {pkg.features.slice(0, 5).map((feature, idx) => (
-                                <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span>{feature}</span>
-                                </div>
-                              ))}
+                      const prose = getVenueProse()
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            isSelected
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => setSelectedPackageId(pkg.id)}
+                        >
+                          {/* Popular badge */}
+                          {pkg.popular && (
+                            <div className="absolute top-0 left-0 right-0 bg-[hsl(var(--primary-500))] text-white text-[10px] font-semibold text-center py-1 uppercase tracking-wide z-10">
+                              Most Popular
                             </div>
                           )}
+
+                          {/* Package Image */}
+                          <div className={`relative w-full h-24 sm:h-28 ${pkg.popular ? 'mt-5' : ''}`}>
+                            {packageImage ? (
+                              <Image
+                                src={packageImage}
+                                alt={pkg.name}
+                                fill
+                                className="object-cover"
+                                sizes="220px"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Package className="w-6 h-6 text-gray-300" />
+                              </div>
+                            )}
+                            {/* Selection checkmark */}
+                            {isSelected && (
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-3 bg-white flex flex-col h-[165px]">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                                £{displayPrice}
+                              </p>
+                            </div>
+
+                            {/* Capacity & Duration */}
+                            {(pkg.minGuests || pkg.maxGuests || pkg.duration) && (
+                              <p className="text-[10px] text-gray-400 mb-1">
+                                {pkg.minGuests && pkg.maxGuests && `${pkg.minGuests}-${pkg.maxGuests} guests`}
+                                {pkg.duration && ` • ${pkg.duration}`}
+                              </p>
+                            )}
+
+                            {/* Description prose - fixed height area */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {prose && (
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                  {prose}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* What's Included - opens modal - always at bottom */}
+                            {pkg.features && pkg.features.length > 0 && (
+                              <div className="pt-2 border-t border-gray-100 mt-auto">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
+                )}
 
                 {/* SECTION 2: Add Catering (if venue offers it) */}
                 {(() => {
@@ -3301,7 +3710,7 @@ export default function SupplierCustomizationModal({
                                     <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
                                       <span className="text-sm text-gray-600">Catering total:</span>
                                       <span className="font-bold text-lg text-[hsl(var(--primary-500))]">
-                                        £{(catering.pricePerHead * cateringGuestCount).toFixed(2)}
+                                        £{roundMoney(catering.pricePerHead * cateringGuestCount).toFixed(2)}
                                       </span>
                                     </div>
                                   </div>
@@ -3318,15 +3727,15 @@ export default function SupplierCustomizationModal({
                 {/* SECTION 3: Add-ons (if venue has any) */}
                 {availableAddons.length > 0 && (
                   <div className="pt-4 border-t border-gray-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Plus className="w-5 h-5 text-[hsl(var(--primary-500))]" />
-                      <h3 className="text-lg font-bold text-gray-900">Add Extras</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Plus className="w-4 h-4 text-[hsl(var(--primary-500))]" />
+                      <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Add-ons</h3>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {availableAddons.map((addon) => (
                         <div
                           key={addon.id}
-                          className={`flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-all duration-200 border ${
+                          className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
                             selectedAddons.includes(addon.id)
                               ? "bg-[hsl(var(--primary-50))] border-[hsl(var(--primary-500))]"
                               : "bg-white border-gray-200 hover:border-gray-300"
@@ -3340,25 +3749,24 @@ export default function SupplierCustomizationModal({
                             className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] mt-0.5 cursor-pointer"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2">
                               <label
                                 htmlFor={`venue-addon-${addon.id}`}
-                                className="font-semibold text-gray-900 cursor-pointer"
+                                className="text-sm font-medium text-gray-900 cursor-pointer"
                               >
                                 {addon.name}
                               </label>
                               {addon.popular && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Sparkles className="w-3 h-3 mr-1" />
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                   Popular
                                 </Badge>
                               )}
                             </div>
                             {addon.description && (
-                              <p className="text-sm text-gray-600">{addon.description}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{addon.description}</p>
                             )}
                           </div>
-                          <div className="font-bold text-[hsl(var(--primary-500))] text-lg flex-shrink-0">+£{(addon.price || 0).toFixed(2)}</div>
+                          <div className="font-semibold text-[hsl(var(--primary-500))] text-sm flex-shrink-0">+£{(addon.price || 0).toFixed(2)}</div>
                         </div>
                       ))}
                     </div>
@@ -3367,16 +3775,18 @@ export default function SupplierCustomizationModal({
 
                 {/* SECTION 4: Price Summary */}
                 {selectedPackage && (
-                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                    <h4 className="font-bold text-gray-900 mb-4">Your Booking Summary</h4>
-                    <div className="space-y-3">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Booking Summary</h4>
+                    <div className="space-y-2">
                       {/* Room */}
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-medium text-gray-900">{selectedPackage.name}</p>
-                          <p className="text-sm text-gray-500">{selectedPackage.duration}</p>
+                          <p className="text-sm font-medium text-gray-700">{selectedPackage.name}</p>
+                          {selectedPackage.duration && (
+                            <p className="text-xs text-gray-500">{selectedPackage.duration}</p>
+                          )}
                         </div>
-                        <span className="font-semibold text-gray-900">£{(getVenuePackagePrice(selectedPackage) || 0).toFixed(2)}</span>
+                        <span className="text-sm font-semibold text-gray-900">£{(getVenuePackagePrice(selectedPackage) || 0).toFixed(2)}</span>
                       </div>
 
                       {/* Catering (if selected) */}
@@ -3386,26 +3796,26 @@ export default function SupplierCustomizationModal({
                         if (!selectedCatering) return null
 
                         return (
-                          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                             <div>
-                              <p className="font-medium text-gray-900">{selectedCatering.name}</p>
-                              <p className="text-sm text-gray-500">{cateringGuestCount} guests × £{selectedCatering.pricePerHead}</p>
+                              <p className="text-sm font-medium text-gray-700">{selectedCatering.name}</p>
+                              <p className="text-xs text-gray-500">{cateringGuestCount} guests × £{selectedCatering.pricePerHead}</p>
                             </div>
-                            <span className="font-semibold text-gray-900">£{(selectedCatering.pricePerHead * cateringGuestCount).toFixed(2)}</span>
+                            <span className="text-sm font-semibold text-gray-900">£{roundMoney(selectedCatering.pricePerHead * cateringGuestCount).toFixed(2)}</span>
                           </div>
                         )
                       })()}
 
                       {/* Add-ons (if selected) */}
                       {selectedAddons.length > 0 && (
-                        <div className="pt-3 border-t border-gray-200 space-y-2">
+                        <div className="pt-2 border-t border-gray-200 space-y-1.5">
                           {selectedAddons.map(addonId => {
                             const addon = availableAddons.find(a => a.id === addonId)
                             if (!addon) return null
                             return (
                               <div key={addonId} className="flex justify-between items-center">
-                                <p className="font-medium text-gray-900">{addon.name}</p>
-                                <span className="font-semibold text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
+                                <p className="text-sm text-gray-700">{addon.name}</p>
+                                <span className="text-sm font-medium text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
                               </div>
                             )
                           })}
@@ -3413,19 +3823,19 @@ export default function SupplierCustomizationModal({
                       )}
 
                       {/* Total */}
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-300 mt-2">
-                        <span className="text-lg font-bold text-gray-900">Total</span>
-                        <span className="text-2xl font-bold text-[hsl(var(--primary-500))]">
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-300 mt-1">
+                        <span className="text-sm font-bold text-gray-900">Total</span>
+                        <span className="text-lg font-bold text-gray-900">
                           £{(() => {
                             const venuePrice = getVenuePackagePrice(selectedPackage)
                             const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
                             const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
-                            const cateringPrice = selectedCatering ? selectedCatering.pricePerHead * cateringGuestCount : 0
+                            const cateringPrice = selectedCatering ? roundMoney(selectedCatering.pricePerHead * cateringGuestCount) : 0
                             const addonsPrice = selectedAddons.reduce((sum, addonId) => {
                               const addon = availableAddons.find(a => a.id === addonId)
                               return sum + (addon?.price || 0)
                             }, 0)
-                            return (venuePrice + cateringPrice + addonsPrice).toFixed(2)
+                            return roundMoney(venuePrice + cateringPrice + addonsPrice).toFixed(2)
                           })()}
                         </span>
                       </div>
@@ -3496,6 +3906,340 @@ export default function SupplierCustomizationModal({
 
           {/* Category-specific disclaimer note */}
           <SupplierNote category={supplierType} className="py-3 px-4" />
+
+          {/* Info Accordions Section */}
+          <div className="px-6 pb-6 space-y-0 border-t border-gray-200 mt-4 pt-4">
+            {(() => {
+              const serviceDetails = supplier?.serviceDetails || supplier?.service_details || {}
+              const AccordionItem = ({ id, title, children }) => {
+                const isOpen = openAccordion === id
+                return (
+                  <div className="border-b border-gray-100 last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => setOpenAccordion(isOpen ? null : id)}
+                      className="w-full flex items-center justify-between py-3 text-left"
+                    >
+                      <span className="font-semibold text-gray-800 uppercase text-xs tracking-wide">{title}</span>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 pb-3' : 'max-h-0'}`}>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        {children}
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              // Helper to format age groups for entertainers
+              const formatAgeRange = (ageGroups) => {
+                if (!ageGroups?.length) return 'All ages'
+                const ages = ageGroups.flatMap(group => {
+                  const matches = group.match(/\d+/g)
+                  return matches ? matches.map(Number) : []
+                })
+                if (ages.length === 0) return ageGroups.join(', ')
+                const min = Math.min(...ages)
+                const max = Math.max(...ages)
+                if (min === max) return `${min} years`
+                return `${min}-${max} years`
+              }
+
+              const ageGroups = serviceDetails?.ageGroups || []
+
+              return (
+                <>
+                  {/* ===== ENTERTAINMENT ACCORDIONS ===== */}
+                  {supplierTypeDetection.isEntertainment && (
+                    <>
+                      {ageGroups.length > 0 && (
+                        <AccordionItem id="entertainer-ages" title="Suitable Ages">
+                          <p>Perfect for children aged {formatAgeRange(ageGroups)}.</p>
+                        </AccordionItem>
+                      )}
+
+                      {serviceDetails.performanceSpecs?.spaceRequired && (
+                        <AccordionItem id="entertainer-space" title="Space Required">
+                          <p>{serviceDetails.performanceSpecs.spaceRequired}</p>
+                        </AccordionItem>
+                      )}
+
+                      {serviceDetails.travelRadius && (
+                        <AccordionItem id="entertainer-coverage" title="Coverage Area">
+                          <p>Available for bookings up to {serviceDetails.travelRadius} miles from their location.</p>
+                        </AccordionItem>
+                      )}
+
+                      <AccordionItem id="entertainer-schedule" title="Party Schedule">
+                        <p>• Entertainer arrives 15-30 minutes before to setup</p>
+                        <p>• First hour of games and activities</p>
+                        <p>• 20 minutes for food and refreshments</p>
+                        <p>• Final 40 minutes of more entertainment</p>
+                      </AccordionItem>
+
+                      {serviceDetails.personalBio?.personalStory && (
+                        <AccordionItem id="entertainer-bio" title="Meet the Entertainer">
+                          {serviceDetails.personalBio.yearsExperience && (
+                            <p className="mb-2">
+                              <span className="font-medium text-gray-900">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties.
+                            </p>
+                          )}
+                          <p>{serviceDetails.personalBio.personalStory}</p>
+                        </AccordionItem>
+                      )}
+
+                      <AccordionItem id="entertainer-equipment" title="What's Included">
+                        <p>Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== FACE PAINTING ACCORDIONS ===== */}
+                  {supplierTypeDetection.isFacePainting && (
+                    <>
+                      <AccordionItem id="fp-included" title="What's Included">
+                        <p>• Professional face paints and materials</p>
+                        <p>• Range of designs for all ages</p>
+                        <p>• Glitter and gems for extra sparkle</p>
+                        <p>• Theme-matching designs available</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="fp-setup" title="Setup & Requirements">
+                        <p><span className="font-medium text-gray-900">Space needed:</span> {serviceDetails?.spaceRequired || 'One table and two chairs in a well-lit area.'}</p>
+                        <p><span className="font-medium text-gray-900">Setup:</span> Artist arrives 15 mins early to prepare.</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="fp-safety" title="Safety & Hygiene">
+                        <p>All paints are hypoallergenic and FDA-approved. Fresh sponges and brushes used for each child.</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="fp-kids" title="How Many Kids?">
+                        <p>Typically 8-12 faces per hour depending on design complexity. Simple designs are faster!</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== BOUNCY CASTLE ACCORDIONS ===== */}
+                  {supplierTypeDetection.isBouncyCastle && (
+                    <>
+                      <AccordionItem id="bc-duration" title="Hire Duration">
+                        <p>Included for the full duration of your party.</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="bc-space" title="Space Required">
+                        <p>{serviceDetails?.spaceRequired || 'Flat outdoor area or large indoor space with high ceiling.'}</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="bc-setup" title="Setup & Collection">
+                        <p><span className="font-medium text-gray-900">Setup:</span> We arrive 30-45 minutes before to inflate and secure the castle.</p>
+                        <p><span className="font-medium text-gray-900">Collection:</span> We pack away after your party - you don't need to do anything!</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="bc-safety" title="Safety Information">
+                        <p>All castles are safety-tested and we provide safety mats.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== ACTIVITIES / SOFT PLAY ACCORDIONS ===== */}
+                  {supplierTypeDetection.isMultiSelect && (
+                    <>
+                      <AccordionItem id="act-age" title="Suitable Ages">
+                        <p>{serviceDetails?.ageRange || 'Ages 1-6 years'}</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="act-space" title="Space Required">
+                        <p>{serviceDetails?.spaceRequired || 'Minimum 3m x 3m clear floor area'}</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="act-setup" title="Setup & Collection">
+                        <p><span className="font-medium text-gray-900">Delivery:</span> {serviceDetails?.setupTime || 'We deliver and set up 30-60 mins before your party starts'}</p>
+                        <p><span className="font-medium text-gray-900">Collection:</span> {serviceDetails?.collectionTime || 'Collected after your party - no need to pack anything away!'}</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="act-safety" title="Safety Information">
+                        <p>All equipment is cleaned and safety-checked before every hire.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== CAKES ACCORDIONS ===== */}
+                  {supplierTypeDetection.isCake && (
+                    <>
+                      <AccordionItem id="delivery" title="Delivery Information">
+                        {serviceDetails.deliveryInfo ? (
+                          <p>{serviceDetails.deliveryInfo}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered to your venue or home address</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="collection" title="Collection Information">
+                        {serviceDetails.collectionInfo ? (
+                          <p>{serviceDetails.collectionInfo}</p>
+                        ) : (
+                          <p>Collection available — address provided after booking confirmation.</p>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="allergens" title="Allergens">
+                        {serviceDetails.allergens ? (
+                          <p>{serviceDetails.allergens}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Sponge:</span> Eggs, Milk, Gluten (Wheat)</p>
+                            <p><span className="font-medium text-gray-900">Fillings:</span> Milk, Soya, Gluten, Eggs, Nuts</p>
+                            <p className="text-xs text-gray-500 mt-2">Please inform us of any allergies when booking.</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="cakecare" title="Important Cake Care Guide">
+                        {serviceDetails.cakeCare ? (
+                          <p>{serviceDetails.cakeCare}</p>
+                        ) : (
+                          <>
+                            <p>Store in a cool, dry place away from direct sunlight.</p>
+                            <p>Keep refrigerated if not serving within 24 hours.</p>
+                            <p>Remove from fridge 1-2 hours before serving for best taste.</p>
+                          </>
+                        )}
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== CATERING ACCORDIONS ===== */}
+                  {supplierTypeDetection.isCatering && (
+                    <>
+                      <AccordionItem id="catering-delivery" title="Delivery Information">
+                        {serviceDetails.deliveryInfo ? (
+                          <p>{serviceDetails.deliveryInfo}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered fresh to your venue</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="catering-allergens" title="Allergens & Dietary">
+                        {serviceDetails.allergens ? (
+                          <p>{serviceDetails.allergens}</p>
+                        ) : (
+                          <>
+                            <p>Please inform us of any allergies or dietary requirements when booking.</p>
+                            <p className="text-xs text-gray-500 mt-2">We can accommodate most dietary needs with advance notice.</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="catering-storage" title="Storage & Serving">
+                        <p>Keep refrigerated until serving. Best consumed within 24 hours of delivery.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== BALLOONS ACCORDIONS ===== */}
+                  {supplierTypeDetection.isBalloons && (
+                    <>
+                      <AccordionItem id="delivery" title="Delivery Information">
+                        {serviceDetails.deliveryInfo ? (
+                          <p>{serviceDetails.deliveryInfo}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered to your venue or home address</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="duration" title="How Long They Last">
+                        {serviceDetails.duration ? (
+                          <p>{serviceDetails.duration}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Helium balloons:</span> 12-24 hours float time</p>
+                            <p><span className="font-medium text-gray-900">Air-filled:</span> Several days to weeks</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="customisation" title="Customisation">
+                        {serviceDetails.customisation ? (
+                          <p>{serviceDetails.customisation}</p>
+                        ) : (
+                          <p>Colours and styles may vary slightly. We always match your theme as closely as possible.</p>
+                        )}
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== PARTY BAGS ACCORDIONS ===== */}
+                  {supplierTypeDetection.isPartyBags && (
+                    <>
+                      <AccordionItem id="pb-delivery" title="Delivery Information">
+                        {serviceDetails.deliveryInfo ? (
+                          <p>{serviceDetails.deliveryInfo}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered to your venue or home address</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="pb-contents" title="What's Included">
+                        <p>Each party bag contains a selection of themed toys, treats, and surprises appropriate for the party theme.</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="pb-allergens" title="Allergens">
+                        <p>Party bags may contain items with allergens. Please inform us of any allergies when booking.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== DECORATIONS ACCORDIONS ===== */}
+                  {supplierTypeDetection.isDecorations && (
+                    <>
+                      <AccordionItem id="deco-delivery" title="Delivery Information">
+                        {serviceDetails.deliveryInfo ? (
+                          <p>{serviceDetails.deliveryInfo}</p>
+                        ) : (
+                          <>
+                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered to your venue or home address</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                          </>
+                        )}
+                      </AccordionItem>
+
+                      <AccordionItem id="deco-setup" title="Setup Tips">
+                        <p>Decorations arrive ready to display. No assembly required for most items.</p>
+                      </AccordionItem>
+
+                      <AccordionItem id="deco-customisation" title="Customisation">
+                        <p>Colours and styles matched to your party theme. Minor variations may occur.</p>
+                      </AccordionItem>
+                    </>
+                  )}
+
+                  {/* ===== GENERAL LEAD TIME (for categories that need it) ===== */}
+                  {(supplierTypeDetection.isCake || supplierTypeDetection.isPartyBags || supplierTypeDetection.isBalloons || supplierTypeDetection.isDecorations || supplierTypeDetection.isCatering) && (
+                    <AccordionItem id="leadtime" title="Lead Time">
+                      {serviceDetails.leadTime ? (
+                        <p>{typeof serviceDetails.leadTime === 'object' ? serviceDetails.leadTime.minimum : serviceDetails.leadTime} days notice required</p>
+                      ) : (
+                        <p>5-7 days notice recommended. Contact us for rush orders.</p>
+                      )}
+                    </AccordionItem>
+                  )}
+                </>
+              )
+            })()}
+          </div>
         </div>
 
         <div className="border-t border-gray-200 p-5 flex-shrink-0 bg-white">
@@ -3518,7 +4262,8 @@ export default function SupplierCustomizationModal({
               disabled={
                 // For multi-select, require at least one item; for others, require package selection
                 // Face painting doesn't need package selection (flat rate)
-                (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting)) ||
+                // Venues don't require package selection - they use priceFrom
+                (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
                 isAdding ||
                 !canAddCheck.canAdd
               }
@@ -3548,7 +4293,9 @@ export default function SupplierCustomizationModal({
             </Button>
           </div>
         </div>
-      </div>
+            </div>
+          </div>
+        </div>
 
       {/* Package Details Modal - Simple what's included view */}
       <PackageDetailsModal
@@ -3559,6 +4306,61 @@ export default function SupplierCustomizationModal({
           setSelectedPackageForModal(null)
         }}
       />
+
+      {/* Lightbox Modal for fullscreen images */}
+      {showLightbox && supplierImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
+          onClick={() => setShowLightbox(false)}
+        >
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            <Image
+              src={supplierImages[lightboxIndex]}
+              alt={`${supplier.name} - Image ${lightboxIndex + 1}`}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Lightbox navigation */}
+          {supplierImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightboxIndex((prev) => (prev === 0 ? supplierImages.length - 1 : prev - 1))
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLightboxIndex((prev) => (prev === supplierImages.length - 1 ? 0 : prev + 1))
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </button>
+
+              {/* Lightbox counter */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white/10 rounded-full">
+                <span className="text-white text-sm">{lightboxIndex + 1} / {supplierImages.length}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

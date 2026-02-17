@@ -1666,19 +1666,37 @@ const getAutoCakeDefaults = (supplier, guestCount) => {
   const packages = supplier?.packages || supplier?.data?.packages || []
   if (packages.length === 0) return null
 
+  // Helper to parse serving size from strings like "12-15" or "24-28"
+  // Returns the minimum value for sorting, and max value for capacity check
+  const parseServings = (value) => {
+    if (typeof value === 'number') return { min: value, max: value }
+    if (!value) return { min: 10, max: 10 }
+
+    const str = String(value).replace(/[^\d-]/g, '') // Remove non-numeric except dash
+    const parts = str.split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n))
+
+    if (parts.length >= 2) {
+      return { min: Math.min(...parts), max: Math.max(...parts) }
+    } else if (parts.length === 1) {
+      return { min: parts[0], max: parts[0] }
+    }
+    return { min: 10, max: 10 }
+  }
+
   // Find the best package that feeds at least the guest count
-  // Sort by serves/feeds to find the smallest one that fits
+  // Sort by minimum serves to find the smallest one that fits
   const sortedPackages = [...packages].sort((a, b) => {
-    const aServes = a.serves || a.feeds || 10
-    const bServes = b.serves || b.feeds || 10
-    return aServes - bServes
+    const aServes = parseServings(a.serves || a.feeds)
+    const bServes = parseServings(b.serves || b.feeds)
+    return aServes.min - bServes.min
   })
 
-  // Find first package that can feed the guest count (or largest if none fit)
+  // Find first package where the MAX serving capacity >= guest count
+  // This ensures the cake can definitely feed everyone
   let selectedPackage = sortedPackages.find(pkg => {
-    const serves = pkg.serves || pkg.feeds || 10
-    return serves >= guestCount
-  }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest
+    const serves = parseServings(pkg.serves || pkg.feeds)
+    return serves.max >= guestCount
+  }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest if none fit
 
   // Get first available flavor
   const flavours = supplier?.serviceDetails?.flavours || supplier?.flavours || []
@@ -2259,6 +2277,7 @@ const addSuppliersSection = (
       <WelcomeDashboardPopup
         isOpen={showWelcomePopup}
         onClose={() => setShowWelcomePopup(false)}
+        partyTheme={partyDetails?.theme}
       />
 
       <PartyChecklistModal

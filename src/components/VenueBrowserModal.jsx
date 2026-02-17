@@ -4,7 +4,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import Image from "next/image"
 import { X, Building, ArrowLeft, SlidersHorizontal, Zap, ChevronDown, Check, Map, List } from "lucide-react"
-import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
@@ -53,32 +52,6 @@ const offersCatering = (venue) => {
                            venue.data?.cateringPackages ||
                            venue.data?.serviceDetails?.cateringPackages || []
   return Array.isArray(cateringPackages) && cateringPackages.length > 0
-}
-
-// Check if venue has customization options that require the modal
-const hasCustomizationOptions = (venue) => {
-  // Check for multiple packages
-  const packages = venue.packages ||
-                   venue.serviceDetails?.packages ||
-                   venue.data?.packages ||
-                   venue.data?.serviceDetails?.packages || []
-  const hasMultiplePackages = Array.isArray(packages) && packages.length > 1
-
-  // Check for catering packages
-  const cateringPackages = venue.cateringPackages ||
-                           venue.serviceDetails?.cateringPackages ||
-                           venue.data?.cateringPackages ||
-                           venue.data?.serviceDetails?.cateringPackages || []
-  const hasCateringPackages = Array.isArray(cateringPackages) && cateringPackages.length > 0
-
-  // Check for add-ons
-  const addons = venue.addons ||
-                 venue.serviceDetails?.addons ||
-                 venue.data?.addons ||
-                 venue.data?.serviceDetails?.addons || []
-  const hasAddons = Array.isArray(addons) && addons.length > 0
-
-  return hasMultiplePackages || hasCateringPackages || hasAddons
 }
 
 // Get venue type
@@ -228,7 +201,6 @@ export default function VenueBrowserModal({
   const isMobile = useIsMobile()
 
   // Core state
-  const [selectedForPreview, setSelectedForPreview] = useState(null)
   const [selectedForCustomization, setSelectedForCustomization] = useState(null)
   const [allVenues, setAllVenues] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -485,14 +457,9 @@ export default function VenueBrowserModal({
 
   // Handlers
   const handleSelectVenue = useCallback((venue) => {
-    // If venue has customization options, open the customization modal instead
-    if (hasCustomizationOptions(venue)) {
-      setSelectedForCustomization(venue)
-      return
-    }
-    onSelectVenue(venue)
-    onClose()
-  }, [onSelectVenue, onClose])
+    // Always open customization modal - it shows all venue info + packages/addons if any
+    setSelectedForCustomization(venue)
+  }, [])
 
   const handleMarkerClick = useCallback((venueId) => {
     setSelectedVenueId(venueId)
@@ -502,12 +469,12 @@ export default function VenueBrowserModal({
   }, [isMobile])
 
   const handleListItemClick = useCallback((venue) => {
-    // On click, open the quick view modal
-    setSelectedForPreview(venue)
+    // On click, open the customization modal
+    setSelectedForCustomization(venue)
   }, [])
 
   const handleViewDetails = useCallback((venue) => {
-    setSelectedForPreview(venue)
+    setSelectedForCustomization(venue)
     setIsBottomSheetOpen(false)
   }, [])
 
@@ -1168,22 +1135,7 @@ export default function VenueBrowserModal({
         )}
       </div>
 
-      {/* Quick View Modal */}
-      {selectedForPreview && (
-        <SupplierQuickViewModal
-          supplier={selectedForPreview}
-          isOpen={!!selectedForPreview}
-          onClose={() => setSelectedForPreview(null)}
-          type="venue"
-          onSelect={() => {
-            handleSelectVenue(selectedForPreview)
-            setSelectedForPreview(null)
-          }}
-          isSelectingSupplier={isSelectingVenue}
-        />
-      )}
-
-      {/* Customization Modal for venues with packages/addons/catering */}
+      {/* Customization Modal - shows venue info + packages/addons if any */}
       {selectedForCustomization && (
         <SupplierCustomizationModal
           isOpen={!!selectedForCustomization}

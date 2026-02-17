@@ -24,7 +24,9 @@ export default function SupplierQuickViewModal({
   partyDetails,
   type,
   onSaveVenueAddons, // NEW: Callback to save selected venue add-ons
-  isAlreadyAdded = false // NEW: Whether this supplier is already in the party plan
+  isAlreadyAdded = false, // NEW: Whether this supplier is already in the party plan
+  onSelect, // NEW: Callback to select venue (used in VenueBrowserModal)
+  isSelectingSupplier = false // NEW: Loading state when selecting
 }) {
   const [fullSupplier, setFullSupplier] = useState(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
@@ -1588,6 +1590,15 @@ export default function SupplierQuickViewModal({
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm h-12"
             >
               Close
+            </Button>
+          ) : onSelect ? (
+            /* Venue browser - show Select Venue button */
+            <Button
+              onClick={onSelect}
+              disabled={isSelectingSupplier}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-semibold text-base h-12 shadow-md"
+            >
+              {isSelectingSupplier ? 'Selecting...' : 'Select Venue'}
             </Button>
           ) : onCustomize ? (
             /* Not added yet - show Book CTA */

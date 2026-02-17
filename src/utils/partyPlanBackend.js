@@ -312,7 +312,9 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       totalPrice: calculatedPrice,
       originalPrice: selectedPackage?.originalPrice || calculatedPrice,
       addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0,
-      partyBagsMetadata: partyBagsMetadata // Store party bags metadata
+      partyBagsMetadata: partyBagsMetadata, // Store party bags metadata
+      // ✅ FIX: Store cateringMetadata at top level for easy access by pricing functions
+      cateringMetadata: selectedPackage?.cateringMetadata || null,
     };
 
 
@@ -623,6 +625,21 @@ addAddonToPlan(addon) {
           if (newPackage.totalPrice !== undefined) {
             plan[slot].packageData = plan[slot].packageData || {};
             plan[slot].packageData.totalPrice = newPackage.totalPrice;
+          }
+
+          // ✅ Save cateringMetadata for catering suppliers
+          if (newPackage.cateringMetadata) {
+            plan[slot].cateringMetadata = newPackage.cateringMetadata;
+            plan[slot].packageData = plan[slot].packageData || {};
+            plan[slot].packageData.cateringMetadata = newPackage.cateringMetadata;
+            plan[slot].packageData.totalPrice = newPackage.cateringMetadata.totalPrice;
+          }
+
+          // ✅ Save selectedAddons so they persist when modal reopens
+          if (newPackage.selectedAddons !== undefined) {
+            plan[slot].selectedAddons = newPackage.selectedAddons;
+            plan[slot].packageData = plan[slot].packageData || {};
+            plan[slot].packageData.selectedAddons = newPackage.selectedAddons;
           }
 
           // ✅ Update features and description if provided

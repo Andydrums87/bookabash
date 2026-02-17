@@ -8,7 +8,7 @@ import { ChevronDown, Search, X,  UsersIcon, } from "lucide-react"
 const eventTypes = [
 
   // Popular themes
-  { value: "no-theme", label: "No theme - Keep it simple!", category: "Popular"   },
+  { value: "no-theme", label: "No theme", category: "Popular"   },
   { value: "princess", label: "Princess", category: "Popular" },
   { value: "superhero", label: "Superhero", category: "Popular" },
   { value: "spiderman", label: "Spiderman", category: "Popular" },

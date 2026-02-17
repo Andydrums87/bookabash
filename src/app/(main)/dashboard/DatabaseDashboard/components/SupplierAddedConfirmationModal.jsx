@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Check, ShoppingBag, CreditCard, X, Clock, Sparkles, Plus, CheckCircle, ImageIcon } from 'lucide-react'
 import Image from 'next/image'
+import { roundMoney } from '@/utils/unifiedPricing'
 
 export default function SupplierAddedConfirmationModal({
   isOpen,
@@ -335,7 +336,7 @@ export default function SupplierAddedConfirmationModal({
                             <div className="mb-1">
                               <p className="font-bold text-[hsl(var(--primary-600))] text-base">
                                 {isPartyBags ? (
-                                  `£${(pkg.price * partyBagsQuantity).toFixed(2)}`
+                                  `£${roundMoney(pkg.price * partyBagsQuantity).toFixed(2)}`
                                 ) : (
                                   `£${pkg.price}`
                                 )}
@@ -446,7 +447,7 @@ export default function SupplierAddedConfirmationModal({
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-gray-900 text-sm">Total:</span>
                         <span className="font-bold text-xl text-gray-900">
-                          £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                          £{roundMoney(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
                         </span>
                       </div>
                     </div>

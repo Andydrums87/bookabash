@@ -1,6 +1,16 @@
 // utils/unifiedPricing.js - Updated with additional entertainer logic
 
 /**
+ * Round a number to 2 decimal places to avoid floating point precision issues
+ * This is critical for monetary calculations (e.g., 2.35 * 11 = 25.850000000000005)
+ * @param {number} value - The value to round
+ * @returns {number} Value rounded to 2 decimal places
+ */
+const roundMoney = (value) => {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+};
+
+/**
  * Check if supplier is lead-based (fixed price, not affected by date/duration)
  * @param {Object} supplier - Supplier object
  * @returns {boolean} True if lead-based supplier
@@ -102,7 +112,7 @@ const calculateAdditionalEntertainerCost = (supplier, guestCount) => {
   if (guestCount > groupSizeMax) {
     const excessGuests = guestCount - groupSizeMax;
     const additionalEntertainers = Math.ceil(excessGuests / groupSizeMax);
-    const additionalEntertainerCost = additionalEntertainers * additionalEntertainerPrice;
+    const additionalEntertainerCost = roundMoney(additionalEntertainers * additionalEntertainerPrice);
 
 
     return {
@@ -154,8 +164,8 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
     // Calculate from packageData if available
     if (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity) {
-      const total = supplier.packageData.price * supplier.packageData.partyBagsQuantity;
-   
+      const total = roundMoney(supplier.packageData.price * supplier.packageData.partyBagsQuantity);
+
       return total;
     }
 
@@ -165,7 +175,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                     supplier.partyBagsMetadata?.quantity ||
                     supplier.packageData?.partyBagsQuantity ||
                     getGuestCount(partyDetails);
-    const total = pricePerBag * quantity;
+    const total = roundMoney(pricePerBag * quantity);
 
 
     return total;
@@ -190,7 +200,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
     // Calculate from packageData if available (pricePerChild × quantity)
     if (supplier.packageData?.price && supplier.cateringMetadata?.quantity) {
-      const total = supplier.packageData.price * supplier.cateringMetadata.quantity;
+      const total = roundMoney(supplier.packageData.price * supplier.cateringMetadata.quantity);
       return total;
     }
 
@@ -199,7 +209,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     const quantity = supplier.cateringMetadata?.quantity ||
                     supplier.packageData?.quantity ||
                     getGuestCount(partyDetails);
-    const total = pricePerChild * quantity;
+    const total = roundMoney(pricePerChild * quantity);
     return total;
   }
 
@@ -232,7 +242,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
     // Calculate from packageData if available (pricePerSet × packSize)
     if (supplier.packageData?.price && supplier.decorationsMetadata?.packSize) {
-      const total = supplier.packageData.price * supplier.decorationsMetadata.packSize;
+      const total = roundMoney(supplier.packageData.price * supplier.decorationsMetadata.packSize);
       return total;
     }
 
@@ -242,7 +252,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                     supplier.packageData?.packSize ||
                     supplier.packageData?.quantity ||
                     getGuestCount(partyDetails);
-    const total = pricePerSet * packSize;
+    const total = roundMoney(pricePerSet * packSize);
     return total;
   }
 
@@ -281,14 +291,29 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
       return supplier.originalPrice;
     }
 
-    // Calculate venue price from hourly rate × total hours
-    const hourlyRate = supplier.serviceDetails?.pricing?.hourlyRate || 0;
+    // Get minimum booking hours from serviceDetails
     const totalVenueHours = supplier.serviceDetails?.pricing?.minimumBookingHours ||
-                            supplier.serviceDetails?.availability?.minimumBookingHours || 4;
-    const calculatedPrice = hourlyRate * totalVenueHours;
+                            supplier.serviceDetails?.availability?.minimumBookingHours ||
+                            supplier.data?.serviceDetails?.pricing?.minimumBookingHours ||
+                            supplier.data?.serviceDetails?.availability?.minimumBookingHours || 4;
 
-    if (calculatedPrice > 0) {
-      return calculatedPrice;
+    // Check if venue uses hourly pricing (either from serviceDetails or priceUnit)
+    const hourlyRateFromDetails = supplier.serviceDetails?.pricing?.hourlyRate ||
+                                  supplier.data?.serviceDetails?.pricing?.hourlyRate || 0;
+    const priceUnit = supplier.priceUnit || supplier.data?.priceUnit || '';
+    const isHourlyPricing = priceUnit.toLowerCase().includes('hour');
+
+    // Calculate venue price from hourly rate × total hours
+    if (hourlyRateFromDetails > 0) {
+      const calculatedPrice = roundMoney(hourlyRateFromDetails * totalVenueHours);
+      if (calculatedPrice > 0) {
+        return calculatedPrice;
+      }
+    }
+
+    // If priceFrom is an hourly rate (indicated by priceUnit), calculate full price
+    if (supplier.priceFrom && supplier.priceFrom > 0 && isHourlyPricing) {
+      return roundMoney(supplier.priceFrom * totalVenueHours);
     }
 
     // Fall back to package price if available
@@ -296,12 +321,8 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
       return supplier.packageData.price;
     }
 
-    // Last resort: use priceFrom (but this might be hourly rate, so multiply)
+    // Last resort: use priceFrom as flat rate
     if (supplier.priceFrom && supplier.priceFrom > 0) {
-      // If priceFrom looks like an hourly rate (< 100), calculate full price
-      if (supplier.priceFrom < 100) {
-        return supplier.priceFrom * totalVenueHours;
-      }
       return supplier.priceFrom;
     }
 
@@ -362,10 +383,11 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     console.warn('⚠️ calculateFinalPrice: No party details provided for', supplier.name);
     const basePrice = getTrueBasePrice(supplier, {});
     const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0;
+    const cupcakesPrice = supplier.packageData?.cakeCustomization?.cupcakesPrice || 0;
     return {
-      finalPrice: basePrice + cakeDeliveryFee,
+      finalPrice: basePrice + cakeDeliveryFee + cupcakesPrice,
       basePrice,
-      breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0, deliveryFee: cakeDeliveryFee },
+      breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0, deliveryFee: cakeDeliveryFee, cupcakes: cupcakesPrice },
       details: {
         isWeekend: false,
         extraHours: 0,
@@ -374,6 +396,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
         additionalEntertainers: 0,
         guestsPerEntertainer: 0,
         cakeDeliveryFee,
+        cupcakesPrice,
+        cupcakeOption: supplier.packageData?.cakeCustomization?.cupcakeOption || null,
         fulfillmentMethod: supplier.packageData?.cakeCustomization?.fulfillmentMethod || null
       }
     };
@@ -398,7 +422,7 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     if (supplier.weekendPremium.type === 'fixed') {
       weekendPremium = supplier.weekendPremium.amount || 0;
     } else if (supplier.weekendPremium.type === 'percentage') {
-      weekendPremium = Math.round((basePrice * supplier.weekendPremium.percentage) / 100);
+      weekendPremium = roundMoney((basePrice * supplier.weekendPremium.percentage) / 100);
     }
   } else if (isLeadBased && isWeekend) {
 
@@ -415,21 +439,35 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
 
   if (!isLeadBased && partyDuration > standardDuration && extraHourRate > 0) {
     extraHours = partyDuration - standardDuration;
-    extraHourCost = extraHours * extraHourRate;
+    extraHourCost = roundMoney(extraHours * extraHourRate);
     
 
   } else if (isLeadBased && partyDuration > standardDuration) {
 
   }
 
-  // 5. Calculate addons total
-  const addonsTotal = addons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+  // 5. Calculate addons total - handle per-child pricing for catering
+  const isCatering = supplier.category === 'Catering' || supplier.category?.toLowerCase().includes('catering') || supplier.category?.toLowerCase().includes('lunchbox');
+  const cateringQuantity = supplier.cateringMetadata?.quantity || supplier.packageData?.cateringMetadata?.quantity || guestCount;
+
+  const addonsTotal = roundMoney(addons.reduce((sum, addon) => {
+    // Check if addon is per-child pricing (for catering)
+    // Note: data may use snake_case (per_child, per_head, per_item) or camelCase (perChild, perHead, perItem)
+    const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_child' || addon.priceType === 'per_head' || addon.priceType === 'perItem' || addon.priceType === 'per_item';
+    if (isPerChild && isCatering) {
+      return sum + roundMoney((addon.price || 0) * cateringQuantity);
+    }
+    return sum + (addon.price || 0);
+  }, 0));
 
   // 6. Calculate cake delivery fee (if applicable)
   const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0;
 
-  // 7. Calculate final price (including additional entertainers and cake delivery)
-  const finalPrice = basePrice + weekendPremium + extraHourCost + addonsTotal + entertainerCalc.additionalEntertainerCost + cakeDeliveryFee;
+  // 7. Calculate cupcakes price (if applicable)
+  const cupcakesPrice = supplier.packageData?.cakeCustomization?.cupcakesPrice || 0;
+
+  // 8. Calculate final price (including additional entertainers, cake delivery, and cupcakes)
+  const finalPrice = roundMoney(basePrice + weekendPremium + extraHourCost + addonsTotal + entertainerCalc.additionalEntertainerCost + cakeDeliveryFee + cupcakesPrice);
 
   return {
     finalPrice,
@@ -440,7 +478,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       extraHours: extraHourCost,
       addons: addonsTotal,
       additionalEntertainers: entertainerCalc.additionalEntertainerCost,
-      deliveryFee: cakeDeliveryFee
+      deliveryFee: cakeDeliveryFee,
+      cupcakes: cupcakesPrice
     },
     details: {
       isWeekend,
@@ -455,6 +494,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       guestsPerEntertainer: entertainerCalc.guestsPerEntertainer,
       additionalEntertainerPrice: supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0,
       cakeDeliveryFee,
+      cupcakesPrice,
+      cupcakeOption: supplier.packageData?.cakeCustomization?.cupcakeOption || null,
       fulfillmentMethod: supplier.packageData?.cakeCustomization?.fulfillmentMethod || null
     }
   }
@@ -528,14 +569,14 @@ export const calculatePartyTotal = (suppliers, addons = [], partyDetails = {}) =
   });
 
   // Add standalone addons (not attached to any supplier)
-  const standaloneAddons = addons.filter(addon => 
+  const standaloneAddons = addons.filter(addon =>
     !addon.supplierId && !addon.supplierType && !addon.attachedToSupplier
   );
-  const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
-  total += standaloneAddonsTotal;
+  const standaloneAddonsTotal = roundMoney(standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0));
+  total = roundMoney(total + standaloneAddonsTotal);
 
   return {
-    total,
+    total: roundMoney(total),
     supplierBreakdown,
     totals: {
       weekend: totalWeekendPremium,
@@ -937,4 +978,4 @@ export const getAdditionalEntertainerInfo = (supplier, guestCount) => {
 };
 
 // Export all helper functions
-export { isWeekendDate };
+export { isWeekendDate, roundMoney };

@@ -2,15 +2,15 @@
 "use client"
 
 import React, { useState } from "react"
-import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin, Camera, RefreshCw } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
-import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
+import { roundMoney } from "@/utils/unifiedPricing"
 
 export default function MyPartyTabContent({
   suppliers = {},
@@ -32,7 +32,6 @@ export default function MyPartyTabContent({
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
-  const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [selectedSupplierType, setSelectedSupplierType] = useState(null) // Track supplier type for modal
   const [showPlanInfo, setShowPlanInfo] = useState(false)
@@ -101,6 +100,8 @@ export default function MyPartyTabContent({
         packageData: supplier.packageData,
         partyBagsQuantity: supplier.partyBagsQuantity,
         partyBagsMetadata: supplier.partyBagsMetadata,
+        // ✅ FIX: Also preserve cateringMetadata for catering suppliers
+        cateringMetadata: supplier.cateringMetadata,
         selectedAddons: supplier.selectedAddons,
         pricePerBag: supplier.pricePerBag,
       }
@@ -384,11 +385,19 @@ export default function MyPartyTabContent({
   }
 
   const renderSupplierCard = ([type, supplier]) => {
-    const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+    // ✅ FIX: Merge global addons with supplier.selectedAddons (same fix as SelectedSupplierCard)
+    // Prioritize supplier.selectedAddons since they have more complete data (e.g., priceType)
+    const globalAddons = Array.isArray(addons) ? addons.filter(addon =>
       addon.supplierId === supplier.id ||
       addon.supplierType === type ||
       addon.attachedToSupplier === type
     ) : []
+    const supplierSelectedAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || []
+    // Put supplierSelectedAddons FIRST so they take priority in dedupe
+    const allAddons = [...supplierSelectedAddons, ...globalAddons]
+    const supplierAddons = allAddons.filter((addon, index, arr) =>
+      arr.findIndex(a => a.id === addon.id) === index
+    )
 
     // ✅ DEBUG: Log party bags data
     const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
@@ -425,7 +434,7 @@ export default function MyPartyTabContent({
         basePrice = supplier.partyBagsMetadata?.totalPrice ||
                     supplier.packageData?.totalPrice ||
                     (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                      ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                      ? roundMoney(supplier.packageData.price * supplier.packageData.partyBagsQuantity)
                       : null)
 
         // If no metadata exists, use price as-is (it's likely already the total)
@@ -460,10 +469,10 @@ export default function MyPartyTabContent({
         <div
           className="relative h-64 w-full cursor-pointer group/image"
           onClick={(e) => {
-            // Don't open quick view if clicking on a button inside the image area
+            // Don't open modal if clicking on a button inside the image area
             if (e.target.closest('button')) return
             e.stopPropagation()
-            setSelectedSupplierForQuickView(supplier)
+            fetchFullSupplierData(supplier, type)
           }}
         >
           {/* Use package image for balloons, face painting, activities, sweet treats, and decorations if available */}
@@ -624,29 +633,17 @@ export default function MyPartyTabContent({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="px-4 bg-white flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedSupplierForQuickView(supplier)
-              setSelectedSupplierType(type)
-            }}
-            variant="outline"
-            className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            View
-          </Button>
+        {/* Action Button - Single unified modal */}
+        <div className="px-4 bg-white">
           <Button
             onClick={(e) => {
               e.stopPropagation()
               fetchFullSupplierData(supplier, type)
             }}
-            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white"
           >
-            <Wand2 className="w-4 h-4 mr-2" />
-            Customize
+            <Eye className="w-4 h-4 mr-2" />
+            View & Edit
           </Button>
         </div>
 
@@ -664,11 +661,17 @@ export default function MyPartyTabContent({
 
   // Calculate total cost
   const totalCost = allSuppliers.reduce((sum, [type, supplier]) => {
-    const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+    // ✅ FIX: Merge global addons with supplier.selectedAddons
+    const globalAddons = Array.isArray(addons) ? addons.filter(addon =>
       addon.supplierId === supplier.id ||
       addon.supplierType === type ||
       addon.attachedToSupplier === type
     ) : []
+    const supplierSelectedAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || []
+    const allAddons = [...supplierSelectedAddons, ...globalAddons]
+    const supplierAddons = allAddons.filter((addon, index, arr) =>
+      arr.findIndex(a => a.id === addon.id) === index
+    )
 
     // ✅ USE: Unified pricing function if available
     if (getSupplierDisplayPricing) {
@@ -686,7 +689,7 @@ export default function MyPartyTabContent({
       basePrice = supplier.partyBagsMetadata?.totalPrice ||
                   supplier.packageData?.totalPrice ||
                   (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                    ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                    ? roundMoney(supplier.packageData.price * supplier.packageData.partyBagsQuantity)
                     : null)
 
       if (!basePrice) {
@@ -990,11 +993,17 @@ export default function MyPartyTabContent({
 
                       let displayPrice = 0
                       if (getSupplierDisplayPricing) {
-                        const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+                        // ✅ FIX: Merge global addons with supplier.selectedAddons
+                        const globalAddons = Array.isArray(addons) ? addons.filter(addon =>
                           addon.supplierId === supplier.id ||
                           addon.supplierType === type ||
                           addon.attachedToSupplier === type
                         ) : []
+                        const supplierSelectedAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || []
+                        const allAddons = [...supplierSelectedAddons, ...globalAddons]
+                        const supplierAddons = allAddons.filter((addon, index, arr) =>
+                          arr.findIndex(a => a.id === addon.id) === index
+                        )
                         const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
                         displayPrice = pricing?.basePrice || 0
 
@@ -1033,12 +1042,26 @@ export default function MyPartyTabContent({
               <div className="mb-4 pt-3 border-t border-gray-200">
                 <h4 className="font-semibold text-gray-900 mb-3 text-sm">Add-ons</h4>
                 <div className="space-y-2">
-                  {addons.map((addon) => (
-                    <div key={addon.id} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{addon.name}</span>
-                      <span className="font-semibold text-gray-900">£{addon.price || 0}</span>
-                    </div>
-                  ))}
+                  {addons.map((addon) => {
+                    // Calculate addon display price - handle per-child pricing for catering
+                    const attachedSupplier = Object.values(suppliers).find(s =>
+                      s && (addon.supplierId === s.id || addon.supplierType === s.category)
+                    )
+                    const isCatering = attachedSupplier?.category === 'Catering' || attachedSupplier?.category?.toLowerCase().includes('catering') || attachedSupplier?.category?.toLowerCase().includes('lunchbox')
+                    // Note: data may use snake_case (per_child, per_head, per_item) or camelCase (perChild, perHead, perItem)
+                    const isPerChild = addon.priceType === 'perChild' || addon.priceType === 'per_child' || addon.priceType === 'per_head' || addon.priceType === 'perItem' || addon.priceType === 'per_item'
+                    const cateringQuantity = attachedSupplier?.cateringMetadata?.quantity || attachedSupplier?.packageData?.cateringMetadata?.quantity || partyDetails?.guestCount || 10
+                    const addonDisplayPrice = (isPerChild && isCatering)
+                      ? roundMoney((addon.price || 0) * cateringQuantity)
+                      : (addon.price || 0)
+
+                    return (
+                      <div key={addon.id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{addon.name}</span>
+                        <span className="font-semibold text-gray-900">£{addonDisplayPrice.toFixed(2)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -1050,11 +1073,17 @@ export default function MyPartyTabContent({
                 .filter(([type, s]) => s)
                 .reduce((sum, [type, supplier]) => {
                   if (getSupplierDisplayPricing) {
-                    const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+                    // ✅ FIX: Merge global addons with supplier.selectedAddons
+                    const globalAddons = Array.isArray(addons) ? addons.filter(addon =>
                       addon.supplierId === supplier.id ||
                       addon.supplierType === type ||
                       addon.attachedToSupplier === type
                     ) : []
+                    const supplierSelectedAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || []
+                    const allAddons = [...supplierSelectedAddons, ...globalAddons]
+                    const supplierAddons = allAddons.filter((addon, index, arr) =>
+                      arr.findIndex(a => a.id === addon.id) === index
+                    )
                     const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
                     return sum + (pricing?.basePrice || 0)
                   }
@@ -1126,17 +1155,7 @@ export default function MyPartyTabContent({
         </>
       )}
 
-      {/* Quick View Modal */}
-      {selectedSupplierForQuickView && (
-        <SupplierQuickViewModal
-          supplier={selectedSupplierForQuickView}
-          isOpen={!!selectedSupplierForQuickView}
-          onClose={() => setSelectedSupplierForQuickView(null)}
-          isAlreadyAdded={true}
-        />
-      )}
-
-      {/* Customization Modal */}
+      {/* Unified Customization Modal */}
       {selectedSupplierForCustomize && (
         <SupplierCustomizationModal
           supplier={selectedSupplierForCustomize}

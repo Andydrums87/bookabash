@@ -2,6 +2,7 @@
 
 import { Trash2, Pencil, Lock } from "lucide-react"
 import { canEditBooking } from "@/utils/editDeadline"
+import { roundMoney } from "@/utils/unifiedPricing"
 
 export default function MyPlanTabContent({
   visibleSuppliers,
@@ -90,7 +91,7 @@ export default function MyPlanTabContent({
                 supplier.priceFrom ||
                 0
 
-              basePrice = pricePerBag * quantity
+              basePrice = roundMoney(pricePerBag * quantity)
             } else {
               basePrice = supplier.packageData?.price || supplier.price || 0
             }

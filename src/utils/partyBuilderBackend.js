@@ -113,6 +113,18 @@ class PartyBuilderBackend {
 
       let selectedPackage;
 
+      // Helper to get preferred colourScheme based on gender
+      const getPreferredColour = (gender) => {
+        if (gender === 'boy') return 'blue';
+        if (gender === 'girl') return 'pink';
+        if (gender === 'neutral') return 'rainbow';
+        return null;
+      };
+
+      const gender = partyDetails?.gender;
+      const preferredColour = getPreferredColour(gender);
+      const isNoTheme = theme === 'no-theme' || !theme;
+
       if (isCakeSupplier && partyDetails?.guestCount) {
         // For cakes, select based on total attendees (children + adults)
         // Adults want cake too!
@@ -121,14 +133,25 @@ class PartyBuilderBackend {
 
         console.log(`🎂 Cake sizing: ${attendees.children} children + ${attendees.adults} adults = ${totalForCake} people`);
 
-        const sortedByServings = [...supplier.packages].sort((a, b) => {
-          const aServes = parseInt(a.serves) || parseInt(a.feeds) || 10;
-          const bServes = parseInt(b.serves) || parseInt(b.feeds) || 10;
+        let sortedByServings = [...supplier.packages].sort((a, b) => {
+          const aServes = parseInt(a.serves) || parseInt(a.feeds) || parseInt(a.servings) || 10;
+          const bServes = parseInt(b.serves) || parseInt(b.feeds) || parseInt(b.servings) || 10;
           return aServes - bServes;
         });
 
+        // For no-theme parties, filter by colour scheme first
+        if (isNoTheme && preferredColour) {
+          const colourFilteredPackages = sortedByServings.filter(pkg =>
+            pkg.colourScheme?.toLowerCase() === preferredColour
+          );
+          if (colourFilteredPackages.length > 0) {
+            sortedByServings = colourFilteredPackages;
+            console.log(`🎨 Filtered cakes by colour: ${preferredColour}`);
+          }
+        }
+
         selectedPackage = sortedByServings.find(pkg => {
-          const serves = parseInt(pkg.serves) || parseInt(pkg.feeds) || 10;
+          const serves = parseInt(pkg.serves) || parseInt(pkg.feeds) || parseInt(pkg.servings) || 10;
           return serves >= totalForCake;
         }) || sortedByServings[sortedByServings.length - 1];
       } else {
@@ -139,12 +162,24 @@ class PartyBuilderBackend {
           return priceA - priceB;
         });
 
-        // Try to find cheapest theme-specific package first
-        const themePackages = sortedPackages.filter(pkg =>
-          pkg.theme === theme || pkg.themes?.includes(theme)
-        );
+        // For no-theme parties with gender, prefer colour-matching packages
+        if (isNoTheme && preferredColour) {
+          const colourPackages = sortedPackages.filter(pkg =>
+            pkg.colourScheme?.toLowerCase() === preferredColour
+          );
+          if (colourPackages.length > 0) {
+            console.log(`🎨 Selected ${preferredColour} package for ${supplier.category}`);
+            selectedPackage = colourPackages[0];
+          }
+        }
 
-        selectedPackage = themePackages.length > 0 ? themePackages[0] : sortedPackages[0];
+        // If no colour match, try theme-specific package
+        if (!selectedPackage) {
+          const themePackages = sortedPackages.filter(pkg =>
+            pkg.theme === theme || pkg.themes?.includes(theme)
+          );
+          selectedPackage = themePackages.length > 0 ? themePackages[0] : sortedPackages[0];
+        }
       }
 
       // For cake suppliers, add delivery fee and customization
@@ -271,7 +306,9 @@ class PartyBuilderBackend {
      
       const availabilityCheck = this.checkSupplierAvailability(supplier, new Date(date), timeSlot);
       const locationCheck = this.checkSupplierLocation(supplier, location);
-      const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+      // Pass gender for no-theme parties to match colour schemes
+      const gender = partyDetails?.gender || null;
+      const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration, gender);
       
       // ✅ NEW: Set up basic package for supplier (pass partyDetails for cakes)
       const basicPackage = this.getBasicPackageForSupplier(supplier, theme, partyDetails);
@@ -789,16 +826,43 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
   }
 
   // Enhanced supplier scoring
-  scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2) {
+  // gender parameter: 'boy', 'girl', or 'neutral' - used for no-theme parties to match colour schemes
+  scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2, gender = null) {
     let score = 50; // Base score
-    
+
     try {
-      if (theme === 'no-theme') {
+      if (theme === 'no-theme' || !theme) {
+        // For no-theme parties, boost suppliers with 'no-theme', 'general', or 'classic' themes
         if (!supplier?.themes || supplier.themes.length === 0) {
           score += 30;
         }
-        if (supplier?.themes && supplier.themes.includes('general')) {
+        if (supplier?.themes && (supplier.themes.includes('general') || supplier.themes.includes('no-theme') || supplier.themes.includes('classic'))) {
           score += 40;
+        }
+
+        // Gender-based matching for colour schemes
+        if (gender && supplier?.themes) {
+          if (gender === 'boy' && supplier.themes.includes('boy')) {
+            score += 25; // Boost blue-themed suppliers
+          } else if (gender === 'girl' && supplier.themes.includes('girl')) {
+            score += 25; // Boost pink-themed suppliers
+          } else if (gender === 'neutral' && (supplier.themes.includes('rainbow') || supplier.themes.includes('neutral'))) {
+            score += 25; // Boost rainbow/neutral suppliers
+          }
+        }
+
+        // Also check package colourSchemes if available
+        if (gender && supplier?.packages && Array.isArray(supplier.packages)) {
+          const hasMatchingColour = supplier.packages.some(pkg => {
+            const colourScheme = pkg.colourScheme?.toLowerCase();
+            if (gender === 'boy' && colourScheme === 'blue') return true;
+            if (gender === 'girl' && colourScheme === 'pink') return true;
+            if (gender === 'neutral' && (colourScheme === 'rainbow' || colourScheme === 'mixed')) return true;
+            return false;
+          });
+          if (hasMatchingColour) {
+            score += 15;
+          }
         }
       } else {
         // Theme matching
@@ -1481,8 +1545,8 @@ async buildParty(partyDetails) {
 export const partyBuilderBackend = new PartyBuilderBackend();
 
 // Export standalone function for theme-based scoring
-export function scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2) {
-  return partyBuilderBackend.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+export function scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2, gender = null) {
+  return partyBuilderBackend.scoreSupplierWithTheme(supplier, theme, timeSlot, duration, gender);
 }
 
 // React hook for using the party builder

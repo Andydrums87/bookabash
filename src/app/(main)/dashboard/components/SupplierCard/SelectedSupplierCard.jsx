@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Plus, X, Clock, Users, Star, ChevronDown, ChevronUp, Info, Eye, Trash2, Wand2, RefreshCw } from "lucide-react"
+import { CheckCircle, X, Clock, Users, Star, Info, Eye, Trash2, Wand2, RefreshCw } from "lucide-react"
 import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
@@ -21,9 +21,6 @@ import {
 // ✅ Import carousel
 import SwipeableSupplierCarousel from '@/components/supplier/SwipableSupplierCarousel'
 
-// ✅ Import the modal
-import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
-
 export default function SelectedSupplierCard({
   type,
   supplier,
@@ -33,7 +30,6 @@ export default function SelectedSupplierCard({
   isDeleting,
   openSupplierModal,
   handleDeleteSupplier,
-  handleRemoveAddon,
   getSupplierDisplayName,
   onClick,
   onCustomize,
@@ -43,10 +39,11 @@ export default function SelectedSupplierCard({
   showBrowseVenues = false,
   onBrowseVenues
 }) {
-  const [showAddons, setShowAddons] = useState(false)
-  const [showQuickViewModal, setShowQuickViewModal] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
+
+  // Check if this is a venue
+  const isVenueSupplier = type === 'venue' || type === 'venues'
 
   // ✅ Function to fetch full supplier data with packages
   const fetchFullSupplierData = async () => {
@@ -67,6 +64,8 @@ export default function SelectedSupplierCard({
         packageData: supplier.packageData,
         partyBagsQuantity: supplier.partyBagsQuantity,
         partyBagsMetadata: supplier.partyBagsMetadata,
+        // ✅ FIX: Also preserve cateringMetadata for catering suppliers
+        cateringMetadata: supplier.cateringMetadata,
         selectedAddons: supplier.selectedAddons,
         pricePerBag: supplier.pricePerBag,
       }
@@ -109,13 +108,26 @@ export default function SelectedSupplierCard({
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
 
-  // Calculate fresh pricing
+  // ✅ FIX: Merge addons prop with supplier.selectedAddons to ensure we always have the latest addons
+  // This prevents stale state issues when modal closes before parent state updates
+  // NOTE: Prioritize supplier.selectedAddons over global addons since they have more complete data (e.g., priceType)
+  const effectiveAddons = useMemo(() => {
+    const supplierSelectedAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || [];
+    // Put supplierSelectedAddons FIRST so they take priority in dedupe
+    const allAddons = [...supplierSelectedAddons, ...addons];
+    // Dedupe by id - keep first occurrence (which is now from supplierSelectedAddons)
+    return allAddons.filter((addon, index, arr) =>
+      arr.findIndex(a => a.id === addon.id) === index
+    );
+  }, [addons, supplier?.selectedAddons, supplier?.packageData?.selectedAddons]);
+
+  // Calculate fresh pricing using effective addons
   const pricing = useMemo(() => {
     if (!supplier) {
       return { finalPrice: 0, breakdown: {}, details: {} }
     }
-    return calculateFinalPrice(supplier, partyDetails, addons)
-  }, [supplier, partyDetails, addons, type])
+    return calculateFinalPrice(supplier, partyDetails, effectiveAddons)
+  }, [supplier, partyDetails, effectiveAddons, type])
   
   const displayPrice = pricing.finalPrice
   
@@ -123,7 +135,7 @@ export default function SelectedSupplierCard({
   const needsAdditionalEntertainers = supplier && requiresAdditionalEntertainers(supplier, guestCount)
   const entertainerInfo = needsAdditionalEntertainers ? getAdditionalEntertainerInfo(supplier, guestCount) : null
   
-  const hasAddons = addons && addons.length > 0
+  const hasAddons = effectiveAddons && effectiveAddons.length > 0
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization || type === 'cakes'
   const isBalloonSupplier = type === 'balloons'
@@ -217,7 +229,7 @@ export default function SelectedSupplierCard({
             className="relative h-64 w-full cursor-pointer group/image"
             onClick={(e) => {
               e.stopPropagation()
-              setShowQuickViewModal(true)
+              fetchFullSupplierData() // Opens unified customization modal
             }}
           >
             {isLoading ? (
@@ -382,6 +394,13 @@ export default function SelectedSupplierCard({
                             <span>✓ Delivery included</span>
                           </div>
                         )}
+
+                        {/* Show add-ons count */}
+                        {hasAddons && (
+                          <div className="text-sm text-white/90 mt-1 drop-shadow">
+                            Includes {effectiveAddons.length} add-on{effectiveAddons.length > 1 ? 's' : ''}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -390,84 +409,21 @@ export default function SelectedSupplierCard({
             )}
           </div>
 
-          {/* Bottom section with addons */}
+          {/* Bottom section */}
           <div className="p-4 bg-white">
-            {hasAddons && (
-              <div className="mb-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowAddons(!showAddons)
-                  }}
-                  className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))] hover:from-[hsl(var(--primary-100))] transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-[hsl(var(--primary-600))]" />
-                    <span className="font-bold text-gray-500 text-xs">
-                      Selected Add-ons ({addons.length})
-                    </span>
-                  </div>
-                  {showAddons ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
-
-                {showAddons && (
-                  <div className="mt-3 space-y-3 animate-in slide-in-from-top duration-200">
-                    {addons.map((addon) => (
-                      <div key={addon.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 ml-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{addon.name}</p>
-                          <p className="text-xs text-gray-600 truncate">{addon.description}</p>
-                        </div>
-                        <div className="flex items-center gap-3 ml-3">
-                          <span className="text-sm font-bold text-[hsl(var(--primary-600))]">£{addon.price}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRemoveAddon(addon.id)
-                            }}
-                            className="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowQuickViewModal(true)
-                }}
-                variant="outline"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-                disabled={isDeleting}
-                data-tour={`view-supplier-${type}`}
-              >
-                <Eye className="w-4 h-4 mr-1.5" />
-                <span className="truncate">Details</span>
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  fetchFullSupplierData()
-                }}
-                className="bg-primary-500 hover:bg-primary-600 text-white text-sm"
-                disabled={isDeleting}
-              >
-                <Wand2 className="w-4 h-4 mr-1.5" />
-                <span className="truncate">Options</span>
-              </Button>
-            </div>
+            {/* Action Button - Single unified modal */}
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                fetchFullSupplierData()
+              }}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white text-sm"
+              disabled={isDeleting}
+              data-tour={`view-supplier-${type}`}
+            >
+              <Eye className="w-4 h-4 mr-1.5" />
+              <span className="truncate">View & Edit</span>
+            </Button>
 
             {/* Image disclaimer - all categories except venue are white-labeled */}
             {/* For venue, add invisible spacer to match height */}
@@ -481,19 +437,7 @@ export default function SelectedSupplierCard({
           </div>
         </Card>
 
-        {/* Quick View Modal */}
-        <SupplierQuickViewModal
-          supplier={supplier}
-          isOpen={showQuickViewModal}
-          onClose={() => setShowQuickViewModal(false)}
-          onAddSupplier={onAddSupplier}
-          partyDetails={partyDetails}
-          type={type}
-          isAlreadyAdded={true}
-          onSaveVenueAddons={type === 'venue' ? onSaveVenueAddons : undefined}
-        />
-        
-        {/* Customization Modal */}
+        {/* Unified Customization Modal - includes details and options */}
         <SupplierCustomizationModal
           isOpen={showCustomizationModal}
           onClose={() => setShowCustomizationModal(false)}

@@ -104,6 +104,7 @@ export default function SnappyChatReviewPage() {
   const [supplierToDelete, setSupplierToDelete] = useState(null);
   const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupFieldErrors, setSignupFieldErrors] = useState({});
@@ -492,6 +493,28 @@ export default function SnappyChatReviewPage() {
       setPhoneError(validation.isValid ? '' : validation.message);
     } else {
       setPhoneError('');
+    }
+  };
+
+  // Validate email format
+  const validateEmail = (email) => {
+    if (!email || email.trim().length === 0) {
+      return { isValid: false, message: 'Email address is required' };
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return { isValid: false, message: 'Please enter a valid email address' };
+    }
+    return { isValid: true, message: '' };
+  };
+
+  const handleEmailChange = (value) => {
+    setFormData(prev => ({ ...prev, email: value }));
+    if (value.length > 0) {
+      const validation = validateEmail(value);
+      setEmailError(validation.isValid ? '' : validation.message);
+    } else {
+      setEmailError('Email address is required');
     }
   };
 
@@ -981,11 +1004,18 @@ export default function SnappyChatReviewPage() {
   const canProceed = () => {
     const step = currentStepData;
     if (step.id === 'main-form') {
-      const phoneValid = phoneError === '' && formData.phoneNumber.length > 0;
+      // Phone must be present AND valid UK mobile format
+      const phone = formData.phoneNumber;
+      const cleanedPhone = phone.replace(/\D/g, '');
+      const ukMobilePattern = /^(?:(?:\+44)|(?:0))7\d{9}$/;
+      const cleanedPattern = /^7\d{9}$/;
+      const phoneValid = phone.length > 0 && (ukMobilePattern.test(phone) || cleanedPattern.test(cleanedPhone));
+
       const addressValid = formData.addressLine1.trim().length > 0 &&
                           formData.city.trim().length > 0 &&
                           formData.postcode.trim().length > 0;
-      const emailValid = formData.email.trim().length > 0;
+      // Email must be present AND valid format
+      const emailValid = formData.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
       return formData.parentName.trim().length > 0 && phoneValid && emailValid && addressValid;
     }
     if (step.id === 'create-account') {
@@ -1233,9 +1263,12 @@ export default function SnappyChatReviewPage() {
                                 placeholder="your.email@example.com"
                                 type="email"
                                 value={formData.email}
-                                onChange={(e) => updateFormData('email', e.target.value)}
-                                className="h-12 text-gray-900 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                onChange={(e) => handleEmailChange(e.target.value)}
+                                className={`h-12 text-gray-900 rounded-md ${
+                                  emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[hsl(var(--primary-500))]'
+                                }`}
                               />
+                              {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
                             </div>
                           </div>
                         </div>
@@ -1846,7 +1879,7 @@ export default function SnappyChatReviewPage() {
                           onClick={currentStepData.showSignupForm
                             ? handleSignupButtonClick
                             : handleNext}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !canProceed()}
                           className={`w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white h-10 text-sm font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 px-4`}
                         >
                         {isSubmitting ? (
@@ -2026,7 +2059,7 @@ export default function SnappyChatReviewPage() {
                           handleSubmitEnquiry();
                         }
                       }}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !canProceed()}
                       className="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-6 text-sm font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                       {isSubmitting ? (

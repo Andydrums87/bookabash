@@ -6,9 +6,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X, Eye } from "lucide-react"
+import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
-import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
 import SupplierCustomizationModal from '@/components/SupplierCustomizationModal'
 import { checkSupplierAvailability } from '@/utils/availabilityChecker'
 import { supabase } from '@/lib/supabase'
@@ -231,11 +230,9 @@ export default function EmptySupplierCard({
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
   const [showTipsModal, setShowTipsModal] = useState(false)
-  const [showQuickView, setShowQuickView] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
   const [showUnavailableInfo, setShowUnavailableInfo] = useState(false)
-  const [bookingPackage, setBookingPackage] = useState(null) // Track which package is being booked
   const router = useRouter()
   const { toast } = useToast()
 
@@ -251,7 +248,8 @@ export default function EmptySupplierCard({
   const isSweetTreatsSupplier = type === 'sweetTreats'
   const isCateringSupplier = type === 'catering'
   const isDecorationsSupplier = type === 'decorations'
-  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier || isDecorationsSupplier
+  const isVenueSupplier = type === 'venue' || type === 'venues'
+  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier || isDecorationsSupplier || isVenueSupplier
 
   // Check if this category is restricted by the selected venue
   const isVenueRestricted = useMemo(() => {
@@ -358,17 +356,17 @@ export default function EmptySupplierCard({
         const fullData = await fetchFullSupplierData(recommendedSupplier.id)
         if (fullData) {
           setFullSupplierData(fullData)
-          setShowCustomizationModal(true)
+          openCustomizationModal()
         } else {
           // Fallback to basic supplier data if fetch fails
           setFullSupplierData(recommendedSupplier)
-          setShowCustomizationModal(true)
+          openCustomizationModal()
         }
       } catch (error) {
         console.error('Error preparing customization:', error)
         // Fallback: still open modal with what we have
         setFullSupplierData(recommendedSupplier)
-        setShowCustomizationModal(true)
+        openCustomizationModal()
       }
       setIsAdding(false)
       return
@@ -430,6 +428,8 @@ export default function EmptySupplierCard({
           image: selectedPackage?.image,
           // Include decorations metadata for pack size display
           decorationsMetadata: decorationsMetadata,
+          // ✅ FIX: Include selectedAddons so they're saved when supplier is added
+          selectedAddons: selectedAddons,
         },
         // Also set selectedPackage for backwards compatibility
         selectedPackage: selectedPackage,
@@ -481,95 +481,9 @@ export default function EmptySupplierCard({
     }
   }
 
-  // Handle direct booking from quick view modal - bypasses customization modal
-  const handleBookPackage = async (pkg) => {
-    // Set booking state to show loading on the button
-    setBookingPackage(pkg.id || pkg.name)
-
-    // Brief delay to show click feedback
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    // Calculate total price based on pricing model
-    const guestCount = partyDetails?.guestCount || 10
-    // Check multiple price fields that might be used
-    const basePrice = pkg.price || pkg.basePrice || pkg.enhancedPrice || pkg.totalPrice || 0
-
-    console.log('📦 handleBookPackage:', { type, pkgName: pkg.name, pkg, basePrice })
-
-    let totalPrice
-    let quantity
-    let pricePerUnit
-    let decorationsMetadata
-
-    if (type === 'decorations') {
-      // Decorations use pack sizes - find smallest pack that covers guests
-      const packSizes = pkg.packSizes || [8, 16, 24, 32, 40, 48]
-      const packSize = packSizes.find(size => size >= guestCount) || packSizes[packSizes.length - 1]
-      totalPrice = basePrice * packSize
-      quantity = packSize
-      pricePerUnit = basePrice
-      decorationsMetadata = {
-        packSize: packSize,
-        pricePerSet: basePrice,
-        totalPrice: totalPrice,
-        bufferCount: packSize - guestCount
-      }
-    } else if (type === 'partyBags' || type === 'catering') {
-      // Per-guest pricing
-      totalPrice = basePrice * guestCount
-      quantity = guestCount
-      pricePerUnit = basePrice
-    } else if (type === 'activities' || type === 'softPlay' || type === 'bouncyCastle') {
-      // Activities/soft play - fixed price per item
-      totalPrice = basePrice
-      quantity = 1
-    } else {
-      // Fixed price items (entertainment, etc.)
-      totalPrice = pkg.totalPrice || pkg.enhancedPrice || basePrice
-      quantity = 1
-    }
-
-    // Build the supplier object with packageData
-    const supplierWithCustomization = {
-      ...recommendedSupplier,
-      packageData: {
-        ...pkg,
-        totalPrice: totalPrice,
-        quantity: quantity,
-        pricePerUnit: pricePerUnit,
-        decorationsMetadata: decorationsMetadata,
-      },
-      selectedPackage: pkg,
-      selectedAddons: [],
-      decorationsMetadata: decorationsMetadata,
-    }
-
-    // Capture scroll position before modal closes (stored in body.style.top while modal is open)
-    const bodyTop = document.body.style.top
-    const savedScrollY = bodyTop ? Math.abs(parseInt(bodyTop, 10)) : window.scrollY
-
-    // Add supplier
-    await onAddSupplier(type, supplierWithCustomization, { package: pkg, addons: [], totalPrice, decorationsMetadata })
-
-    // Close modal
-    setShowQuickView(false)
-    setBookingPackage(null)
-
-    // Wait for modal to close, then scroll down to stay at optional extras section
-    await new Promise(resolve => setTimeout(resolve, 50))
-    window.scrollTo({ top: savedScrollY + 400, behavior: 'instant' })
-
-    // Show success state if not disabled
-    if (!disableSuccessState) {
-      setJustAdded(true)
-    }
-
-    // Show toast notification
-    const categoryName = getDisplayName(type)
-    toast.success(`${categoryName} - £${Number(totalPrice).toFixed(2)}`, {
-      title: `${pkg?.name || 'Package'} added to your party!`,
-      duration: 3000,
-    })
+  // Helper to open the customization modal
+  const openCustomizationModal = () => {
+    setShowCustomizationModal(true)
   }
 
   const getDisplayName = (supplierType) => {
@@ -714,15 +628,29 @@ export default function EmptySupplierCard({
           className="overflow-hidden bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-300))] h-full relative"
         >
           <div className="flex flex-col h-full">
-            {/* Image section - clickable to show quick view */}
+            {/* Image section - clickable to show unified modal */}
             <div
               className="relative h-32 w-full flex-shrink-0 cursor-pointer group/img"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation()
+                if (isUnavailable) return
                 // Save scroll position before opening modal
                 savedScrollPositionRef.current = window.scrollY
-                // Always open quick view when tapping image (customization happens via Add button)
-                setShowQuickView(true)
+                // Open unified customization modal directly
+                setIsAdding(true)
+                try {
+                  const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+                  if (fullData) {
+                    setFullSupplierData(fullData)
+                  } else {
+                    setFullSupplierData(recommendedSupplier)
+                  }
+                } catch (error) {
+                  console.error('Error preparing customization:', error)
+                  setFullSupplierData(recommendedSupplier)
+                }
+                setIsAdding(false)
+                openCustomizationModal()
               }}
             >
               <Image
@@ -735,16 +663,6 @@ export default function EmptySupplierCard({
 
               {/* Subtle overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/40 transition-opacity group-hover/img:opacity-80" />
-
-              {/* View badge - shows on available suppliers to indicate clickable */}
-              {!isUnavailable && (
-                <div className="absolute top-2 left-2 z-10">
-                  <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
-                    <Eye className="w-3 h-3 text-gray-600" />
-                    <span className="text-[10px] font-medium text-gray-600">Details</span>
-                  </div>
-                </div>
-              )}
 
               {/* Info icon - shows unavailability reason when unavailable */}
               {isUnavailable && unavailabilityExplanation && (
@@ -778,15 +696,30 @@ export default function EmptySupplierCard({
               )}
             </div>
 
-            {/* Content section below image - clickable to open quick view */}
+            {/* Content section below image - clickable to open unified modal */}
             <div className="p-3 flex-1 flex flex-col">
-              {/* Clickable area for quick view (everything except button) */}
+              {/* Clickable area for unified modal (everything except button) */}
               <div
                 className="flex-1 cursor-pointer"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation()
+                  if (isUnavailable) return
                   savedScrollPositionRef.current = window.scrollY
-                  setShowQuickView(true)
+                  // Open unified customization modal directly
+                  setIsAdding(true)
+                  try {
+                    const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+                    if (fullData) {
+                      setFullSupplierData(fullData)
+                    } else {
+                      setFullSupplierData(recommendedSupplier)
+                    }
+                  } catch (error) {
+                    console.error('Error preparing customization:', error)
+                    setFullSupplierData(recommendedSupplier)
+                  }
+                  setIsAdding(false)
+                  openCustomizationModal()
                 }}
               >
                 {/* Category name - larger */}
@@ -851,38 +784,15 @@ export default function EmptySupplierCard({
           </div>
         </Card>
 
-        {/* Quick View Modal */}
-        <SupplierQuickViewModal
-          supplier={recommendedSupplier}
-          isOpen={showQuickView}
-          onClose={() => setShowQuickView(false)}
-          onAddSupplier={onAddSupplier}
+        {/* Unified Customization Modal */}
+        <SupplierCustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => setShowCustomizationModal(false)}
+          supplier={fullSupplierData || recommendedSupplier}
+          onAddToPlan={handleCustomizationComplete}
           partyDetails={partyDetails}
-          type={type}
-          onBookPackage={needsCustomization ? handleBookPackage : undefined}
-          bookingPackageId={bookingPackage}
-          onCustomize={needsCustomization ? () => {
-            // Preserve scroll position when transitioning from quick view to customization
-            const bodyTop = document.body.style.top
-            if (bodyTop) {
-              savedScrollPositionRef.current = Math.abs(parseInt(bodyTop, 10))
-            }
-            setShowQuickView(false)
-            setShowCustomizationModal(true)
-          } : undefined}
+          supplierType={type}
         />
-
-        {/* Customization Modal for Cakes, Balloons, Party Bags */}
-        {needsCustomization && (
-          <SupplierCustomizationModal
-            isOpen={showCustomizationModal}
-            onClose={() => setShowCustomizationModal(false)}
-            supplier={fullSupplierData || recommendedSupplier}
-            onAddToPlan={handleCustomizationComplete}
-            partyDetails={partyDetails}
-            supplierType={type}
-          />
-        )}
       </>
     )
   }
@@ -893,10 +803,24 @@ export default function EmptySupplierCard({
       <>
         <Card
           className="overflow-hidden bg-gray-300 rounded-xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90 h-70 cursor-pointer"
-          onClick={(e) => {
-            if (isUnavailableCategory) return
+          onClick={async (e) => {
+            if (isUnavailableCategory || isUnavailable) return
             savedScrollPositionRef.current = window.scrollY
-            setShowQuickView(true)
+            // Open unified customization modal directly
+            setIsAdding(true)
+            try {
+              const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+              if (fullData) {
+                setFullSupplierData(fullData)
+              } else {
+                setFullSupplierData(recommendedSupplier)
+              }
+            } catch (error) {
+              console.error('Error preparing customization:', error)
+              setFullSupplierData(recommendedSupplier)
+            }
+            setIsAdding(false)
+            openCustomizationModal()
           }}
         >
           <div className="relative h-100 w-full">
@@ -1010,38 +934,15 @@ export default function EmptySupplierCard({
           category={type}
         />
 
-        {/* Quick View Modal */}
-        <SupplierQuickViewModal
-          supplier={recommendedSupplier}
-          isOpen={showQuickView}
-          onClose={() => setShowQuickView(false)}
-          onAddSupplier={onAddSupplier}
+        {/* Unified Customization Modal */}
+        <SupplierCustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => setShowCustomizationModal(false)}
+          supplier={fullSupplierData || recommendedSupplier}
+          onAddToPlan={handleCustomizationComplete}
           partyDetails={partyDetails}
-          type={type}
-          onBookPackage={needsCustomization ? handleBookPackage : undefined}
-          bookingPackageId={bookingPackage}
-          onCustomize={needsCustomization ? () => {
-            // Preserve scroll position when transitioning from quick view to customization
-            const bodyTop = document.body.style.top
-            if (bodyTop) {
-              savedScrollPositionRef.current = Math.abs(parseInt(bodyTop, 10))
-            }
-            setShowQuickView(false)
-            setShowCustomizationModal(true)
-          } : undefined}
+          supplierType={type}
         />
-
-        {/* Customization Modal for Cakes, Balloons, Party Bags */}
-        {needsCustomization && (
-          <SupplierCustomizationModal
-            isOpen={showCustomizationModal}
-            onClose={() => setShowCustomizationModal(false)}
-            supplier={fullSupplierData || recommendedSupplier}
-            onAddToPlan={handleCustomizationComplete}
-            partyDetails={partyDetails}
-            supplierType={type}
-          />
-        )}
       </>
     )
   }
@@ -1051,10 +952,24 @@ export default function EmptySupplierCard({
     <>
       <Card
         className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90 cursor-pointer"
-        onClick={() => {
-          if (isUnavailableCategory) return
+        onClick={async () => {
+          if (isUnavailableCategory || isUnavailable) return
           savedScrollPositionRef.current = window.scrollY
-          setShowQuickView(true)
+          // Open unified customization modal directly
+          setIsAdding(true)
+          try {
+            const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+            if (fullData) {
+              setFullSupplierData(fullData)
+            } else {
+              setFullSupplierData(recommendedSupplier)
+            }
+          } catch (error) {
+            console.error('Error preparing customization:', error)
+            setFullSupplierData(recommendedSupplier)
+          }
+          setIsAdding(false)
+          openCustomizationModal()
         }}
       >
         <div className="relative h-62 w-full">
@@ -1182,38 +1097,15 @@ export default function EmptySupplierCard({
         category={type}
       />
 
-      {/* Quick View Modal */}
-      <SupplierQuickViewModal
-        supplier={recommendedSupplier}
-        isOpen={showQuickView}
-        onClose={() => setShowQuickView(false)}
-        onAddSupplier={onAddSupplier}
+      {/* Unified Customization Modal */}
+      <SupplierCustomizationModal
+        isOpen={showCustomizationModal}
+        onClose={() => setShowCustomizationModal(false)}
+        supplier={fullSupplierData || recommendedSupplier}
+        onAddToPlan={handleCustomizationComplete}
         partyDetails={partyDetails}
-        type={type}
-        onBookPackage={needsCustomization ? handleBookPackage : undefined}
-        bookingPackageId={bookingPackage}
-        onCustomize={needsCustomization ? () => {
-          // Preserve scroll position when transitioning from quick view to customization
-          const bodyTop = document.body.style.top
-          if (bodyTop) {
-            savedScrollPositionRef.current = Math.abs(parseInt(bodyTop, 10))
-          }
-          setShowQuickView(false)
-          setShowCustomizationModal(true)
-        } : undefined}
+        supplierType={type}
       />
-
-      {/* Customization Modal for Cakes, Balloons, Party Bags */}
-      {needsCustomization && (
-        <SupplierCustomizationModal
-          isOpen={showCustomizationModal}
-          onClose={() => setShowCustomizationModal(false)}
-          supplier={fullSupplierData || recommendedSupplier}
-          onAddToPlan={handleCustomizationComplete}
-          partyDetails={partyDetails}
-          supplierType={type}
-        />
-      )}
     </>
   )
 }
