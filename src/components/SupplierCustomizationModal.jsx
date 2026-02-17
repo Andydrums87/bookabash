@@ -72,7 +72,7 @@ const formatPriceCompact = (price) => {
   return `£${price.toFixed(2)}`
 }
 
-// Package Details Modal - Simple "What's Included" view
+// Package Details Modal - Visual Grid "What's Included" view
 const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   // Disable body scroll when modal is open (iOS Safari compatible)
   useEffect(() => {
@@ -103,7 +103,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm overflow-hidden animate-in slide-in-from-bottom duration-200"
+        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden animate-in slide-in-from-bottom duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -120,28 +120,33 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Content - Simple bullet list */}
-        <div className="p-4">
-          <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">What&apos;s Included</h4>
+        {/* Content - Styled checklist */}
+        <div className="p-4 max-h-[60vh] overflow-y-auto">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">What&apos;s Included</p>
           {items.length > 0 ? (
-            <ul className="space-y-2">
+            <div className="space-y-2.5">
               {items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <Check className="w-4 h-4 text-[hsl(var(--primary-500))] mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700 text-sm">{item}</span>
-                </li>
+                <div
+                  key={i}
+                  className="flex items-start gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
+                >
+                  <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                  </div>
+                  <span className="text-gray-700 text-sm pt-0.5">{item}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p className="text-gray-500 text-sm">Package details not available.</p>
+            <p className="text-gray-500 text-sm text-center py-4">Package details not available.</p>
           )}
         </div>
 
         {/* Close button */}
-        <div className="p-4 pt-2">
+        <div className="p-4 pt-2 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
           >
             Close
           </button>
@@ -258,8 +263,15 @@ export default function SupplierCustomizationModal({
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
 
+  // Mobile swipe state
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+
   // Info accordion state
   const [openAccordion, setOpenAccordion] = useState(null)
+
+  // About section expand state (mobile)
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false)
 
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
@@ -331,6 +343,8 @@ export default function SupplierCustomizationModal({
       emblaApi.scrollTo(0)
       setCarouselIndex(0)
     }
+    // Reset about section expanded state when supplier changes
+    setIsAboutExpanded(false)
   }, [supplier?.id, emblaApi])
 
   const scrollPrev = useCallback((e) => {
@@ -342,6 +356,31 @@ export default function SupplierCustomizationModal({
     e.stopPropagation()
     emblaApi?.scrollNext()
   }, [emblaApi])
+
+  // Mobile swipe handlers for image carousel
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchEndX.current = e.touches[0].clientX
+  }, [])
+
+  const handleTouchMove = useCallback((e) => {
+    touchEndX.current = e.touches[0].clientX
+  }, [])
+
+  const handleTouchEnd = useCallback((imagesLength) => {
+    const diff = touchStartX.current - touchEndX.current
+    const threshold = 50 // Minimum swipe distance
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // Swiped left - go to next image
+        setCarouselIndex(prev => prev === imagesLength - 1 ? 0 : prev + 1)
+      } else {
+        // Swiped right - go to previous image
+        setCarouselIndex(prev => prev === 0 ? imagesLength - 1 : prev - 1)
+      }
+    }
+  }, [])
 
   // Disable body scroll when main modal is open (iOS Safari compatible)
   useEffect(() => {
@@ -1964,7 +2003,12 @@ export default function SupplierCustomizationModal({
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
             {/* Mobile: taller image at top with overlaid header */}
-            <div className="lg:hidden relative w-full h-56 bg-gray-900 overflow-hidden">
+            <div
+              className="lg:hidden relative w-full h-56 bg-gray-900 overflow-hidden touch-pan-y"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={() => handleTouchEnd(supplierImages.length)}
+            >
               {supplierImages.length > 0 ? (
                 <>
                   {/* Main image - full bleed, no padding */}
@@ -2165,16 +2209,29 @@ export default function SupplierCustomizationModal({
 
               if (!description) return null
 
-              const aboutTitle = supplierTypeDetection.isCake ? 'About This Cake' : 'About'
+              // Check if description is long enough to need truncation (roughly 150 chars)
+              const needsTruncation = description.length > 150
 
               return (
                 <div className="px-5 lg:px-6 pt-5 pb-4 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-800 uppercase text-xs tracking-wide mb-2">
-                    {aboutTitle}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  {/* Desktop: always show full text */}
+                  <p className="hidden lg:block text-sm text-gray-600 leading-relaxed">
                     {description}
                   </p>
+                  {/* Mobile: truncate with "more" button */}
+                  <div className="lg:hidden">
+                    <p className={`text-sm text-gray-600 leading-relaxed ${!isAboutExpanded && needsTruncation ? 'line-clamp-3' : ''}`}>
+                      {description}
+                    </p>
+                    {needsTruncation && (
+                      <button
+                        onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+                        className="text-sm font-medium text-primary-600 hover:text-primary-700 mt-1"
+                      >
+                        {isAboutExpanded ? 'Show less' : 'More'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })()}
@@ -2185,7 +2242,7 @@ export default function SupplierCustomizationModal({
               <section className="space-y-5">
                 {/* Choose Size - Dropdown */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
                     Cake Size
                   </label>
                   <Select
@@ -2213,7 +2270,7 @@ export default function SupplierCustomizationModal({
 
                 {/* Flavour Selection - Dropdown */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
                     Cake Flavour
                   </label>
                   {availableFlavors.length === 0 ? (
@@ -2245,9 +2302,9 @@ export default function SupplierCustomizationModal({
 
                 {/* Matching Cupcakes - Dropdown */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
                     Matching Cupcakes
-                    <span className="font-normal normal-case tracking-normal ml-1">(optional)</span>
+                    <span className="font-normal normal-case tracking-normal text-gray-500 ml-1">(optional)</span>
                   </label>
                   <Select
                     value={selectedCupcakeOption || 'none'}
@@ -2288,11 +2345,11 @@ export default function SupplierCustomizationModal({
                   <button
                     type="button"
                     onClick={() => setShowSpecialRequests(!showSpecialRequests)}
-                    className="flex items-center gap-2 text-[11px] font-medium text-gray-400 uppercase tracking-wide hover:text-gray-600 transition-colors"
+                    className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
                   >
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showSpecialRequests ? 'rotate-180' : ''}`} />
                     <span>Special Requests</span>
-                    <span className="font-normal normal-case tracking-normal">(optional)</span>
+                    <span className="font-normal normal-case tracking-normal text-gray-500">(optional)</span>
                   </button>
                   {showSpecialRequests && (
                     <div className="mt-3">
@@ -2314,7 +2371,7 @@ export default function SupplierCustomizationModal({
 
                 {/* Delivery Method */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2.5">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2.5">
                     Delivery Method
                   </label>
 
@@ -3350,12 +3407,16 @@ export default function SupplierCustomizationModal({
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 mb-3">What's Included</h3>
                       <div className="space-y-2">
-                        {features.map((feature, idx) => (
-                          <div key={idx} className="flex items-start gap-2.5">
-                            <Check className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-700 text-sm">{feature}</span>
-                          </div>
-                        ))}
+                        {features.map((feature, idx) => {
+                          // Remove any existing checkmarks/ticks from the start of the text
+                          const cleanFeature = feature.replace(/^[✓✔☑️]\s*/g, '').trim()
+                          return (
+                            <div key={idx} className="flex items-start gap-2.5">
+                              <Check className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                              <span className="text-gray-700 text-sm">{cleanFeature}</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )
