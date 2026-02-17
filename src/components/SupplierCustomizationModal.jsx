@@ -277,31 +277,53 @@ export default function SupplierCustomizationModal({
   const scrollPositionRef = useRef(0)
 
   // Get all supplier images for carousel
-  const getSupplierImages = (supplier) => {
-    if (!supplier) return []
+  // Get supplier images with packageId mapping
+  const getSupplierImagesWithPackageIds = (supplier) => {
+    if (!supplier) return { images: [], packageIdToIndex: new Map() }
     const imageList = []
+    const packageIdToIndex = new Map()
     const seenUrls = new Set()
+    const urlToIndex = new Map() // Track URL to index mapping
 
-    const addImage = (url) => {
-      if (url && !seenUrls.has(url)) {
+    const addImage = (url, packageId = null) => {
+      if (!url) return
+
+      if (!seenUrls.has(url)) {
+        // New image - add it
+        const index = imageList.length
         imageList.push(url)
         seenUrls.add(url)
+        urlToIndex.set(url, index)
+        if (packageId) {
+          packageIdToIndex.set(packageId, index)
+        }
+      } else if (packageId) {
+        // URL already exists but we have a packageId - map it to the existing index
+        const existingIndex = urlToIndex.get(url)
+        if (existingIndex !== undefined) {
+          packageIdToIndex.set(packageId, existingIndex)
+        }
       }
     }
 
-    // Add cover photo first
+    // Add cover photo first (no packageId)
     if (supplier.coverPhoto) addImage(supplier.coverPhoto)
     else if (supplier.originalSupplier?.coverPhoto) addImage(supplier.originalSupplier.coverPhoto)
     else if (supplier.image) addImage(typeof supplier.image === 'object' ? supplier.image.src : supplier.image)
     else if (supplier.originalSupplier?.image) addImage(supplier.originalSupplier.image)
     else if (supplier.imageUrl) addImage(supplier.imageUrl)
 
-    // Process images from various fields
+    // Process images from various fields - extract packageId if present
     const processImage = (img) => {
-      if (typeof img === 'string') addImage(img)
-      else if (img?.src) addImage(img.src)
-      else if (img?.url) addImage(img.url)
-      else if (img?.image) addImage(img.image)
+      if (typeof img === 'string') {
+        addImage(img)
+      } else if (img?.src) {
+        addImage(img.src, img.packageId)
+      } else if (img?.url) {
+        addImage(img.url, img.packageId)
+      } else if (img?.image) {
+        addImage(img.image, img.packageId)
+      }
     }
 
     // Add portfolio images
@@ -315,10 +337,18 @@ export default function SupplierCustomizationModal({
       }
     })
 
-    return imageList.slice(0, 6)
+    return { images: imageList.slice(0, 6), packageIdToIndex }
   }
 
-  const supplierImages = getSupplierImages(supplier)
+  const { images: supplierImages, packageIdToIndex } = getSupplierImagesWithPackageIds(supplier)
+
+  // Function to scroll carousel to a package's linked image
+  const scrollToPackageImage = useCallback((packageId) => {
+    const imageIndex = packageIdToIndex.get(packageId)
+    if (imageIndex !== undefined && imageIndex !== carouselIndex) {
+      setCarouselIndex(imageIndex)
+    }
+  }, [packageIdToIndex, carouselIndex])
 
   // Embla carousel callbacks
   const onEmblaSelect = useCallback(() => {
@@ -2002,9 +2032,9 @@ export default function SupplierCustomizationModal({
 
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: taller image at top with overlaid header */}
+            {/* Mobile: fixed height image at top with overlaid header */}
             <div
-              className="lg:hidden relative w-full h-56 bg-gray-900 overflow-hidden touch-pan-y"
+              className="lg:hidden relative w-full h-72 bg-gray-900 overflow-hidden touch-pan-y"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={() => handleTouchEnd(supplierImages.length)}
@@ -2813,7 +2843,10 @@ export default function SupplierCustomizationModal({
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setSelectedPackageId(pkg.id)}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
                         >
                           {/* Package Image */}
                           <div className="relative w-full h-24 sm:h-28">
@@ -2925,7 +2958,10 @@ export default function SupplierCustomizationModal({
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setSelectedPackageId(pkg.id)}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
                         >
                           {/* Package Image */}
                           <div className="relative w-full h-24 sm:h-28">
@@ -3011,7 +3047,7 @@ export default function SupplierCustomizationModal({
                 {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
                 <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
-                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
+                    className="flex gap-2.5 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
                     style={{
                       WebkitOverflowScrolling: 'touch'
                     }}
@@ -3041,43 +3077,46 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[175px] sm:w-[190px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setSelectedPackageId(pkg.id)}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
                         >
                           {/* Package Image */}
-                          <div className="relative w-full h-24 sm:h-28">
+                          <div className="relative w-full h-20 sm:h-22">
                             {packageImage ? (
                               <Image
                                 src={packageImage}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="220px"
+                                sizes="190px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-6 h-6 text-gray-300" />
+                                <Package className="w-5 h-5 text-gray-300" />
                               </div>
                             )}
                             {/* Selection checkmark */}
                             {isSelected && (
-                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
-                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                              <div className="absolute top-1 right-1 w-4.5 h-4.5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
 
                           {/* Content */}
-                          <div className="p-3 bg-white flex flex-col h-[165px]">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                          <div className="p-2.5 bg-white flex flex-col h-[130px]">
+                            <div className="flex items-start justify-between gap-1.5 mb-0.5">
+                              <h4 className="font-semibold text-gray-900 text-[13px] leading-tight">
                                 {pkg.name}
                               </h4>
-                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                              <p className="font-bold text-primary-600 text-sm flex-shrink-0">
                                 £{supplierTypeDetection.isPartyBags
                                   ? roundMoney(pkg.price * partyBagsQuantity).toFixed(2)
                                   : parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
@@ -3087,14 +3126,14 @@ export default function SupplierCustomizationModal({
                             {/* Description prose - fixed height area */}
                             <div className="flex-1 min-h-0 overflow-hidden">
                               {prose && (
-                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
                                   {prose}
                                 </p>
                               )}
 
                               {/* Party bags quantity */}
                               {supplierTypeDetection.isPartyBags && (
-                                <p className="text-[10px] text-gray-400 mt-1">
+                                <p className="text-[9px] text-gray-400 mt-0.5">
                                   {partyBagsQuantity} bags
                                 </p>
                               )}
@@ -3102,7 +3141,7 @@ export default function SupplierCustomizationModal({
 
                             {/* What's Included - opens modal - always at bottom */}
                             {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="pt-2 border-t border-gray-100 mt-auto">
+                              <div className="pt-1.5 border-t border-gray-100 mt-auto">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -3110,7 +3149,7 @@ export default function SupplierCustomizationModal({
                                     setSelectedPackageForModal(pkg)
                                     setShowPackageModal(true)
                                   }}
-                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                  className="flex items-center gap-1 text-[11px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
                                 >
                                   <Info className="w-3.5 h-3.5" />
                                   <span>What&apos;s included</span>
@@ -3491,7 +3530,10 @@ export default function SupplierCustomizationModal({
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => setSelectedPackageId(pkg.id)}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
                         >
                           {/* Popular badge */}
                           {pkg.popular && (
