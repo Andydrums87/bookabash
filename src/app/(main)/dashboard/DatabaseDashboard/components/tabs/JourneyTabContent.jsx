@@ -31,6 +31,7 @@ export default function JourneyTabContent({
   onDataUpdate,
   onEditSupplier,
   partyDate,
+  onBrowseVenues,
 }) {
   return (
     <div className="space-y-8 py-6 px-5">
@@ -102,6 +103,7 @@ export default function JourneyTabContent({
           horizontalScroll={true}
           preventNavigation={true}
           disableConfetti={true}
+          onBrowseVenues={onBrowseVenues}
         />
       </div>
     </div>

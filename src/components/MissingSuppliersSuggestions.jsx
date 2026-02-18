@@ -21,6 +21,7 @@ export default function MissingSuppliersSuggestions({
   horizontalScroll = false, // NEW: Enable horizontal scroll mode
   disableConfetti = false, // NEW: Disable confetti animation
   onCustomize, // NEW: Callback to open customization modal
+  onBrowseVenues = null, // NEW: Callback to open venue browser modal
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -435,6 +436,7 @@ export default function MissingSuppliersSuggestions({
                 onCustomize={onCustomize}
                 disableSuccessState={disableConfetti}
                 selectedVenue={partyPlan?.venue}
+                onBrowseVenues={onBrowseVenues}
               />
             </div>
           );

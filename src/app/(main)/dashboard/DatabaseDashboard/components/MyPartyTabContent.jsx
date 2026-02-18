@@ -928,6 +928,7 @@ export default function MyPartyTabContent({
               showTitle={false}
               preventNavigation={true}
               horizontalScroll={true}
+              onBrowseVenues={onBrowseVenues}
             />
           </div>
 

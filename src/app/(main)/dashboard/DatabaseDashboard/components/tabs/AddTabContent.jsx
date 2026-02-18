@@ -7,6 +7,7 @@ export default function AddTabContent({
   partyDetails,
   onAddSupplier,
   onCustomize,
+  onBrowseVenues,
 }) {
   // Build the partyPlan object from visible suppliers for MissingSuppliersSuggestions
   const partyPlan = suppliers || {}
@@ -33,6 +34,7 @@ export default function AddTabContent({
           disableConfetti={false}
           onCustomize={onCustomize}
           preventNavigation={true}
+          onBrowseVenues={onBrowseVenues}
         />
       </div>
 

@@ -263,7 +263,8 @@ export default function SupplierCard({
     recommendedSupplier: recommendedSupplier,
     onAddSupplier: onAddSupplier,
     isCompact: isCompact, // ✅ PASS IT HERE
-    selectedVenue: selectedVenue // ✅ Pass venue for restriction checks (e.g., bouncy castles)
+    selectedVenue: selectedVenue, // ✅ Pass venue for restriction checks (e.g., bouncy castles)
+    onBrowseVenues: onBrowseVenues // ✅ Pass venue browser callback for "find different venue" CTA
   }
 
   const enquiry = enquiries.find(e => e.supplier_category === type)

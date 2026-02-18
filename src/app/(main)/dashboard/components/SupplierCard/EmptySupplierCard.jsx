@@ -1,12 +1,13 @@
 "use client"
 import { useState, useEffect, useMemo, useRef } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X } from "lucide-react"
+import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X, Building2 } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import SupplierCustomizationModal from '@/components/SupplierCustomizationModal'
 import { checkSupplierAvailability } from '@/utils/availabilityChecker'
@@ -225,6 +226,7 @@ export default function EmptySupplierCard({
   onCustomize, // NEW: If provided, clicking will open customization modal instead
   disableSuccessState = false, // NEW: If true, don't show "In Plan" state or confetti
   selectedVenue = null, // Venue data to check for restrictions (e.g., bouncy castles not allowed)
+  onBrowseVenues = null, // Callback to open venue browser modal (for "find different venue" CTA)
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -233,11 +235,13 @@ export default function EmptySupplierCard({
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
   const [showUnavailableInfo, setShowUnavailableInfo] = useState(false)
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
   const router = useRouter()
   const { toast } = useToast()
 
   // Ref to store scroll position before modal opens - used to restore after add completes
   const savedScrollPositionRef = useRef(null)
+  const infoButtonRef = useRef(null)
 
   // Check if this supplier needs customization first (package selection)
   const isCakeSupplier = type === 'cakes'
@@ -586,6 +590,58 @@ export default function EmptySupplierCard({
 
   const unavailabilityExplanation = isUnavailable ? getUnavailabilityExplanation() : null
 
+  // Handle info button click - calculate position and show tooltip via portal
+  const handleInfoButtonClick = (e) => {
+    e.stopPropagation()
+    if (showUnavailableInfo) {
+      setShowUnavailableInfo(false)
+      return
+    }
+    // Get button position for portal tooltip
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltipPosition({
+      top: rect.bottom + 8, // 8px below the button
+      left: Math.max(16, rect.right - 224), // Align right edge with button, but keep 16px from screen edge
+    })
+    setShowUnavailableInfo(true)
+  }
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!showUnavailableInfo) return
+    const handleClickOutside = (e) => {
+      if (infoButtonRef.current && !infoButtonRef.current.contains(e.target)) {
+        setShowUnavailableInfo(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showUnavailableInfo])
+
+  // Render tooltip via portal so it's not clipped by overflow:hidden
+  const renderTooltipPortal = () => {
+    if (!showUnavailableInfo || !unavailabilityExplanation || !isMounted) return null
+    return createPortal(
+      <div
+        className="fixed w-56 bg-white rounded-xl shadow-2xl border border-gray-200 p-3 z-[9999]"
+        style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-xs text-gray-600 leading-snug">{unavailabilityExplanation}</p>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowUnavailableInfo(false)
+          }}
+          className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>,
+      document.body
+    )
+  }
+
   // Debug logging
   // useEffect(() => {
   //   console.log(`🔍 EmptySupplierCard [${type}]:`, {
@@ -667,31 +723,13 @@ export default function EmptySupplierCard({
               {/* Info icon - shows unavailability reason when unavailable */}
               {isUnavailable && unavailabilityExplanation && (
                 <div className="absolute top-2 right-2 z-10">
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowUnavailableInfo(!showUnavailableInfo)
-                      }}
-                      className="w-7 h-7 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-                    >
-                      <Info className="w-3.5 h-3.5 text-white" />
-                    </button>
-                    {showUnavailableInfo && (
-                      <div className="absolute top-9 right-0 w-56 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
-                        <p className="text-xs text-gray-600 leading-snug">{unavailabilityExplanation}</p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowUnavailableInfo(false)
-                          }}
-                          className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    ref={infoButtonRef}
+                    onClick={handleInfoButtonClick}
+                    className="w-7 h-7 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                  >
+                    <Info className="w-3.5 h-3.5 text-white" />
+                  </button>
                 </div>
               )}
             </div>
@@ -736,50 +774,61 @@ export default function EmptySupplierCard({
                 )}
               </div>
 
-              {/* Button at bottom */}
-              <Button
-                className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed mt-auto ${
-                  isUnavailable
-                    ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                    : isAddedToParty
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
-                    : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
-                }`}
-                onClick={handleAddToParty}
-                disabled={isAdding || isAddedToParty || isUnavailable}
-                title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
-              >
-                {isUnavailable ? (
-                  <>
-                    <X className="w-3.5 h-3.5 mr-1" />
-                    <span className="font-semibold">
-                      {isVenueRestricted
-                        ? "Not at venue"
-                        : availabilityCheck.requiredLeadTime
+              {/* Button at bottom - Show "Find Different Venue" when venue restricts bouncy castles */}
+              {isVenueRestricted && onBrowseVenues ? (
+                <Button
+                  className="w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 mt-auto bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onBrowseVenues()
+                  }}
+                  title="Your venue doesn't allow bouncy castles"
+                >
+                  <span className="font-semibold">Find Different Venue</span>
+                </Button>
+              ) : (
+                <Button
+                  className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed mt-auto ${
+                    isUnavailable
+                      ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                      : isAddedToParty
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                      : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+                  }`}
+                  onClick={handleAddToParty}
+                  disabled={isAdding || isAddedToParty || isUnavailable}
+                  title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
+                >
+                  {isUnavailable ? (
+                    <>
+                      <X className="w-3.5 h-3.5 mr-1" />
+                      <span className="font-semibold">
+                        {availabilityCheck.requiredLeadTime
                           ? "Needs more notice"
                           : "Unavailable"}
-                    </span>
-                  </>
-                ) : isAdding ? (
-                  <>
-                    <div className="relative w-3 h-3 mr-1.5">
-                      <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
-                      <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                    <span className="animate-pulse">Adding...</span>
-                  </>
-                ) : isAddedToParty ? (
-                  <>
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                    <span className="font-semibold">In Plan</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    <span className="font-semibold">Add</span>
-                  </>
-                )}
-              </Button>
+                      </span>
+                    </>
+                  ) : isAdding ? (
+                    <>
+                      <div className="relative w-3 h-3 mr-1.5">
+                        <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
+                        <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <span className="animate-pulse">Adding...</span>
+                    </>
+                  ) : isAddedToParty ? (
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                      <span className="font-semibold">In Plan</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      <span className="font-semibold">Add</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </Card>
@@ -793,6 +842,9 @@ export default function EmptySupplierCard({
           partyDetails={partyDetails}
           supplierType={type}
         />
+
+        {/* Portal-based tooltip for unavailability info */}
+        {renderTooltipPortal()}
       </>
     )
   }
@@ -841,31 +893,13 @@ export default function EmptySupplierCard({
             {/* Info icon - shows unavailability reason when unavailable */}
             {!isUnavailableCategory && isUnavailable && unavailabilityExplanation && (
               <div className="absolute top-2 right-2 z-10">
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowUnavailableInfo(!showUnavailableInfo)
-                    }}
-                    className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-                  >
-                    <Info className="w-4 h-4 text-white" />
-                  </button>
-                  {showUnavailableInfo && (
-                    <div className="absolute top-10 right-0 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
-                      <p className="text-sm text-gray-600 leading-snug">{unavailabilityExplanation}</p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowUnavailableInfo(false)
-                        }}
-                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  ref={infoButtonRef}
+                  onClick={handleInfoButtonClick}
+                  className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                >
+                  <Info className="w-4 h-4 text-white" />
+                </button>
               </div>
             )}
 
@@ -881,49 +915,61 @@ export default function EmptySupplierCard({
 
           {/* Compact button */}
           <div className="p-3" onClick={(e) => e.stopPropagation()}>
-            <Button
-              className={`w-full text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
-                isUnavailable
-                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                  : isAddedToParty
-                  ? 'bg-gradient-to-r from-green-500 to-green-600'
-                  : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
-              }`}
-              onClick={handleAddToParty}
-              disabled={isAdding || isAddedToParty || isUnavailable}
-              title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
-            >
-              {isUnavailable ? (
-                <>
-                  <X className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">
-                    {isVenueRestricted
-                      ? "Not allowed at venue"
-                      : availabilityCheck.requiredLeadTime
+            {/* Show "Find Different Venue" when venue restricts bouncy castles */}
+            {isVenueRestricted && onBrowseVenues ? (
+              <Button
+                className="w-full text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onBrowseVenues()
+                }}
+                title="Your venue doesn't allow bouncy castles"
+              >
+                <span className="text-xs font-semibold">Find Different Venue</span>
+              </Button>
+            ) : (
+              <Button
+                className={`w-full text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
+                  isUnavailable
+                    ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                    : isAddedToParty
+                    ? 'bg-gradient-to-r from-green-500 to-green-600'
+                    : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+                }`}
+                onClick={handleAddToParty}
+                disabled={isAdding || isAddedToParty || isUnavailable}
+                title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
+              >
+                {isUnavailable ? (
+                  <>
+                    <X className="w-4 h-4 mr-1" />
+                    <span className="text-xs font-semibold">
+                      {availabilityCheck.requiredLeadTime
                         ? "Needs more notice"
                         : "Unavailable"}
-                  </span>
-                </>
-              ) : isAdding ? (
-                <>
-                  <div className="relative w-4 h-4 mr-2">
-                    <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
-                    <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <span className="animate-pulse text-xs">Adding...</span>
-                </>
-              ) : isAddedToParty ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">In Plan</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Click to Add</span>
-                </>
-              )}
-            </Button>
+                    </span>
+                  </>
+                ) : isAdding ? (
+                  <>
+                    <div className="relative w-4 h-4 mr-2">
+                      <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
+                      <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <span className="animate-pulse text-xs">Adding...</span>
+                  </>
+                ) : isAddedToParty ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    <span className="text-xs font-semibold">In Plan</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-1" />
+                    <span className="text-xs font-semibold">Click to Add</span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </Card>
 
@@ -943,6 +989,9 @@ export default function EmptySupplierCard({
           partyDetails={partyDetails}
           supplierType={type}
         />
+
+        {/* Portal-based tooltip for unavailability info */}
+        {renderTooltipPortal()}
       </>
     )
   }
@@ -990,31 +1039,13 @@ export default function EmptySupplierCard({
            {/* Info icon - only shows for unavailable suppliers */}
            {isUnavailable && unavailabilityExplanation && (
              <div className="absolute top-2 right-2 z-10">
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowUnavailableInfo(!showUnavailableInfo)
-                    }}
-                    className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 cursor-pointer"
-                  >
-                    <Info className="w-4 h-4 text-white" />
-                  </button>
-                  {showUnavailableInfo && (
-                    <div className="absolute top-10 right-0 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
-                      <p className="text-sm text-gray-600 leading-snug">{unavailabilityExplanation}</p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowUnavailableInfo(false)
-                        }}
-                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  ref={infoButtonRef}
+                  onClick={handleInfoButtonClick}
+                  className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 cursor-pointer"
+                >
+                  <Info className="w-4 h-4 text-white" />
+                </button>
               </div>
             )}
 
@@ -1045,48 +1076,62 @@ export default function EmptySupplierCard({
 
         {/* Bottom section with single CTA */}
         <div className="p-6" onClick={(e) => e.stopPropagation()}>
-          <Button
-            className={`w-full text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
-              isUnavailable
-                ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                : isAddedToParty
-                ? 'bg-gradient-to-r from-green-500 to-green-600'
-                : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
-            }`}
-            size="lg"
-            onClick={handleAddToParty}
-            disabled={isAdding || isAddedToParty || isUnavailable}
-            title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
-          >
-            {isUnavailable ? (
-              <>
-                <X className="w-5 h-5 mr-2" />
-                {isVenueRestricted
-                  ? "Not allowed at your venue"
-                  : availabilityCheck.requiredLeadTime
+          {/* Show "Find Different Venue" when venue restricts bouncy castles */}
+          {isVenueRestricted && onBrowseVenues ? (
+            <Button
+              className="w-full text-white shadow-lg transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]"
+              size="lg"
+              onClick={(e) => {
+                e.stopPropagation()
+                onBrowseVenues()
+              }}
+              title="Your venue doesn't allow bouncy castles"
+            >
+              <Building2 className="w-5 h-5 mr-2" />
+              Find Different Venue
+            </Button>
+          ) : (
+            <Button
+              className={`w-full text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
+                isUnavailable
+                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                  : isAddedToParty
+                  ? 'bg-gradient-to-r from-green-500 to-green-600'
+                  : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+              }`}
+              size="lg"
+              onClick={handleAddToParty}
+              disabled={isAdding || isAddedToParty || isUnavailable}
+              title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
+            >
+              {isUnavailable ? (
+                <>
+                  <X className="w-5 h-5 mr-2" />
+                  {availabilityCheck.requiredLeadTime
                     ? "Needs more notice"
                     : "Unavailable"}
-              </>
-            ) : isAdding ? (
-              <>
-                <div className="relative w-5 h-5 mr-2">
-                  <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
-                  <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <span className="animate-pulse">Adding...</span>
-              </>
-            ) : isAddedToParty ? (
-              <>
-                <CheckCircle className="w-5 h-5 mr-2" />
-                In Plan
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5 mr-2" />
-                Click to Add
-              </>
-            )}
-          </Button>
+                </>
+              ) : isAdding ? (
+                <>
+                  <div className="relative w-5 h-5 mr-2">
+                    <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
+                    <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <span className="animate-pulse">Adding...</span>
+                </>
+              ) : isAddedToParty ? (
+                <>
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  In Plan
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Click to Add
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -1106,6 +1151,9 @@ export default function EmptySupplierCard({
         partyDetails={partyDetails}
         supplierType={type}
       />
+
+      {/* Portal-based tooltip for unavailability info */}
+      {renderTooltipPortal()}
     </>
   )
 }

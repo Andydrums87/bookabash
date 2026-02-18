@@ -20,6 +20,7 @@ const CATEGORY_TYPE_MAP = {
     'Bouncy Castle': 'bouncyCastle',
     'Balloons': 'balloons',
     'Activities': 'activities',
+    'Soft Play': 'activities',  // Maps to same type as Activities
     'Face Painting': 'facePainting',
     'Cakes': 'cakes',
     'Sweet Treats': 'sweetTreats'
