@@ -110,7 +110,7 @@ export default function MissingSuppliersSuggestions({
       categories: ["Face Painting"]
     },
     activities: {
-      name: "Activities",
+      name: "Soft Play",
       icon: "🎪",
       color: "bg-yellow-500",
       description: "Extra fun activities",

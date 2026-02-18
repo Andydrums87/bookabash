@@ -98,7 +98,7 @@ export default function SelectedSupplierCard({
       catering: "Catering",
       cakes: "Cakes",
       facePainting: "Face Painting",
-      activities: "Activities",
+      activities: "Soft Play",
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",

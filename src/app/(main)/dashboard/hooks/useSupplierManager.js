@@ -21,7 +21,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
       entertainment: 'Entertainer',
       cakes: 'Cakes',
       facePainting: 'Face Painting',
-      activities: 'Activities',
+      activities: 'Soft Play',
       partyBags: 'Party Bags',
       decorations: 'Decorations',
       balloons: 'Balloons',

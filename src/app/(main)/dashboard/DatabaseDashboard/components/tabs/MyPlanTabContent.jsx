@@ -19,7 +19,7 @@ export default function MyPlanTabContent({
     catering: 'Catering',
     cakes: 'Cakes',
     facePainting: 'Face Painting',
-    activities: 'Activities',
+    activities: 'Soft Play',
     partyBags: 'Party Bags',
     decorations: 'Decorations',
     balloons: 'Balloons',

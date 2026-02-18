@@ -173,9 +173,9 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       icon: <div className="text-sm">🦸</div>,
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854552/kfhncxpa58uyrtrjpq2z.jpg"
     },
-    { 
+    {
       id: "activities", // ✅ KEPT: This one stays as "activities"
-      name: "Activities", 
+      name: "Soft Play",
       icon: <Gamepad2 className="w-5 h-5" />,
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385838/iStock-2185368487_a68z9g.jpg"
     },

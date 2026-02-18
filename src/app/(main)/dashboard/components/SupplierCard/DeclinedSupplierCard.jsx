@@ -51,7 +51,7 @@ export default function DeclinedSupplierCard({
       entertainment: "Entertainment",
       catering: "Catering",
       facePainting: "Face Painting",
-      activities: "Activities",
+      activities: "Soft Play",
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",

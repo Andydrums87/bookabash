@@ -448,7 +448,7 @@ const MobileBottomTabBar = ({
                         catering: 'Catering',
                         cakes: 'Cakes',
                         facePainting: 'Face Painting',
-                        activities: 'Activities',
+                        activities: 'Soft Play',
                         partyBags: 'Party Bags',
                         decorations: 'Decorations',
                         balloons: 'Balloons'
@@ -575,7 +575,7 @@ const MobileBottomTabBar = ({
                         catering: 'Catering',
                         cakes: 'Cakes',
                         facePainting: 'Face Painting',
-                        activities: 'Activities',
+                        activities: 'Soft Play',
                         partyBags: 'Party Bags',
                         decorations: 'Decorations',
                         balloons: 'Balloons'

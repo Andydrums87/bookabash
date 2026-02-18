@@ -281,7 +281,7 @@ export default function PartyPhaseContent({
                             catering: 'Catering',
                             cakes: 'Cakes',
                             facePainting: 'Face Painting',
-                            activities: 'Activities',
+                            activities: 'Soft Play',
                             partyBags: 'Party Bags',
                             decorations: 'Decorations',
                             balloons: 'Balloons'
@@ -411,7 +411,7 @@ export default function PartyPhaseContent({
                             catering: 'Catering',
                             cakes: 'Cakes',
                             facePainting: 'Face Painting',
-                            activities: 'Activities',
+                            activities: 'Soft Play',
                             partyBags: 'Party Bags',
                             decorations: 'Decorations',
                             balloons: 'Balloons'

@@ -211,7 +211,7 @@ const SupplierMessagesSection = ({ customerId, partyId }) => {
       venue: 'Venue',
       photography: 'Photography',
       decorations: 'Decorations',
-      activities: 'Activities',
+      activities: 'Soft Play',
       facePainting: 'Face Painting',
       partyBags: 'Party Bags',
       balloons: 'Balloons',

@@ -147,7 +147,7 @@ export default function MyPartyTabContent({
       catering: 'The Food',
       cakes: 'The Cake',
       facePainting: 'Face Painting',
-      activities: 'Activities',
+      activities: 'Soft Play',
       partyBags: 'Party Bags',
       decorations: 'The Decorations',
       balloons: 'Balloons',

@@ -302,7 +302,7 @@ const childPhotoRef = useRef(null)
           cakes: 'Cakes',
           decorations: 'Decorations',
           facePainting: 'Face Painting',
-          activities: 'Activities',
+          activities: 'Soft Play',
           partyBags: 'Party Bags',
           balloons: 'Balloons',
           catering: 'Catering'
@@ -815,7 +815,7 @@ useEffect(() => {
           cakes: 'Cakes',
           catering: 'Catering',
           facePainting: 'Face Painting',
-          activities: 'Activities',
+          activities: 'Soft Play',
           partyBags: 'Party Bags',
           decorations: 'Decorations',
           balloons: 'Balloons',

@@ -495,7 +495,7 @@ export default function EmptySupplierCard({
       entertainment: "Entertainment",
       catering: "Catering",
       facePainting: "Face Painting",
-      activities: "Activities",
+      activities: "Soft Play",
       decorations: "Decorations",
       balloons: "Balloons",
       cakes: "Cakes",

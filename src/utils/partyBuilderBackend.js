@@ -1254,7 +1254,7 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
       catering: 'Catering',
       cakes: 'Cakes',
       decorations: 'Decorations',
-      activities: 'Activities',
+      activities: 'Soft Play',
       partyBags: 'Party Bags'
     };
     return mapping[dashboardCategory] || dashboardCategory;

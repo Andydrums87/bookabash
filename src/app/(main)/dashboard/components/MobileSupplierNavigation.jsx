@@ -127,8 +127,8 @@ export default function MobileSupplierNavigation({
       {
         id: "activities",
         type: "activities",
-        title: "Activities",
-        name: "Activities",
+        title: "Soft Play",
+        name: "Soft Play",
         image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385838/iStock-2185368487_a68z9g.jpg",
         icon: <Music className="w-5 h-5" />,
       },
