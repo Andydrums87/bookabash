@@ -2128,7 +2128,7 @@ const handleChildPhotoUpload = async (file) => {
                           const recommendedSupplier = getRecommendedSupplierForType(type);
                           const isLoading = loadingCards[type];
                           const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
-                          const alwaysShowCategories = ['photography', 'bouncyCastle', 'catering', 'sweetTreats', 'decorations'];
+                          const alwaysShowCategories = ['photography', 'bouncyCastle', 'catering', 'sweetTreats', 'decorations', 'activities'];
                           const shouldAlwaysShow = alwaysShowCategories.includes(type);
 
                           // Show if: no supplier AND (has recommendation OR is loading OR is deleting OR should always show)
