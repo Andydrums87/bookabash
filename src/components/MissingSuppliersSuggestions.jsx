@@ -115,7 +115,7 @@ export default function MissingSuppliersSuggestions({
       color: "bg-yellow-500",
       description: "Extra fun activities",
       priority: 9,
-      categories: ["Activities"]
+      categories: ["Activities", "Soft Play"]
     },
     bouncyCastle: {
       name: "Bouncy Castle",
