@@ -4,6 +4,9 @@
  * Handles lead-time detection, party bag calculations, and payment types
  */
 
+// Helper to avoid floating point precision issues
+const roundMoney = (value) => Math.round(value * 100) / 100
+
 /**
  * Detect if supplier requires full payment upfront (lead-time based)
  */
@@ -88,7 +91,7 @@ export const calculateSupplierPrice = (supplier, partyDetails = null) => {
                         5.00;
     
     const guestCount = getGuestCount(partyDetails);
-    const totalPrice = pricePerBag * guestCount;
+    const totalPrice = roundMoney(pricePerBag * guestCount);
     
     return {
       price: totalPrice,

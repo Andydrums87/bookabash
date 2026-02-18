@@ -126,13 +126,13 @@ export default function SupplierAddedConfirmationModal({
     if (!supplier) return 0
     let packagePrice = selectedPackage?.price || supplier.price || supplier.priceFrom || 0
 
-    // For party bags, multiply by quantity
+    // For party bags, multiply by quantity (use roundMoney to avoid floating point issues)
     if (isPartyBags) {
-      packagePrice = packagePrice * partyBagsQuantity
+      packagePrice = roundMoney(packagePrice * partyBagsQuantity)
     }
 
     const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-    return packagePrice + addonsTotal
+    return roundMoney(packagePrice + addonsTotal)
   }, [selectedPackage, selectedAddons, supplier, isPartyBags, partyBagsQuantity])
 
   // Disable body scroll when modal is open
@@ -185,18 +185,19 @@ export default function SupplierAddedConfirmationModal({
 
     if (isPartyBags && selectedPackage) {
       const pricePerBag = selectedPackage.price
+      const partyBagsTotalPrice = roundMoney(pricePerBag * partyBagsQuantity)
       finalPackage = {
         ...selectedPackage,
         price: pricePerBag,
         originalPrice: pricePerBag,
-        totalPrice: pricePerBag * partyBagsQuantity,
+        totalPrice: partyBagsTotalPrice,
         partyBagsQuantity: partyBagsQuantity,
         guestCount: partyDetails?.guestCount || 10,
         pricePerBag: pricePerBag,
         partyBagsMetadata: {
           quantity: partyBagsQuantity,
           pricePerBag: pricePerBag,
-          totalPrice: pricePerBag * partyBagsQuantity,
+          totalPrice: partyBagsTotalPrice,
         },
       }
     }

@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation"
 import { useSuppliers } from "@/utils/mockBackend"
 import { usePartyPlan } from "@/utils/partyPlanBackend"
 
+// Helper to avoid floating point precision issues
+const roundMoney = (value) => Math.round(value * 100) / 100
+
 export default function RecommendedAddons({
   title = "Party Extras",
   subtitle = "Complete your party with these additional services",
@@ -36,7 +39,7 @@ export default function RecommendedAddons({
   // Convert supplier to addon format helper function
   const convertSupplierToAddon = (supplier) => {
     const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
-    const addonPrice = isPartyBags ? supplier.priceFrom * guestCount : supplier.priceFrom
+    const addonPrice = isPartyBags ? roundMoney(supplier.priceFrom * guestCount) : supplier.priceFrom
 
     return {
       id: supplier.id,
