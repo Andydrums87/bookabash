@@ -10,7 +10,6 @@ import { User, Cake } from "lucide-react"
 
 export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, partyTheme }) {
   const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
   const [childAge, setChildAge] = useState("")
   const [gender, setGender] = useState("")
   const [existingChildData, setExistingChildData] = useState(null)
@@ -20,12 +19,11 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
   const isNoTheme = !partyTheme || partyTheme === "no-theme"
 
   // Check if all required fields are filled (gender only required if no theme)
-  const isFormValid = firstName.trim() && lastName.trim() && childAge && (!isNoTheme || gender)
+  const isFormValid = firstName.trim() && childAge && (!isNoTheme || gender)
 
   // Individual field validation
   const errors = {
     firstName: !firstName.trim(),
-    lastName: !lastName.trim(),
     childAge: !childAge,
     gender: isNoTheme && !gender
   }
@@ -42,13 +40,12 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
           
           // If we have child data from à la carte, use it and auto-submit
           if (parsed.source === 'a_la_carte' && parsed.firstName && parsed.childAge) {
- 
-            
+
+
             const childData = {
-              childName: parsed.childName || `${parsed.firstName} ${parsed.lastName || ''}`.trim(),
+              childName: parsed.childName || parsed.firstName,
               childAge: parsed.childAge,
-              firstName: parsed.firstName,
-              lastName: parsed.lastName || ''
+              firstName: parsed.firstName
             }
             
             // Auto-submit and close immediately
@@ -80,10 +77,9 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
     }
 
     const submitData = {
-      childName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+      childName: firstName.trim(),
       childAge: parseInt(childAge),
-      firstName: firstName.trim(),
-      lastName: lastName.trim()
+      firstName: firstName.trim()
     }
 
     // Include gender only if it was collected (no-theme parties)
@@ -102,7 +98,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
       return // Prevent closing without completing the form
     }
     setFirstName("")
-    setLastName("")
     setChildAge("")
     setGender("")
     setExistingChildData(null)
@@ -171,35 +166,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
               </div>
               {showErrors && errors.firstName && (
                 <p className="text-xs text-red-500 mt-1">Please enter first name</p>
-              )}
-            </div>
-
-            {/* Child's Last Name */}
-            <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                Last name
-              </Label>
-              <div className="relative">
-                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${showErrors && errors.lastName ? 'text-red-400' : 'text-gray-400'}`} />
-                <Input
-                  id="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => {
-                    setLastName(e.target.value)
-                    if (showErrors) setShowErrors(false)
-                  }}
-                  onKeyPress={handleKeyPress}
-                  className={`pl-10 h-12 text-base font-medium border-2 rounded-xl transition-colors ${
-                    showErrors && errors.lastName
-                      ? 'border-red-400 focus:border-red-500'
-                      : 'border-gray-200 focus:border-primary-500'
-                  }`}
-                  placeholder="e.g. Smith"
-                />
-              </div>
-              {showErrors && errors.lastName && (
-                <p className="text-xs text-red-500 mt-1">Please enter last name</p>
               )}
             </div>
 
