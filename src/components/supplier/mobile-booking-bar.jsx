@@ -920,7 +920,7 @@ const MobileBookingBar = ({
 
     let buttonText
     if (isCakeSupplier && isCustomizablePackage(selectedPackage)) {
-      buttonText = "Customize & Add"
+      buttonText = "Customise & Add"
     } else if (isLeadTimeBased) {
       buttonText = hasPartyPlan ? "Add to Plan" : "Add to Cart"
     } else {

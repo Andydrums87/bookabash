@@ -210,7 +210,7 @@ const CakeCustomizationModal = ({
       showCloseButton={true}
     >
       <ModalHeader
-        title="Customize Your Cake Order"
+        title="Customise Your Cake Order"
         subtitle={`${selectedPackage.name} from ${supplier?.name}`}
         theme="fun"
         icon={<Cake className="w-6 h-6" />}

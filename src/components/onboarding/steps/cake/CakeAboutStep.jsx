@@ -38,7 +38,7 @@ export default function CakeAboutStep({ description = "", onChange }) {
         <textarea
           value={text}
           onChange={handleChange}
-          placeholder="Describe this cake - what it looks like, what makes it special, any customization options available..."
+          placeholder="Describe this cake - what it looks like, what makes it special, any customisation options available..."
           className="w-full min-h-[200px] p-4 text-lg text-gray-900 placeholder-gray-400 border-2 border-gray-200 rounded-xl focus:border-gray-900 focus:outline-none resize-none"
         />
 

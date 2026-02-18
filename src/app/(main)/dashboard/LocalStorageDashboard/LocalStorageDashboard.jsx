@@ -1836,14 +1836,14 @@ const handleCustomizationComplete = async (customizationData) => {
       newValue: localStorage.getItem('user_party_plan')
     }))
 
-    toast.success(`${supplier.name} customization saved!`, {
+    toast.success(`${supplier.name} customisation saved!`, {
       description: 'Your changes have been applied',
       duration: 3000
     })
 
   } catch (error) {
-    console.error('❌ Error saving customization:', error)
-    toast.error('Failed to save customization')
+    console.error('❌ Error saving customisation:', error)
+    toast.error('Failed to save customisation')
   }
 }
 

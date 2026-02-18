@@ -552,7 +552,7 @@ const CakeServiceDetails = ({
                 handleFieldChange('description', newText);
               }
             }}
-            placeholder="Describe this cake - what it looks like, what makes it special, any customization options..."
+            placeholder="Describe this cake - what it looks like, what makes it special, any customisation options..."
             className="w-full min-h-[250px] p-4 text-xl text-gray-900 placeholder-gray-400 border-2 border-gray-200 rounded-xl focus:border-gray-900 focus:outline-none resize-none"
           />
         </div>
