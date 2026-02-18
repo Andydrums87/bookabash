@@ -2527,64 +2527,6 @@ export default function SupplierCustomizationModal({
                   </p>
                 </div>
 
-                {/* Cake Price Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  {/* ✅ EDIT MODE: Price diff banner for cakes */}
-                  {mode === "edit" && priceDiff !== 0 && (
-                    <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
-                      priceDiff > 0
-                        ? "bg-amber-50 border border-amber-200"
-                        : "bg-green-50 border border-green-200"
-                    }`}>
-                      <Info className={`w-4 h-4 flex-shrink-0 ${priceDiff > 0 ? "text-amber-600" : "text-green-600"}`} />
-                      <p className={`text-sm ${priceDiff > 0 ? "text-amber-800" : "text-green-800"}`}>
-                        {priceDiff > 0
-                          ? `This change will increase the price by £${priceDiff.toFixed(2)}`
-                          : `This change will reduce the price by £${Math.abs(priceDiff).toFixed(2)}`
-                        }
-                      </p>
-                    </div>
-                  )}
-                  <h4 className="text-sm text-gray-600 mb-3">Price Summary</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">{selectedPackage?.name || 'Select a size'}</span>
-                      <span className="text-gray-900">
-                        {selectedPackage ? `£${selectedPackage.price}` : '-'}
-                      </span>
-                    </div>
-                    {fulfillmentMethod === "delivery" && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">Delivery</span>
-                        <span className="text-gray-900">
-                          {calculateModalPricing.deliveryFee > 0 ? `£${calculateModalPricing.deliveryFee.toFixed(2)}` : 'Free'}
-                        </span>
-                      </div>
-                    )}
-                    {fulfillmentMethod === "pickup" && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">Collection</span>
-                        <span className="text-gray-900">Free</span>
-                      </div>
-                    )}
-                    {selectedCupcakeOption && calculateModalPricing.cupcakesPrice > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">
-                          Cupcakes ({selectedCupcakeOption === 'box6' ? 'Box of 6' : selectedCupcakeOption === 'box12' ? 'Box of 12' : '2 x Box of 12'})
-                        </span>
-                        <span className="text-gray-900">£{calculateModalPricing.cupcakesPrice.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-gray-200 pt-2 mt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-900">Total</span>
-                        <span className="font-semibold text-lg text-gray-900">
-                          {selectedPackage ? `£${calculateModalPricing.totalPrice}` : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </section>
             )}
 
@@ -2669,14 +2611,6 @@ export default function SupplierCustomizationModal({
                   <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
                 </div>
 
-                {/* Price Summary */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-900">Total</span>
-                    <span className="font-bold text-2xl text-gray-900">£{totalPrice.toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Flat rate for 2-hour party</p>
-                </div>
               </section>
             )}
 
@@ -3965,135 +3899,10 @@ export default function SupplierCustomizationModal({
                   </div>
                 )}
 
-                {/* SECTION 4: Price Summary */}
-                {selectedPackage && (
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Booking Summary</h4>
-                    <div className="space-y-2">
-                      {/* Room */}
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">{selectedPackage.name}</p>
-                          {selectedPackage.duration && (
-                            <p className="text-xs text-gray-500">{selectedPackage.duration}</p>
-                          )}
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">£{(getVenuePackagePrice(selectedPackage) || 0).toFixed(2)}</span>
-                      </div>
-
-                      {/* Catering (if selected) */}
-                      {(() => {
-                        const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
-                        const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
-                        if (!selectedCatering) return null
-
-                        return (
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{selectedCatering.name}</p>
-                              <p className="text-xs text-gray-500">{cateringGuestCount} guests × £{selectedCatering.pricePerHead}</p>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900">£{roundMoney(selectedCatering.pricePerHead * cateringGuestCount).toFixed(2)}</span>
-                          </div>
-                        )
-                      })()}
-
-                      {/* Add-ons (if selected) */}
-                      {selectedAddons.length > 0 && (
-                        <div className="pt-2 border-t border-gray-200 space-y-1.5">
-                          {selectedAddons.map(addonId => {
-                            const addon = availableAddons.find(a => a.id === addonId)
-                            if (!addon) return null
-                            return (
-                              <div key={addonId} className="flex justify-between items-center">
-                                <p className="text-sm text-gray-700">{addon.name}</p>
-                                <span className="text-sm font-medium text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-
-                      {/* Total */}
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-300 mt-1">
-                        <span className="text-sm font-bold text-gray-900">Total</span>
-                        <span className="text-lg font-bold text-gray-900">
-                          £{(() => {
-                            const venuePrice = getVenuePackagePrice(selectedPackage)
-                            const cateringPackages = supplier?.data?.cateringPackages || supplier?.cateringPackages || []
-                            const selectedCatering = cateringPackages.find(c => c.id === selectedCateringId)
-                            const cateringPrice = selectedCatering ? roundMoney(selectedCatering.pricePerHead * cateringGuestCount) : 0
-                            const addonsPrice = selectedAddons.reduce((sum, addonId) => {
-                              const addon = availableAddons.find(a => a.id === addonId)
-                              return sum + (addon?.price || 0)
-                            }, 0)
-                            return roundMoney(venuePrice + cateringPrice + addonsPrice).toFixed(2)
-                          })()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </section>
             )}
 
-            {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && !supplierTypeDetection.isEntertainment && !supplierTypeDetection.isVenue && (
-              <section className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-                {/* ✅ EDIT MODE: Price diff banner */}
-                {mode === "edit" && priceDiff !== 0 && (
-                  <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-                    priceDiff > 0
-                      ? "bg-amber-50 border border-amber-200"
-                      : "bg-green-50 border border-green-200"
-                  }`}>
-                    <Info className={`w-4 h-4 flex-shrink-0 ${priceDiff > 0 ? "text-amber-600" : "text-green-600"}`} />
-                    <p className={`text-sm ${priceDiff > 0 ? "text-amber-800" : "text-green-800"}`}>
-                      {priceDiff > 0
-                        ? `This change will increase the price by £${priceDiff.toFixed(2)}`
-                        : `This change will reduce the price by £${Math.abs(priceDiff).toFixed(2)}`
-                      }
-                    </p>
-                  </div>
-                )}
-                <div className="mb-4">
-                  <h4 className="font-semibold text-gray-900 text-base">Price Summary</h4>
-                </div>
-                <div className="space-y-2.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      {selectedPackage?.name}
-                      {calculateModalPricing.pricingInfo?.isTimeBased && (
-                        <span className="text-gray-500 text-xs ml-2">
-                          ({formatDuration(effectivePartyDetails?.duration || 2)})
-                        </span>
-                      )}
-                    </span>
-                    <span className="font-semibold text-gray-900">£{calculateModalPricing.packagePrice}</span>
-                  </div>
-
-                  {selectedAddons.map((addonId) => {
-                    const addon = availableAddons.find((a) => a.id === addonId)
-                    return addon ? (
-                      <div key={addonId} className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">{addon.name}</span>
-                        <span className="font-medium text-gray-900">£{(addon.price || 0).toFixed(2)}</span>
-                      </div>
-                    ) : null
-                  })}
-
-                  <div className="border-t border-gray-300 pt-3 mt-3 flex justify-between items-center">
-                    <span className="font-bold text-gray-900">Total</span>
-                    <span className="font-bold text-2xl text-gray-900">£{totalPrice.toFixed(2)}</span>
-                  </div>
-
-                  {calculateModalPricing.hasEnhancedPricing && (
-                    <div className="text-xs text-gray-600 bg-gray-100 rounded p-2.5 text-center mt-3">
-                      Enhanced pricing applied based on your party details
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
+            {/* Price summary removed - price shown in CTA button */}
           </div>
 
           {/* Category-specific disclaimer note */}
