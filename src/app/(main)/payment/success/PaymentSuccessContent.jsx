@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   CheckCircle,
@@ -36,9 +36,13 @@ export default function PaymentSuccessPage() {
 
   const [upgradeCompleted, setUpgradeCompleted] = useState(false)
   const [upgradeError, setUpgradeError] = useState(null)
+  const trackingFired = useRef(false)
 
-  // Track booking completion
+  // Track booking completion (only once)
   useEffect(() => {
+    if (trackingFired.current) return;
+    trackingFired.current = true;
+
     if (window.gtag) {
       window.gtag('event', 'booking_completed', {
         event_category: 'conversion',
