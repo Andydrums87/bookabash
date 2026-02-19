@@ -46,6 +46,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`scroll-to-top ${montserrat.variable} ${poppins.variable} ${orbitron.variable} ${fredoka.variable}`}>
       <head>
+        <meta
+          name="facebook-domain-verification"
+          content="6eexcunosrj4etelgt5zobc4ni1bq5"
+        />
         {/* Block analytics by default until consent */}
         <Script id="gtag-consent" strategy="beforeInteractive">
           {`
