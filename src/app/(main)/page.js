@@ -209,6 +209,14 @@ export default function HomePage() {
       return
     }
 
+    // Track Plan My Party click
+    if (window.gtag) {
+      window.gtag('event', 'booking_started', {
+        event_category: 'engagement',
+        event_label: 'plan_my_party_click'
+      });
+    }
+
     // ✅ NEW: Allow users to create multiple parties without warnings
     // Just proceed directly with party creation
     proceedWithPartyCreation(formData)

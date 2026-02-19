@@ -51,12 +51,12 @@ export default function MobileSearchForm({
 
   const handleMobileSearch = async (e) => {
     e.preventDefault()
-    
+
     if (!isFormValid()) {
       alert('Please fill in all required fields before submitting.');
       return;
     }
-    
+
     handleSearch(e);
   };
 

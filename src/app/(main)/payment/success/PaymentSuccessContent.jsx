@@ -37,6 +37,16 @@ export default function PaymentSuccessPage() {
   const [upgradeCompleted, setUpgradeCompleted] = useState(false)
   const [upgradeError, setUpgradeError] = useState(null)
 
+  // Track booking completion
+  useEffect(() => {
+    if (window.gtag) {
+      window.gtag('event', 'booking_completed', {
+        event_category: 'conversion',
+        event_label: 'payment_success'
+      });
+    }
+  }, []);
+
   // Handle upgrade completion
   useEffect(() => {
     const completeUpgrade = async () => {
