@@ -91,7 +91,7 @@ export default function RootLayout({ children }) {
             'https://connect.facebook.net/en_US/fbevents.js');
 
             window.fbq = fbq;
-            fbq('init', '2673808906339700');
+            fbq('init', '517991158551582');
           `}
         </Script>
       </head>
