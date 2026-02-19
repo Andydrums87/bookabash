@@ -216,6 +216,9 @@ export default function HomePage() {
         event_label: 'plan_my_party_click'
       });
     }
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'InitiateCheckout');
+    }
 
     // ✅ NEW: Allow users to create multiple parties without warnings
     // Just proceed directly with party creation

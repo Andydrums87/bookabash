@@ -45,6 +45,9 @@ export default function PaymentSuccessPage() {
         event_label: 'payment_success'
       });
     }
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Purchase');
+    }
   }, []);
 
   // Handle upgrade completion
