@@ -54,6 +54,11 @@ export default function CookieConsent() {
           ad_personalization: 'granted'
         })
       }
+      // Initialize Meta Pixel
+      if (typeof window !== 'undefined') {
+        window.fbq?.('consent', 'grant');
+        window.fbq?.('track', 'PageView');
+      }
     }
   }
 
