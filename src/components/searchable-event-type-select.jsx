@@ -16,6 +16,7 @@ const eventTypes = [
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },
   { value: "mermaid", label: "Mermaid", category: "Popular" },
+  { value: "kpop-demon-hunters", label: "K-Pop Demon Hunters", category: "Popular" },
 
 
   // Adventure themes
