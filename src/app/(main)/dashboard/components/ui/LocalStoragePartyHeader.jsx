@@ -39,7 +39,7 @@ const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296848/iStock-1474868329_hxmo8u.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297169/iStock-1434335578_h3dzbb.jpg",
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg",
-      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771603333/ChatGPT_Image_Feb_20_2026_04_01_59_PM_s9r5nm.png",
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771611975/Screenshot_2026-02-20_at_18.25.53_nzx9if.png",
       frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png",
     }
     return themeImages[themeName.toLowerCase()] || null
@@ -674,7 +674,7 @@ export default function LocalStoragePartyHeader({
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg",
-      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771603333/ChatGPT_Image_Feb_20_2026_04_01_59_PM_s9r5nm.png",
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771611975/Screenshot_2026-02-20_at_18.25.53_nzx9if.png",
       frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png"
     }
 

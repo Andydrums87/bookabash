@@ -14,6 +14,7 @@ const eventTypes = [
   { value: "spiderman", label: "Spiderman", category: "Popular" },
   { value: "unicorn", label: "Unicorn Magic", category: "Popular" },
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
+  { value: "frozen", label: "Frozen", category: "Popular" },
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },
   { value: "mermaid", label: "Mermaid", category: "Popular" },
   { value: "kpop-demon-hunters", label: "K-Pop Demon Hunters", category: "Popular" },
