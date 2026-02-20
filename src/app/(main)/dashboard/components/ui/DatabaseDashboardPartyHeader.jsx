@@ -224,7 +224,7 @@ export default function DatabasePartyHeader({
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg",
-      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771601928/ChatGPT_Image_Feb_20_2026_03_38_38_PM_fzhev8.png"
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771603333/ChatGPT_Image_Feb_20_2026_04_01_59_PM_s9r5nm.png"
     }
 
     return themeImages[themeSource.toLowerCase()] || null
