@@ -224,7 +224,8 @@ export default function DatabasePartyHeader({
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg",
-      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771603333/ChatGPT_Image_Feb_20_2026_04_01_59_PM_s9r5nm.png"
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771603333/ChatGPT_Image_Feb_20_2026_04_01_59_PM_s9r5nm.png",
+      frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png"
     }
 
     return themeImages[themeSource.toLowerCase()] || null
@@ -251,6 +252,7 @@ export default function DatabasePartyHeader({
       pirate: "linear-gradient(to right, #d97706, #7f1d1d, #374151)",
       mermaid: "linear-gradient(to right, #2dd4bf, #06b6d4, #3b82f6)",
       "kpop-demon-hunters": "linear-gradient(to right, #ec4899, #8b5cf6, #06b6d4)",
+      frozen: "linear-gradient(to right, #7dd3fc, #38bdf8, #0ea5e9)",
       default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
     }
 
