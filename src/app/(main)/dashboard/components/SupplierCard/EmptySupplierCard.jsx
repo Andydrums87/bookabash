@@ -253,7 +253,9 @@ export default function EmptySupplierCard({
   const isCateringSupplier = type === 'catering'
   const isDecorationsSupplier = type === 'decorations'
   const isVenueSupplier = type === 'venue' || type === 'venues'
-  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier || isDecorationsSupplier || isVenueSupplier
+  const isPhotographySupplier = type === 'photography'
+  const isEntertainmentSupplier = type === 'entertainment'
+  const needsCustomization = isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isFacePaintingSupplier || isActivitiesSupplier || isSweetTreatsSupplier || isCateringSupplier || isDecorationsSupplier || isVenueSupplier || isPhotographySupplier || isEntertainmentSupplier
 
   // Check if this category is restricted by the selected venue
   const isVenueRestricted = useMemo(() => {

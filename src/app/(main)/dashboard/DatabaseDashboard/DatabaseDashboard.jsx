@@ -593,7 +593,7 @@ const childPhotoRef = useRef(null)
       console.error('Cannot remove supplier: No party ID')
       return { success: false, error: 'No party ID available' }
     }
-    
+
     const result = await partyDatabaseBackend.removeSupplierFromParty(partyId, supplierType)
     if (result.success) {
       refreshPartyData()
@@ -603,9 +603,18 @@ const childPhotoRef = useRef(null)
   }
 
   const {
-    handleDeleteSupplier,
+    handleDeleteSupplier: originalHandleDeleteSupplier,
     getSupplierDisplayName,
   } = useSupplierManager(removeSupplier)
+
+  // Wrapper for handleDeleteSupplier to show toast notification
+  const handleDeleteSupplier = async (supplierType) => {
+    const supplierName = getSupplierDisplayName(supplierType)
+    await originalHandleDeleteSupplier(supplierType)
+    toast.success(`${supplierName} removed from your party`, {
+      duration: 3000,
+    })
+  }
   // ✅ CHECK CACHE IMMEDIATELY - BEFORE ANY HOOKS
   const cachedData = (() => {
     if (typeof window === 'undefined') return null

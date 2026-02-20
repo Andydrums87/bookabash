@@ -235,9 +235,18 @@ const childPhotoRef = useRef(null)
     closeSupplierModal: originalCloseSupplierModal,
     handleSupplierSelection: originalHandleSupplierSelection,
     handleDeleteSupplier,
-    confirmDeleteSupplier,
+    confirmDeleteSupplier: originalConfirmDeleteSupplier,
     cancelDeleteSupplier
   } = useSupplierManager(removeSupplier)
+
+  // Wrapper for confirmDeleteSupplier to show toast notification
+  const confirmDeleteSupplier = async (supplierType) => {
+    const supplierName = getSupplierDisplayName(supplierType)
+    await originalConfirmDeleteSupplier(supplierType)
+    toast.success(`${supplierName} removed from your party`, {
+      duration: 3000,
+    })
+  }
 
   // ✅ CRITICAL FIX: Create suppliers object with useMemo so it updates when partyPlan changes
   const suppliers = useMemo(() => ({

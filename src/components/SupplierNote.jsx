@@ -56,6 +56,10 @@ const CATEGORY_NOTES = {
   bouncyCastle: "Equipment shown is representative. Exact model may vary based on availability.",
   bouncy: "Equipment shown is representative. Exact model may vary based on availability.",
   "bouncy castle": "Equipment shown is representative. Exact model may vary based on availability.",
+
+  // Photography
+  photography: "Photos shown are examples of our photographer's work. Specific photographer assigned based on availability.",
+  Photography: "Photos shown are examples of our photographer's work. Specific photographer assigned based on availability.",
 }
 
 export default function SupplierNote({ category, className = "" }) {

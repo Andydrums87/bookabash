@@ -483,7 +483,7 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Detect supplier types using unified system
   const supplierTypeDetection = useMemo(() => {
-    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false, isBalloons: false, isFacePainting: false, isSoftPlay: false, isBouncyCastle: false, isMultiSelect: false, isCatering: false, isSweetTreats: false, isDecorations: false, isEntertainment: false }
+    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false, isBalloons: false, isFacePainting: false, isSoftPlay: false, isBouncyCastle: false, isMultiSelect: false, isCatering: false, isSweetTreats: false, isDecorations: false, isEntertainment: false, isPhotography: false }
 
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
@@ -506,6 +506,7 @@ export default function SupplierCustomizationModal({
       const isSweetTreatsFromType = supplierType === 'sweetTreats' || supplierType.toLowerCase().includes('sweet') || supplierType.toLowerCase().includes('candy')
       const isDecorationsFromType = supplierType === 'decorations' || supplierType.toLowerCase().includes('decoration') || supplierType.toLowerCase().includes('tableware')
       const isEntertainmentFromType = supplierType === 'entertainment' || supplierType.toLowerCase().includes('entertain') || supplierType.toLowerCase().includes('magician') || supplierType.toLowerCase().includes('clown')
+      const isPhotographyFromType = supplierType === 'photography' || supplierType.toLowerCase().includes('photo')
 
       // Detect if this is a venue supplier from supplierType prop or category
       const venueTypesFromProp = ['venue', 'private function room', 'community hall', 'church hall', 'village hall', 'school hall', 'sports centre', 'hotel', 'restaurant', 'pub', 'bar', 'event space']
@@ -530,6 +531,7 @@ export default function SupplierCustomizationModal({
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
         isEntertainment: isEntertainmentFromType,
+        isPhotography: isPhotographyFromType,
         isVenue: isVenueFromType,
         isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
         hasPackages: supplierData?.packages?.length
@@ -548,6 +550,7 @@ export default function SupplierCustomizationModal({
         isSweetTreats: isSweetTreatsFromType,
         isDecorations: isDecorationsFromType,
         isEntertainment: isEntertainmentFromType,
+        isPhotography: isPhotographyFromType,
         isVenue: isVenueFromType,
         isMultiSelect: isMultiSelectModel || isMultiSelectForActivities,
       }
@@ -664,6 +667,14 @@ export default function SupplierCustomizationModal({
       dataObj?.serviceType === 'entertainment' ||
       supplier?.category === 'Entertainment'
 
+    // Detect if this is a photography supplier
+    const isPhotographySupplier =
+      categoryStr.includes("photography") ||
+      categoryStr.includes("photographer") ||
+      supplier?.serviceType === 'photography' ||
+      dataObj?.serviceType === 'photography' ||
+      supplier?.category === 'Photography'
+
     // Detect if this is a venue supplier
     // Venue types include: Private Function Room, Community Hall, Church Hall, etc.
     const venueTypes = ['private function room', 'community hall', 'church hall', 'school hall',
@@ -699,6 +710,7 @@ export default function SupplierCustomizationModal({
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
       isEntertainment: isEntertainmentSupplier,
+      isPhotography: isPhotographySupplier,
       isVenue: isVenueSupplier,
       isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
       hasDataFlavours: dataObj?.flavours?.length > 0,
@@ -720,6 +732,7 @@ export default function SupplierCustomizationModal({
       isSweetTreats: isSweetTreatsSupplier,
       isDecorations: isDecorationsSupplier,
       isEntertainment: isEntertainmentSupplier,
+      isPhotography: isPhotographySupplier,
       isVenue: isVenueSupplier,
       isMultiSelect: isMultiSelectModel || isMultiSelectForSweetTreats,
     }
@@ -3040,6 +3053,99 @@ export default function SupplierCustomizationModal({
                             <div className="flex-1 overflow-hidden">
                               {pkg.description && (
                                 <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                                  {pkg.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* What's Included link - always at bottom */}
+                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
+                              <div className="pt-2 border-t border-gray-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1 text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Photography - Text-only cards similar to balloons */}
+            {supplierTypeDetection.isPhotography && !supplierTypeDetection.isMultiSelect && (
+              <section>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                  Choose Package
+                </label>
+
+                {/* Horizontal scroll on all screens */}
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div
+                    className="flex gap-2.5 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
+                    style={{
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageId === pkg.id
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] h-[140px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            isSelected
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
+                          }`}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
+                        >
+                          {/* Content - no image, just text */}
+                          <div className="p-3 flex flex-col h-full">
+                            {/* Header with name and price */}
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <h4 className="font-bold text-gray-900 text-sm leading-tight">
+                                {pkg.name}
+                              </h4>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <p className="font-bold text-primary-600 text-base">
+                                  £{parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
+                                </p>
+                                {isSelected && (
+                                  <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Duration badge */}
+                            {pkg.duration && (
+                              <span className="inline-flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                <Clock className="w-3 h-3" />
+                                {pkg.duration}
+                              </span>
+                            )}
+
+                            {/* Description - flex-1 to fill available space */}
+                            <div className="flex-1 overflow-hidden">
+                              {pkg.description && (
+                                <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
                                   {pkg.description}
                                 </p>
                               )}
