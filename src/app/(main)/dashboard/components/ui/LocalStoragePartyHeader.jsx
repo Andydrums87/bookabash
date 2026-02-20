@@ -673,7 +673,7 @@ export default function LocalStoragePartyHeader({
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg",
-      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771601669/ChatGPT_Image_Feb_20_2026_03_34_09_PM_rqilvg.png"
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771601928/ChatGPT_Image_Feb_20_2026_03_38_38_PM_fzhev8.png"
     }
 
     return themeImages[theme.toLowerCase()] || null
