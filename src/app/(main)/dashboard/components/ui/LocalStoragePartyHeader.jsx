@@ -38,7 +38,8 @@ const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
       football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296848/iStock-1474868329_hxmo8u.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297169/iStock-1434335578_h3dzbb.jpg",
-      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg"
+      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg",
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771601928/ChatGPT_Image_Feb_20_2026_03_38_38_PM_fzhev8.png",
     }
     return themeImages[themeName.toLowerCase()] || null
   }
@@ -671,7 +672,8 @@ export default function LocalStoragePartyHeader({
       football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
       space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
       mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
-      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg"
+      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg",
+      "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771601669/ChatGPT_Image_Feb_20_2026_03_34_09_PM_rqilvg.png"
     }
 
     return themeImages[theme.toLowerCase()] || null
@@ -695,6 +697,7 @@ export default function LocalStoragePartyHeader({
       football: "linear-gradient(to right, #16a34a, #059669, #047857)",
       pirate: "linear-gradient(to right, #d97706, #7f1d1d, #374151)",
       mermaid: "linear-gradient(to right, #2dd4bf, #06b6d4, #3b82f6)",
+      "kpop-demon-hunters": "linear-gradient(to right, #ec4899, #8b5cf6, #06b6d4)",
       default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
     }
 
