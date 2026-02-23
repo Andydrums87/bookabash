@@ -10,6 +10,12 @@ export const useInviteData = () => {
   const [savedGuestList, setSavedGuestList] = useState([])
   const [currentPartyId, setCurrentPartyId] = useState(null)
 
+  // Helper to extract first name only
+  const getFirstName = (fullName) => {
+    if (!fullName) return ""
+    return fullName.trim().split(' ')[0]
+  }
+
   const getVenueName = (partyPlan, fallbackLocation) => {
     try {
       console.log("🏢 Extracting venue from party plan:", partyPlan)
@@ -294,7 +300,7 @@ export const useInviteData = () => {
             setSelectedTheme(themeToUse)
 
             const inviteDataToUse = {
-              childName: party.child_name || "",
+              childName: getFirstName(party.child_name),
               age: party.child_age?.toString() || "",
               date: party.party_date || "",
               // NEW: Use formatted time data
@@ -337,7 +343,7 @@ export const useInviteData = () => {
             console.log("ℹ️ No einvites yet, populating with party details")
             
             const newInviteData = {
-              childName: party.child_name || "",
+              childName: getFirstName(party.child_name),
               age: party.child_age?.toString() || "",
               date: party.party_date || "",
               // NEW: Use formatted time data

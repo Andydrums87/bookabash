@@ -2,15 +2,11 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Users, ChevronDown, MapPin } from 'lucide-react'
-import { useState } from "react"
+import { Users, MapPin, Palette } from 'lucide-react'
 import { formatDateForDisplay } from '../utils/helperFunctions'
-import { getHeadlineOptions, getHeadlineStyles, getHeadlineText } from '../utils/headlineUtils'
+import { getThemeCategory } from '@/lib/inviteTemplates'
 
-const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIGeneration }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false)
-
+const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme }) => {
   const date = formatDateForDisplay(inviteData.date)
 
   // Helper function to get first name only from childName
@@ -232,96 +228,31 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
               placeholder="Party venue (name and address)"
               className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
             />
-          
           </div>
+
+          {/* Theme Display - Read only */}
+          {selectedTheme && (
+            <div>
+              <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                Party Theme
+              </label>
+              <div
+                className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg"
+                style={{ borderColor: getThemeCategory(selectedTheme)?.color + '40' }}
+              >
+                <span className="text-2xl">{getThemeCategory(selectedTheme)?.icon}</span>
+                <span className="font-medium text-gray-800">
+                  {getThemeCategory(selectedTheme)?.name || selectedTheme}
+                </span>
+                <span className="ml-auto text-xs text-gray-500">
+                  From your party plan
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Advanced Options Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors mb-4"
-        >
-          <span className="font-medium text-gray-700">
-            {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-          </span>
-          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
-            showAdvanced ? 'rotate-180' : ''
-          }`} />
-        </button>
-
-        {/* Advanced Fields - Collapsible */}
-        {showAdvanced && (
-          <div className="space-y-4 border-t border-gray-200 pt-4">
-            {/* Headline Options - Only show for template mode */}
-            {!useAIGeneration && (
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Invitation Headline
-                  <span className="text-xs text-gray-500 ml-2 font-normal">
-                    Choose how you want to announce the party
-                  </span>
-                </label>
-                <div className="space-y-3">
-                  <select
-                    value={inviteData.headline}
-                    onChange={(e) => handleInputChange("headline", e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-medium text-base"
-                  >
-                    {getHeadlineOptions(selectedTheme, inviteData.childName, inviteData.age, selectedTheme).map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}: "{option.text}"
-                      </option>
-                    ))}
-                    <option value="custom">Custom headline</option>
-                  </select>
-                  
-                  {inviteData.headline === "custom" && (
-                    <Input
-                      value={inviteData.customHeadline || ""}
-                      onChange={(e) => handleInputChange("customHeadline", e.target.value)}
-                      placeholder="Enter your custom headline"
-                      className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
-                    />
-                  )}
-                  
-                  <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-                    <div className="text-sm font-bold text-gray-600 mb-2">Preview:</div>
-                    <div
-                      style={{
-                        ...getHeadlineStyles(inviteData.headline, selectedTheme),
-                        position: "relative",
-                        transform: "none",
-                        color: "#333",
-                        textShadow: "none",
-                      }}
-                    >
-                      "{getHeadlineText(inviteData, selectedTheme)}"
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      Style: {getHeadlineStyles(inviteData.headline, selectedTheme).fontSize} •{" "}
-                      {getHeadlineStyles(inviteData.headline, selectedTheme).fontWeight} •{" "}
-                      {getHeadlineStyles(inviteData.headline, selectedTheme).fontFamily || "Default Font"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Special Message
-              </label>
-              <Textarea
-                value={inviteData.message}
-                onChange={(e) => handleInputChange("message", e.target.value)}
-                placeholder="Add a special message for your guests"
-                rows={3}
-                className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base resize-none"
-              />
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   )
