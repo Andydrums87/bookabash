@@ -338,7 +338,7 @@ export default function HomePage() {
         }
 
         // ✅ Calculate total duration dynamically based on budget and guest count
-        // Each item: 2.5 seconds
+        // Each item: 1 second
         const budget = getDefaultBudgetForGuests(formData.guestCount)
 
         // Calculate number of items that will be shown
@@ -348,7 +348,7 @@ export default function HomePage() {
           itemCount += 2 // Decorations, Activities
         }
 
-        const totalDuration = itemCount * 2500
+        const totalDuration = itemCount * 1000
 
         await new Promise((resolve) => setTimeout(resolve, totalDuration))
 

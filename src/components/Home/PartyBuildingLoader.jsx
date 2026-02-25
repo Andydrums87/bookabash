@@ -125,8 +125,8 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       return
     }
 
-    // ✅ 2.5 seconds per item to enjoy the animations
-    const itemDuration = 2500
+    // ✅ 1 second per item - fast and snappy
+    const itemDuration = 1000
     let currentItem = 0
 
     const advanceItem = () => {
