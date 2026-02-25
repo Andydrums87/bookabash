@@ -34,24 +34,18 @@ export async function POST(request) {
     console.log('🎨 Generating AI invite for:', childName);
     console.log('🎯 Theme:', themeName);
 
-    // Prepare input for Replicate
+    // Prepare input for flawless-text model
+    // This model expects 'data' to be a JSON string with prompt field
     const input = {
-      prompt: prompt,
-      aspect_ratio: "3:4",
-      magic_prompt: "Off",
-      seed: Math.floor(Math.random() * 1000000),
+      data: JSON.stringify({
+        prompt: prompt
+      }),
     };
 
-    if (referenceImageUrl) {
-      const referenceImages = Array.isArray(referenceImageUrl) 
-        ? referenceImageUrl 
-        : [referenceImageUrl];
-      input.style_reference_images = referenceImages;
-    } else {
-      input.style_type = "Design";
-    }
-
-    const output = await replicate.run("ideogram-ai/ideogram-v3-turbo", { input });
+    const output = await replicate.run(
+      "subhash25rawat/flawless-text:3142f4263ca49db113f8702a00114c2a6a6f450d67cb089a0106fd26ddc73bcc",
+      { input }
+    );
 
     // Extract image URL (your existing logic)
     let imageUrl = null;
@@ -136,7 +130,7 @@ export async function POST(request) {
         themeName,
         referenceUsed: !!referenceImageUrl,
         generatedAt: new Date().toISOString(),
-        model: 'ideogram-v3-turbo'
+        model: 'flawless-text'
       }
     });
 

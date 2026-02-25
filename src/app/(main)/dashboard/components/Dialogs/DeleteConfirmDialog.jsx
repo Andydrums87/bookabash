@@ -1,7 +1,9 @@
 "use client"
 
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { useDemo } from "@/hooks/useDemo"
 
 export default function DeleteConfirmDialog({
   isOpen,
@@ -9,6 +11,35 @@ export default function DeleteConfirmDialog({
   onConfirm,
   onCancel
 }) {
+  const { isDemo } = useDemo()
+  const [isPressed, setIsPressed] = useState(false)
+  const [ripples, setRipples] = useState([])
+  const buttonRef = useRef(null)
+
+  const createRipple = (e) => {
+    if (!isDemo || !buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const ripple = { id: Date.now(), x, y }
+    setRipples((prev) => [...prev, ripple])
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
+    }, 500)
+  }
+
+  const handleRemoveClick = (e) => {
+    if (isDemo) {
+      createRipple(e)
+      setIsPressed(true)
+      setTimeout(() => setIsPressed(false), 100)
+      // Delay the actual action so ripple is visible
+      setTimeout(() => onConfirm(supplierType), 200)
+    } else {
+      onConfirm(supplierType)
+    }
+  }
+
   if (!isOpen) return null
 
   const getSupplierDisplayName = (type) => {
@@ -55,9 +86,27 @@ export default function DeleteConfirmDialog({
             Keep It
           </Button>
           <Button
-            onClick={() => onConfirm(supplierType)}
-            className="flex-1 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white"
+            ref={buttonRef}
+            onClick={handleRemoveClick}
+            className="flex-1 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white relative overflow-hidden"
+            style={isDemo ? {
+              transform: isPressed ? "scale(0.96)" : "scale(1)",
+              transition: "transform 100ms ease-out",
+            } : undefined}
           >
+            {/* Demo mode ripples */}
+            {isDemo && ripples.map((ripple) => (
+              <span
+                key={ripple.id}
+                className="absolute pointer-events-none z-20"
+                style={{ left: ripple.x, top: ripple.y, transform: "translate(-50%, -50%)" }}
+              >
+                <span
+                  className="block rounded-full animate-demo-ripple"
+                  style={{ width: "10px", height: "10px", backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+                />
+              </span>
+            ))}
             Remove
           </Button>
         </div>

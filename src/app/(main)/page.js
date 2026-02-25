@@ -11,6 +11,7 @@ import CategoryGrid from "@/components/Home/CategoryGrid"
 import HowItWorks from "@/components/Home/HowItWorks"
 import CustomerStories from "@/components/Home/CustomerStories"
 import FinalCTA from "@/components/Home/FinalCTA"
+import FounderStory from "@/components/Home/FounderStory"
 import FloatingCTA from "@/components/Home/FloatingCTA"
 import PartyOverrideConfirmation from '@/components/party-override-confirmation'
 import PostcodeRestrictionModal from '@/components/PostcodeRestrictionModal'
@@ -469,6 +470,7 @@ export default function HomePage() {
       <FeaturesGrid />
 
       <CustomerStories />
+      <FounderStory />
       <FinalCTA />
    
     </div>

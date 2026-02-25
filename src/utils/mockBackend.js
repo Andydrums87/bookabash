@@ -943,13 +943,24 @@ export const suppliersAPI = {
         
         if (!isEntertainment) return false;
         
-        const matchesTheme = 
+        // STRICT theme matching - only use themes array and name, NOT description
+        // Description matching is too loose (e.g., Frozen entertainer mentioning "we also do superhero")
+        const matchesTheme =
           supplier.themes?.includes(theme) ||
           supplier.serviceType === theme ||
           supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
-          supplier.description?.toLowerCase().includes(theme.toLowerCase()) ||
+          // Superhero theme - match superhero entertainers
+          (theme === 'superhero' && (
+            supplier.themes?.includes('superhero') ||
+            supplier.themes?.includes('spiderman') ||
+            supplier.themes?.includes('batman') ||
+            supplier.themes?.includes('avengers') ||
+            supplier.name.toLowerCase().includes('superhero') ||
+            supplier.name.toLowerCase().includes('hero')
+          )) ||
           (theme === 'spiderman' && (
             supplier.themes?.includes('superhero') ||
+            supplier.themes?.includes('spiderman') ||
             supplier.name.toLowerCase().includes('spider') ||
             supplier.name.toLowerCase().includes('superhero')
           )) ||
@@ -957,6 +968,12 @@ export const suppliersAPI = {
             supplier.themes?.includes('princess') ||
             supplier.themes?.includes('fairy') ||
             supplier.name.toLowerCase().includes('princess')
+          )) ||
+          (theme === 'frozen' && (
+            supplier.themes?.includes('frozen') ||
+            supplier.themes?.includes('princess') ||
+            supplier.name.toLowerCase().includes('frozen') ||
+            supplier.name.toLowerCase().includes('elsa')
           )) ||
           (theme === 'taylor-swift' && (
             supplier.serviceType === 'musician' ||
@@ -967,7 +984,7 @@ export const suppliersAPI = {
             supplier.serviceType === 'pokemon' ||
             supplier.themes?.includes('pokemon')
           ));
-        
+
         return matchesTheme;
       });
       

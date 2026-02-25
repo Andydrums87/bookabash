@@ -125,7 +125,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
       <DialogContent className="sm:max-w-lg w-[90vw] md:w-[60vw] max-h-[80vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="md:text-4xl text-start text-3xl font-black text-gray-900 leading-tight">
-            Almost Ready!<br className="sm:hidden" /> One Quick Thing...
+            Your Party Is Almost Ready 🎉
           </DialogTitle>
         </DialogHeader>
 
@@ -263,13 +263,18 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
           </div>
         </div>
 
-        <DialogFooter className="pt-8">
-          <Button
-            onClick={handleNameSubmit}
-            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 transition-all duration-200"
-          >
-            Continue to {firstName.trim() ? `${firstName.trim()}'s` : "My"} Party!
-          </Button>
+        <DialogFooter className="pt-8 sm:flex-col">
+          <div className="w-full flex flex-col items-center gap-2">
+            <Button
+              onClick={handleNameSubmit}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 transition-all duration-200"
+            >
+              Continue to {firstName.trim() ? `${firstName.trim()}'s` : "My"} Party!
+            </Button>
+            <p className="text-xs text-gray-500 text-center">
+              No payment required — review everything before booking.
+            </p>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

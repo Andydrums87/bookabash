@@ -11,6 +11,8 @@ import SearchableEventTypeSelect from "@/components/searchable-event-type-select
 import Image from "next/image"
 import { format } from "date-fns"
 import { useGeolocation } from "@/hooks/useGeolocation"
+import { useDemo } from "@/hooks/useDemo"
+import { DemoSubmitButton } from "@/components/ui/demo-button"
 
 export default function MobileSearchForm({
   handleSearch,
@@ -26,6 +28,7 @@ export default function MobileSearchForm({
 }) {
   const { getPostcodeFromLocation, isLoading: isGettingLocation, error: locationError } = useGeolocation()
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const { isDemo } = useDemo()
 
   const isFormValid = () => {
     return (
@@ -190,6 +193,7 @@ export default function MobileSearchForm({
                 onValueChange={(value) => handleFieldChange("theme", value)}
                 defaultValue="princess"
                 required
+                isDemo={isDemo}
               />
               {!formData.theme && (
                 <div className="mt-1">
@@ -329,22 +333,43 @@ export default function MobileSearchForm({
           </div>
 
           {/* Search Button */}
-          <Button
-            type="submit"
-            disabled={isSubmitting || !isFormValid()}
-            className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-base font-bold py-3 px-6 rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-80 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Building Your Party...
-              </div>
-            ) : (
+          {isDemo ? (
+            <DemoSubmitButton
+              disabled={isSubmitting || !isFormValid()}
+              isSubmitting={isSubmitting}
+              onDemoComplete={() => {
+                if (isFormValid()) {
+                  handleSearch({ preventDefault: () => {} })
+                }
+              }}
+              loadingText="Building..."
+              successText="Done ✓"
+              loadingDuration={800}
+              successDuration={400}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-base font-bold py-3 px-6 rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-80 disabled:cursor-not-allowed"
+            >
               <div className="flex items-center justify-center relative text-white font-bold">
                 Plan My Party! <span className="text-2xl ml-2">🎉</span>
               </div>
-            )}
-          </Button>
+            </DemoSubmitButton>
+          ) : (
+            <Button
+              type="submit"
+              disabled={isSubmitting || !isFormValid()}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-base font-bold py-3 px-6 rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-80 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Building Your Party...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center relative text-white font-bold">
+                  Plan My Party! <span className="text-2xl ml-2">🎉</span>
+                </div>
+              )}
+            </Button>
+          )}
         </div>
       </form>
     </div>

@@ -289,6 +289,195 @@ Important: Use only the exact information provided. No extra text.`
     setGeneratedImage(JSON.stringify(aiInviteData))
   }
 
+  // Generate a single verified invite with retry logic
+  // Generates ONE image, verifies with OCR, retries if fails, caps at maxAttempts
+  const generateVerifiedInvite = async (maxAttempts = 7, onProgress = null) => {
+    if (!validateRequiredFields(inviteData)) {
+      toast.warning("Please fill in all party details before generating", {
+        title: "Missing Information",
+        duration: 4000
+      })
+      return null
+    }
+
+    setIsGeneratingAI(true)
+    setAiOptions([])
+    setShowAiOptions(false)
+
+    try {
+      let partyTheme = "colorful kids party"
+      let themeName = "colorful kids party"
+
+      try {
+        const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+
+        if (partyResult.success && partyResult.party) {
+          partyTheme = partyResult.party.theme || selectedTheme
+          themeName = themes[partyTheme]?.name || partyTheme || "colorful kids party"
+        } else {
+          partyTheme = selectedTheme
+          themeName = themes[selectedTheme]?.name || "colorful kids party"
+        }
+      } catch (error) {
+        partyTheme = selectedTheme
+        themeName = themes[selectedTheme]?.name || "colorful kids party"
+      }
+
+      const firstName = getFirstNameOnly(inviteData.childName)
+
+      const prompt =
+        `Create a vibrant ${themeName.toLowerCase()} themed birthday party invitation.
+
+Include this information:
+- Title: "${firstName} is turning ${inviteData.age}!" (write as one sentence)
+- ${date}
+- ${inviteData.time}
+- ${inviteData.venue}
+
+Design: Bright, colorful ${themeName.toLowerCase()} theme with ${getThemeElements(partyTheme)}. Fun and festive. Portrait orientation.
+
+Important: Use only the exact information provided. No extra text.`
+
+      let attempt = 0
+      let verifiedOption = null
+
+      while (attempt < maxAttempts && !verifiedOption) {
+        attempt++
+        console.log(`🎨 Attempt ${attempt}/${maxAttempts}: Generating invite...`)
+
+        // Report progress
+        if (onProgress) {
+          onProgress({ attempt, maxAttempts, status: 'generating' })
+        }
+
+        try {
+          // Generate one image
+          const response = await fetch("/api/generate-invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: prompt,
+              childName: firstName,
+              date: date,
+              time: inviteData.time,
+              venue: inviteData.venue,
+              theme: partyTheme,
+              themeName: themeName,
+            })
+          })
+
+          if (!response.ok) {
+            console.error(`❌ Attempt ${attempt} generation failed: ${response.status}`)
+            continue
+          }
+
+          const result = await response.json()
+
+          if (!result.imageUrl) {
+            console.error(`❌ Attempt ${attempt}: No image URL returned`)
+            continue
+          }
+
+          console.log(`✅ Attempt ${attempt}: Image generated, verifying text...`)
+
+          // Report progress - verifying
+          if (onProgress) {
+            onProgress({ attempt, maxAttempts, status: 'verifying', imageUrl: result.imageUrl })
+          }
+
+          // Verify with OCR
+          const verifyResponse = await fetch('/api/verify-invite-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageUrl: result.imageUrl,
+              expectedData: {
+                childName: inviteData.childName,
+                date: inviteData.date,
+                time: inviteData.time,
+                venue: inviteData.venue
+              }
+            })
+          })
+
+          const verifyResult = await verifyResponse.json()
+          console.log(`🔍 Attempt ${attempt} verification:`, verifyResult)
+
+          if (verifyResult.isValid) {
+            // Found a valid invite!
+            console.log(`🎉 Attempt ${attempt}: PASSED verification (${verifyResult.passedChecks}/${verifyResult.totalChecks})`)
+
+            verifiedOption = {
+              id: `verified-option`,
+              index: 1,
+              imageUrl: result.imageUrl,
+              prompt: prompt,
+              metadata: result.metadata,
+              verification: {
+                isValid: true,
+                passedChecks: verifyResult.passedChecks,
+                totalChecks: verifyResult.totalChecks,
+                verification: verifyResult.verification,
+                attempts: attempt
+              }
+            }
+          } else {
+            console.log(`⚠️ Attempt ${attempt}: Failed verification (${verifyResult.passedChecks}/${verifyResult.totalChecks}), retrying...`)
+          }
+        } catch (error) {
+          console.error(`❌ Attempt ${attempt} error:`, error)
+        }
+      }
+
+      if (verifiedOption) {
+        setAiOptions([verifiedOption])
+        setSelectedAiOption(verifiedOption)
+        setShowAiOptions(true)
+        setUseAIGeneration(true)
+
+        const aiInviteData = {
+          type: "ai-generated",
+          imageUrl: verifiedOption.imageUrl,
+          prompt: prompt,
+          theme: partyTheme,
+          themeName: themeName,
+          inviteData,
+          timestamp: Date.now(),
+          verification: verifiedOption.verification,
+        }
+
+        setGeneratedImage(JSON.stringify(aiInviteData))
+
+        toast.success(`Verified invite generated after ${attempt} attempt${attempt > 1 ? 's' : ''}!`, {
+          title: "🎉 Perfect Invitation Created",
+          duration: 5000
+        })
+
+        return verifiedOption
+      } else {
+        // All attempts failed - no verified invite found
+        console.log(`❌ All ${maxAttempts} attempts failed verification`)
+
+        toast.error(`Could not generate a verified invite after ${maxAttempts} attempts. You may want to simplify the venue address or try again.`, {
+          title: "Generation Issue",
+          duration: 8000
+        })
+
+        return null
+      }
+    } catch (error) {
+      console.error("❌ Error in generateVerifiedInvite:", error)
+      toast.error(`Failed to generate invite: ${error.message}`, {
+        title: "Generation Failed",
+        duration: 6000
+      })
+      return null
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
   return {
     isGeneratingAI,
     useAIGeneration,
@@ -298,6 +487,7 @@ Important: Use only the exact information provided. No extra text.`
     showAiOptions,
     generateAIInvite,
     generateAIOptions,
+    generateVerifiedInvite,
     selectAiOption,
   }
 }

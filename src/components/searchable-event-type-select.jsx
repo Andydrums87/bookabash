@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, Search, X,  UsersIcon, } from "lucide-react"
+import { ChevronDown, Search, X, UsersIcon } from "lucide-react"
 
 
 const eventTypes = [
@@ -74,14 +74,58 @@ const eventTypes = [
 export default function SearchableEventTypeSelect({
   defaultValue = "",
   onValueChange,
-  placeholder = "Choose event type"
+  placeholder = "Choose event type",
+  isDemo = false
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedValue, setSelectedValue] = useState(defaultValue)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [isPressed, setIsPressed] = useState(false)
+  const [ripples, setRipples] = useState([])
+  const [itemRipples, setItemRipples] = useState([])
   const dropdownRef = useRef(null)
   const inputRef = useRef(null)
+  const buttonRef = useRef(null)
+
+  // Demo mode ripple effect for trigger button
+  const createRipple = (e) => {
+    if (!isDemo || !buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const ripple = { id: Date.now(), x, y }
+    setRipples((prev) => [...prev, ripple])
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== ripple.id))
+    }, 500)
+  }
+
+  // Demo mode ripple effect for dropdown items
+  const createItemRipple = (e, itemValue) => {
+    if (!isDemo) return
+    const button = e.currentTarget
+    const rect = button.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const ripple = { id: Date.now(), x, y, itemValue }
+    setItemRipples((prev) => [...prev, ripple])
+    setTimeout(() => {
+      setItemRipples((prev) => prev.filter((r) => r.id !== ripple.id))
+    }, 500)
+  }
+
+  const handleTriggerClick = (e) => {
+    if (isDemo) {
+      createRipple(e)
+      setIsPressed(true)
+      setTimeout(() => setIsPressed(false), 100)
+    }
+    setIsOpen(!isOpen)
+    if (!isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 0)
+    }
+  }
 
   // Filter event types based on search query
   const filteredEventTypes = eventTypes.filter(
@@ -169,20 +213,33 @@ export default function SearchableEventTypeSelect({
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
       <Button
+        ref={buttonRef}
         type="button"
         variant="outline"
-        onClick={() => {
-          setIsOpen(!isOpen)
-          if (!isOpen) {
-            setTimeout(() => inputRef.current?.focus(), 0)
-          }
-        }}
+        onClick={handleTriggerClick}
         onKeyDown={handleKeyDown}
-        className="w-full justify-between md:bg-white bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 px-3 text-left font-normal text-sm"
+        className="w-full justify-between md:bg-white bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 px-3 text-left font-normal text-sm overflow-hidden"
+        style={isDemo ? {
+          transform: isPressed ? "scale(0.96)" : "scale(1)",
+          transition: "transform 100ms ease-out",
+        } : undefined}
       >
-          <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
+        {/* Demo mode ripples */}
+        {isDemo && ripples.map((ripple) => (
+          <span
+            key={ripple.id}
+            className="absolute pointer-events-none z-20"
+            style={{ left: ripple.x, top: ripple.y, transform: "translate(-50%, -50%)" }}
+          >
+            <span
+              className="block rounded-full animate-demo-ripple"
+              style={{ width: "10px", height: "10px", backgroundColor: "rgba(255, 110, 76, 0.3)" }}
+            />
+          </span>
+        ))}
+        <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
         <span className={selectedValue ? "text-gray-900 ml-6" : "text-gray-500 ml-6"}>
-        {selectedLabel}
+          {selectedLabel}
         </span>
         <ChevronDown
           className={`w-4 h-4 text-gray-400 transition-transform ${
@@ -246,12 +303,22 @@ export default function SearchableEventTypeSelect({
                     )
                     const isHighlighted = globalIndex === highlightedIndex
                     const isSelected = eventType.value === selectedValue
+                    const itemRipple = itemRipples.find(r => r.itemValue === eventType.value)
 
                     return (
                       <button
+                        type="button"
                         key={eventType.value}
-                        onClick={() => handleSelect(eventType.value)}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                        onClick={(e) => {
+                          if (isDemo) {
+                            createItemRipple(e, eventType.value)
+                            // Delay selection slightly so ripple is visible
+                            setTimeout(() => handleSelect(eventType.value), 150)
+                          } else {
+                            handleSelect(eventType.value)
+                          }
+                        }}
+                        className={`relative overflow-hidden w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
                           isHighlighted ? "bg-primary-50 text-primary-700" : ""
                         } ${
                           isSelected
@@ -259,6 +326,18 @@ export default function SearchableEventTypeSelect({
                             : "text-gray-700"
                         }`}
                       >
+                        {/* Demo mode ripple */}
+                        {isDemo && itemRipple && (
+                          <span
+                            className="absolute pointer-events-none z-20"
+                            style={{ left: itemRipple.x, top: itemRipple.y, transform: "translate(-50%, -50%)" }}
+                          >
+                            <span
+                              className="block rounded-full animate-demo-ripple"
+                              style={{ width: "10px", height: "10px", backgroundColor: "rgba(255, 110, 76, 0.4)" }}
+                            />
+                          </span>
+                        )}
                         {eventType.label}
                       </button>
                     )

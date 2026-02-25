@@ -179,8 +179,9 @@ export default function PaymentConfirmation({
             {/* What's Next */}
             <Section style={styles.nextStepsSection}>
               <Heading as="h3" style={styles.nextStepsTitle}>What Happens Next?</Heading>
-              <Text style={styles.stepItem}>✓ Your suppliers will contact you within 24 hours</Text>
-              <Text style={styles.stepItem}>✓ Final details confirmed 2-3 days before the party</Text>
+              <Text style={styles.stepItem}>✓ We personally confirm every supplier for your party</Text>
+              <Text style={styles.stepItem}>✓ Full confirmation pack sent within 2 working days</Text>
+              <Text style={styles.stepItem}>✓ Suppliers will reach out to finalize details</Text>
               <Text style={styles.stepItem}>✓ Manage everything through your dashboard</Text>
               <Text style={styles.stepItem}>✓ Get ready for an amazing celebration!</Text>
             </Section>

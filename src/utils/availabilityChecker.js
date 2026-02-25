@@ -1,6 +1,15 @@
 // utils/availabilityChecker.js
 // Utility functions for checking supplier availability
 
+// LAUNCH MODE: When enabled, all non-venue suppliers are always available
+// This bypasses availability checks for entertainment, catering, etc.
+// Set NEXT_PUBLIC_BYPASS_SUPPLIER_AVAILABILITY=true in .env.local to enable
+// When real suppliers are onboarded, set this to false to re-enable availability checks
+const BYPASS_NON_VENUE_AVAILABILITY = process.env.NEXT_PUBLIC_BYPASS_SUPPLIER_AVAILABILITY === 'true';
+
+// Supplier types that should ALWAYS check availability (even in bypass mode)
+const ALWAYS_CHECK_AVAILABILITY = ['venue', 'venues'];
+
 /**
  * Parse human-readable date formats like "26th December, 2025"
  * @param {string} dateStr - Human-readable date string
@@ -69,6 +78,20 @@ export function checkSupplierAvailability(supplier, partyDate, partyTime = null,
   if (!partyDate) {
     // If no party date is set yet, allow adding supplier
     return { available: true, reason: null };
+  }
+
+  // LAUNCH MODE: Bypass availability for non-venue suppliers
+  // This makes all suppliers (except venues) always available
+  if (BYPASS_NON_VENUE_AVAILABILITY) {
+    const supplierType = supplier.supplierType || supplier.type || supplier.category || '';
+    const isVenue = ALWAYS_CHECK_AVAILABILITY.some(type =>
+      supplierType.toLowerCase().includes(type)
+    );
+
+    if (!isVenue) {
+      // Non-venue supplier in bypass mode - always available
+      return { available: true, reason: null };
+    }
   }
 
   try {

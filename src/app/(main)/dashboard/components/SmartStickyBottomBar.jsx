@@ -137,51 +137,50 @@ const SmartStickyBottomBar = ({
         <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-black/[0.06] to-transparent pointer-events-none" />
         <div className="container mx-auto px-8 py-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
-            {/* Left: Summary with expand toggle */}
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-4 group"
-            >
-              {/* Supplier count badge */}
-              <div className="flex items-center gap-2">
+            {/* Left: Trust indicators */}
+            <div className="flex items-center gap-6">
+              {/* Expand toggle */}
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-2 group"
+              >
                 <div className="flex -space-x-1">
                   {selectedSuppliers.slice(0, 3).map((_, i) => (
                     <div
                       key={i}
-                      className="w-6 h-6 rounded-full bg-primary-500 border-2 border-white flex items-center justify-center"
+                      className="w-5 h-5 rounded-full bg-primary-500 border-2 border-white flex items-center justify-center"
                     >
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                     </div>
                   ))}
-                  {selectedCount > 3 && (
-                    <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-gray-600">+{selectedCount - 3}</span>
-                    </div>
+                </div>
+                <span className="text-sm text-gray-600">{selectedCount} selected</span>
+                <div className="flex items-center gap-1 text-primary-500 group-hover:text-primary-600 transition-colors">
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4" />
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-600">
-                  {selectedCount} supplier{selectedCount !== 1 ? 's' : ''} selected
-                </span>
-              </div>
+              </button>
 
-              {/* Inline summary */}
-              <div className="hidden xl:flex items-center gap-2 text-sm text-gray-500">
+              {/* Trust points */}
+              <div className="hidden lg:flex items-center gap-4 text-sm text-gray-600">
                 <span className="text-gray-300">|</span>
-                <span>{getInlineSummary()}</span>
-              </div>
-
-              {/* Expand indicator */}
-              <div className="flex items-center gap-1 text-primary-500 group-hover:text-primary-600 transition-colors">
-                <span className="text-sm font-medium">
-                  {isExpanded ? 'Hide' : 'View'} details
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Personally confirmed
                 </span>
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronUp className="w-4 h-4" />
-                )}
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-green-500" />
+                  100% money-back guarantee
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Add extras anytime
+                </span>
               </div>
-            </button>
+            </div>
 
             {/* Right: Total + CTA */}
             <div className="flex items-center gap-6">
@@ -189,12 +188,14 @@ const SmartStickyBottomBar = ({
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
                 <p className="text-2xl font-bold text-gray-900">£{totalCost.toLocaleString()}</p>
               </div>
-              <button
-                onClick={onContinue}
-                className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md"
-              >
-                Continue to Book
-              </button>
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={onContinue}
+                  className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md"
+                >
+                  Secure My Party
+                </button>
+              </div>
             </div>
           </div>
         </div>

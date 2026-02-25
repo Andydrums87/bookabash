@@ -10,9 +10,16 @@ export default function GoogleOneTap({ onSuccess, shouldInitialize = true }) {
   const { toast } = useToast()
   const hasInitialized = useRef(false)
 
+  // Disable Google One Tap on localhost/local network - only works in production
+  const isLocalDev = typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+     window.location.hostname === "127.0.0.1" ||
+     window.location.hostname.startsWith("192."))
+
   useEffect(() => {
     // Only initialize once and when allowed
-    if (hasInitialized.current || !shouldInitialize) return
+    // Skip initialization for local development to avoid GSI errors
+    if (hasInitialized.current || !shouldInitialize || isLocalDev) return
 
     // Check if user is already signed in
     const checkAuth = async () => {

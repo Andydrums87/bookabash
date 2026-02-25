@@ -625,6 +625,22 @@ function PaymentForm({
         />
       )}
 
+      {/* Trust reassurance checklist */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1.5">
+        <div className="flex items-center gap-2 text-sm text-green-800">
+          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span>Personally confirmed with suppliers</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-green-800">
+          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span>100% money-back guarantee</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-green-800">
+          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span>Add extras anytime before the party</span>
+        </div>
+      </div>
+
       {timerExpired ? (
         <button
           onClick={clearTimerAndRefresh}
@@ -649,10 +665,15 @@ function PaymentForm({
               <span>Processing...</span>
             </div>
           ) : (
-            <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
+            <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)} & Secure My Party</span>
           )}
         </button>
       )}
+
+      {/* Human contact */}
+      <p className="text-xs text-gray-500 text-center">
+        Questions? Email us at <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a> — we're here to help.
+      </p>
     </div>
   )
 }

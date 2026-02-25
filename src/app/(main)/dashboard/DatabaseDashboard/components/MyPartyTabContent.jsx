@@ -793,10 +793,10 @@ export default function MyPartyTabContent({
         <div>
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-gray-700 leading-tight">
-              Here's Your Party Plan
+              {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.charAt(0).toUpperCase() + partyDetails.theme.slice(1)} ` : ''}Party is Ready 🎉
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              We've matched you with top suppliers for your date & location. Customize it however you like.
+              We've selected everything for you. Tweak anything in seconds.
             </p>
           </div>
 
@@ -901,11 +901,11 @@ export default function MyPartyTabContent({
           <div className="bg-gray-50/50 border border-gray-200/60 rounded-xl p-5">
             <div className="mb-4">
               <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <span>{allSuppliers.length > 0 ? "Anything else you'd like to add?" : "Start building your party"}</span>
+                <span>{allSuppliers.length > 0 ? "✨ Optional Extras" : "Start building your party"}</span>
               </h3>
               <p className="text-sm text-gray-500">
                 {allSuppliers.length > 0
-                  ? "Here are some suggestions to make your party even better"
+                  ? "Not ready to decide? You can add these anytime from your dashboard."
                   : "Add suppliers to create your perfect party plan"}
               </p>
             </div>
@@ -1006,22 +1006,18 @@ export default function MyPartyTabContent({
                           arr.findIndex(a => a.id === addon.id) === index
                         )
                         const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
-                        displayPrice = pricing?.basePrice || 0
+                        // Use totalPrice (finalPrice) which includes hourly calculations for venues
+                        displayPrice = pricing?.totalPrice || pricing?.basePrice || 0
 
-                        if (isPartyBags) {
-                          console.log('🎁 [Summary] Party Bags Price:', {
-                            name: supplier.name,
-                            hasFunction: !!getSupplierDisplayPricing,
-                            pricing: pricing,
-                            basePrice: pricing?.basePrice,
-                            displayPrice
-                          })
+                        // Override for party bags with special metadata
+                        if (isPartyBags && supplier.partyBagsMetadata?.totalPrice) {
+                          displayPrice = supplier.partyBagsMetadata.totalPrice
                         }
                       } else {
                         // ✅ FIX: For party bags, use supplier.price (total) not packageData.price (per bag)
                         if (isPartyBags) {
                           displayPrice = supplier.partyBagsMetadata?.totalPrice || supplier.price || supplier.packageData?.price || 0
-                        
+
                         } else {
                           displayPrice = supplier.packageData?.price || supplier.price || 0
                         }
@@ -1148,8 +1144,8 @@ export default function MyPartyTabContent({
                 )}
               </span>
             </Button>
-            <p className="text-xs text-center text-gray-600 mt-3">
-              You'll review your full party plan before any payment
+            <p className="text-sm text-center text-gray-600 mt-3">
+              ✓ Personally confirmed · ✓ 100% money-back · ✓ Add extras anytime
             </p>
           </div>
           )}

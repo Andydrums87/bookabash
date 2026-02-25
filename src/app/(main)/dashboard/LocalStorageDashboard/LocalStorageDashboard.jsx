@@ -1957,13 +1957,13 @@ const handleChildPhotoUpload = async (file) => {
                   />
                   <div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
-                      Here's Your Party Plan
+                      {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.charAt(0).toUpperCase() + partyDetails.theme.slice(1)} ` : ''}Party is Ready 🎉
                     </h2>
                     <p className="text-sm md:text-base text-gray-600 mt-1">
-                      We've matched you with top suppliers for your date & location. Customize it however you like.
+                      We've selected everything for you. Tweak anything in seconds.
                     </p>
                   </div>
-                 
+
                 </div>
 {/*      
                 <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
@@ -2221,12 +2221,17 @@ const handleChildPhotoUpload = async (file) => {
 
                             {/* Divider between selected and available */}
                             {selectedTypes.length > 0 && availableTypes.length > 0 && (
-                              <div className="col-span-full flex items-center gap-4 my-6">
-                                <div className="flex-1 h-px bg-gray-200"></div>
-                                <div className="px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
-                                  <span className="text-sm font-medium text-primary-600">Anything Else to Add?</span>
+                              <div className="col-span-full my-6">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex-1 h-px bg-gray-200"></div>
+                                  <div className="px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
+                                    <span className="text-sm font-medium text-primary-600">✨ Optional Extras</span>
+                                  </div>
+                                  <div className="flex-1 h-px bg-gray-200"></div>
                                 </div>
-                                <div className="flex-1 h-px bg-gray-200"></div>
+                                <p className="text-center text-sm text-gray-500 mt-2">
+                                  Not ready to decide? You can add these anytime from your dashboard.
+                                </p>
                               </div>
                             )}
 
@@ -2534,32 +2539,22 @@ const handleChildPhotoUpload = async (file) => {
                   <h4 className="font-semibold text-gray-900 mb-3 text-sm">Your Suppliers</h4>
                   <div className="space-y-2 text-sm text-gray-700">
                     {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => {
-                      // Calculate correct price for party bags
+                      // Use unified pricing for accurate display
+                      const pricing = calculateFinalPrice(supplier, partyDetails, [])
+                      let displayPrice = pricing.finalPrice
+
+                      // Override for party bags which have special metadata
                       const isPartyBags = supplier.category === 'Party Bags' ||
                                          supplier.category?.toLowerCase().includes('party bag')
+                      if (isPartyBags && supplier.partyBagsMetadata?.totalPrice) {
+                        displayPrice = supplier.partyBagsMetadata.totalPrice
+                      }
 
-                      // Check if this is a cake supplier
+                      // Override for cakes which include delivery in totalPrice
                       const isCake = supplier.category?.toLowerCase().includes('cake') ||
                                     supplier.serviceType?.toLowerCase().includes('cake')
-
-                      let displayPrice = supplier.packageData?.price || supplier.price || 0
-
-                      if (isPartyBags) {
-                        displayPrice = supplier.partyBagsMetadata?.totalPrice ||
-                                      supplier.packageData?.totalPrice ||
-                                      (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                                        ? roundMoney(supplier.packageData.price * supplier.packageData.partyBagsQuantity)
-                                        : null)
-
-                        if (!displayPrice) {
-                          displayPrice = supplier.price || supplier.priceFrom || 0
-                        }
-                      } else if (isCake) {
-                        // For cakes, use totalPrice which includes delivery fee
-                        displayPrice = supplier.packageData?.totalPrice ||
-                                      supplier.packageData?.enhancedPrice ||
-                                      supplier.packageData?.price ||
-                                      supplier.price || 0
+                      if (isCake && supplier.packageData?.totalPrice) {
+                        displayPrice = supplier.packageData.totalPrice
                       }
 
                       return (
@@ -2623,8 +2618,8 @@ const handleChildPhotoUpload = async (file) => {
                   </>
                 )}
               </button>
-              <p className="text-xs text-gray-600 text-center mt-3">
-                You'll review your full party plan before any payment
+              <p className="text-sm text-gray-600 text-center mt-3">
+                ✓ Personally confirmed · ✓ 100% money-back · ✓ Add extras anytime
               </p>
             </div>
           </div>

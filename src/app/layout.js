@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron, Nunito } from "next/font/google";
 import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
@@ -33,6 +33,12 @@ const orbitron = Orbitron({
   variable: '--font-orbitron'
 });
 
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-nunito'
+});
+
 export const metadata = {
   metadataBase: new URL(getBaseUrl()),
   title: "PartySnap",
@@ -44,7 +50,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`scroll-to-top ${montserrat.variable} ${poppins.variable} ${orbitron.variable} ${fredoka.variable}`}>
+    <html lang="en" className={`scroll-to-top ${montserrat.variable} ${poppins.variable} ${orbitron.variable} ${fredoka.variable} ${nunito.variable}`}>
       <head>
         <meta
           name="facebook-domain-verification"

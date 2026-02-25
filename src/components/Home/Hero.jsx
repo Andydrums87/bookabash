@@ -42,13 +42,13 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             {/* Hero Text - Left Side */}
             <div className="space-y-8">
               <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
-                Book Your Party in a <span className="text-primary-500 relative">
-                  Snap!
+                Tell us the details. <span className="text-primary-500 relative">
+                  We Build the Party.
                 </span>
               </h1>
-              
+
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
-                Let Snappy handle the theme, the crew, and snacks too — just one click and a snap, and it's done for you!
+                Date. Location. Number of kids. Theme. We handle everything else.
               </h2>
             </div>
 
@@ -346,13 +346,13 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
                 <h1 className="text-5xl font-black text-gray-900 mb-10 leading-tight animate-fade-in">
-                  Book Your Party in a <span className="text-primary-500 relative">
-                    Snap!
+                  Tell us the details. <span className="text-primary-500 relative">
+                    We Build the Party.
                     <div className="absolute -bottom-1 left-0 w-full h-1.5 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>
                   </span>
                 </h1>
                 <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
-                Let Snappy handle everything — one click and we take it from there!
+                  Date. Location. Number of kids. Theme. We handle everything else.
                 </p>
               </div>
             </div>

@@ -185,7 +185,7 @@ export default function SnappyChatReviewPage() {
     {
       id: 'forgotten',
       title: "Anything Missing?",
-      description: "Here are some popular extras you might want to add (Optional)",
+      description: "Not ready to decide? You can always add more from your dashboard later.",
       showMissingSuppliers: true,
       optional: true
     }
