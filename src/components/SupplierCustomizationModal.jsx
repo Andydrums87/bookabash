@@ -2125,72 +2125,75 @@ export default function SupplierCustomizationModal({
 
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: Image with overlay sticky header */}
-            <div className="lg:hidden relative">
-              {/* Sticky header - overlays on top when scrolled, no height change */}
-              <div
-                className={`absolute top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 transition-all duration-300 ${
-                  isImageCollapsed
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 -translate-y-full pointer-events-none'
-                }`}
-              >
-                <div className="flex items-center gap-3 p-3">
-                  {/* Thumbnail */}
-                  <button
-                    onClick={() => {
-                      setIsExpanding(true)
-                      setIsImageCollapsed(false)
-                      if (mobileContentRef.current) {
-                        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-                      }
-                    }}
-                    className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
-                  >
-                    {supplierImages.length > 0 ? (
-                      <Image
-                        src={supplierImages[carouselIndex] || supplierImages[0]}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-gray-400" />
+            {/* Mobile: Collapsible image with sticky header */}
+            <div className="lg:hidden relative overflow-hidden">
+              {/* Sticky header - shows when image is collapsed */}
+              {isImageCollapsed && (
+                <div className="bg-white border-b border-gray-200 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Thumbnail */}
+                    <button
+                      onClick={() => {
+                        setIsExpanding(true)
+                        setIsImageCollapsed(false)
+                        if (mobileContentRef.current) {
+                          mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                        }
+                      }}
+                      className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
+                    >
+                      {supplierImages.length > 0 ? (
+                        <Image
+                          src={supplierImages[carouselIndex] || supplierImages[0]}
+                          alt={supplier.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                      {/* Expand indicator */}
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Maximize2 className="w-4 h-4 text-white" />
                       </div>
-                    )}
-                    {/* Expand indicator */}
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Maximize2 className="w-4 h-4 text-white" />
+                    </button>
+                    {/* Package info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
+                      {selectedPackage && (
+                        <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
+                      )}
                     </div>
-                  </button>
-                  {/* Package info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
-                    {selectedPackage && (
-                      <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
-                    )}
+                    {/* Price */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-primary-600">
+                        £{calculateModalPricing.totalPrice.toFixed(2)}
+                      </p>
+                    </div>
+                    {/* Close button */}
+                    <button
+                      onClick={onClose}
+                      className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
+                    >
+                      <X className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
-                  {/* Price */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-primary-600">
-                      £{calculateModalPricing.totalPrice.toFixed(2)}
-                    </p>
-                  </div>
-                  {/* Close button */}
-                  <button
-                    onClick={onClose}
-                    className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
-                  >
-                    <X className="w-4 h-4 text-gray-600" />
-                  </button>
                 </div>
-              </div>
+              )}
 
-              {/* Full image - always visible, header slides over it */}
+              {/* Full image - slides up when collapsed using negative margin */}
               <div
-                className="relative w-full h-72 bg-gray-900 overflow-hidden touch-pan-y"
+                className="relative w-full bg-gray-900 overflow-hidden touch-pan-y"
+                style={{
+                  height: isImageCollapsed ? 0 : 288,
+                  marginTop: isImageCollapsed ? 0 : 0,
+                  transition: isExpanding
+                    ? 'height 500ms cubic-bezier(0.4, 0, 0.2, 1)'
+                    : 'height 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(supplierImages.length)}
