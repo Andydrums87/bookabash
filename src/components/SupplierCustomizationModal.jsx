@@ -2127,7 +2127,7 @@ export default function SupplierCustomizationModal({
               {/* Collapsed sticky header - shows when scrolled */}
               {isImageCollapsed && (
               <div
-                className="sticky top-0 z-30 bg-white border-b border-gray-200 animate-in fade-in slide-in-from-top duration-300"
+                className="sticky top-0 z-30 bg-white border-b border-gray-200 animate-in fade-in slide-in-from-top duration-500"
               >
                 <div className="flex items-center gap-3 p-3">
                   {/* Thumbnail */}
@@ -2184,9 +2184,12 @@ export default function SupplierCustomizationModal({
 
               {/* Full image - hides when collapsed */}
               <div
-                className={`relative w-full bg-gray-900 overflow-hidden touch-pan-y transition-all duration-500 ease-in-out ${
+                className={`relative w-full bg-gray-900 overflow-hidden touch-pan-y ${
                   isImageCollapsed ? 'h-0 opacity-0' : 'h-72 opacity-100'
                 }`}
+                style={{
+                  transition: 'height 800ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 600ms ease'
+                }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(supplierImages.length)}
