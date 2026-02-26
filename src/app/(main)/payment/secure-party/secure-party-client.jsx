@@ -774,9 +774,6 @@ export default function PaymentPageContent() {
         
         const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party, addonsList)
 
-        const newResetKey = supplierList.map(s => s.id).join('-')
-        setTimerResetKey(newResetKey)
-
         setConfirmedSuppliers(supplierList)
         setPaymentBreakdown(breakdown)
         setPartyId(partyResult.party.id)
