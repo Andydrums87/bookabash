@@ -351,11 +351,25 @@ export default function SupplierCustomizationModal({
   // Function to scroll carousel to a package's linked image
   const scrollToPackageImage = useCallback((packageId) => {
     const imageIndex = packageIdToIndex.get(packageId)
-    if (imageIndex !== undefined) {
+
+    // If image is collapsed (mobile), expand it and scroll to top FIRST
+    // This ensures the image area is visible before we update the carousel index
+    if (isImageCollapsed && mobileContentRef.current) {
+      // Set the carousel index BEFORE expanding so the correct image shows
+      if (imageIndex !== undefined) {
+        setCarouselIndex(imageIndex)
+        if (emblaApi) emblaApi.scrollTo(imageIndex)
+      }
+      // Then expand and scroll to top
+      setIsImageCollapsed(false)
+      setImageScrollOffset(0)
+      mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (imageIndex !== undefined) {
+      // Not collapsed - just update the carousel index
       setCarouselIndex(imageIndex)
       if (emblaApi) emblaApi.scrollTo(imageIndex)
     }
-  }, [packageIdToIndex, emblaApi])
+  }, [packageIdToIndex, emblaApi, isImageCollapsed])
 
   // Embla carousel callbacks
   const onEmblaSelect = useCallback(() => {
@@ -486,6 +500,9 @@ export default function SupplierCustomizationModal({
 
       // If collapsed, scroll back to top to show the new image
       if (isImageCollapsed && mobileContentRef.current) {
+        // Reset collapsed state immediately so image renders
+        setIsImageCollapsed(false)
+        setImageScrollOffset(0)
         mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
@@ -2115,177 +2132,10 @@ export default function SupplierCustomizationModal({
         {/* Split Layout Container */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0">
 
-          {/* Left Side - Image (sticky on desktop) */}
-          <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: Image scrolls up naturally with content */}
-            <div className="lg:hidden relative overflow-hidden">
-              {/* Sticky header - fades in as image scrolls up */}
-              <div
-                className="bg-white border-b border-gray-200"
-                style={{
-                  opacity: imageScrollOffset / IMAGE_HEIGHT,
-                  height: isImageCollapsed ? 'auto' : 0,
-                  overflow: 'hidden'
-                }}
-              >
-                <div className="flex items-center gap-3 p-3">
-                  {/* Thumbnail */}
-                  <button
-                    onClick={() => {
-                      if (mobileContentRef.current) {
-                        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-                      }
-                    }}
-                    className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
-                  >
-                    {supplierImages.length > 0 ? (
-                      <Image
-                        src={supplierImages[carouselIndex] || supplierImages[0]}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-gray-400" />
-                      </div>
-                    )}
-                    {/* Expand indicator */}
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Maximize2 className="w-4 h-4 text-white" />
-                    </div>
-                  </button>
-                  {/* Package info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
-                    {selectedPackage && (
-                      <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
-                    )}
-                  </div>
-                  {/* Price */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-primary-600">
-                      £{calculateModalPricing.totalPrice.toFixed(2)}
-                    </p>
-                  </div>
-                  {/* Close button */}
-                  <button
-                    onClick={onClose}
-                    className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
-                  >
-                    <X className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Full image - height shrinks as user scrolls, 1:1 with scroll position */}
-              <div
-                className="relative w-full bg-gray-900 overflow-hidden touch-pan-y"
-                style={{
-                  height: Math.max(0, IMAGE_HEIGHT - imageScrollOffset)
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={() => handleTouchEnd(supplierImages.length)}
-              >
-                {supplierImages.length > 0 ? (
-                  <>
-                    {/* Blurred background image - fills the space with colors */}
-                    <div className="absolute inset-0">
-                      <Image
-                        src={supplierImages[carouselIndex] || supplierImages[0]}
-                        alt=""
-                        fill
-                        className={`object-cover blur-2xl scale-110 transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-110'}`}
-                        sizes="100vw"
-                        priority={false}
-                      />
-                      {/* Dark overlay to ensure image pops */}
-                      <div className="absolute inset-0 bg-black/30" />
-                    </div>
-                    {/* Main image - full visible with contain */}
-                    <div className="absolute inset-0 z-10">
-                      <Image
-                        src={supplierImages[carouselIndex] || supplierImages[0]}
-                        alt={`${supplier.name} - Image ${carouselIndex + 1}`}
-                        fill
-                        className={`object-contain transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
-                        sizes="100vw"
-                      />
-                    </div>
-                    {/* Mobile navigation arrows */}
-                    {supplierImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCarouselIndex(prev => prev === 0 ? supplierImages.length - 1 : prev - 1)
-                          }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
-                        >
-                          <ChevronLeft className="w-5 h-5 text-white" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCarouselIndex(prev => prev === supplierImages.length - 1 ? 0 : prev + 1)
-                          }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
-                        >
-                          <ChevronRight className="w-5 h-5 text-white" />
-                        </button>
-                      </>
-                    )}
-                    {/* Mobile bottom gradient with supplier name */}
-                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 via-black/40 to-transparent pt-8 pb-3 px-4">
-                      <h2 className="text-white font-bold text-lg truncate">{supplier.name}</h2>
-                      {supplierImages.length > 1 && (
-                        <div className="flex gap-2 mt-2">
-                          {supplierImages.map((_, idx) => (
-                            <button
-                              key={idx}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setCarouselIndex(idx)
-                              }}
-                              className={`w-2.5 h-2.5 rounded-full transition-all ${idx === carouselIndex ? "bg-white scale-110" : "bg-white/50"}`}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {/* Mobile close button */}
-                    <button
-                      onClick={onClose}
-                      className="absolute top-3 right-3 z-30 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </button>
-                    {/* Mobile fullscreen button with image counter */}
-                    <button
-                      onClick={() => {
-                        setLightboxIndex(carouselIndex)
-                        setShowLightbox(true)
-                      }}
-                      className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5"
-                    >
-                      <Maximize2 className="w-4 h-4 text-white" />
-                      <span className="text-white text-xs font-medium">
-                        {supplierImages.length > 1 ? `${carouselIndex + 1}/${supplierImages.length}` : 'View'}
-                      </span>
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <span className="text-gray-400">No image</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
+          {/* Left Side - Image (desktop only - mobile image is inside scrollable content) */}
+          <div className="hidden lg:block lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
             {/* Desktop: taller image panel with blurred background */}
-            <div className="hidden lg:block relative w-full h-full min-h-[500px] bg-gray-900 overflow-hidden">
+            <div className="relative w-full h-full min-h-[500px] bg-gray-900 overflow-hidden">
               {supplierImages.length > 0 ? (
                 <>
                   {/* Blurred background image */}
@@ -2392,6 +2242,166 @@ export default function SupplierCustomizationModal({
 
             {/* Scrollable content area */}
             <div ref={mobileContentRef} className="flex-1 overflow-y-auto min-w-0" style={{ minHeight: 0 }}>
+
+            {/* Mobile: Sticky header - appears when scrolled past image */}
+            {isImageCollapsed && (
+              <div className="lg:hidden sticky top-0 z-20 bg-white border-b border-gray-200">
+                <div className="flex items-center gap-3 p-3">
+                  {/* Thumbnail */}
+                  <button
+                    onClick={() => {
+                      if (mobileContentRef.current) {
+                        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
+                    className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
+                  >
+                    {supplierImages.length > 0 ? (
+                      <Image
+                        src={supplierImages[carouselIndex] || supplierImages[0]}
+                        alt={supplier.name}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                    {/* Expand indicator */}
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <Maximize2 className="w-4 h-4 text-white" />
+                    </div>
+                  </button>
+                  {/* Package info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
+                    {selectedPackage && (
+                      <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
+                    )}
+                  </div>
+                  {/* Price */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-primary-600">
+                      £{calculateModalPricing.totalPrice.toFixed(2)}
+                    </p>
+                  </div>
+                  {/* Close button */}
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile: Image at top of scrollable content - scrolls naturally */}
+            <div className="lg:hidden" key={`mobile-image-${carouselIndex}`}>
+              {/* Full image - scrolls naturally with content */}
+              <div
+                className="relative w-full h-56 bg-gray-900 overflow-hidden touch-pan-y"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={() => handleTouchEnd(supplierImages.length)}
+              >
+                {supplierImages.length > 0 ? (
+                  <>
+                    {/* Blurred background image */}
+                    <div className="absolute inset-0">
+                      <Image
+                        key={`blur-${carouselIndex}`}
+                        src={supplierImages[carouselIndex] || supplierImages[0]}
+                        alt=""
+                        fill
+                        className={`object-cover blur-2xl scale-110 transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-110'}`}
+                        sizes="100vw"
+                        priority={false}
+                      />
+                      <div className="absolute inset-0 bg-black/30" />
+                    </div>
+                    {/* Main image */}
+                    <div className="absolute inset-0 z-10">
+                      <Image
+                        key={`main-${carouselIndex}`}
+                        src={supplierImages[carouselIndex] || supplierImages[0]}
+                        alt={`${supplier.name} - Image ${carouselIndex + 1}`}
+                        fill
+                        className={`object-contain transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                        sizes="100vw"
+                      />
+                    </div>
+                    {/* Navigation arrows */}
+                    {supplierImages.length > 1 && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCarouselIndex(prev => prev === 0 ? supplierImages.length - 1 : prev - 1)
+                          }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-white" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCarouselIndex(prev => prev === supplierImages.length - 1 ? 0 : prev + 1)
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
+                        >
+                          <ChevronRight className="w-5 h-5 text-white" />
+                        </button>
+                      </>
+                    )}
+                    {/* Bottom gradient with supplier name */}
+                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 via-black/40 to-transparent pt-8 pb-3 px-4">
+                      <h2 className="text-white font-bold text-lg truncate">{supplier.name}</h2>
+                      {supplierImages.length > 1 && (
+                        <div className="flex gap-2 mt-2">
+                          {supplierImages.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCarouselIndex(idx)
+                              }}
+                              className={`w-2.5 h-2.5 rounded-full transition-all ${idx === carouselIndex ? "bg-white scale-110" : "bg-white/50"}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Close button */}
+                    <button
+                      onClick={onClose}
+                      className="absolute top-3 right-3 z-30 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                    {/* Fullscreen button */}
+                    <button
+                      onClick={() => {
+                        setLightboxIndex(carouselIndex)
+                        setShowLightbox(true)
+                      }}
+                      className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5"
+                    >
+                      <Maximize2 className="w-4 h-4 text-white" />
+                      <span className="text-white text-xs font-medium">
+                        {supplierImages.length > 1 ? `${carouselIndex + 1}/${supplierImages.length}` : 'View'}
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <span className="text-gray-400">No image</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* About Section - Skip for venues (VenueDisplay has its own) */}
             {!supplierTypeDetection.isVenue && (() => {
@@ -3126,7 +3136,7 @@ export default function SupplierCustomizationModal({
             {supplierTypeDetection.isBalloons && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
               <section>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                  Choose Package
+                  Choose Package (Balloons)
                 </label>
 
                 {/* Horizontal scroll on all screens */}
