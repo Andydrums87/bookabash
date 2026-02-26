@@ -39,6 +39,9 @@ export default function FinalCTA() {
                 >
                   Plan My Party
                 </a>
+                <p className="text-xs text-gray-500 mt-3">
+                  Takes less than 60 seconds
+                </p>
               </div>
 
               {/* Image */}
@@ -61,7 +64,7 @@ export default function FinalCTA() {
                   href="mailto:hello@partysnap.co.uk"
                   className="text-primary-600 hover:text-[hsl(var(--primary-700))] font-bold hover:underline"
                 >
-                  Speak to Andrew directly
+                  Speak to our team directly
                 </Link>{" "}
                 — real human support, no bots.
               </p>

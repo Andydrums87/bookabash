@@ -54,11 +54,11 @@ export default function HowItWorks() {
       bullets: [
         "100% money-back guarantee",
         "Confirmation pack within 2 working days",
-        "Direct support from Andrew"
+        "Personal support from our team"
       ],
       mobileBullets: [
         "100% money-back guarantee",
-        "Direct support from Andrew"
+        "Personal support from our team"
       ],
       screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102928/IMG_6580_qofg58.png",
       imageAlt: "PartySnap checkout and confirmation screen",
@@ -96,7 +96,7 @@ export default function HowItWorks() {
           key={step.number}
           className={`py-6 md:py-14 relative overflow-hidden ${
             step.darkBg
-              ? 'bg-gradient-to-br from-[#FF7A4E] via-[hsl(var(--primary-500))] to-[#FF6A3D]'
+              ? 'bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]'
               : 'bg-white'
           }`}
         >

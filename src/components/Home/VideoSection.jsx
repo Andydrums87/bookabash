@@ -93,25 +93,28 @@ export default function VideoSection() {
           {/* Thumbnail (shown when not playing) */}
           {!isPlaying && (
             <>
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-100 via-rose-50 to-amber-100">
                 <Image
                   src={thumbnailUrl}
                   alt="PartySnap demo video thumbnail"
                   fill
-                  className="object-contain md:object-cover opacity-90"
+                  className="object-contain md:object-cover"
                   sizes="(max-width: 768px) 100vw, 1024px"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+                {/* Warm peach overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-orange-500/30 via-transparent to-rose-400/20" />
               </div>
 
-              {/* Play Button */}
+              {/* Play Button - larger and more vibrant with contrast backdrop */}
               <button
                 onClick={handlePlayPause}
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
                 aria-label="Play video"
               >
-                <div className="w-16 h-16 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-                  <Play className="w-6 h-6 md:w-10 md:h-10 text-primary-600 ml-1" fill="currentColor" />
+                {/* Contrast backdrop behind button */}
+                <div className="absolute w-36 h-36 md:w-44 md:h-44 bg-white/60 rounded-full blur-xl" />
+                <div className="relative w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:shadow-primary-500/40 transition-all duration-300 ring-4 ring-white/50">
+                  <Play className="w-8 h-8 md:w-12 md:h-12 text-white ml-1" fill="currentColor" />
                 </div>
               </button>
             </>
