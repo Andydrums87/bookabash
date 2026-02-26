@@ -2118,12 +2118,11 @@ export default function SupplierCustomizationModal({
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
             {/* Mobile: Collapsible image with sticky header */}
-            <div className="lg:hidden">
+            <div className="lg:hidden relative">
               {/* Collapsed sticky header - shows when scrolled */}
+              {isImageCollapsed && (
               <div
-                className={`sticky top-0 z-30 bg-white border-b border-gray-200 transition-all duration-300 ease-out ${
-                  isImageCollapsed ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
-                }`}
+                className="sticky top-0 z-30 bg-white border-b border-gray-200 animate-in fade-in slide-in-from-top duration-200"
               >
                 <div className="flex items-center gap-3 p-3">
                   {/* Thumbnail */}
@@ -2176,6 +2175,7 @@ export default function SupplierCustomizationModal({
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Full image - hides when collapsed */}
               <div
