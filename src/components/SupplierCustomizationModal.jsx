@@ -276,12 +276,13 @@ export default function SupplierCustomizationModal({
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
 
-  // Mobile sticky header state - collapses when user scrolls past image
-  const [isImageCollapsed, setIsImageCollapsed] = useState(false)
-  const [isExpanding, setIsExpanding] = useState(false) // Track if we're expanding (for smooth animation) vs collapsing (instant)
+  // Mobile sticky header state - image scrolls up naturally with content
+  const [imageScrollOffset, setImageScrollOffset] = useState(0) // How much the image has scrolled up
+  const [isImageCollapsed, setIsImageCollapsed] = useState(false) // True when image fully hidden
   const [imageTransitioning, setImageTransitioning] = useState(false)
   const mobileContentRef = useRef(null)
   const previousImageIndex = useRef(carouselIndex)
+  const IMAGE_HEIGHT = 224 // h-56 = 224px
 
 
   // Get all supplier images for carousel with packageId mapping (memoized)
@@ -455,32 +456,26 @@ export default function SupplierCustomizationModal({
     }
   }, [isOpen])
 
-  // Mobile scroll detection for collapsible image header
+  // Mobile scroll detection - image scrolls up naturally with content
   useEffect(() => {
     if (!isOpen || !mobileContentRef.current) return
 
     const contentEl = mobileContentRef.current
-    const COLLAPSE_THRESHOLD = 100 // Pixels scrolled before collapsing
-    const EXPAND_THRESHOLD = 10 // Must be near top to expand (less aggressive)
 
     const handleScroll = () => {
       const scrollTop = contentEl.scrollTop
 
-      // Collapse when scrolled past threshold (instant, no animation)
-      if (!isImageCollapsed && scrollTop > COLLAPSE_THRESHOLD) {
-        setIsExpanding(false)
-        setIsImageCollapsed(true)
-      }
-      // Only expand when back near the very top (with smooth animation)
-      else if (isImageCollapsed && scrollTop < EXPAND_THRESHOLD) {
-        setIsExpanding(true)
-        setIsImageCollapsed(false)
-      }
+      // Image scrolls up with content, capped at IMAGE_HEIGHT (fully hidden)
+      const newOffset = Math.min(scrollTop, IMAGE_HEIGHT)
+      setImageScrollOffset(newOffset)
+
+      // Mark as collapsed when image is fully scrolled out of view
+      setIsImageCollapsed(scrollTop >= IMAGE_HEIGHT)
     }
 
     contentEl.addEventListener('scroll', handleScroll, { passive: true })
     return () => contentEl.removeEventListener('scroll', handleScroll)
-  }, [isOpen, isImageCollapsed])
+  }, [isOpen, IMAGE_HEIGHT])
 
   // Auto-expand image when package changes and image is different (for balloons, decorations, etc.)
   useEffect(() => {
@@ -489,13 +484,9 @@ export default function SupplierCustomizationModal({
       setImageTransitioning(true)
       const timer = setTimeout(() => setImageTransitioning(false), 300)
 
-      // If collapsed, expand to show the new image
-      if (isImageCollapsed) {
-        setIsImageCollapsed(false)
-        // Scroll content back to top to show the image
-        if (mobileContentRef.current) {
-          mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-        }
+      // If collapsed, scroll back to top to show the new image
+      if (isImageCollapsed && mobileContentRef.current) {
+        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
       previousImageIndex.current = carouselIndex
@@ -507,6 +498,7 @@ export default function SupplierCustomizationModal({
   useEffect(() => {
     if (supplier?.id) {
       setIsImageCollapsed(false)
+      setImageScrollOffset(0)
       previousImageIndex.current = 0
     }
   }, [supplier?.id])
@@ -2125,74 +2117,73 @@ export default function SupplierCustomizationModal({
 
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: Collapsible image with sticky header */}
+            {/* Mobile: Image scrolls up naturally with content */}
             <div className="lg:hidden relative overflow-hidden">
-              {/* Sticky header - shows when image is collapsed */}
-              {isImageCollapsed && (
-                <div className="bg-white border-b border-gray-200 animate-in fade-in duration-200">
-                  <div className="flex items-center gap-3 p-3">
-                    {/* Thumbnail */}
-                    <button
-                      onClick={() => {
-                        setIsExpanding(true)
-                        setIsImageCollapsed(false)
-                        if (mobileContentRef.current) {
-                          mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-                        }
-                      }}
-                      className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
-                    >
-                      {supplierImages.length > 0 ? (
-                        <Image
-                          src={supplierImages[carouselIndex] || supplierImages[0]}
-                          alt={supplier.name}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5 text-gray-400" />
-                        </div>
-                      )}
-                      {/* Expand indicator */}
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Maximize2 className="w-4 h-4 text-white" />
+              {/* Sticky header - fades in as image scrolls up */}
+              <div
+                className="bg-white border-b border-gray-200"
+                style={{
+                  opacity: imageScrollOffset / IMAGE_HEIGHT,
+                  height: isImageCollapsed ? 'auto' : 0,
+                  overflow: 'hidden'
+                }}
+              >
+                <div className="flex items-center gap-3 p-3">
+                  {/* Thumbnail */}
+                  <button
+                    onClick={() => {
+                      if (mobileContentRef.current) {
+                        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
+                    className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
+                  >
+                    {supplierImages.length > 0 ? (
+                      <Image
+                        src={supplierImages[carouselIndex] || supplierImages[0]}
+                        alt={supplier.name}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
                       </div>
-                    </button>
-                    {/* Package info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
-                      {selectedPackage && (
-                        <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
-                      )}
+                    )}
+                    {/* Expand indicator */}
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <Maximize2 className="w-4 h-4 text-white" />
                     </div>
-                    {/* Price */}
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-primary-600">
-                        £{calculateModalPricing.totalPrice.toFixed(2)}
-                      </p>
-                    </div>
-                    {/* Close button */}
-                    <button
-                      onClick={onClose}
-                      className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
-                    >
-                      <X className="w-4 h-4 text-gray-600" />
-                    </button>
+                  </button>
+                  {/* Package info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{supplier.name}</p>
+                    {selectedPackage && (
+                      <p className="text-sm text-gray-500 truncate">{selectedPackage.name}</p>
+                    )}
                   </div>
+                  {/* Price */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-primary-600">
+                      £{calculateModalPricing.totalPrice.toFixed(2)}
+                    </p>
+                  </div>
+                  {/* Close button */}
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
                 </div>
-              )}
+              </div>
 
-              {/* Full image - slides up when collapsed using negative margin */}
+              {/* Full image - height shrinks as user scrolls, 1:1 with scroll position */}
               <div
                 className="relative w-full bg-gray-900 overflow-hidden touch-pan-y"
                 style={{
-                  height: isImageCollapsed ? 0 : 288,
-                  marginTop: isImageCollapsed ? 0 : 0,
-                  transition: isExpanding
-                    ? 'height 500ms cubic-bezier(0.4, 0, 0.2, 1)'
-                    : 'height 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  height: Math.max(0, IMAGE_HEIGHT - imageScrollOffset)
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
