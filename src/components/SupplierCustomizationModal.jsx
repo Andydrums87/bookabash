@@ -2125,17 +2125,21 @@ export default function SupplierCustomizationModal({
 
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: Collapsible image with sticky header */}
+            {/* Mobile: Image with overlay sticky header */}
             <div className="lg:hidden relative">
-              {/* Collapsed sticky header - shows when scrolled */}
-              {isImageCollapsed && (
+              {/* Sticky header - overlays on top when scrolled, no height change */}
               <div
-                className="sticky top-0 z-30 bg-white border-b border-gray-200 animate-in fade-in slide-in-from-top duration-500"
+                className={`absolute top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 transition-all duration-300 ${
+                  isImageCollapsed
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 -translate-y-full pointer-events-none'
+                }`}
               >
                 <div className="flex items-center gap-3 p-3">
                   {/* Thumbnail */}
                   <button
                     onClick={() => {
+                      setIsExpanding(true)
                       setIsImageCollapsed(false)
                       if (mobileContentRef.current) {
                         mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
@@ -2183,19 +2187,10 @@ export default function SupplierCustomizationModal({
                   </button>
                 </div>
               </div>
-              )}
 
-              {/* Full image - hides when collapsed */}
+              {/* Full image - always visible, header slides over it */}
               <div
-                className={`relative w-full bg-gray-900 overflow-hidden touch-pan-y ${
-                  isImageCollapsed ? 'h-0 opacity-0' : 'h-72 opacity-100'
-                }`}
-                style={{
-                  // Quick fade on collapse (200ms), smooth expand (800ms)
-                  transition: isExpanding
-                    ? 'height 800ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 600ms ease'
-                    : 'height 200ms ease-out, opacity 150ms ease-out'
-                }}
+                className="relative w-full h-72 bg-gray-900 overflow-hidden touch-pan-y"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(supplierImages.length)}
