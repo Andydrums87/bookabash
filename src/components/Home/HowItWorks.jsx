@@ -19,7 +19,7 @@ export default function HowItWorks() {
         "Pick from popular themes",
         "Takes less than a minute"
       ],
-      screenImage: "/mobile-frames/step1.PNG",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102943/IMG_6574_gwt1hj.png",
       imageAlt: "PartySnap form showing date, theme, and location fields",
       reverse: false,
       darkBg: true,
@@ -35,13 +35,13 @@ export default function HowItWorks() {
       bullets: [
         "Entertainment, venues, cakes & more",
         "Transparent pricing upfront",
-        "Compare options side-by-side"
+        "Curated packages tailored to you"
       ],
       mobileBullets: [
         "Vetted local suppliers",
         "Transparent pricing"
       ],
-      screenImage: "/mobile-frames/step2.PNG",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102954/IMG_6576_b3zd7h.png",
       imageAlt: "PartySnap dashboard showing matched suppliers",
       reverse: true,
       darkBg: false,
@@ -60,9 +60,8 @@ export default function HowItWorks() {
         "100% money-back guarantee",
         "Direct support from Andrew"
       ],
-      screenImage: null,
-      placeholderBg: "from-green-100 to-green-200",
-      placeholderIcon: "✅",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102928/IMG_6580_qofg58.png",
+      imageAlt: "PartySnap checkout and confirmation screen",
       reverse: false,
       darkBg: true,
       trustSignals: null
@@ -201,20 +200,20 @@ export default function HowItWorks() {
                     ))}
                   </ul>
 
-                  {/* Trust Signals on mobile */}
+                  {/* Trust Signals on mobile - inline row */}
                   {step.trustSignals && (
-                    <div className="flex flex-wrap gap-2 justify-center mt-3">
+                    <div className="flex gap-2 justify-center mt-3">
                       {step.trustSignals.map((signal, signalIndex) => (
                         <div
                           key={signalIndex}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${
+                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] whitespace-nowrap ${
                             step.darkBg
                               ? 'bg-white/15 text-white/90'
                               : 'bg-gray-100 text-gray-700'
                           }`}
                         >
-                          {signal.icon === 'shield' && <Shield className="w-3 h-3" />}
-                          {signal.icon === 'chat' && <MessageCircle className="w-3 h-3" />}
+                          {signal.icon === 'shield' && <Shield className="w-2.5 h-2.5" />}
+                          {signal.icon === 'chat' && <MessageCircle className="w-2.5 h-2.5" />}
                           <span>{signal.text}</span>
                         </div>
                       ))}

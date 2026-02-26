@@ -12,25 +12,25 @@ export default function TrustIndicators() {
 
         {/* Trust badges - Inverted triangle on mobile, single row on desktop */}
         {/* Mobile: 2 on top, 1 below */}
-        <div className="flex flex-col items-center gap-2 md:hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1.5 md:hidden">
+          <div className="flex items-center gap-1.5">
             {/* Personally confirmed */}
-            <div className="flex items-center gap-1 bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-700">Personally confirmed</span>
+            <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full border border-gray-200 whitespace-nowrap">
+              <ShieldCheck className="w-3 h-3 text-green-500 flex-shrink-0" />
+              <span className="text-[10px] font-medium text-gray-700">Personally confirmed</span>
             </div>
 
             {/* Money back guarantee */}
-            <div className="flex items-center gap-1 bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-200">
-              <Banknote className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-700">100% money-back</span>
+            <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full border border-gray-200 whitespace-nowrap">
+              <Banknote className="w-3 h-3 text-green-500 flex-shrink-0" />
+              <span className="text-[10px] font-medium text-gray-700">100% money-back</span>
             </div>
           </div>
 
           {/* Founded in St Albans - centered below */}
-          <div className="flex items-center gap-1 bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-200">
-            <MapPin className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
-            <span className="text-xs font-medium text-gray-700">Founded in St Albans</span>
+          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full border border-gray-200 whitespace-nowrap">
+            <MapPin className="w-3 h-3 text-primary-500 flex-shrink-0" />
+            <span className="text-[10px] font-medium text-gray-700">Founded in St Albans</span>
           </div>
         </div>
 
