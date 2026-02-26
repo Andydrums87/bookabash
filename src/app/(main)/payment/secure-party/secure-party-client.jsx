@@ -992,13 +992,10 @@ export default function PaymentPageContent() {
           </div>
 
           {/* Order items */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-6">
             {paymentBreakdown.paymentDetails.map((supplier) => (
-              <div key={supplier.id} className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
-                  <p className="text-xs text-gray-500">For {partyDetails.childName}'s party</p>
-                </div>
+              <div key={supplier.id} className="flex justify-between items-center">
+                <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
                 <p className="text-sm text-gray-900">£{supplier.amountToday}</p>
               </div>
             ))}
