@@ -1,7 +1,6 @@
 "use client"
 
 import PartyPhaseContent from '../../../components/PartyPhaseContent'
-import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions'
 import AgeBasedRecommendationBanner from '@/components/AgeBasedRecommendationBanner'
 
 export default function JourneyTabContent({
@@ -31,7 +30,6 @@ export default function JourneyTabContent({
   onDataUpdate,
   onEditSupplier,
   partyDate,
-  onBrowseVenues,
 }) {
   return (
     <div className="space-y-8 py-6 px-5">
@@ -79,33 +77,6 @@ export default function JourneyTabContent({
         onEditSupplier={onEditSupplier}
         partyDate={partyDate}
       />
-
-      {/* Anything Else to Add? - keeps user engaged in journey */}
-      <div className="mt-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-            Anything Else to Add?
-            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-          </h2>
-          <p className="text-sm text-gray-600 mt-3">Complete your party with these popular additions</p>
-        </div>
-        <MissingSuppliersSuggestions
-          partyPlan={visibleSuppliers}
-          partyDetails={partyDetails}
-          onAddSupplier={async (supplier, supplierType) => {
-            await onAddRecommendedSupplier(supplierType, supplier, false)
-            return true
-          }}
-          onCustomize={(supplier, supplierType) => {
-            onAddRecommendedSupplier(supplierType, supplier, false)
-          }}
-          showTitle={false}
-          horizontalScroll={true}
-          preventNavigation={true}
-          disableConfetti={true}
-          onBrowseVenues={onBrowseVenues}
-        />
-      </div>
     </div>
   )
 }

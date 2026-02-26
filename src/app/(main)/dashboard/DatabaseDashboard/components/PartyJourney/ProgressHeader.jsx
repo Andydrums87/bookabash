@@ -91,8 +91,13 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
       <div className="mt-4 px-4 md:px-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
-            {completedSteps} of {totalSteps} steps complete
-            {progress === 100 && <span className="ml-2 text-primary font-semibold">All done! 🎉</span>}
+            {progress === 100 ? (
+              <span className="text-primary font-semibold">All done! 🎉</span>
+            ) : completedSteps === 1 ? (
+              "You're 1 step in — great start! 🎉"
+            ) : (
+              `You're ${completedSteps} steps in — great progress! 🎉`
+            )}
           </p>
         </div>
       </div>

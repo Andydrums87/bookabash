@@ -2,13 +2,13 @@
 "use client"
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Lock, Circle, ArrowRight, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { SupplierJourneyStep } from './SupplierJourneyStep'
 import { VenueConfirmationStep } from './VenueConfirmationStep'
 import { PartyTeamBrowseStep } from './PartyTeamBrowseStep'
+import { useToast } from '@/components/ui/toast'
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +43,32 @@ export function JourneyStep({
 }) {
   // All steps collapsed by default
   const [isExpanded, setIsExpanded] = useState(false)
+  const { toast } = useToast()
+
+  // Handle click on locked step - show helpful toast (keep it warm and friendly!)
+  const handleLockedClick = () => {
+    if (!step.unlockMessage) return
+
+    // Customize message based on step type - friendly tone!
+    let title = "Hold tight!"
+    let message = step.unlockMessage
+
+    if (step.id === 'create_einvites') {
+      title = "Almost there!"
+      message = "Hold tight! Your venue is reviewing your booking now. As soon as they confirm, you can start creating your invites. Usually just a few hours! 🎉"
+    } else if (step.id === 'venue_confirmation') {
+      title = "One quick step"
+      message = step.unlockMessage
+    } else if (step.id === 'final_details') {
+      title = "Coming soon!"
+      message = "We'll send you final party details and your complete checklist 7 days before the big day. You'll get a notification when it's ready!"
+    }
+
+    toast.info(message, {
+      title,
+      duration: 5000
+    })
+  }
 
   // Clean, minimal styling with coral accents
   const getStatusStyles = () => {
@@ -91,7 +117,7 @@ export function JourneyStep({
           <div className="p-4 bg-white rounded-lg border border-gray-200">
             <p className="text-sm text-gray-600 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              Your deposit has been secured and your party is confirmed!
+              Payment complete — your party is confirmed!
             </p>
           </div>
         )
@@ -353,64 +379,67 @@ case 'party_team_browse':
   return (
     <div className="relative">
       <CardWrapper>
-        <Card
+        <div
           className={`
-            ${styles.border}
-            ${styles.bg}
-            transition-all
-            ${styles.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}
+            transition-all rounded-2xl border bg-white
+            ${styles.disabled
+              ? 'opacity-50 cursor-pointer hover:opacity-60 border-gray-200'
+              : 'hover:shadow-md cursor-pointer border-gray-200 hover:border-gray-300'}
             ${step.status === 'completed' ? 'border-l-4 border-l-[hsl(var(--primary-500))]' : ''}
           `}
         >
-          {/* ✅ CLEAN HEADER */}
+          {/* ✅ COMPACT SINGLE-LINE HEADER */}
           <div
-            className={`p-3 ${styles.disabled ? 'pointer-events-none' : ''}`}
-            onClick={() => !styles.disabled && setIsExpanded(!isExpanded)}
+            className="py-3.5 px-4"
+            onClick={() => {
+              if (styles.disabled) {
+                handleLockedClick()
+              } else {
+                setIsExpanded(!isExpanded)
+              }
+            }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Icon */}
-                <div className="w-12 h-12 flex items-center justify-center relative">
-                  {/* Check if icon is a URL or emoji */}
-                  {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://') || step.icon.startsWith('/')) ? (
-                    <img
-                      src={step.icon}
-                      alt={step.title}
-                      className="w-12 h-12 object-contain"
-                    />
-                  ) : (
-                    <span className="text-xl">{step.icon}</span>
-                  )}
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Icon - smaller on mobile */}
+              <div className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center relative flex-shrink-0">
+                {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://') || step.icon.startsWith('/')) ? (
+                  <img
+                    src={step.icon}
+                    alt={step.title}
+                    className="w-8 h-8 md:w-12 md:h-12 object-contain"
+                  />
+                ) : (
+                  <span className="text-base md:text-xl">{step.icon}</span>
+                )}
 
-                  {/* Lock overlay for locked steps */}
-                  {styles.disabled && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-                      <Lock className="w-4 h-4 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Title & Description */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${styles.disabled ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Step {step.number}
-                    </span>
-                    <h3 className={`text-base font-bold ${styles.titleColor} truncate`}>
-                      {step.title}
-                    </h3>
+                {/* Lock overlay for locked steps */}
+                {styles.disabled && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                    <Lock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
                   </div>
-                  {!isExpanded && step.status === 'completed' && (
-                    <p className={`text-xs ${styles.descColor} mt-0.5 line-clamp-1`}>
-                      {step.description}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
 
-              {/* Collapse Toggle - only show if not disabled */}
+              {/* Title - single line on mobile */}
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <span className={`text-xs md:text-sm font-medium ${styles.disabled ? 'text-gray-400' : 'text-gray-500'} flex-shrink-0`}>
+                  {step.number}.
+                </span>
+                <h3 className={`text-sm md:text-base font-semibold ${styles.titleColor} truncate`}>
+                  {step.title}
+                  {step.titleSuffix && (
+                    <span className="text-gray-400 font-normal ml-1">{step.titleSuffix}</span>
+                  )}
+                </h3>
+                {/* Status indicator on mobile */}
+                {step.status === 'completed' && (
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 md:hidden" />
+                )}
+              </div>
+
+              {/* Collapse Toggle */}
               {!styles.disabled && (
-                <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                <button className="p-1 md:p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
                   {isExpanded ? (
                     <ChevronUp className="w-4 h-4 text-gray-600" />
                   ) : (
@@ -423,18 +452,17 @@ case 'party_team_browse':
 
           {/* ✅ COLLAPSIBLE CONTENT */}
           {isExpanded && !styles.disabled && (
-            <CardContent className="px-4 pb-4 pt-0">
+            <div className="px-4 pb-4 pt-0">
+              {/* Subtitle */}
+              {step.subtitle && (
+                <p className="text-sm text-gray-600 mb-3">{step.subtitle}</p>
+              )}
               {/* Step Content */}
               {renderStepContent()}
-            </CardContent>
+            </div>
           )}
-        </Card>
+        </div>
       </CardWrapper>
-
-      {/* Connector Line */}
-      {!isLast && (
-        <div className="absolute left-10 top-full w-0.5 h-6 bg-gray-200 -mt-2 z-0" />
-      )}
     </div>
   )
 }

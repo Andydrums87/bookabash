@@ -5,10 +5,10 @@ import { Compass, ClipboardList, PlusCircle, Users, Clock, MoreHorizontal } from
 
 // Tab configuration with Lucide icons
 const TABS = [
-  { id: "journey", label: "Journey", icon: Compass, mobileLabel: "Journey" },
-  { id: "myplan", label: "My Plan", icon: ClipboardList, mobileLabel: "Plan" },
-  { id: "add", label: "Add", icon: PlusCircle, mobileLabel: "Add" },
-  { id: "guests", label: "Guests", icon: Users, mobileLabel: "Guests" },
+  { id: "journey", label: "Progress", icon: Compass, mobileLabel: "Progress" },
+  { id: "myplan", label: "Party Plan", icon: ClipboardList, mobileLabel: "Party Plan" },
+  { id: "add", label: "Add Suppliers", icon: PlusCircle, mobileLabel: "Add Suppliers" },
+  { id: "guests", label: "Invites", icon: Users, mobileLabel: "Invites" },
   { id: "timeline", label: "Timeline", icon: Clock, mobileLabel: "Timeline" },
   { id: "more", label: "More", icon: MoreHorizontal, mobileLabel: "More" },
 ]
@@ -64,7 +64,7 @@ function TabNavigation({ activeTab, onTabChange, notifications = {} }) {
 // Mobile Tab Navigation - Separate component to be rendered outside the card
 function MobileTabNavigation({ activeTab, onTabChange, notifications = {} }) {
   return (
-    <div className="md:hidden flex items-center gap-1.5 px-4 pt-1 pb-4 overflow-x-auto bg-transparent -mt-2">
+    <div className="md:hidden flex items-center gap-1.5 pl-1 pr-12 pt-1 pb-4 overflow-x-auto bg-transparent -mt-2">
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id
         const notificationCount = notifications[tab.id] || 0
@@ -168,7 +168,7 @@ export default function DashboardTabs({
       />
 
       {/* Main Card Container */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden md:mt-6">
+      <div className="bg-white rounded-2xl overflow-hidden md:mt-6">
         {/* Desktop Tab Navigation - Inside the card */}
         <div className="hidden md:block px-5 pt-5">
           <TabNavigation

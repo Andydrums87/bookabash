@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Users, Mail, Gift, Lock, ChevronRight } from "lucide-react"
+import { useToast } from "@/components/ui/toast"
 
 export default function GuestsTabContent({
   partyToolsData,
@@ -11,6 +12,8 @@ export default function GuestsTabContent({
   enquiries,
   visibleSuppliers,
 }) {
+  const { toast } = useToast()
+
   const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
   const venueExists = !!visibleSuppliers.venue
   // QA bypass: set NEXT_PUBLIC_BYPASS_VENUE_LOCK=true to unlock e-invites without venue confirmation
@@ -18,6 +21,33 @@ export default function GuestsTabContent({
   const isVenueConfirmed = bypassVenueLock || (venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false)
   const venueAwaitingConfirmation = !bypassVenueLock && venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
   const hasPaidSuppliers = enquiries.some(e => ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) || e.is_paid === true)
+
+  const handleLockedClick = (tool) => {
+    // Different messages based on which tool is locked and why - keep it warm and friendly!
+    if (tool.id === 'einvites') {
+      if (venueAwaitingConfirmation) {
+        toast.info("Hold tight! Your venue is reviewing your booking now. As soon as they confirm, you can start creating your invites. Usually just a few hours! 🎉", {
+          title: "Almost there!",
+          duration: 5000
+        })
+      } else if (!venueExists) {
+        toast.info("Pop a venue in your party first — once they confirm your booking, you'll be all set to create beautiful invites!", {
+          title: "One quick step first",
+          duration: 5000
+        })
+      } else {
+        toast.info("Just waiting on your venue to confirm. As soon as you get that confirmation email, you can jump straight into creating invites!", {
+          title: "Hold tight!",
+          duration: 5000
+        })
+      }
+    } else if (tool.id === 'registry') {
+      toast.info("Once you've secured a supplier with a deposit, your gift registry will be ready to set up. Nearly there!", {
+        title: "Coming soon!",
+        duration: 5000
+      })
+    }
+  }
 
   const einvitesData = partyToolsData?.einvites
   // Check multiple possible fields that indicate an invite exists
@@ -66,9 +96,9 @@ export default function GuestsTabContent({
       href: inviteId ? `/e-invites/${inviteId}/manage` : '/e-invites/create',
       hasContent: einvitesCreated,
       isLocked: !isVenueConfirmed,
-      lockMessage: venueAwaitingConfirmation ? 'Waiting for venue to confirm your booking' : !venueExists ? 'Add a venue to your party first' : 'Venue must confirm your booking first',
-      status: !isVenueConfirmed ? '🔒 Locked' : einvitesCreated ? invitesSent ? `${sentCount} sent` : '✓ Created' : 'Not created',
-      description: !isVenueConfirmed ? (venueAwaitingConfirmation ? 'Waiting for venue confirmation' : 'Add and confirm venue first') : einvitesCreated ? (invitesSent ? 'Manage and track your invitations' : 'Share with guests') : 'Create beautiful digital invitations',
+      lockMessage: venueAwaitingConfirmation ? 'Hold tight — venue confirming soon!' : !venueExists ? 'Add a venue first' : 'Waiting on venue confirmation',
+      status: !isVenueConfirmed ? '⏳ Coming soon' : einvitesCreated ? invitesSent ? `${sentCount} sent` : '✓ Created' : 'Not created',
+      description: !isVenueConfirmed ? (venueAwaitingConfirmation ? 'Nearly ready!' : 'Add a venue to get started') : einvitesCreated ? (invitesSent ? 'Manage and track your invitations' : 'Share with guests') : 'Create beautiful digital invitations',
       image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754388320/party-invites/seo3b2joo1omjdkdmjtw.png'
     },
     {
@@ -79,9 +109,9 @@ export default function GuestsTabContent({
       hasContent: !!giftRegistryData,
       count: registryItemCountData,
       isLocked: !hasPaidSuppliers,
-      lockMessage: 'Secure at least one supplier to create registry',
-      status: !hasPaidSuppliers ? '🔒 Locked' : giftRegistryData ? registryItemCountData > 0 ? `${registryItemCountData} item${registryItemCountData !== 1 ? 's' : ''}` : 'Registry created' : 'Not created',
-      description: !hasPaidSuppliers ? 'Confirm suppliers first' : giftRegistryData ? registryItemCountData > 0 ? 'Manage your gift registry' : 'Add items to your registry' : 'Help guests know what to bring',
+      lockMessage: 'Available after first booking',
+      status: !hasPaidSuppliers ? '⏳ Coming soon' : giftRegistryData ? registryItemCountData > 0 ? `${registryItemCountData} item${registryItemCountData !== 1 ? 's' : ''}` : 'Registry created' : 'Not created',
+      description: !hasPaidSuppliers ? 'Secure a supplier to unlock' : giftRegistryData ? registryItemCountData > 0 ? 'Manage your gift registry' : 'Add items to your registry' : 'Help guests know what to bring',
       image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970180/iStock-2000435412-removebg_ewfzxs.png'
     }
   ]
@@ -97,41 +127,33 @@ export default function GuestsTabContent({
         <p className="text-sm text-gray-600 mt-3">Manage invitations, RSVPs, and gift registry</p>
       </div>
 
-      {/* Party Tools - Stacked Widgets */}
-      <div className="space-y-4">
-        {partyTools.map((tool) => {
+      {/* Party Tools - Simple List on Mobile, Cards on Desktop */}
+      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        {partyTools.map((tool, index) => {
           const Icon = tool.icon
           const isLocked = tool.isLocked
 
           if (isLocked) {
             return (
-              <div
+              <button
                 key={`${partyToolsKey}-${partyId}-${tool.id}`}
-                className="bg-gray-100 border-2 border-gray-200 rounded-2xl p-5 opacity-70 cursor-not-allowed"
+                onClick={() => handleLockedClick(tool)}
+                className="w-full flex items-center gap-3 p-4 opacity-60 hover:opacity-80 hover:bg-gray-50 transition-all cursor-pointer text-left active:scale-[0.99]"
               >
-                <div className="flex items-center gap-4">
-                  {/* Icon */}
-                  <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center flex-shrink-0">
-                    <Lock className="w-6 h-6 text-gray-400" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-gray-400 text-lg">{tool.label}</h4>
-                      <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">Locked</span>
-                    </div>
-                    <p className="text-sm text-gray-400">{tool.lockMessage}</p>
-                  </div>
-
-                  {/* Disabled Button */}
-                  <div className="flex-shrink-0">
-                    <div className="px-5 py-2.5 bg-gray-200 text-gray-400 rounded-xl text-sm font-semibold">
-                      Unlock
-                    </div>
-                  </div>
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-5 h-5 text-gray-400" />
                 </div>
-              </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-400 text-sm">{tool.label}</h4>
+                  <p className="text-xs text-gray-400 truncate">{tool.lockMessage}</p>
+                </div>
+
+                {/* Locked indicator */}
+                <Lock className="w-4 h-4 text-gray-300 flex-shrink-0" />
+              </button>
             )
           }
 
@@ -139,29 +161,21 @@ export default function GuestsTabContent({
             <Link
               key={`${partyToolsKey}-${partyId}-${tool.id}`}
               href={tool.href}
-              className="block bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-300 hover:shadow-lg transition-all group"
+              className="flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors active:bg-gray-100"
             >
-              <div className="flex items-center gap-4">
-                {/* Icon with colored background */}
-                <div className="w-14 h-14 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200 transition-colors">
-                  <Icon className="w-7 h-7 text-primary-600" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-gray-900 text-lg">{tool.label}</h4>
-                  </div>
-                  <p className="text-sm text-gray-600">{tool.description}</p>
-                </div>
-
-                {/* Action Button */}
-                <div className="flex-shrink-0">
-                  <div className="px-5 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-semibold group-hover:bg-primary-600 transition-colors">
-                    {tool.hasContent ? 'Manage' : 'Create'}
-                  </div>
-                </div>
+              {/* Icon */}
+              <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary-50))] flex items-center justify-center flex-shrink-0">
+                <Icon className="w-5 h-5 text-[hsl(var(--primary-500))]" />
               </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 text-sm">{tool.label}</h4>
+                <p className="text-xs text-gray-500 truncate">{tool.description}</p>
+              </div>
+
+              {/* Arrow */}
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </Link>
           )
         })}
