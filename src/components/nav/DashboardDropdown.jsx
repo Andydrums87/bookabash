@@ -190,7 +190,7 @@ export function DashboardDropdown({ initialUser }) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center cursor-pointer space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
       >
-        <span>My Snapboard</span>
+        <span>Party Hub</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -204,26 +204,19 @@ export function DashboardDropdown({ initialUser }) {
             Party Dashboard
           </button>
 
-          <div className="h-px bg-gray-100 my-1.5" />
-
-          {/* Start New Party */}
-          <button
-            onClick={() => handleNavigation({ href: "/dashboard?action=new-party" })}
-            className="w-full px-4 py-2.5 text-left text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Start New Party
-          </button>
-
           {hasDatabaseParties && (
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                router.push('/dashboard?view=parties')
-              }}
-              className="w-full px-4 py-2.5 text-left text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              My Parties
-            </button>
+            <>
+              <div className="h-px bg-gray-100 my-1.5" />
+              <button
+                onClick={() => {
+                  setIsOpen(false)
+                  router.push('/dashboard?view=parties')
+                }}
+                className="w-full px-4 py-2.5 text-left text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                My Parties
+              </button>
+            </>
           )}
         </div>
       )}

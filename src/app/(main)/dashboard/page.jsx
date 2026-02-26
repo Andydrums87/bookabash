@@ -448,21 +448,20 @@ function DashboardContent() {
           // ✅ Unauthenticated + Has localStorage = LOCALSTORAGE DASHBOARD
           debug.steps.push('✅ Valid localStorage found → LOCALSTORAGE DASHBOARD')
           debug.finalDecision = 'localStorage'
-       
-          
+
+
           setDebugInfo(debug)
           setUserType('localStorage')
           setIsLoading(false)
           return
         } else {
-          // ❌ No data anywhere = WELCOME
-          debug.steps.push('❌ No valid data found → WELCOME SCREEN')
-          debug.finalDecision = 'welcome'
+          // ❌ No data anywhere = REDIRECT TO SIGN IN
+          debug.steps.push('❌ No valid data found → REDIRECT TO SIGN IN')
+          debug.finalDecision = 'redirect-signin'
 
-          
+
           setDebugInfo(debug)
-          setUserType('welcome')
-          setIsLoading(false)
+          router.push('/signin')
           return
         }
         

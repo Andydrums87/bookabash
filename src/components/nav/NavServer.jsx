@@ -40,7 +40,7 @@ export async function NavServer() {
             {/* Client component for interactive dropdown */}
             <DashboardDropdown initialUser={user} />
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              Snapspiration
+              Blog
             </Link>
           </nav>
 

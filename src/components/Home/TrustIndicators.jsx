@@ -24,7 +24,7 @@ export default function TrustIndicators() {
             {/* Image - Left side */}
             <div className="md:w-1/2 relative rounded-2xl overflow-hidden min-h-[250px] md:min-h-[320px]">
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772104852/f13bc664-67c7-4257-b433-f45ca3cb95b5_2_zxttbt.jpg"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772107076/Untitled_design_29_aotysg.png"
                 alt="Happy family enjoying a children's birthday party"
                 fill
                 className="object-cover object-center"

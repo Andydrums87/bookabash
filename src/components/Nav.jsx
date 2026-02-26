@@ -53,12 +53,12 @@ function UserMenu({ user, onSignOut }) {
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+        className="flex items-center space-x-2 p-2 rounded-full hover:bg-white/10 transition-colors"
       >
-        <div className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+        <div className="w-8 h-8 bg-white text-primary-500 rounded-full flex items-center justify-center text-sm font-semibold">
           {getUserInitials()}
         </div>
-        <span className="hidden md:block text-sm font-medium text-gray-700">
+        <span className="hidden md:block text-sm font-medium text-white">
           {getUserDisplayName()}
         </span>
       </button>
@@ -323,9 +323,9 @@ const handleNavigation = async (item) => {
       {/* Dashboard Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center cursor-pointer space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
+        className="flex items-center cursor-pointer space-x-1 text-white hover:text-white/80 px-3 py-2 text-md font-medium transition-colors"
       >
-        <span>My Snapboard</span>
+        <span>Party Hub</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -562,7 +562,7 @@ const handleSignOut = async () => {
 }
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-[hsl(var(--primary-500))] sticky top-0 z-50">
       {/* Main Navbar */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-27">
         <div className="flex justify-between items-center h-15 md:h-20">
@@ -581,13 +581,13 @@ const handleSignOut = async () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <Link href="/" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
+            <Link href="/" className="text-white hover:text-white/80 px-3 py-2 text-md font-medium">
               Home
             </Link>
              {/* Replace dashboard link with dropdown */}
              <DashboardDropdown />
-            <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-            Snapspiration
+            <Link href="/blog" className="text-white hover:text-white/80 px-3 py-2 text-md font-medium">
+              Blog
             </Link>
           </nav>
 
@@ -605,16 +605,14 @@ const handleSignOut = async () => {
               ) : (
                 // Not signed in - show sign in/up buttons
                 <>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" className="bg-white text-primary-500 border-white hover:bg-white/90" asChild>
                     <Link href="/signin">Sign In</Link>
                   </Button>
-                  <Button size="sm" className="bg-primary-500 hover:bg-primary-600" asChild>
+                  <Button size="sm" className="bg-white/20 text-white border border-white/30 hover:bg-white/30" asChild>
                     <Link href="/suppliers/onboarding">For Business</Link>
-                    
                   </Button>
-                  
-                  
                 </>
+
               )}
                {/* ADD CART INDICATOR HERE */}
                <CartIndicator partyId={currentPartyId} />

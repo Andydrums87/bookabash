@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Menu, X, Calendar, User, BookOpen, Mail, Gift, Users, ShoppingCart, Briefcase, PartyPopper } from "lucide-react"
+import { Menu, X, Calendar, User, BookOpen, Mail, Gift, Users, ShoppingCart, Briefcase, PartyPopper, Settings } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -95,7 +95,6 @@ function MobileCartIndicator({ className = "", onCartClick, currentPartyId }) {
 
 export default function MobileNav({ user, onSignOut, loading, currentPartyId }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [dashboardExpanded, setDashboardExpanded] = useState(false)
   const [activePartyId, setActivePartyId] = useState(null)
   const [loadingPartyData, setLoadingPartyData] = useState(false)
   const [isSupplier, setIsSupplier] = useState(false)
@@ -262,7 +261,6 @@ useEffect(() => {
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = "unset"
-      setDashboardExpanded(false) // Reset dashboard when closing
     }
     return () => {
       document.body.style.overflow = "unset"
@@ -275,7 +273,6 @@ useEffect(() => {
 
   const closeMenu = () => {
     setIsOpen(false)
-    setDashboardExpanded(false)
   }
 
   const getUserDisplayName = () => {
@@ -341,15 +338,13 @@ useEffect(() => {
         />
 
         {/* Menu Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative z-50 p-2 hover:bg-gray-100 transition-colors duration-200"
+        <button
+          className="relative z-50 p-2 hover:bg-gray-100 rounded-md transition-colors duration-200"
           onClick={toggleMenu}
         >
           {isOpen ? <X className="h-6 w-6 text-gray-700" /> : <Menu className="h-6 w-6 text-gray-700" />}
           <span className="sr-only">Toggle menu</span>
-        </Button>
+        </button>
       </div>
 
       {/* Backdrop */}
@@ -364,48 +359,41 @@ useEffect(() => {
         className={`
           fixed top-0 right-0 h-full w-80 z-[300] lg:hidden
           transform transition-all duration-300 ease-out flex flex-col
-          bg-white/95 backdrop-blur-md shadow-xl
+          bg-[hsl(var(--primary-500))] shadow-xl
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        {/* Profile Section */}
-        <div className="flex-shrink-0 pt-8 pb-6 px-8 text-center border-b border-gray-100">
+        {/* Profile Section - lighter coral/peach for logo visibility */}
+        <div className="flex-shrink-0 py-4 px-6 bg-[#fef7f7]">
           {!loading && user ? (
-            <>
-              {/* Profile Avatar - clickable for account settings */}
-              <button
-                onClick={() => {
-                  closeMenu()
-                  router.push("/profile")
-                }}
-                className="w-12 h-12 rounded-full bg-primary-100 border-2 border-primary-200 mx-auto mb-2 flex items-center justify-center hover:bg-primary-200 transition-colors duration-200"
-              >
-                <User className="w-5 h-5 text-primary-600" />
-              </button>
-
-              {/* User Name - also clickable for account settings */}
-              <button
-                onClick={() => {
-                  closeMenu()
-                  router.push("/profile")
-                }}
-                className="block w-full hover:opacity-80 transition-colors duration-200"
-              >
-                <h2 className="text-lg font-bold text-gray-900 mb-1">{getUserDisplayName()}</h2>
-                <p className="text-gray-500 text-xs">{isSupplier ? "Business Owner" : "Party Planner"} • Tap for settings</p>
-              </button>
-            </>
-          ) : (
-            <>
-              {/* PartySnap Logo for non-authenticated users */}
-              <div className="flex justify-center">
-                <img
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-                  alt="PartySnap"
-                  className="h-12 w-auto"
-                />
+            <button
+              onClick={() => {
+                closeMenu()
+                router.push("/profile")
+              }}
+              className="flex items-center gap-3 w-full hover:opacity-80 transition-colors duration-200"
+            >
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-primary-500 border-2 border-primary-400 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 text-white" />
               </div>
-            </>
+              {/* Name and role */}
+              <div className="flex-1 text-left">
+                <h2 className="text-base font-bold text-gray-900">{getUserDisplayName()}</h2>
+                <p className="text-gray-600 text-xs flex items-center gap-1">
+                  {isSupplier ? "Business Owner" : "Party Planner"}
+                  <Settings className="w-3 h-3 ml-1" />
+                </p>
+              </div>
+            </button>
+          ) : (
+            <div className="flex justify-center py-2">
+              <img
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                alt="PartySnap"
+                className="h-10 w-auto"
+              />
+            </div>
           )}
         </div>
 
@@ -413,7 +401,7 @@ useEffect(() => {
         <div className="flex-1 px-8 space-y-1 pt-6">
           <Link
             href="/"
-            className="block py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
+            className="block py-3 text-white text-lg font-medium transition-colors duration-200 hover:text-white/80"
             onClick={closeMenu}
           >
             Home
@@ -426,73 +414,51 @@ useEffect(() => {
                 closeMenu()
                 router.push("/suppliers/dashboard")
               }}
-              className="flex items-center py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600 w-full"
+              className="flex items-center py-3 text-white text-lg font-medium transition-colors duration-200 hover:text-white/80 w-full"
             >
               <Briefcase className="w-5 h-5 mr-3" />
               Business Dashboard
             </button>
           ) : (
-            /* Customer: Expandable My Snapboard menu */
-            <div>
-              <button
-                onClick={() => setDashboardExpanded(!dashboardExpanded)}
-                className="flex items-center justify-between w-full py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
+            /* Customer: Party Hub links */
+            <>
+              <Link
+                href="/dashboard"
+                className="block py-3 text-white text-lg font-medium transition-colors duration-200 hover:text-white/80"
+                onClick={closeMenu}
               >
-                <span>My Snapboard</span>
-                <svg
-                  className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                Party Dashboard
+              </Link>
+              {hasDatabaseParties && (
+                <button
+                  onClick={() => {
+                    closeMenu()
+                    router.push("/dashboard?view=parties")
+                  }}
+                  className="block w-full text-left py-3 text-white text-lg font-medium transition-colors duration-200 hover:text-white/80"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {dashboardExpanded && (
-                <div className="pl-4 space-y-1 pb-2">
-                  {dashboardItems.map((item) => (
-                    <button
-                      key={item.href}
-                      onClick={() => handleDashboardNavigation(item)}
-                      className="block w-full text-left py-2 text-gray-600 hover:text-primary-500 text-base font-normal transition-colors duration-200"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                  {hasDatabaseParties && (
-                    <button
-                      onClick={() => {
-                        closeMenu()
-                        router.push("/dashboard?view=parties")
-                      }}
-                      className="flex items-center w-full text-left py-2 text-gray-600 hover:text-primary-500 text-base font-normal transition-colors duration-200"
-                    >
-                      <PartyPopper className="w-4 h-4 mr-2" />
-                      My Planned Parties
-                    </button>
-                  )}
-                </div>
+                  My Parties
+                </button>
               )}
-            </div>
+            </>
           )}
 
           <Link
             href="/blog"
-            className="block py-3 text-primary-500 text-lg font-medium transition-colors duration-200 hover:text-primary-600"
+            className="block py-3 text-white text-lg font-medium transition-colors duration-200 hover:text-white/80"
             onClick={closeMenu}
           >
-            Snapspiration
+            Blog
           </Link>
 
           {!user && (
-            <div className="space-y-3 pt-6 border-t border-gray-100 mt-4">
+            <div className="space-y-3 pt-6 border-t border-white/20 mt-4">
               <button
                 onClick={() => {
                   closeMenu()
                   router.push("/signin")
                 }}
-                className="w-full py-3 px-4 bg-primary-500 rounded-lg text-white text-base font-semibold transition-all duration-200 hover:bg-primary-600"
+                className="w-full py-3 px-4 bg-white rounded-lg text-primary-500 text-base font-semibold transition-all duration-200 hover:bg-white/90"
               >
                 Sign In
               </button>
@@ -502,7 +468,7 @@ useEffect(() => {
                   closeMenu()
                   router.push("/suppliers/onboarding")
                 }}
-                className="w-full py-3 px-4 bg-white border-2 border-primary-500 text-primary-500 rounded-lg text-base font-semibold transition-all duration-200 hover:bg-primary-50"
+                className="w-full py-3 px-4 bg-white/20 border-2 border-white/30 text-white rounded-lg text-base font-semibold transition-all duration-200 hover:bg-white/30"
               >
                 List Your Business
               </button>
@@ -511,11 +477,11 @@ useEffect(() => {
         </div>
 
         {/* Bottom Section */}
-        <div className="flex-shrink-0 pb-6 px-8 border-t border-gray-100">
+        <div className="flex-shrink-0 pb-6 px-8 border-t border-white/20">
           {user && (
             <button
               onClick={handleSignOut}
-              className="block w-full text-left py-3 text-gray-500 text-base font-medium transition-colors duration-200 hover:text-primary-500 mt-4"
+              className="block w-full text-left py-3 text-white/70 text-base font-medium transition-colors duration-200 hover:text-white mt-4"
             >
               Sign Out
             </button>
@@ -525,9 +491,9 @@ useEffect(() => {
           <div className="flex justify-center mt-4">
             <button
               onClick={closeMenu}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
