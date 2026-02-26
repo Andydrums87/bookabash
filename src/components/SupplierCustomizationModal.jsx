@@ -2191,10 +2191,10 @@ export default function SupplierCustomizationModal({
                   isImageCollapsed ? 'h-0 opacity-0' : 'h-72 opacity-100'
                 }`}
                 style={{
-                  // Instant collapse (no animation), smooth expand (800ms)
+                  // Quick fade on collapse (200ms), smooth expand (800ms)
                   transition: isExpanding
                     ? 'height 800ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 600ms ease'
-                    : 'none'
+                    : 'height 200ms ease-out, opacity 150ms ease-out'
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
