@@ -13,16 +13,14 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  CheckCircle, 
-  Star, 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Shield, 
-  Lock,
-  Timer,
-  AlertTriangle
+import {
+  CheckCircle,
+  Star,
+  Calendar,
+  MapPin,
+  Users,
+  Shield,
+  Lock
 } from 'lucide-react'
 
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
@@ -43,18 +41,6 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   locale: 'en-GB',
 })
 
-// ========================================
-// HELPER: Clear timer and refresh
-// ========================================
-const clearTimerAndRefresh = () => {
-  // Clear all booking timer keys from localStorage
-  Object.keys(localStorage).forEach(key => {
-    if (key.startsWith('booking_timer_')) {
-      localStorage.removeItem(key)
-    }
-  })
-  window.location.reload()
-}
 
 // ========================================
 // DATE FORMATTING HELPER
@@ -84,7 +70,7 @@ function PaymentPageSkeleton() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row animate-pulse">
       {/* Left panel skeleton */}
-      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-2 lg:order-1">
+      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-1 lg:order-1">
         <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
           <div className="mb-8">
             <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
@@ -117,7 +103,7 @@ function PaymentPageSkeleton() {
       </div>
 
       {/* Right panel skeleton */}
-      <div className="lg:w-1/2 bg-white lg:min-h-screen order-1 lg:order-2">
+      <div className="lg:w-1/2 bg-white lg:min-h-screen order-2 lg:order-2">
         <div className="max-w-md mr-auto px-6 lg:px-12 py-8 lg:py-16">
           <div className="space-y-4">
             <div className="h-12 w-full bg-gray-100 rounded"></div>
@@ -131,139 +117,6 @@ function PaymentPageSkeleton() {
   )
 }
 
-// ========================================
-// BOOKING TIMER COMPONENT
-// ========================================
-function BookingTimer({ partyId, onExpire, supplierCount = 0 }) {
-  const [timeLeft, setTimeLeft] = useState(null)
-  const [isExpired, setIsExpired] = useState(false)
-
-  useEffect(() => {
-    if (!supplierCount || supplierCount === 0) {
-      console.log('⏸️ Waiting for supplier count...')
-      return
-    }
-
-    const TIMER_DURATION = 15 * 60 * 1000
-    const TIMER_KEY = `booking_timer_${partyId}`
-    const SUPPLIER_COUNT_KEY = `booking_timer_${partyId}_supplier_count`
-
-    const savedSupplierCount = localStorage.getItem(SUPPLIER_COUNT_KEY)
-    const supplierCountChanged = savedSupplierCount && parseInt(savedSupplierCount) !== supplierCount
-    const isFirstLoad = !savedSupplierCount
-    
-    if (supplierCountChanged || (isFirstLoad && isExpired)) {
-      console.log('🔄 Resetting timer - supplier count changed or first load with expired state')
-      localStorage.removeItem(TIMER_KEY)
-      localStorage.removeItem(SUPPLIER_COUNT_KEY)
-      setIsExpired(false)
-    }
-    
-    const savedTimer = localStorage.getItem(TIMER_KEY)
-    let expiryTime
-    
-    if (savedTimer && !supplierCountChanged && !(isFirstLoad && isExpired)) {
-      expiryTime = parseInt(savedTimer, 10)
-      const now = Date.now()
-      
-      if (now >= expiryTime) {
-        setIsExpired(true)
-        onExpire()
-        return
-      }
-    } else {
-      expiryTime = Date.now() + TIMER_DURATION
-      localStorage.setItem(TIMER_KEY, expiryTime.toString())
-      localStorage.setItem(SUPPLIER_COUNT_KEY, supplierCount.toString())
-      console.log('⏰ Starting new timer - expires in 15 minutes')
-    }
-    
-    const interval = setInterval(() => {
-      const now = Date.now()
-      const remaining = expiryTime - now
-      
-      if (remaining <= 0) {
-        setIsExpired(true)
-        clearInterval(interval)
-        localStorage.removeItem(TIMER_KEY)
-        onExpire()
-      } else {
-        setTimeLeft(remaining)
-      }
-    }, 1000)
-    
-    return () => clearInterval(interval)
-  }, [partyId, onExpire, supplierCount, isExpired])
-
-  const formatTime = (ms) => {
-    if (!ms) return '15:00'
-    const totalSeconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  const getUrgencyLevel = () => {
-    if (!timeLeft) return 'normal'
-    const minutes = Math.floor(timeLeft / 60000)
-    if (minutes < 3) return 'critical'
-    if (minutes < 5) return 'warning'
-    return 'normal'
-  }
-
-  const urgency = getUrgencyLevel()
-
-  if (isExpired) {
-    return (
-      <button
-        onClick={clearTimerAndRefresh}
-        className="fixed top-4 right-4 z-50 bg-primary-50 border-2 border-primary-300 rounded-lg shadow-lg p-3 max-w-xs hover:bg-primary-100 transition-colors cursor-pointer"
-      >
-        <div className="flex items-center space-x-2">
-          <AlertTriangle className="w-5 h-5 text-primary-600 flex-shrink-0" />
-          <div className="text-left">
-            <h3 className="text-sm font-semibold text-primary-900">Session Expired</h3>
-            <p className="text-xs text-primary-700">Tap to refresh</p>
-          </div>
-        </div>
-      </button>
-    )
-  }
-
-  return (
-    <div className={`fixed top-4 right-4 z-50 border-2 rounded-lg shadow-lg p-3 backdrop-blur-sm ${
-      urgency === 'critical' ? 'bg-red-50/95 border-red-300 animate-pulse' :
-      urgency === 'warning' ? 'bg-amber-50/95 border-amber-300' :
-      'bg-white/95 border-blue-300'
-    }`}>
-      <div className="flex items-center space-x-3">
-        <Timer className={`w-5 h-5 flex-shrink-0 ${
-          urgency === 'critical' ? 'text-red-600' :
-          urgency === 'warning' ? 'text-amber-600' :
-          'text-blue-600'
-        }`} />
-        <div>
-          <div className={`text-xs font-medium ${
-            urgency === 'critical' ? 'text-red-900' :
-            urgency === 'warning' ? 'text-amber-900' :
-            'text-gray-700'
-          }`}>
-            {urgency === 'critical' ? 'Almost out of time!' :
-             urgency === 'warning' ? 'Complete soon' :
-             'Time remaining'}
-          </div>
-          <div className={`text-2xl font-bold tabular-nums leading-tight ${
-            urgency === 'critical' ? 'text-red-600' :
-            urgency === 'warning' ? 'text-amber-600' :
-            'text-blue-600'
-          }`}>
-            {formatTime(timeLeft)}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ========================================
 // HELPER FUNCTIONS
@@ -386,7 +239,6 @@ function PaymentForm({
   onPaymentError,
   isRedirecting,
   setIsRedirecting,
-  timerExpired,
   clientSecret,
   creditApplied = 0
 }) {
@@ -467,7 +319,7 @@ function PaymentForm({
   const handlePayment = async (event) => {
     event.preventDefault()
 
-    if (!stripe || !elements || timerExpired) {
+    if (!stripe || !elements) {
       return
     }
 
@@ -546,11 +398,11 @@ function PaymentForm({
     }
   }
 
-  const isFormDisabled = isProcessing || isRedirecting || timerExpired
+  const isFormDisabled = isProcessing || isRedirecting
 
   return (
     <div className="space-y-5">
-      {!timerExpired && clientSecret && (
+      {clientSecret && (
         <PaymentElement
           options={{
             layout: {
@@ -588,19 +440,7 @@ function PaymentForm({
         </div>
       )}
 
-      {timerExpired && (
-        <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg text-center">
-          <p className="text-primary-800 text-sm font-medium mb-3">Your session has timed out. Refresh to continue with your booking.</p>
-          <button
-            onClick={clearTimerAndRefresh}
-            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors"
-          >
-            Refresh & Continue
-          </button>
-        </div>
-      )}
-
-      {!clientSecret && !timerExpired && (
+      {!clientSecret && (
         <div className="py-8">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
@@ -641,20 +481,12 @@ function PaymentForm({
         </div>
       </div>
 
-      {timerExpired ? (
-        <button
-          onClick={clearTimerAndRefresh}
-          className="cursor-pointer w-full bg-primary-500 hover:bg-primary-600 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm hover:shadow-md"
-        >
-          <span>Refresh & Continue</span>
-        </button>
-      ) : (
-        <button
-          onClick={handlePayment}
-          disabled={!stripe || isFormDisabled || !bookingTermsAccepted || !clientSecret}
-          className="cursor-pointer w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-        >
-          {isRedirecting ? (
+      <button
+        onClick={handlePayment}
+        disabled={!stripe || isFormDisabled || !bookingTermsAccepted || !clientSecret}
+        className="cursor-pointer w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+      >
+        {isRedirecting ? (
             <div className="flex items-center justify-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
               <span>Redirecting...</span>
@@ -667,8 +499,7 @@ function PaymentForm({
           ) : (
             <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)} & Secure My Party</span>
           )}
-        </button>
-      )}
+      </button>
 
       {/* Human contact */}
       <p className="text-xs text-gray-500 text-center">
@@ -776,8 +607,6 @@ export default function PaymentPageContent() {
   const [user, setUser] = useState(null)
   const [partyId, setPartyId] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
-  const [timerResetKey, setTimerResetKey] = useState(() => Date.now().toString())
-  const [timerExpired, setTimerExpired] = useState(false)
   const [clientSecret, setClientSecret] = useState(null)
   const [paymentBreakdown, setPaymentBreakdown] = useState({
     depositAmount: 0,
@@ -793,30 +622,6 @@ export default function PaymentPageContent() {
   const [creditApplied, setCreditApplied] = useState(0)
 
   const { partyPlan, addons } = usePartyPlan()
-
-  const handleTimerExpire = async () => {
-    console.log('⏰ Booking timer expired')
-    setTimerExpired(true)
-    
-    if (partyId) {
-      try {
-        await supabase
-          .from('parties')
-          .update({ 
-            status: 'expired',
-            expired_at: new Date().toISOString()
-          })
-          .eq('id', partyId)
-      } catch (error) {
-        console.error('Error updating party status:', error)
-      }
-    }
-  }
-
-  const handleTimerReset = () => {
-    console.log('🔄 Timer reset - clearing expired state')
-    setTimerExpired(false)
-  }
 
   useEffect(() => {
     const loadPaymentData = async () => {
@@ -1176,17 +981,9 @@ export default function PaymentPageContent() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {partyId && (
-        <BookingTimer
-          partyId={partyId}
-          onExpire={handleTimerExpire}
-          onReset={handleTimerReset}
-          supplierCount={confirmedSuppliers.length}
-        />
-      )}
 
-      {/* Left panel - Order summary (gray background) */}
-      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-2 lg:order-1">
+      {/* Order summary panel - shows first on mobile, left side on desktop */}
+      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen">
         <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
 
           {/* Party header */}
@@ -1267,8 +1064,8 @@ export default function PaymentPageContent() {
       </div>
 
       {/* Right panel - Payment form (white background) */}
-      <div className="lg:w-1/2 bg-white lg:min-h-screen order-1 lg:order-2">
-        <div className="max-w-md mr-auto px-6 lg:px-12 py-8 lg:py-16">
+      <div className="flex-1 lg:w-1/2 bg-white lg:min-h-screen">
+        <div className="max-w-md mx-auto lg:mr-auto lg:ml-0 px-6 lg:px-12 py-8 lg:py-16">
 
           {creditApplied > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
@@ -1343,7 +1140,6 @@ export default function PaymentPageContent() {
                 onPaymentError={handlePaymentError}
                 isRedirecting={isRedirecting}
                 setIsRedirecting={setIsRedirecting}
-                timerExpired={timerExpired}
                 clientSecret={clientSecret}
                 creditApplied={creditApplied}
               />
