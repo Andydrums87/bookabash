@@ -509,22 +509,40 @@ export default function PaymentSuccessPage() {
   // Initial booking success page - Clean Sharesy-inspired design
   return (
     <div className="min-h-screen bg-white">
+      {/* Celebration Banner with fade */}
+      <div className="w-full h-32 md:h-40 overflow-hidden relative">
+        <img
+          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772098964/Untitled_Website_1_rw03j4.png"
+          alt="Celebration bunting"
+          className="w-full h-full object-cover opacity-95"
+        />
+        {/* Gradient fade to white */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
+      </div>
+
       {/* Main Content */}
-      <div className="max-w-xl mx-auto px-6 py-12">
+      <div className="max-w-xl mx-auto px-6 py-8">
+
+        {/* Success Badge */}
+        <div className="flex justify-center mb-4">
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">
+            <span>🎉</span> Party Secured
+          </span>
+        </div>
 
         {/* Header with celebration */}
-        <div className="mb-10">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Congratulations! {bookingDetails.childName}'s party is happening!
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+            It's official! {bookingDetails.childName}'s party is booked!
           </h1>
-          <p className="text-gray-600 leading-relaxed">
-            We're so excited to help make this a day to remember. A receipt has been sent to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
+          <p className="text-gray-600 text-lg leading-relaxed">
+            We're excited to help make this a day {bookingDetails.childName} will never forget. Your receipt is on its way to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
           </p>
         </div>
 
         {/* What happens next section */}
         <div className="mb-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">What happens next?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">What happens next?</h2>
 
           {/* Step 1 */}
           <div className="mb-8">

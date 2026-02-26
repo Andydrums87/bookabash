@@ -466,10 +466,12 @@ export default function HomePage() {
         enteredPostcode={restrictedPostcode}
       />
       <VideoSection />
+      <HowItWorks />
       <CategoryGrid />
-      <FeaturesGrid />
+      {/* <FeaturesGrid /> */}
 
-      <CustomerStories />
+      {/* TODO: Re-enable when we have real customer stories */}
+      {/* <CustomerStories /> */}
       <FounderStory />
       <FinalCTA />
    

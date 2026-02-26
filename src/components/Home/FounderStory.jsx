@@ -1,78 +1,66 @@
 "use client"
 import Image from "next/image"
-import { MapPin, Heart } from "lucide-react"
 
 export default function FounderStory() {
   return (
-    <section className="py-16 bg-gradient-to-b from-white to-primary-50/30">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center gap-8 p-8 md:p-12">
-              {/* Photo Section */}
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary-100 shadow-lg bg-gradient-to-br from-primary-100 to-primary-200">
-                    {/* Placeholder - replace with actual image */}
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-4xl md:text-5xl mb-1">👨‍👧</div>
-                        <span className="text-xs text-primary-600 font-medium">Photo coming</span>
-                      </div>
-                    </div>
-                    {/* Uncomment when real image is available:
-                    <Image
-                      src="/founder-andrew.jpg"
-                      alt="Andrew, founder of PartySnap"
-                      fill
-                      className="object-cover"
-                    />
-                    */}
-                  </div>
-                  {/* Location badge */}
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white rounded-full px-3 py-1 shadow-md border border-gray-100 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-primary-500" />
-                    <span className="text-xs font-semibold text-gray-700">St Albans</span>
-                  </div>
-                </div>
+    <section className="py-12 md:py-20 bg-gradient-to-br from-orange-50/50 via-rose-50/30 to-amber-50/40 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-10 left-10 w-3 h-3 bg-primary-200 rounded-full opacity-60" />
+      <div className="absolute top-20 right-20 w-2 h-2 bg-rose-200 rounded-full opacity-50" />
+      <div className="absolute bottom-16 left-1/4 w-4 h-4 bg-amber-200 rounded-full opacity-40" />
+      <div className="absolute top-1/3 right-10 w-2 h-2 bg-primary-300 rounded-full opacity-50" />
+      <div className="absolute bottom-20 right-1/3 w-3 h-3 bg-rose-100 rounded-full opacity-60" />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          {/* Section Header - matching other sections */}
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
+              Meet the Founder
+            </h2>
+            <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              The story behind PartySnap
+            </p>
+          </div>
+
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Photo Section - Shows first on mobile */}
+            <div className="w-full lg:w-2/5 relative order-1 lg:order-1">
+              <div className="aspect-square w-full max-w-[280px] md:max-w-[350px] mx-auto lg:max-w-none relative rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772096949/74ba51c0-78ae-4230-a617-bf75240bda22_2_vy3g0i.jpg"
+                  alt="Andrew with his child"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 280px, (max-width: 1024px) 350px, 40vw"
+                  priority
+                />
               </div>
+            </div>
 
-              {/* Story Content */}
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-                  <Heart className="w-4 h-4 text-red-400 fill-red-400" />
-                  <span className="text-sm font-semibold text-primary-600 uppercase tracking-wide">
-                    Meet the Founder
-                  </span>
-                </div>
+            {/* Story Content - Shows second on mobile */}
+            <div className="w-full lg:w-3/5 text-center lg:text-left order-2 lg:order-2">
+              {/* Greeting */}
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+                Hi, I'm Andrew <span className="inline-block">👋</span>
+              </h3>
 
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                  Hi, I'm Andrew
-                </h3>
+              {/* Subtitle */}
+              <p className="text-sm md:text-base text-primary-600 font-medium mb-4 md:mb-6">
+                A dad from St Albans
+              </p>
 
-                <p className="text-gray-600 leading-relaxed mb-4">
-                  I'm a dad from St Albans who got tired of the stress that comes with planning kids' parties.
-                  Juggling work, family, and trying to coordinate multiple suppliers for my daughter's birthdays
-                  felt overwhelming.
+              {/* Story */}
+              <div className="space-y-3 md:space-y-4">
+                <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                  I built PartySnap because I know how stressful planning a kids' party can be.
+                  Juggling work, family, and trying to coordinate multiple suppliers felt overwhelming.
                 </p>
-
-                <p className="text-gray-600 leading-relaxed mb-6">
-                  So I built PartySnap — the service I wished existed. One place to find trusted local suppliers,
+                <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                  So I created the service I wished existed — one place to find trusted local suppliers,
                   build your perfect party, and take the stress away so you can focus on what matters:
-                  <span className="font-semibold text-gray-800"> being present for the celebration.</span>
+                  <span className="font-semibold text-gray-800"> enjoying the day with your child.</span>
                 </p>
-
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
-                    <span className="text-green-500">✓</span> Parent-built
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
-                    <span className="text-green-500">✓</span> Local to Herts
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
-                    <span className="text-green-500">✓</span> Real person, real support
-                  </span>
-                </div>
               </div>
             </div>
           </div>

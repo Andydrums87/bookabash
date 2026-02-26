@@ -33,7 +33,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
   }
 
   return (
-    <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen overflow-visible">
+    <section id="hero" className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen overflow-visible">
       <div className="container mx-auto overflow-visible">
         
         {/* Desktop Layout - Original */}
@@ -42,13 +42,13 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             {/* Hero Text - Left Side */}
             <div className="space-y-8">
               <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
-                Tell us the details. <span className="text-primary-500 relative">
-                  We Build the Party.
-                </span>
+                Plan your child's <span className="text-primary-500 relative">
+                  perfect party
+                </span> in minutes.
               </h1>
 
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
-                Date. Location. Number of kids. Theme. We handle everything else.
+                We handle the suppliers. You enjoy the day.
               </h2>
             </div>
 
@@ -75,15 +75,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             style={{
               boxShadow: '0 10px 40px rgba(255, 107, 107, 0.1), 0 4px 20px rgba(0, 0, 0, 0.05)'
             }}>
-            <div className="h-40 w-40 absolute bottom-[-70px] left-[-50px] z-10">
-              <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
-                alt="Snappy the crocodile"
-                fill
-                sizes="100vw 100vh"
-                priority
-              />
-            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
               
@@ -345,19 +336,17 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
             <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
-                <h1 className="text-5xl font-black text-gray-900 mb-10 leading-tight animate-fade-in">
-                  Tell us the details. <span className="text-primary-500 relative">
-                    We Build the Party.
-                    <div className="absolute -bottom-1 left-0 w-full h-1.5 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>
-                  </span>
+                <h1 className="text-4xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
+                  <span className="block">Plan your child's</span>
+                  <span className="text-primary-500 block">perfect party</span>
+                  <span className="block">in minutes.</span>
                 </h1>
                 <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
-                  Date. Location. Number of kids. Theme. We handle everything else.
+                  We handle the suppliers. You enjoy the day.
                 </p>
               </div>
             </div>
 
-            {/* Removed image section to save space */}
           </div>
  
           <style jsx>{`

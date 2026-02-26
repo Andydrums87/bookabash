@@ -155,19 +155,19 @@ export default function VideoSection() {
           )}
         </div>
 
-        {/* Optional: Feature callouts below video */}
-        <div className="grid grid-cols-3 gap-4 md:gap-8 mt-8 text-center">
-          <div>
-            <p className="text-2xl md:text-3xl font-bold text-primary-600">2 min</p>
-            <p className="text-sm text-gray-600">to plan a party</p>
+        {/* Feature callouts below video */}
+        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mt-8">
+          <div className="flex items-center gap-2 text-gray-700">
+            <span className="text-green-500 font-bold">✓</span>
+            <span className="text-sm md:text-base font-medium">Founded in St Albans</span>
           </div>
-          <div>
-            <p className="text-2xl md:text-3xl font-bold text-primary-600">100+</p>
-            <p className="text-sm text-gray-600">vetted suppliers</p>
+          <div className="flex items-center gap-2 text-gray-700">
+            <span className="text-green-500 font-bold">✓</span>
+            <span className="text-sm md:text-base font-medium">100+ vetted suppliers</span>
           </div>
-          <div>
-            <p className="text-2xl md:text-3xl font-bold text-primary-600">4.9★</p>
-            <p className="text-sm text-gray-600">parent rating</p>
+          <div className="flex items-center gap-2 text-gray-700">
+            <span className="text-green-500 font-bold">✓</span>
+            <span className="text-sm md:text-base font-medium">Personal confirmation on every booking</span>
           </div>
         </div>
       </div>

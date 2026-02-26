@@ -6,11 +6,13 @@ import { Providers } from "./providers";
 export default function MainLayout({ children }) {
   return (
     <Providers>
-      <NavServer />
-      <main className="flex-grow">
-        {children}
-      </main>
-      <Footer />
+      <div className="min-h-screen flex flex-col">
+        <NavServer />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
+      </div>
     </Providers>
   );
 }
