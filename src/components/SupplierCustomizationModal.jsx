@@ -460,13 +460,18 @@ export default function SupplierCustomizationModal({
 
     const contentEl = mobileContentRef.current
     const COLLAPSE_THRESHOLD = 100 // Pixels scrolled before collapsing
+    const EXPAND_THRESHOLD = 10 // Must be near top to expand (less aggressive)
 
     const handleScroll = () => {
       const scrollTop = contentEl.scrollTop
-      const shouldCollapse = scrollTop > COLLAPSE_THRESHOLD
 
-      if (shouldCollapse !== isImageCollapsed) {
-        setIsImageCollapsed(shouldCollapse)
+      // Collapse when scrolled past threshold
+      if (!isImageCollapsed && scrollTop > COLLAPSE_THRESHOLD) {
+        setIsImageCollapsed(true)
+      }
+      // Only expand when back near the very top
+      else if (isImageCollapsed && scrollTop < EXPAND_THRESHOLD) {
+        setIsImageCollapsed(false)
       }
     }
 
