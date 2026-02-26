@@ -278,6 +278,7 @@ export default function SupplierCustomizationModal({
 
   // Mobile sticky header state - collapses when user scrolls past image
   const [isImageCollapsed, setIsImageCollapsed] = useState(false)
+  const [isExpanding, setIsExpanding] = useState(false) // Track if we're expanding (for smooth animation) vs collapsing (instant)
   const [imageTransitioning, setImageTransitioning] = useState(false)
   const mobileContentRef = useRef(null)
   const previousImageIndex = useRef(carouselIndex)
@@ -465,12 +466,14 @@ export default function SupplierCustomizationModal({
     const handleScroll = () => {
       const scrollTop = contentEl.scrollTop
 
-      // Collapse when scrolled past threshold
+      // Collapse when scrolled past threshold (instant, no animation)
       if (!isImageCollapsed && scrollTop > COLLAPSE_THRESHOLD) {
+        setIsExpanding(false)
         setIsImageCollapsed(true)
       }
-      // Only expand when back near the very top
+      // Only expand when back near the very top (with smooth animation)
       else if (isImageCollapsed && scrollTop < EXPAND_THRESHOLD) {
+        setIsExpanding(true)
         setIsImageCollapsed(false)
       }
     }
@@ -2188,7 +2191,10 @@ export default function SupplierCustomizationModal({
                   isImageCollapsed ? 'h-0 opacity-0' : 'h-72 opacity-100'
                 }`}
                 style={{
-                  transition: 'height 800ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 600ms ease'
+                  // Instant collapse (no animation), smooth expand (800ms)
+                  transition: isExpanding
+                    ? 'height 800ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 600ms ease'
+                    : 'none'
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
