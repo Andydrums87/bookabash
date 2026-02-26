@@ -80,7 +80,7 @@ export default function MobileSearchForm({
                     type="button"
                     variant="outline"
                     className={`
-                      w-full font-normal h-12 overflow-hidden
+                      w-full h-12 overflow-hidden
                       bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
                       hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
                       ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
@@ -219,7 +219,7 @@ export default function MobileSearchForm({
                 required
               >
                 <SelectTrigger className={`
-                  bg-white w-full border-gray-200 rounded-xl pl-10 text-sm font-normal
+                  bg-white w-full border-gray-200 rounded-xl pl-10 text-sm
                   !h-12
                   focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none
                   focus:border-[hsl(var(--primary-400))] focus-visible:border-[hsl(var(--primary-400))]

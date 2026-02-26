@@ -1112,39 +1112,24 @@ export default function MyPartyTabContent({
           {/* Complete Booking CTA - Only show when there are suppliers */}
           {allSuppliers.length > 0 && (
           <div className="mt-4">
-            <Button
+            <button
               onClick={handleImHappy}
               disabled={isProcessing}
-              className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-90 disabled:cursor-not-allowed"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
-                boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
-              }}
+              className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 w-full rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {/* Animated shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-              <span className="relative flex items-center justify-center gap-2">
-                {isProcessing ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 animate-pulse" />
-                    Complete Booking
-                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </>
-                )}
-              </span>
-            </Button>
-            <p className="text-sm text-center text-gray-600 mt-3">
+              {isProcessing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                'Secure My Party'
+              )}
+            </button>
+            <p className="text-xs text-center text-gray-500 mt-3">
               ✓ Personally confirmed · ✓ 100% money-back · ✓ Add extras anytime
             </p>
           </div>

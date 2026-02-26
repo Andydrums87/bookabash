@@ -32,7 +32,7 @@ export default function JourneyTabContent({
   partyDate,
 }) {
   return (
-    <div className="space-y-8 py-6 px-5">
+    <div className="space-y-8 py-6 px-1">
       {/* Age-based recommendation banner for ages 1-2 */}
       <AgeBasedRecommendationBanner
         childAge={partyDetails?.childAge}
