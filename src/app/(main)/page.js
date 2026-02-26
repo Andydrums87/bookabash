@@ -465,9 +465,9 @@ export default function HomePage() {
         onClose={() => setShowPostcodeRestrictionModal(false)}
         enteredPostcode={restrictedPostcode}
       />
-      <VideoSection />
       <HowItWorks />
       <CategoryGrid />
+      <VideoSection />
       {/* <FeaturesGrid /> */}
 
       {/* TODO: Re-enable when we have real customer stories */}

@@ -15,14 +15,32 @@ export default function VideoSection() {
   const videoUrl = "https://res.cloudinary.com/dghzq6xtd/video/upload/v1769618757/Untitled_design_1_m9ejbg.mp4"
   const thumbnailUrl = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1769426689/homepage-hero-thumbnail_oxumhw.png"
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
+        setIsPlaying(false)
       } else {
+        // Start playing
         videoRef.current.play()
+        setIsPlaying(true)
+
+        // Enter fullscreen
+        try {
+          if (videoRef.current.requestFullscreen) {
+            await videoRef.current.requestFullscreen()
+          } else if (videoRef.current.webkitEnterFullscreen) {
+            // iOS Safari
+            await videoRef.current.webkitEnterFullscreen()
+          } else if (containerRef.current?.requestFullscreen) {
+            await containerRef.current.requestFullscreen()
+          }
+          setIsFullscreen(true)
+        } catch (err) {
+          // Fullscreen may be blocked, video still plays
+          console.log("Fullscreen not available:", err)
+        }
       }
-      setIsPlaying(!isPlaying)
     }
   }
 
@@ -111,9 +129,10 @@ export default function VideoSection() {
                 className="absolute inset-0 flex items-center justify-center group cursor-pointer"
                 aria-label="Play video"
               >
-                {/* Contrast backdrop behind button */}
-                <div className="absolute w-36 h-36 md:w-44 md:h-44 bg-white/60 rounded-full blur-xl" />
-                <div className="relative w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:shadow-primary-500/40 transition-all duration-300 ring-4 ring-white/50">
+                {/* Contrast backdrop behind button - stronger white for better pop */}
+                <div className="absolute w-40 h-40 md:w-52 md:h-52 bg-white/80 rounded-full blur-2xl" />
+                <div className="absolute w-28 h-28 md:w-36 md:h-36 bg-white rounded-full opacity-90" />
+                <div className="relative w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:shadow-primary-500/40 transition-all duration-300 ring-4 ring-white">
                   <Play className="w-8 h-8 md:w-12 md:h-12 text-white ml-1" fill="currentColor" />
                 </div>
               </button>
