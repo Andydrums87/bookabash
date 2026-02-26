@@ -276,6 +276,7 @@ export default function SupplierCustomizationModal({
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
 
+
   // Get all supplier images for carousel with packageId mapping (memoized)
   const { images: supplierImages, packageIdToIndex } = useMemo(() => {
     if (!supplier) return { images: [], packageIdToIndex: new Map() }
@@ -446,6 +447,7 @@ export default function SupplierCustomizationModal({
       }
     }
   }, [isOpen])
+
 
   // ✅ Initialize party bags quantity from existing data or guest count
   useEffect(() => {
@@ -2060,7 +2062,7 @@ export default function SupplierCustomizationModal({
 
           {/* Left Side - Image (sticky on desktop) */}
           <div className="lg:w-[45%] lg:flex-shrink-0 bg-gray-100">
-            {/* Mobile: fixed height image at top with overlaid header */}
+            {/* Mobile: fixed height image */}
             <div
               className="lg:hidden relative w-full h-72 bg-gray-900 overflow-hidden touch-pan-y"
               onTouchStart={handleTouchStart}
@@ -2136,7 +2138,7 @@ export default function SupplierCustomizationModal({
                   {/* Mobile close button */}
                   <button
                     onClick={onClose}
-                    className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center"
+                    className="absolute top-3 right-3 z-30 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center"
                   >
                     <X className="w-5 h-5 text-white" />
                   </button>

@@ -219,7 +219,7 @@ export default function MobileSearchForm({
                 required
               >
                 <SelectTrigger className={`
-                  bg-white w-full border-gray-200 rounded-xl pl-10 text-sm
+                  bg-white w-full border-gray-200 rounded-xl pl-10 text-sm font-normal
                   !h-12
                   focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none
                   focus:border-[hsl(var(--primary-400))] focus-visible:border-[hsl(var(--primary-400))]
