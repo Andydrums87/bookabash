@@ -139,13 +139,11 @@ export async function POST(request) {
       ...(partyDetails.email && { receipt_email: partyDetails.email }),
     };
 
-    // Use automatic_payment_methods for modern approach (includes Apple/Google Pay)
+    // Explicitly set payment methods (don't use automatic_payment_methods to avoid Amazon Pay, Revolut, etc.)
+    // Apple Pay and Google Pay are included via 'card' when using Payment Element
     if (enableKlarna) {
-      paymentIntentConfig.automatic_payment_methods = {
-        enabled: true,
-        allow_redirects: 'always' // Required for Klarna
-      };
-      
+      paymentIntentConfig.payment_method_types = ['card', 'klarna'];
+
       // Klarna-specific options
       paymentIntentConfig.payment_method_options = {
         klarna: {
@@ -153,10 +151,7 @@ export async function POST(request) {
         }
       };
     } else {
-      // Fallback to standard automatic payment methods
-      paymentIntentConfig.automatic_payment_methods = {
-        enabled: true,
-      };
+      paymentIntentConfig.payment_method_types = ['card'];
     }
 
     // Create PaymentIntent
