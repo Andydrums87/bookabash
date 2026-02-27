@@ -2126,7 +2126,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mx-auto bg-white rounded-t-2xl lg:rounded-xl max-w-5xl w-full max-h-[90vh] lg:max-h-[85vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom lg:fade-in duration-200`}
+        className={`fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mx-auto bg-white rounded-t-2xl lg:rounded-xl max-w-5xl w-full max-h-[85dvh] lg:max-h-[85vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom lg:fade-in duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Split Layout Container */}
