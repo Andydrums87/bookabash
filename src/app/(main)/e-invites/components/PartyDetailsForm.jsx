@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Users, MapPin, Palette } from 'lucide-react'
 import { formatDateForDisplay } from '../utils/helperFunctions'
 import { getThemeCategory } from '@/lib/inviteTemplates'
@@ -222,11 +223,12 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme }) => {
               <MapPin className="w-4 h-4" />
               Venue *
             </label>
-            <Input
+            <Textarea
               value={inviteData.venue || ''}
               onChange={(e) => handleInputChange("venue", e.target.value)}
-              placeholder="Party venue (name and address)"
-              className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
+              placeholder="Party venue (name and full address)"
+              className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base min-h-[80px] resize-none"
+              rows={3}
             />
           </div>
 
