@@ -401,7 +401,7 @@ function PaymentForm({
   const isFormDisabled = isProcessing || isRedirecting
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {clientSecret && (
         <PaymentElement
           options={{
@@ -435,7 +435,7 @@ function PaymentForm({
       )}
 
       {paymentError && !isRedirecting && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
           <p className="text-red-700 text-sm">{paymentError}</p>
         </div>
       )}
@@ -450,11 +450,9 @@ function PaymentForm({
       )}
 
       {partyDetails?.termsAccepted ? (
-        <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-2 py-2">
           <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <p className="text-sm text-gray-600">
-            Terms & conditions accepted
-          </p>
+          <p className="text-sm text-gray-600">Terms accepted</p>
         </div>
       ) : (
         <BookingTermsAcceptance
@@ -465,45 +463,42 @@ function PaymentForm({
         />
       )}
 
-      {/* Trust reassurance checklist */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1.5">
-        <div className="flex items-center gap-2 text-sm text-green-800">
-          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span>Personally confirmed with suppliers</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-green-800">
-          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span>100% money-back guarantee</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-green-800">
-          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span>Add extras anytime before the party</span>
-        </div>
-      </div>
-
+      {/* Pay button */}
       <button
         onClick={handlePayment}
         disabled={!stripe || isFormDisabled || !bookingTermsAccepted || !clientSecret}
-        className="cursor-pointer w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-lg font-semibold text-[15px] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+        className="cursor-pointer w-full bg-slate-900 hover:bg-slate-800 text-white py-4 px-4 rounded-xl font-semibold text-base transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isRedirecting ? (
-            <div className="flex items-center justify-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Redirecting...</span>
-            </div>
-          ) : isProcessing ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Processing...</span>
-            </div>
-          ) : (
-            <span>Pay £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)} & Secure My Party</span>
-          )}
+          <div className="flex items-center justify-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-400" />
+            <span>Redirecting...</span>
+          </div>
+        ) : isProcessing ? (
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Processing...</span>
+          </div>
+        ) : (
+          <span>Pay Now</span>
+        )}
       </button>
 
-      {/* Human contact */}
-      <p className="text-xs text-gray-500 text-center">
-        Questions? Email us at <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a> — we're here to help.
+      {/* Trust indicators - subtle */}
+      <div className="flex items-center justify-center gap-4 pt-4 text-xs text-gray-400">
+        <span className="flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" />
+          Verified suppliers
+        </span>
+        <span className="flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" />
+          Free cancellation
+        </span>
+      </div>
+
+      {/* Contact */}
+      <p className="text-xs text-gray-400 text-center pt-3">
+        Need help? <a href="mailto:hello@partysnap.co.uk" className="text-gray-500 hover:underline">hello@partysnap.co.uk</a>
       </p>
     </div>
   )
@@ -977,101 +972,61 @@ export default function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-lg mx-auto px-5 py-6 pb-8">
 
-      {/* Order summary panel - shows first on mobile, left side on desktop */}
-      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen">
-        <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
-
-          {/* Party header */}
-          <div className="mb-8">
-            <p className="text-sm text-gray-500 mb-1">Pay PartySnap</p>
-            <p className="text-4xl font-bold text-gray-900">
-              £{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}
-            </p>
-          </div>
-
-          {/* Order items */}
-          <div className="space-y-3 mb-6">
-            {paymentBreakdown.paymentDetails.map((supplier) => (
-              <div key={supplier.id} className="flex justify-between items-center">
-                <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
-                <p className="text-sm text-gray-900">£{supplier.amountToday}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Subtotal & Total */}
-          <div className="border-t border-gray-200 pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Subtotal</span>
-              <span className="text-gray-900">£{paymentBreakdown.totalPaymentToday}</span>
-            </div>
-
-            {creditApplied > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-green-600">Referral Credit</span>
-                <span className="text-green-600">-£{creditApplied.toFixed(2)}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200">
-              <span className="text-gray-900">Total due</span>
-              <span className="text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Party details - compact */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Party Details</p>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center">
-                <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                <span>{formatDateWithOrdinal(partyDetails.date)}</span>
-              </div>
-              <div className="flex items-center">
-                <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                <span>{partyDetails.location}</span>
-              </div>
-              <div className="flex items-center">
-                <Users className="w-4 h-4 text-gray-400 mr-2" />
-                <span>{partyDetails.guestCount || '10-15'} guests · Age {partyDetails.childAge}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Booking protection - minimal */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center text-xs text-gray-500">
-              <Shield className="w-3.5 h-3.5 mr-1.5" />
-              <span>Secure booking · Customer support included</span>
-            </div>
-          </div>
-
-          {/* Powered by footer */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-400">
-              Powered by <span className="font-semibold">stripe</span>
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Payment</h1>
         </div>
-      </div>
 
-      {/* Right panel - Payment form (white background) */}
-      <div className="flex-1 lg:w-1/2 bg-white lg:min-h-screen">
-        <div className="max-w-md mx-auto lg:mr-auto lg:ml-0 px-6 lg:px-12 py-8 lg:py-16">
-
-          {creditApplied > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">
-                  <span className="font-medium">£{creditApplied.toFixed(2)} referral credit applied</span>
+        {/* Party Details Card */}
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-3">Party Details</h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <MapPin className="w-5 h-5 text-gray-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{partyDetails.location}</p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {formatDateWithOrdinal(partyDetails.date)} · {partyDetails.guestCount || '10-15'} guests
                 </p>
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
+        {/* Order Summary */}
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-3">Order Summary</h2>
+          <div className="space-y-3">
+            {paymentBreakdown.paymentDetails.map((supplier) => (
+              <div key={supplier.id} className="flex justify-between items-center">
+                <span className="text-sm text-gray-600 capitalize">{supplier.category}</span>
+                <span className="text-sm text-gray-900">£{supplier.amountToday}</span>
+              </div>
+            ))}
+
+            {creditApplied > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-green-600">Referral Credit</span>
+                <span className="text-sm text-green-600">-£{creditApplied.toFixed(2)}</span>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex justify-between items-center">
+                <span className="text-base font-semibold text-gray-900">Total</span>
+                <span className="text-lg font-semibold text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Form */}
+        <div className="mb-6">
           {clientSecret === 'credit_only' ? (
             <CreditOnlyBooking
               partyDetails={partyDetails}
@@ -1094,14 +1049,14 @@ export default function PaymentPageContent() {
                     colorDanger: '#dc2626',
                     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
                     spacingUnit: '4px',
-                    borderRadius: '6px',
+                    borderRadius: '10px',
                     fontSizeBase: '14px',
                   },
                   rules: {
                     '.Input': {
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid #e5e7eb',
                       boxShadow: 'none',
-                      padding: '12px',
+                      padding: '12px 14px',
                     },
                     '.Input:focus': {
                       border: '1px solid #0f172a',
@@ -1110,15 +1065,15 @@ export default function PaymentPageContent() {
                     '.Label': {
                       fontWeight: '500',
                       fontSize: '14px',
-                      color: '#1e293b',
-                      marginBottom: '8px',
+                      color: '#374151',
+                      marginBottom: '6px',
                     },
                     '.Tab': {
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '10px',
                     },
                     '.Tab--selected': {
-                      border: '1px solid #0f172a',
+                      border: '2px solid #0f172a',
                       backgroundColor: '#ffffff',
                     },
                   },
@@ -1139,13 +1094,19 @@ export default function PaymentPageContent() {
               />
             </Elements>
           ) : (
-            <div className="py-16">
+            <div className="py-12">
               <div className="flex flex-col items-center justify-center space-y-3">
                 <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                <p className="text-sm text-gray-500">Loading...</p>
+                <p className="text-sm text-gray-500">Loading payment options...</p>
               </div>
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+          <Lock className="w-3 h-3" />
+          <span>Secured by Stripe</span>
         </div>
       </div>
     </div>

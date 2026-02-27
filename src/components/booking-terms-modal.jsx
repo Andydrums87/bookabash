@@ -225,30 +225,22 @@ export function BookingTermsModal({ children, partyDetails }) {
 // Booking Terms Acceptance Component for Payment Form
 export function BookingTermsAcceptance({ termsAccepted, setTermsAccepted, partyDetails, required = true }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4">
-      <div className="flex items-start space-x-3">
-        <Checkbox
-          id="booking-terms"
-          checked={termsAccepted}
-          onCheckedChange={setTermsAccepted}
-          className="mt-1"
-          required={required}
-        />
-        <div className="flex-1">
-          <Label htmlFor="booking-terms" className="text-sm font-medium cursor-pointer block">
-            I accept PartySnap's{" "}
-            <BookingTermsModal partyDetails={partyDetails}>
-              <button type="button" className="text-primary-600 hover:underline font-medium">
-                Booking Terms & Conditions
-              </button>
-            </BookingTermsModal>{" "}
-            and understand the cancellation policy
-          </Label>
-          <p className="text-xs text-gray-500 mt-1">
-            Required to complete your booking. Covers payments, cancellations, and party day responsibilities.
-          </p>
-        </div>
-      </div>
+    <div className="flex items-center gap-3 py-2">
+      <Checkbox
+        id="booking-terms"
+        checked={termsAccepted}
+        onCheckedChange={setTermsAccepted}
+        required={required}
+        className="h-5 w-5 rounded border-gray-300"
+      />
+      <Label htmlFor="booking-terms" className="text-sm text-gray-600 cursor-pointer">
+        I agree to the{" "}
+        <BookingTermsModal partyDetails={partyDetails}>
+          <button type="button" className="text-gray-900 underline underline-offset-2">
+            terms & conditions
+          </button>
+        </BookingTermsModal>
+      </Label>
     </div>
   )
 }
