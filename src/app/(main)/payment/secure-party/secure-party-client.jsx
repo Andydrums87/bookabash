@@ -615,6 +615,15 @@ export default function PaymentPageContent() {
   })
   const [referralCredit, setReferralCredit] = useState(0)
   const [creditApplied, setCreditApplied] = useState(0)
+  const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [editedDetails, setEditedDetails] = useState({
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    postcode: '',
+    phone: ''
+  })
+  const [isSavingDetails, setIsSavingDetails] = useState(false)
 
   const { partyPlan, addons } = usePartyPlan()
 
@@ -805,6 +814,15 @@ export default function PaymentPageContent() {
           displayLocation = userAddressParts.length > 0 ? userAddressParts.join(', ') : partyResult.party.location
         }
 
+        // Build user's delivery address
+        const deliveryAddressParts = [
+          userResult.user.address_line_1,
+          userResult.user.address_line_2,
+          userResult.user.city,
+          userResult.user.postcode
+        ].filter(Boolean)
+        const deliveryAddress = deliveryAddressParts.length > 0 ? deliveryAddressParts.join(', ') : null
+
         setPartyDetails({
           id: partyResult.party.id,
           childName: partyResult.party.child_name,
@@ -814,7 +832,9 @@ export default function PaymentPageContent() {
           location: displayLocation,
           guestCount: partyResult.party.guest_count,
           email: userResult.user.email,
+          phone: userResult.user.phone || userResult.user.mobile,
           parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim(),
+          deliveryAddress: deliveryAddress,
           termsAccepted: partyResult.party.terms_accepted || false,
           termsAcceptedAt: partyResult.party.terms_accepted_at || null,
           hasVenue: !!venue
@@ -952,6 +972,67 @@ export default function PaymentPageContent() {
     console.error('Payment failed:', error)
   }
 
+  // Handle editing user details
+  const handleEditDetails = () => {
+    setEditedDetails({
+      addressLine1: user?.address_line_1 || '',
+      addressLine2: user?.address_line_2 || '',
+      city: user?.city || '',
+      postcode: user?.postcode || '',
+      phone: user?.phone || user?.mobile || ''
+    })
+    setIsEditingDetails(true)
+  }
+
+  const handleSaveDetails = async () => {
+    setIsSavingDetails(true)
+    try {
+      // Update user in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          address_line_1: editedDetails.addressLine1,
+          address_line_2: editedDetails.addressLine2,
+          city: editedDetails.city,
+          postcode: editedDetails.postcode,
+          phone: editedDetails.phone
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      // Update local state
+      const newDeliveryAddress = [
+        editedDetails.addressLine1,
+        editedDetails.addressLine2,
+        editedDetails.city,
+        editedDetails.postcode
+      ].filter(Boolean).join(', ')
+
+      setPartyDetails(prev => ({
+        ...prev,
+        deliveryAddress: newDeliveryAddress,
+        phone: editedDetails.phone
+      }))
+
+      setUser(prev => ({
+        ...prev,
+        address_line_1: editedDetails.addressLine1,
+        address_line_2: editedDetails.addressLine2,
+        city: editedDetails.city,
+        postcode: editedDetails.postcode,
+        phone: editedDetails.phone
+      }))
+
+      setIsEditingDetails(false)
+    } catch (error) {
+      console.error('Error saving details:', error)
+      alert('Failed to save details. Please try again.')
+    } finally {
+      setIsSavingDetails(false)
+    }
+  }
+
   // SHOW SKELETON WHILE LOADING
   if (loading) {
     return <PaymentPageSkeleton />
@@ -972,141 +1053,258 @@ export default function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-lg mx-auto px-5 py-6 pb-8">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Payment</h1>
-        </div>
-
-        {/* Party Details Card */}
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Party Details</h2>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-                <MapPin className="w-5 h-5 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{partyDetails.location}</p>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {formatDateWithOrdinal(partyDetails.date)} · {partyDetails.guestCount || '10-15'} guests
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left Panel - Order Summary (gray background) */}
+      <div className="lg:w-1/2 bg-[#f6f9fc] lg:min-h-screen order-1 lg:order-1">
+        <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
+          {/* Party Name & Total */}
+          <div className="mb-8">
+            <p className="text-sm text-gray-500 mb-1">{partyDetails.childName}'s {partyDetails.theme} Party</p>
+            <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</p>
           </div>
-        </div>
 
-        {/* Order Summary */}
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Order Summary</h2>
-          <div className="space-y-3">
+          {/* Order Items */}
+          <div className="space-y-4 mb-6">
             {paymentBreakdown.paymentDetails.map((supplier) => (
-              <div key={supplier.id} className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 capitalize">{supplier.category}</span>
-                <span className="text-sm text-gray-900">£{supplier.amountToday}</span>
+              <div key={supplier.id} className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
+                  <p className="text-xs text-gray-500">{supplier.name}</p>
+                </div>
+                <p className="text-sm text-gray-900">£{supplier.amountToday.toFixed(2)}</p>
               </div>
             ))}
+          </div>
+
+          {/* Subtotal & Credits */}
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="text-gray-900">£{paymentBreakdown.totalPaymentToday.toFixed(2)}</span>
+            </div>
 
             {creditApplied > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-green-600">Referral Credit</span>
-                <span className="text-sm text-green-600">-£{creditApplied.toFixed(2)}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-green-600">Referral Credit</span>
+                <span className="text-green-600">-£{creditApplied.toFixed(2)}</span>
               </div>
             )}
 
-            <div className="pt-3 border-t border-gray-100">
-              <div className="flex justify-between items-center">
-                <span className="text-base font-semibold text-gray-900">Total</span>
-                <span className="text-lg font-semibold text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
-              </div>
+            <div className="flex justify-between pt-2 border-t border-gray-200">
+              <span className="text-sm font-medium text-gray-900">Total due today</span>
+              <span className="text-sm font-medium text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
             </div>
           </div>
-        </div>
 
-        {/* Payment Form */}
-        <div className="mb-6">
-          {clientSecret === 'credit_only' ? (
-            <CreditOnlyBooking
-              partyDetails={partyDetails}
-              creditApplied={creditApplied}
-              onSuccess={handlePaymentSuccess}
-              isRedirecting={isRedirecting}
-              setIsRedirecting={setIsRedirecting}
-            />
-          ) : clientSecret ? (
-            <Elements
-              stripe={stripePromise}
-              options={{
-                clientSecret: clientSecret,
-                appearance: {
-                  theme: 'stripe',
-                  variables: {
-                    colorPrimary: '#0f172a',
-                    colorBackground: '#ffffff',
-                    colorText: '#1e293b',
-                    colorDanger: '#dc2626',
-                    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-                    spacingUnit: '4px',
-                    borderRadius: '10px',
-                    fontSizeBase: '14px',
-                  },
-                  rules: {
-                    '.Input': {
-                      border: '1px solid #e5e7eb',
-                      boxShadow: 'none',
-                      padding: '12px 14px',
-                    },
-                    '.Input:focus': {
-                      border: '1px solid #0f172a',
-                      boxShadow: '0 0 0 1px #0f172a',
-                    },
-                    '.Label': {
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    },
-                    '.Tab': {
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '10px',
-                    },
-                    '.Tab--selected': {
-                      border: '2px solid #0f172a',
-                      backgroundColor: '#ffffff',
-                    },
-                  },
-                },
-              }}
-            >
-              <PaymentForm
+          {/* Your Details */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-900">Your details</h3>
+              {!isEditingDetails && (
+                <button
+                  onClick={handleEditDetails}
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {isEditingDetails ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Address Line 1</label>
+                  <input
+                    type="text"
+                    value={editedDetails.addressLine1}
+                    onChange={(e) => setEditedDetails(prev => ({ ...prev, addressLine1: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="123 Street Name"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Address Line 2 (optional)</label>
+                  <input
+                    type="text"
+                    value={editedDetails.addressLine2}
+                    onChange={(e) => setEditedDetails(prev => ({ ...prev, addressLine2: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="Flat, building, etc."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">City</label>
+                    <input
+                      type="text"
+                      value={editedDetails.city}
+                      onChange={(e) => setEditedDetails(prev => ({ ...prev, city: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      placeholder="London"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Postcode</label>
+                    <input
+                      type="text"
+                      value={editedDetails.postcode}
+                      onChange={(e) => setEditedDetails(prev => ({ ...prev, postcode: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      placeholder="SW1A 1AA"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Phone</label>
+                  <input
+                    type="tel"
+                    value={editedDetails.phone}
+                    onChange={(e) => setEditedDetails(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="07123 456789"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={handleSaveDetails}
+                    disabled={isSavingDetails}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                  >
+                    {isSavingDetails ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingDetails(false)}
+                    disabled={isSavingDetails}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Delivery Address */}
+                {partyDetails.deliveryAddress && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-600">{partyDetails.deliveryAddress}</p>
+                  </div>
+                )}
+
+                {/* Email */}
+                <div className="flex items-start gap-3">
+                  <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-600">{partyDetails.email}</p>
+                </div>
+
+                {/* Phone */}
+                {partyDetails.phone && (
+                  <div className="flex items-start gap-3">
+                    <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <p className="text-sm text-gray-600">{partyDetails.phone}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Payment Form (white background) */}
+      <div className="lg:w-1/2 bg-white lg:min-h-screen order-2 lg:order-2">
+        <div className="max-w-md mr-auto px-6 lg:px-12 py-8 lg:py-16">
+          {/* Mobile Header - only show on mobile */}
+          <div className="mb-6 lg:hidden">
+            <h1 className="text-xl font-semibold text-gray-900">Payment</h1>
+          </div>
+
+          {/* Payment Form */}
+          <div>
+            {clientSecret === 'credit_only' ? (
+              <CreditOnlyBooking
                 partyDetails={partyDetails}
-                confirmedSuppliers={confirmedSuppliers}
-                addons={addons || []}
-                paymentBreakdown={paymentBreakdown}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={handlePaymentError}
+                creditApplied={creditApplied}
+                onSuccess={handlePaymentSuccess}
                 isRedirecting={isRedirecting}
                 setIsRedirecting={setIsRedirecting}
-                clientSecret={clientSecret}
-                creditApplied={creditApplied}
               />
-            </Elements>
-          ) : (
-            <div className="py-12">
-              <div className="flex flex-col items-center justify-center space-y-3">
-                <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                <p className="text-sm text-gray-500">Loading payment options...</p>
+            ) : clientSecret ? (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#0f172a',
+                      colorBackground: '#ffffff',
+                      colorText: '#1e293b',
+                      colorDanger: '#dc2626',
+                      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                      spacingUnit: '4px',
+                      borderRadius: '10px',
+                      fontSizeBase: '14px',
+                    },
+                    rules: {
+                      '.Input': {
+                        border: '1px solid #e5e7eb',
+                        boxShadow: 'none',
+                        padding: '12px 14px',
+                      },
+                      '.Input:focus': {
+                        border: '1px solid #0f172a',
+                        boxShadow: '0 0 0 1px #0f172a',
+                      },
+                      '.Label': {
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        color: '#374151',
+                        marginBottom: '6px',
+                      },
+                      '.Tab': {
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '10px',
+                      },
+                      '.Tab--selected': {
+                        border: '2px solid #0f172a',
+                        backgroundColor: '#ffffff',
+                      },
+                    },
+                  },
+                }}
+              >
+                <PaymentForm
+                  partyDetails={partyDetails}
+                  confirmedSuppliers={confirmedSuppliers}
+                  addons={addons || []}
+                  paymentBreakdown={paymentBreakdown}
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentError={handlePaymentError}
+                  isRedirecting={isRedirecting}
+                  setIsRedirecting={setIsRedirecting}
+                  clientSecret={clientSecret}
+                  creditApplied={creditApplied}
+                />
+              </Elements>
+            ) : (
+              <div className="py-12">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                  <p className="text-sm text-gray-500">Loading payment options...</p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-          <Lock className="w-3 h-3" />
-          <span>Secured by Stripe</span>
+          {/* Footer */}
+          <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400 mt-8">
+            <Lock className="w-3 h-3" />
+            <span>Secured by Stripe</span>
+          </div>
         </div>
       </div>
     </div>
