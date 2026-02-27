@@ -2087,35 +2087,7 @@ export default function SupplierCustomizationModal({
 
     const formattedPrice = totalPrice.toFixed(2)
 
-    if (supplierTypeDetection.isCake) {
-      return `Book Cake - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isBalloons) {
-      return `Book Balloons - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isFacePainting) {
-      return `Book Face Painting - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isSoftPlay) {
-      return `Book Soft Play - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isSweetTreats) {
-      return `Book Sweet Treats - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isCatering) {
-      return `Book Catering - £${formattedPrice}`
-    }
-
-    if (supplierTypeDetection.isMultiSelect) {
-      return `Book Selection - £${formattedPrice}`
-    }
-
-    return `Book Service - £${formattedPrice}`
+    return `Add to Party - £${formattedPrice}`
   }
 
   if (!isOpen) return null
@@ -4520,13 +4492,6 @@ export default function SupplierCustomizationModal({
                 </>
               ) : (
                 <>
-                  {supplierTypeDetection.isCake ? (
-                    <Cake className="w-4 h-4 mr-2" />
-                  ) : supplierTypeDetection.isLeadBased ? (
-                    <Package className="w-4 h-4 mr-2" />
-                  ) : (
-                    <Plus className="w-4 h-4 mr-2" />
-                  )}
                   {getButtonText()}
                 </>
               )}
