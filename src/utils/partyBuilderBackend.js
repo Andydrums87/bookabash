@@ -133,11 +133,33 @@ class PartyBuilderBackend {
 
         console.log(`🎂 Cake sizing: ${attendees.children} children + ${attendees.adults} adults = ${totalForCake} people`);
 
+        // Helper to parse serving ranges like "8-10" and get max value
+        const parseServingsMax = (value) => {
+          if (!value) return 10;
+          const str = String(value).replace(/[^\d-]/g, '');
+          const parts = str.split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+          if (parts.length >= 2) return Math.max(...parts);
+          if (parts.length === 1) return parts[0];
+          return 10;
+        };
+
+        // Helper to parse serving ranges and get min value (for sorting)
+        const parseServingsMin = (value) => {
+          if (!value) return 10;
+          const str = String(value).replace(/[^\d-]/g, '');
+          const parts = str.split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+          if (parts.length >= 2) return Math.min(...parts);
+          if (parts.length === 1) return parts[0];
+          return 10;
+        };
+
         let sortedByServings = [...supplier.packages].sort((a, b) => {
-          const aServes = parseInt(a.serves) || parseInt(a.feeds) || parseInt(a.servings) || 10;
-          const bServes = parseInt(b.serves) || parseInt(b.feeds) || parseInt(b.servings) || 10;
+          const aServes = parseServingsMin(a.serves || a.feeds || a.servings);
+          const bServes = parseServingsMin(b.serves || b.feeds || b.servings);
           return aServes - bServes;
         });
+
+        console.log(`🎂 Sorted packages:`, sortedByServings.map(p => ({ name: p.name, serves: p.serves, max: parseServingsMax(p.serves || p.feeds) })));
 
         // For no-theme parties, filter by colour scheme first
         if (isNoTheme && preferredColour) {
@@ -150,10 +172,20 @@ class PartyBuilderBackend {
           }
         }
 
+        // Find first package where MAX serving capacity >= totalForCake
         selectedPackage = sortedByServings.find(pkg => {
-          const serves = parseInt(pkg.serves) || parseInt(pkg.feeds) || parseInt(pkg.servings) || 10;
-          return serves >= totalForCake;
-        }) || sortedByServings[sortedByServings.length - 1];
+          const maxServes = parseServingsMax(pkg.serves || pkg.feeds || pkg.servings);
+          return maxServes >= totalForCake;
+        });
+
+        // If no package found, default to second smallest (index 1) to avoid highest price
+        if (!selectedPackage) {
+          const fallbackIndex = Math.min(1, sortedByServings.length - 1);
+          selectedPackage = sortedByServings[fallbackIndex];
+          console.log(`🎂 No exact match, using fallback at index ${fallbackIndex}: ${selectedPackage?.name}`);
+        } else {
+          console.log(`🎂 Selected package: ${selectedPackage?.name}`);
+        }
       } else {
         // Sort packages by price (cheapest first)
         const sortedPackages = [...supplier.packages].sort((a, b) => {

@@ -1700,12 +1700,26 @@ const getAutoCakeDefaults = (supplier, guestCount) => {
     return aServes.min - bServes.min
   })
 
+  console.log('🎂 Cake package selection for guest count:', guestCount)
+  console.log('🎂 Sorted packages:', sortedPackages.map(p => ({ name: p.name, serves: p.serves, feeds: p.feeds, parsed: parseServings(p.serves || p.feeds) })))
+
   // Find first package where the MAX serving capacity >= guest count
   // This ensures the cake can definitely feed everyone
   let selectedPackage = sortedPackages.find(pkg => {
     const serves = parseServings(pkg.serves || pkg.feeds)
     return serves.max >= guestCount
-  }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest if none fit
+  })
+
+  // If no package found, default to the SECOND smallest package (index 1) if available
+  // This avoids defaulting to the largest/most expensive package
+  if (!selectedPackage) {
+    // Try second package (index 1), or first if only 1-2 packages exist
+    const fallbackIndex = Math.min(1, sortedPackages.length - 1)
+    selectedPackage = sortedPackages[fallbackIndex]
+    console.log('🎂 No exact match found, using fallback package at index:', fallbackIndex)
+  }
+
+  console.log('🎂 Selected package:', selectedPackage?.name)
 
   // Get first available flavor
   const flavours = supplier?.serviceDetails?.flavours || supplier?.flavours || []
