@@ -401,7 +401,7 @@ const PartyServiceCard = ({ service, onAction }) => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-2xl font-bold text-gray-900">
-              £{service.price}
+              £{Number(service.price).toFixed(2)}
               {hasAddons && (
                 <span className="text-sm font-normal text-[hsl(var(--primary-600))] ml-2">
                   +{service.addons.length} extras
@@ -410,18 +410,18 @@ const PartyServiceCard = ({ service, onAction }) => {
             </div>
             {service.amountPaid > 0 && (
               <div className="text-sm text-teal-600 font-medium">
-                £{service.amountPaid} paid
+                £{Number(service.amountPaid).toFixed(2)} paid
               </div>
             )}
           </div>
-          
+
           {hasPendingPayment && (
             <div className="text-right">
               <div className="text-sm text-gray-500">Remaining</div>
               <div className={`text-lg font-semibold text-orange-600 ${
                 hasPendingPayment ? 'animate-pulse' : ''
               }`}>
-                £{service.price - service.amountPaid}
+                £{(service.price - service.amountPaid).toFixed(2)}
               </div>
             </div>
           )}
@@ -433,7 +433,7 @@ const PartyServiceCard = ({ service, onAction }) => {
             <div className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-orange-600" />
               <span className="text-sm font-medium text-orange-700">
-                Payment Required: £{service.price - service.amountPaid}
+                Payment Required: £{(service.price - service.amountPaid).toFixed(2)}
               </span>
             </div>
           </div>
@@ -527,19 +527,19 @@ const PartyServiceTableRow = ({ service, onAction, expandedRows, toggleRowExpans
         </TableCell>
         <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
           <div>
-            <div>£{service.price}</div>
+            <div>£{Number(service.price).toFixed(2)}</div>
             {service.addons && service.addons.length > 0 && (
               <div className="text-xs text-gray-500">
-                Base: £{service.basePrice} + Add-ons: £{service.addonsPrice}
+                Base: £{Number(service.basePrice).toFixed(2)} + Add-ons: £{Number(service.addonsPrice).toFixed(2)}
               </div>
             )}
           </div>
         </TableCell>
         <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
-          £{service.amountPaid}
+          £{Number(service.amountPaid).toFixed(2)}
         </TableCell>
         <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
-          £{service.price - service.amountPaid}
+          £{(service.price - service.amountPaid).toFixed(2)}
         </TableCell>
         <TableCell className="px-3 md:px-8 py-3 md:py-6">
           <div className="flex gap-1 md:gap-2">
@@ -583,7 +583,7 @@ const PartyServiceTableRow = ({ service, onAction, expandedRows, toggleRowExpans
                         {addon.name}
                       </h5>
                       <span className="text-sm font-bold text-[hsl(var(--primary-600))]">
-                        £{addon.price || 0}
+                        £{Number(addon.price || 0).toFixed(2)}
                       </span>
                     </div>
                     {addon.description && (

@@ -43,7 +43,7 @@ const PartySummarySection = ({
               <div className="text-white/80 drop-shadow">{supplier.name}</div>
             </div>
             <div className="text-white font-bold text-xl drop-shadow">
-              £{supplier.price}
+              £{Number(supplier.price).toFixed(2)}
             </div>
           </div>
         ))}
@@ -57,7 +57,7 @@ const PartySummarySection = ({
             <span className="text-xl font-bold text-white drop-shadow">Total Party Cost</span>
           </div>
           <div className="text-3xl font-bold text-white drop-shadow">
-            £{totalCost.toLocaleString()}
+            £{Number(totalCost).toFixed(2)}
           </div>
         </div>
       </div>
