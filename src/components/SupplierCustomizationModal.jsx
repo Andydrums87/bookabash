@@ -2271,10 +2271,10 @@ export default function SupplierCustomizationModal({
             )}
 
             {/* Mobile: Image at top of scrollable content - scrolls naturally */}
-            <div className="lg:hidden" key={`mobile-image-${carouselIndex}`}>
+            <div className="lg:hidden">
               {/* Full image - scrolls naturally with content */}
               <div
-                className="relative w-full h-56 bg-gray-900 overflow-hidden touch-pan-y"
+                className="relative w-full h-56 bg-gray-200 overflow-hidden touch-pan-y"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(supplierImages.length)}
@@ -2284,25 +2284,24 @@ export default function SupplierCustomizationModal({
                     {/* Blurred background image */}
                     <div className="absolute inset-0">
                       <Image
-                        key={`blur-${carouselIndex}`}
                         src={supplierImages[carouselIndex] || supplierImages[0]}
                         alt=""
                         fill
-                        className={`object-cover blur-2xl scale-110 transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-110'}`}
+                        className="object-cover blur-2xl scale-110"
                         sizes="100vw"
-                        priority={false}
+                        priority
                       />
                       <div className="absolute inset-0 bg-black/30" />
                     </div>
                     {/* Main image */}
                     <div className="absolute inset-0 z-10">
                       <Image
-                        key={`main-${carouselIndex}`}
                         src={supplierImages[carouselIndex] || supplierImages[0]}
                         alt={`${supplier.name} - Image ${carouselIndex + 1}`}
                         fill
-                        className={`object-contain transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                        className="object-contain"
                         sizes="100vw"
+                        priority
                       />
                     </div>
                     {/* Navigation arrows */}
@@ -4455,48 +4454,38 @@ export default function SupplierCustomizationModal({
         </div>
 
         <div className="border-t border-gray-200 p-5 flex-shrink-0 bg-white">
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 h-12 font-medium bg-transparent"
-              disabled={isAdding}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddToPlan}
-              className={`flex-[2] h-12 font-semibold shadow-lg hover:shadow-xl transition-all ${
-                !canAddCheck.canAdd
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-primary-500 hover:bg-primary-600 text-white"
-              }`}
-              disabled={
-                // For multi-select, require at least one item; for others, require package selection
-                // Face painting doesn't need package selection (flat rate)
-                // Venues don't require package selection - they use priceFrom
-                (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
-                isAdding ||
-                !canAddCheck.canAdd
-              }
-            >
-              {isAdding ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  {getButtonText()}
-                </>
-              ) : !canAddCheck.canAdd ? (
-                <>
-                  <Clock className="w-4 h-4 mr-2" />
-                  {getButtonText()}
-                </>
-              ) : (
-                <>
-                  {getButtonText()}
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleAddToPlan}
+            className={`w-full h-12 font-semibold shadow-lg hover:shadow-xl transition-all ${
+              !canAddCheck.canAdd
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-primary-500 hover:bg-primary-600 text-white"
+            }`}
+            disabled={
+              // For multi-select, require at least one item; for others, require package selection
+              // Face painting doesn't need package selection (flat rate)
+              // Venues don't require package selection - they use priceFrom
+              (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
+              isAdding ||
+              !canAddCheck.canAdd
+            }
+          >
+            {isAdding ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                {getButtonText()}
+              </>
+            ) : !canAddCheck.canAdd ? (
+              <>
+                <Clock className="w-4 h-4 mr-2" />
+                {getButtonText()}
+              </>
+            ) : (
+              <>
+                {getButtonText()}
+              </>
+            )}
+          </Button>
         </div>
             </div>
           </div>
