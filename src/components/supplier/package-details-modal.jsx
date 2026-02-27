@@ -39,27 +39,28 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
-          {/* What's Included */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
-            <div className="flex flex-wrap gap-2">
-              {pkg.whatsIncluded?.map((item, i) => (
-                <span key={i} className="bg-[#fff0ee] text-gray-900 text-sm font-medium px-3 py-1.5 rounded-full">
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Detailed Description */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Package Details</h3>
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <div className="whitespace-pre-line text-gray-700 leading-relaxed">
+          {/* Package Description - shown first */}
+          {pkg.description && (
+            <div className="mb-6">
+              <p className="text-gray-700 leading-relaxed">
                 {pkg.description}
+              </p>
+            </div>
+          )}
+
+          {/* What's Included */}
+          {(pkg.whatsIncluded?.length > 0 || pkg.features?.length > 0 || pkg.contents?.length > 0) && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">What&apos;s Included</h3>
+              <div className="flex flex-wrap gap-2">
+                {(pkg.whatsIncluded || pkg.features || pkg.contents)?.map((item, i) => (
+                  <span key={i} className="bg-[#fff0ee] text-gray-900 text-sm font-medium px-3 py-1.5 rounded-full">
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Package Stats */}
           <div className="grid grid-cols-2 gap-4 mb-6">

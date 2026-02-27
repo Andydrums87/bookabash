@@ -120,8 +120,15 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Content - Styled checklist */}
+        {/* Content - Description and Styled checklist */}
         <div className="p-4 max-h-[60vh] overflow-y-auto">
+          {/* Package Description */}
+          {pkg.description && (
+            <div className="mb-4">
+              <p className="text-gray-600 text-sm leading-relaxed">{pkg.description}</p>
+            </div>
+          )}
+
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">What&apos;s Included</p>
           {items.length > 0 ? (
             <div className="space-y-2.5">
@@ -3050,15 +3057,6 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const packageImage = typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)
 
-                      // Prose for catering
-                      const getCateringProse = () => {
-                        const features = pkg?.features || pkg?.contents || []
-                        if (features.length === 0) return pkg.description || null
-                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
-                      }
-
-                      const prose = getCateringProse()
-
                       return (
                         <div
                           key={pkg.id}
@@ -3106,11 +3104,11 @@ export default function SupplierCustomizationModal({
                               </p>
                             </div>
 
-                            {/* Description prose - fixed height area */}
+                            {/* Description - fixed height area */}
                             <div className="flex-1 min-h-0 overflow-hidden">
-                              {prose && (
+                              {pkg.description && (
                                 <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                  {prose}
+                                  {pkg.description}
                                 </p>
                               )}
 
@@ -3165,15 +3163,6 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const packageImage = getDecorationsPackageImage(pkg) || pkg.image || pkg.images?.[0]
 
-                      // Short descriptions for decorations
-                      const getDecorationsProse = () => {
-                        const features = pkg?.features || pkg?.contents || []
-                        if (features.length === 0) return pkg.description || null
-                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
-                      }
-
-                      const prose = getDecorationsProse()
-
                       return (
                         <div
                           key={pkg.id}
@@ -3221,11 +3210,11 @@ export default function SupplierCustomizationModal({
                               </p>
                             </div>
 
-                            {/* Description prose - fixed height area */}
+                            {/* Description - fixed height area */}
                             <div className="flex-1 min-h-0 overflow-hidden">
-                              {prose && (
+                              {pkg.description && (
                                 <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                  {prose}
+                                  {pkg.description}
                                 </p>
                               )}
 
@@ -3474,14 +3463,6 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const packageImage = pkg.image || pkg.images?.[0]
 
-                      const getPartyBagsProse = () => {
-                        const features = pkg?.features || pkg?.contents || []
-                        if (features.length === 0) return pkg.description || null
-                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
-                      }
-
-                      const prose = getPartyBagsProse()
-
                       return (
                         <div
                           key={pkg.id}
@@ -3529,11 +3510,11 @@ export default function SupplierCustomizationModal({
                               </p>
                             </div>
 
-                            {/* Description prose */}
+                            {/* Description */}
                             <div className="flex-1 min-h-0 overflow-hidden">
-                              {prose && (
+                              {pkg.description && (
                                 <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
-                                  {prose}
+                                  {pkg.description}
                                 </p>
                               )}
 
