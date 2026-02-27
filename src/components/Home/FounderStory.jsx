@@ -16,7 +16,7 @@ export default function FounderStory() {
           {/* Section Header - matching other sections */}
           <div className="text-center mb-8 md:mb-12">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
-              Meet the Founder
+              Meet the Founders
             </h2>
             <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
               The story behind PartySnap
@@ -24,17 +24,31 @@ export default function FounderStory() {
           </div>
 
           <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-            {/* Photo Section - Shows first on mobile */}
+            {/* Photo Section - Two founders side by side */}
             <div className="w-full lg:w-2/5 relative order-1 lg:order-1">
-              <div className="aspect-square w-full max-w-[280px] md:max-w-[350px] mx-auto lg:max-w-none relative rounded-2xl overflow-hidden shadow-xl">
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772096949/74ba51c0-78ae-4230-a617-bf75240bda22_2_vy3g0i.jpg"
-                  alt="Andrew with his child"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 280px, (max-width: 1024px) 350px, 40vw"
-                  priority
-                />
+              <div className="flex gap-4 justify-center lg:justify-start">
+                {/* Andrew's photo */}
+                <div className="aspect-square w-[140px] md:w-[160px] lg:w-[170px] relative rounded-2xl overflow-hidden shadow-xl">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772096949/74ba51c0-78ae-4230-a617-bf75240bda22_2_vy3g0i.jpg"
+                    alt="Andrew with his child"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 140px, (max-width: 1024px) 160px, 170px"
+                    priority
+                  />
+                </div>
+                {/* Neil's photo */}
+                <div className="aspect-square w-[140px] md:w-[160px] lg:w-[170px] relative rounded-2xl overflow-hidden shadow-xl">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772193071/146c1cd7-5bfc-47ad-a91b-083ba5c66cfe_cjdlqz.jpg"
+                    alt="Neil with his child"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 140px, (max-width: 1024px) 160px, 170px"
+                    priority
+                  />
+                </div>
               </div>
             </div>
 
@@ -42,22 +56,22 @@ export default function FounderStory() {
             <div className="w-full lg:w-3/5 text-center lg:text-left order-2 lg:order-2">
               {/* Greeting */}
               <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                Hi, I'm Andrew <span className="inline-block">👋</span>
+                Hi, we're Andrew & Neil <span className="inline-block">👋</span>
               </h3>
 
               {/* Subtitle */}
               <p className="text-sm md:text-base text-primary-600 font-medium mb-4 md:mb-6">
-                A dad from St Albans
+                Two local dads from St Albans who get it
               </p>
 
               {/* Story */}
               <div className="space-y-3 md:space-y-4">
                 <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                  I built PartySnap because I know how stressful planning a kids' party can be.
+                  We built PartySnap because we know how stressful planning a kids' party can be.
                   Juggling work, family, and trying to coordinate multiple suppliers felt overwhelming.
                 </p>
                 <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                  So I created the service I wished existed — one place to find trusted local suppliers,
+                  So we created the service we wished existed — one place to find trusted local suppliers,
                   build your perfect party, and take the stress away so you can focus on what matters:
                   <span className="font-semibold text-gray-800"> enjoying the day with your child.</span>
                 </p>

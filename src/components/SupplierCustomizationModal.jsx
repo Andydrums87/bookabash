@@ -2795,9 +2795,30 @@ export default function SupplierCustomizationModal({
                             <h4 className="font-bold text-gray-800 text-sm mb-1 truncate">
                               {pkg.name}
                             </h4>
-                            <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                            <p className="font-bold text-[hsl(var(--primary-600))] text-base mb-1">
                               £{(pkg.price || 0).toFixed(2)}
                             </p>
+                            {/* Description - truncated for mobile */}
+                            {pkg.description && (
+                              <p className="text-gray-500 text-xs line-clamp-2 mb-1">
+                                {pkg.description}
+                              </p>
+                            )}
+                            {/* What's Included - opens modal */}
+                            {(pkg.whatsIncluded?.length > 0 || pkg.features?.length > 0) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedPackageForModal(pkg)
+                                  setShowPackageModal(true)
+                                }}
+                                className="flex items-center gap-1 text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                              >
+                                <Info className="w-3 h-3" />
+                                <span>What&apos;s included</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       )
@@ -2843,18 +2864,45 @@ export default function SupplierCustomizationModal({
                         )}
 
                         {/* Item Info - Right side */}
-                        <div className="flex-1 p-3 flex items-center justify-between">
-                          <div>
-                            <h4 className="font-bold text-gray-800 text-base mb-1">
-                              {pkg.name}
-                            </h4>
-                            <p className="font-bold text-[hsl(var(--primary-600))] text-lg">
-                              £{(pkg.price || 0).toFixed(2)}
-                            </p>
+                        <div className="flex-1 p-3 flex items-start justify-between">
+                          <div className="flex-1 pr-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-bold text-gray-800 text-base">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-[hsl(var(--primary-600))] text-lg">
+                                £{(pkg.price || 0).toFixed(2)}
+                              </p>
+                            </div>
+
+                            {/* Description */}
+                            {pkg.description && (
+                              <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                                {pkg.description}
+                              </p>
+                            )}
+
+                            {/* What's Included - opens modal */}
+                            {(pkg.whatsIncluded?.length > 0 || pkg.features?.length > 0) && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-4 h-4" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
 
                           {/* Selection Indicator */}
-                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                             isSelected
                               ? 'bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))]'
                               : 'bg-white border-gray-300'
@@ -3104,11 +3152,11 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Balloons - Text-only cards with full description (images shown in carousel above) */}
+            {/* Balloons - Cards with images (same style as party bags) */}
             {supplierTypeDetection.isBalloons && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
               <section>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                  Choose Package (Balloons)
+                  Choose Package
                 </label>
 
                 {/* Horizontal scroll on all screens */}
@@ -3121,51 +3169,75 @@ export default function SupplierCustomizationModal({
                   >
                     {packages.map((pkg) => {
                       const isSelected = selectedPackageId === pkg.id
+                      const packageImage = pkg.image || pkg.images?.[0]
+
+                      const getBalloonsProse = () => {
+                        const features = pkg?.features || pkg?.contents || pkg?.whatsIncluded || []
+                        if (features.length === 0) return pkg.description || null
+                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
+                      }
+
+                      const prose = getBalloonsProse()
 
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] h-[140px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[175px] sm:w-[190px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => {
                             setSelectedPackageId(pkg.id)
                             scrollToPackageImage(pkg.id)
                           }}
                         >
-                          {/* Content - no image, just text */}
-                          <div className="p-3 flex flex-col h-full">
-                            {/* Header with name and price */}
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <h4 className="font-bold text-gray-900 text-sm leading-tight">
+                          {/* Package Image */}
+                          <div className="relative w-full h-20 sm:h-22">
+                            {packageImage ? (
+                              <Image
+                                src={packageImage}
+                                alt={pkg.name}
+                                fill
+                                className="object-cover"
+                                sizes="190px"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Gift className="w-5 h-5 text-gray-300" />
+                              </div>
+                            )}
+                            {/* Selection checkmark */}
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-4.5 h-4.5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-2.5 bg-white flex flex-col h-[130px]">
+                            <div className="flex items-start justify-between gap-1.5 mb-0.5">
+                              <h4 className="font-semibold text-gray-900 text-[13px] leading-tight">
                                 {pkg.name}
                               </h4>
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <p className="font-bold text-primary-600 text-base">
-                                  £{parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
-                                </p>
-                                {isSelected && (
-                                  <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                                  </div>
-                                )}
-                              </div>
+                              <p className="font-bold text-primary-600 text-sm flex-shrink-0">
+                                £{parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
+                              </p>
                             </div>
 
-                            {/* Description - flex-1 to fill available space */}
-                            <div className="flex-1 overflow-hidden">
-                              {pkg.description && (
-                                <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
-                                  {pkg.description}
+                            {/* Description prose */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {prose && (
+                                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+                                  {prose}
                                 </p>
                               )}
                             </div>
 
-                            {/* What's Included link - always at bottom */}
-                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="pt-2 border-t border-gray-100">
+                            {/* What's Included */}
+                            {(pkg.features?.length > 0 || pkg.contents?.length > 0 || pkg.whatsIncluded?.length > 0) && (
+                              <div className="pt-1.5 border-t border-gray-100 mt-auto">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -3173,7 +3245,7 @@ export default function SupplierCustomizationModal({
                                     setSelectedPackageForModal(pkg)
                                     setShowPackageModal(true)
                                   }}
-                                  className="flex items-center gap-1 text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                  className="flex items-center gap-1 text-[11px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
                                 >
                                   <Info className="w-3.5 h-3.5" />
                                   <span>What&apos;s included</span>

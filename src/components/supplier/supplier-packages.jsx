@@ -135,7 +135,8 @@ const PackageCard = ({
   onShowNotification,
   isReplacementMode = false,
   isMobileView = false,
-  showWeekendIndicator = false
+  showWeekendIndicator = false,
+  showExpandedLayout = false // New prop for soft play style with description and what's included
 }) => {
   const [showModal, setShowModal] = useState(false)
   const [imageError, setImageError] = useState(false)
@@ -279,14 +280,43 @@ const PackageCard = ({
             }`}>
               {pkg.displayPrice || `£${pkg.price}`}
             </p>
-         
+
           </div>
-          
+
           <div className="flex items-center justify-center gap-2 text-gray-500 mt-1">
             <span className="text-gray-400 text-xs">{pkg.duration}</span>
           </div>
 
         </div>
+
+        {/* Expanded Layout: Description & What's Included (for soft play style) */}
+        {showExpandedLayout && (
+          <div className="px-2 mb-4 text-left space-y-4">
+            {/* Description */}
+            {pkg.description && (
+              <div>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {pkg.description}
+                </p>
+              </div>
+            )}
+
+            {/* What's Included */}
+            {features.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">What's Included</h4>
+                <ul className="space-y-1.5">
+                  {features.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Buttons with mobile-optimized sizing */}
         {isInPlanPackage ? (
@@ -676,9 +706,15 @@ export default function SupplierPackages({
     : packagesData
 
     // In SupplierPackages component
-const isVenue = supplier?.serviceType === 'venue' || 
-supplier?.category === 'Venues' || 
+const isVenue = supplier?.serviceType === 'venue' ||
+supplier?.category === 'Venues' ||
 supplier?.serviceDetails?.venueType;
+
+// Check if this is a soft play or activities supplier that should show expanded layout
+const isSoftPlayOrActivities = supplier?.category?.toLowerCase()?.includes('soft play') ||
+  supplier?.category?.toLowerCase()?.includes('activities') ||
+  supplier?.serviceType?.toLowerCase()?.includes('activities') ||
+  supplier?.pricingModel === 'multiSelect';
 
   return (
     <div className={isMobile ? "px-2" : "px-4 md:px-0"}>
@@ -729,6 +765,7 @@ supplier?.serviceDetails?.venueType;
                 onShowNotification={onShowNotification}
                 isReplacementMode={isReplacementMode}
                 isMobileView={true}
+                showExpandedLayout={isSoftPlayOrActivities}
               />
             )
           })}
@@ -752,7 +789,8 @@ supplier?.serviceDetails?.venueType;
                 onShowNotification={onShowNotification}
                 isReplacementMode={isReplacementMode}
                 isMobileView={false}
-                partyDuration={partyDetails.duration || 2} // Pass current duration
+                partyDuration={partyDetails.duration || 2}
+                showExpandedLayout={isSoftPlayOrActivities}
               />
             )
           })}

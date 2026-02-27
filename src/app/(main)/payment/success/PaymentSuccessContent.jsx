@@ -506,7 +506,7 @@ export default function PaymentSuccessPage() {
     )
   }
 
-  // Initial booking success page - Clean Sharesy-inspired design
+  // Initial booking success page
   return (
     <div className="min-h-screen bg-white">
       {/* Celebration Banner with fade */}
@@ -530,31 +530,31 @@ export default function PaymentSuccessPage() {
           </span>
         </div>
 
-        {/* Header with celebration */}
+        {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            It's official! {bookingDetails.childName}'s party is booked!
+            {bookingDetails.childName}'s party is officially booked!
           </h1>
           <p className="text-gray-600 text-lg leading-relaxed">
-            We're excited to help make this a day {bookingDetails.childName} will never forget. Your receipt is on its way to <span className="font-medium text-gray-900">{bookingDetails.email}</span>.
+            We've sent your receipt to <span className="font-medium text-gray-900">{bookingDetails.email}</span>
           </p>
         </div>
 
         {/* What happens next section */}
         <div className="mb-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">What happens next?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">What happens next?</h2>
 
           {/* Step 1 */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">1</span>
-              <h3 className="text-lg font-semibold text-gray-900">We take care of the details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">We secure everything behind the scenes</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              We're now securing your party with our trusted partners and handling all the arrangements for you.
+              We're now personally confirming your suppliers and finalising arrangements.
             </p>
             <p className="text-gray-600 leading-relaxed ml-10 mt-2">
-              You'll receive a confirmation email within <span className="font-semibold">2 working days</span> once everything is locked in.
+              You'll receive a full confirmation email within <span className="font-semibold">2 working days</span> once everything is locked in.
             </p>
             <p className="text-gray-500 text-sm ml-10 mt-2 italic">
               Bookings made outside working hours are confirmed the next working day.
@@ -565,16 +565,19 @@ export default function PaymentSuccessPage() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">2</span>
-              <h3 className="text-lg font-semibold text-gray-900">Invite your guests</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Your dashboard is live</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              We've created guest list and e-invite tools for you. Share your party details via WhatsApp, email, or our digital invites.
+              You can add extras, update details, manage guests, and design invitations anytime from your personalised dashboard.
+            </p>
+            <p className="text-gray-600 leading-relaxed ml-10 mt-2">
+              Nothing is locked — you stay in control.
             </p>
             <button
               onClick={handleReturnToDashboard}
-              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm underline underline-offset-2"
+              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm"
             >
-              Go to my dashboard
+              👉 Go to My Dashboard
             </button>
           </div>
 
@@ -582,10 +585,13 @@ export default function PaymentSuccessPage() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">3</span>
-              <h3 className="text-lg font-semibold text-gray-900">We'll keep you updated</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Invitations (after venue confirmation)</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              We'll send reminders before the party and coordinate with your suppliers so you don't have to.
+              Once your venue is confirmed, you'll be able to create and send invitations directly from your dashboard.
+            </p>
+            <p className="text-gray-600 leading-relaxed ml-10 mt-2">
+              Share via WhatsApp, email, or our digital invite builder.
             </p>
           </div>
 
@@ -593,16 +599,19 @@ export default function PaymentSuccessPage() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <span className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold flex items-center justify-center mr-3">4</span>
-              <h3 className="text-lg font-semibold text-gray-900">Save the date</h3>
+              <h3 className="text-lg font-semibold text-gray-900">We'll keep you updated</h3>
             </div>
             <p className="text-gray-600 leading-relaxed ml-10">
-              Add the party to your calendar and relax — we'll email you 48 hours before with final details and supplier contact information.
+              We'll send reminders before the party and coordinate with suppliers so you don't have to.
+            </p>
+            <p className="text-gray-600 leading-relaxed ml-10 mt-2">
+              You'll also receive final details and supplier contact information 48 hours before the party.
             </p>
             <button
               onClick={handleAddToCalendar}
-              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm underline underline-offset-2"
+              className="ml-10 mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm"
             >
-              Add to calendar
+              📅 Add to Calendar
             </button>
           </div>
         </div>
@@ -610,14 +619,14 @@ export default function PaymentSuccessPage() {
         {/* Main CTA */}
         <Button
           onClick={handleReturnToDashboard}
-          className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-lg font-medium text-base"
+          className="w-full bg-primary-500 hover:bg-primary-600 text-white py-4 rounded-xl font-medium text-base"
         >
           Go to My Dashboard
         </Button>
 
         {/* Help line */}
         <p className="text-sm text-gray-500 text-center mt-6">
-          Questions or special requests? Just reply to your confirmation email — we're happy to help.
+          Questions or special requests? Just reply to your confirmation email — real humans, no bots.
         </p>
 
         {/* Reference Number */}
