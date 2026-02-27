@@ -361,9 +361,10 @@ export default function SupplierCustomizationModal({
         if (emblaApi) emblaApi.scrollTo(imageIndex)
       }
       // Then expand and scroll to top
+      // Use scrollTop = 0 for Safari iOS compatibility (scrollTo can be unreliable)
       setIsImageCollapsed(false)
       setImageScrollOffset(0)
-      mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      mobileContentRef.current.scrollTop = 0
     } else if (imageIndex !== undefined) {
       // Not collapsed - just update the carousel index
       setCarouselIndex(imageIndex)
