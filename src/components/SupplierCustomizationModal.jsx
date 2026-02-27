@@ -590,9 +590,9 @@ export default function SupplierCustomizationModal({
         supplierCategory === 'venue' || supplierCategory === 'venues' ||
         venueTypesFromProp.some(type => supplierCategory.includes(type))
 
-      // For activities/soft play and sweet treats, always treat as multi-select
-      // These suppliers are inherently multi-select (users pick individual items)
-      const isMultiSelectForActivities = isSoftPlayFromType || isSweetTreatsFromType
+      // Sweet treats uses multi-select (users pick individual items)
+      // Note: Soft play/activities is SINGLE SELECT only
+      const isMultiSelectForActivities = isSweetTreatsFromType
 
       console.log('🔍 [Type Detection] Using supplierType prop override:', {
         supplierType,
@@ -768,8 +768,9 @@ export default function SupplierCustomizationModal({
       dataObj?.category === 'Venue' ||
       dataObj?.category === 'Venues'
 
-    // Sweet treats also uses multi-select
-    const isMultiSelectForSweetTreats = isSoftPlaySupplier || isSweetTreatsSupplier
+    // Sweet treats uses multi-select
+    // Note: Soft play/activities is SINGLE SELECT only
+    const isMultiSelectForSweetTreats = isSweetTreatsSupplier
 
     console.log('🔍 [Type Detection] Checking supplier type:', {
       category: categoryStr,
@@ -1053,7 +1054,8 @@ export default function SupplierCustomizationModal({
 
     // Check if this is a multi-select supplier (don't limit items)
     // Use the already-computed supplierTypeDetection if available
-    const isMultiSelectSupplier = supplierTypeDetection?.isMultiSelect || dataObj?.pricingModel === 'multiSelect' || supplier?.pricingModel === 'multiSelect'
+    // Note: Soft play/activities is NOT multi-select even if pricingModel says so
+    const isMultiSelectSupplier = (supplierTypeDetection?.isMultiSelect || dataObj?.pricingModel === 'multiSelect' || supplier?.pricingModel === 'multiSelect') && !supplierTypeDetection?.isSoftPlay
 
     console.log('📦 [Packages] Looking for packages:', {
       supplierPackages: supplier.packages,
@@ -1180,8 +1182,8 @@ export default function SupplierCustomizationModal({
 
   // ✅ UPDATED: Unified pricing calculation for modal totals
   const calculateModalPricing = useMemo(() => {
-    // Multi-select suppliers (soft play) - sum up all selected items
-    if (supplierTypeDetection.isMultiSelect) {
+    // Multi-select suppliers (sweet treats only, NOT soft play) - sum up all selected items
+    if (supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) {
       const selectedItems = packages.filter(pkg => selectedPackageIds.includes(pkg.id))
       const itemsPrice = selectedItems.reduce((sum, item) => sum + (item.price || 0), 0)
       const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
@@ -1498,8 +1500,8 @@ export default function SupplierCustomizationModal({
   // ✅ Initialize selected package when modal opens or supplier changes
   useEffect(() => {
     if (isOpen && packages.length > 0) {
-      // ✅ For multi-select (soft play/activities): Restore previously selected items
-      if (supplierTypeDetection.isMultiSelect) {
+      // ✅ For multi-select (sweet treats only, NOT soft play): Restore previously selected items
+      if (supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) {
         const existingSelectedIds = supplier?.packageData?.selectedItemIds ||
                                      supplier?.packageData?.selectedItems?.map(item => item.id) ||
                                      [];
@@ -1872,8 +1874,8 @@ export default function SupplierCustomizationModal({
         isTimeBased: false,
         isLeadBased: true,
       }
-    } else if (supplierTypeDetection.isMultiSelect) {
-      // ✅ MULTI-SELECT (Soft Play): Multiple items selected
+    } else if (supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) {
+      // ✅ MULTI-SELECT (Sweet Treats only, NOT soft play): Multiple items selected
       const selectedItems = packages.filter(pkg => selectedPackageIds.includes(pkg.id))
       const firstItem = selectedItems[0] || {}
 
@@ -2732,8 +2734,8 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Multi-Select Suppliers (Soft Play) - Item Selection */}
-            {supplierTypeDetection.isMultiSelect && (
+            {/* Multi-Select Suppliers (Sweet Treats only, NOT soft play) - Item Selection */}
+            {supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-primary-500" />
@@ -2919,6 +2921,113 @@ export default function SupplierCustomizationModal({
                   })}
                 </div>
 
+              </section>
+            )}
+
+            {/* Soft Play / Activities - Cards with images (SINGLE SELECT like party bags) */}
+            {supplierTypeDetection.isSoftPlay && (
+              <section>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                  Choose Package
+                </label>
+
+                {/* Horizontal scroll on all screens */}
+                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div
+                    className="flex gap-2.5 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
+                    style={{
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageId === pkg.id
+                      const packageImage = typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex-shrink-0 w-[175px] sm:w-[190px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            isSelected
+                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => {
+                            setSelectedPackageId(pkg.id)
+                            scrollToPackageImage(pkg.id)
+                          }}
+                        >
+                          {/* Package Image */}
+                          <div className="relative w-full h-20 sm:h-22">
+                            {packageImage ? (
+                              <Image
+                                src={packageImage}
+                                alt={pkg.name}
+                                fill
+                                className="object-cover"
+                                sizes="190px"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Package className="w-5 h-5 text-gray-300" />
+                              </div>
+                            )}
+                            {/* Selection checkmark */}
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-4.5 h-4.5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-2.5 bg-white flex flex-col h-[130px]">
+                            <div className="flex items-start justify-between gap-1.5 mb-0.5">
+                              <h4 className="font-semibold text-gray-900 text-[13px] leading-tight">
+                                {pkg.name}
+                              </h4>
+                              <p className="font-bold text-primary-600 text-sm flex-shrink-0">
+                                £{(pkg.price || 0).toFixed(2)}
+                              </p>
+                            </div>
+
+                            {/* Description */}
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              {pkg.description && (
+                                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+                                  {pkg.description}
+                                </p>
+                              )}
+
+                              {pkg.duration && (
+                                <p className="text-[9px] text-gray-400 mt-0.5">
+                                  {pkg.duration}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* What's Included */}
+                            {(pkg.whatsIncluded?.length > 0 || pkg.features?.length > 0) && (
+                              <div className="pt-1.5 border-t border-gray-100 mt-auto">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPackageForModal(pkg)
+                                    setShowPackageModal(true)
+                                  }}
+                                  className="flex items-center gap-1 text-[11px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                  <span>What&apos;s included</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               </section>
             )}
 
@@ -3171,14 +3280,6 @@ export default function SupplierCustomizationModal({
                       const isSelected = selectedPackageId === pkg.id
                       const packageImage = pkg.image || pkg.images?.[0]
 
-                      const getBalloonsProse = () => {
-                        const features = pkg?.features || pkg?.contents || pkg?.whatsIncluded || []
-                        if (features.length === 0) return pkg.description || null
-                        return `Includes ${features.slice(0, 2).join(', ').toLowerCase()}${features.length > 2 ? ' and more' : ''}.`
-                      }
-
-                      const prose = getBalloonsProse()
-
                       return (
                         <div
                           key={pkg.id}
@@ -3226,11 +3327,11 @@ export default function SupplierCustomizationModal({
                               </p>
                             </div>
 
-                            {/* Description prose */}
+                            {/* Description */}
                             <div className="flex-1 min-h-0 overflow-hidden">
-                              {prose && (
+                              {pkg.description && (
                                 <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
-                                  {prose}
+                                  {pkg.description}
                                 </p>
                               )}
                             </div>
@@ -4327,7 +4428,7 @@ export default function SupplierCustomizationModal({
                   )}
 
                   {/* ===== ACTIVITIES / SOFT PLAY ACCORDIONS ===== */}
-                  {supplierTypeDetection.isMultiSelect && (
+                  {supplierTypeDetection.isSoftPlay && (
                     <>
                       <AccordionItem id="act-age" title="Suitable Ages">
                         <p>{serviceDetails?.ageRange || 'Ages 1-6 years'}</p>
@@ -4535,10 +4636,11 @@ export default function SupplierCustomizationModal({
                 : "bg-primary-500 hover:bg-primary-600 text-white"
             }`}
             disabled={
-              // For multi-select, require at least one item; for others, require package selection
+              // For multi-select (NOT soft play), require at least one item; for others, require package selection
               // Face painting doesn't need package selection (flat rate)
               // Venues don't require package selection - they use priceFrom
-              (supplierTypeDetection.isMultiSelect ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
+              // Soft play uses single select (selectedPackageId), not multi-select
+              ((supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
               isAdding ||
               !canAddCheck.canAdd
             }

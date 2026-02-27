@@ -2,9 +2,223 @@
 // Enhanced version with venue support, cake suppliers, and smart pricing
 "use client"
 import { useState, useMemo } from 'react'
-import { Clock, Users, DollarSign, Calendar, MapPin, AlertTriangle } from 'lucide-react'
+import Image from 'next/image'
+import { Clock, Users, DollarSign, Calendar, MapPin, AlertTriangle, CheckCircle, Info, ImageIcon, Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import SupplierPackages from '@/components/supplier/supplier-packages'
 import CakeCustomizationModal from './CakeCustomizationModal'
+
+// Inline Packages Component (for soft play, activities)
+// Displays inline horizontal cards like party bags - SINGLE SELECT only
+const InlinePackages = ({
+  supplier,
+  packages,
+  selectedPackageId,
+  setSelectedPackageId,
+  onShowNotification,
+  isReplacementMode,
+  handleAddToPlan,
+  getAddToPartyButtonState,
+  getSupplierInPartyDetails
+}) => {
+  const [showPackageModal, setShowPackageModal] = useState(false)
+  const [selectedPackageForModal, setSelectedPackageForModal] = useState(null)
+
+  const partyDetails = getSupplierInPartyDetails()
+  const selectedPackage = packages.find(p => p.id === selectedPackageId)
+
+  const handleSelectPackage = (pkgId) => {
+    // Single select - clicking same package deselects, clicking different selects new one
+    if (selectedPackageId === pkgId) {
+      setSelectedPackageId(null)
+    } else {
+      setSelectedPackageId(pkgId)
+    }
+  }
+
+  const handleAddSelectedToPlan = () => {
+    if (!selectedPackageId) {
+      onShowNotification?.({
+        type: "warning",
+        message: "Please select a package"
+      })
+      return
+    }
+    handleAddToPlan()
+  }
+
+  const buttonState = getAddToPartyButtonState(selectedPackageId)
+
+  return (
+    <div className="px-4 md:px-0">
+      {/* Header */}
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+        {isReplacementMode ? "Choose Replacement Package" : "Choose a Package"}
+      </h2>
+
+      {/* Horizontal scroll cards - same style as party bags */}
+      <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-hide pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="flex gap-3 px-4 md:px-0 snap-x snap-mandatory w-max md:w-auto md:flex-wrap md:justify-start">
+          {packages.map((pkg) => {
+            const isSelected = selectedPackageId === pkg.id
+            const packageImage = pkg.image || pkg.imageUrl || pkg.images?.[0]
+            const features = pkg.whatsIncluded || pkg.features || []
+
+            return (
+              <div
+                key={pkg.id}
+                className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                  isSelected
+                    ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))] shadow-md"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
+                }`}
+                onClick={() => handleSelectPackage(pkg.id)}
+              >
+                {/* Package Image */}
+                <div className="relative w-full h-32 sm:h-36">
+                  {packageImage ? (
+                    <Image
+                      src={typeof packageImage === 'object' ? packageImage.src : packageImage}
+                      alt={pkg.name}
+                      fill
+                      className="object-cover"
+                      sizes="220px"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                    </div>
+                  )}
+                  {/* Selection checkmark */}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-3 bg-white">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                      {pkg.name}
+                    </h4>
+                    <p className="font-bold text-primary-600 text-base flex-shrink-0">
+                      £{(pkg.price || 0).toFixed(2)}
+                    </p>
+                  </div>
+
+                  {/* Duration */}
+                  {pkg.duration && (
+                    <p className="text-xs text-gray-400 mb-1">{pkg.duration}</p>
+                  )}
+
+                  {/* Description */}
+                  {pkg.description && (
+                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">
+                      {pkg.description}
+                    </p>
+                  )}
+
+                  {/* What's Included button */}
+                  {features.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedPackageForModal(pkg)
+                        setShowPackageModal(true)
+                      }}
+                      className="flex items-center gap-1 text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                      <span>What&apos;s included</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Selection Summary & Add to Plan */}
+      {selectedPackage && (
+        <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">{selectedPackage.name}</p>
+              <p className="text-2xl font-bold text-primary-600">
+                £{(selectedPackage.price || 0).toFixed(2)}
+              </p>
+            </div>
+            <Button
+              onClick={handleAddSelectedToPlan}
+              disabled={buttonState.disabled}
+              className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-xl font-semibold"
+            >
+              {partyDetails.inParty ? "Update Package" : "Add to Plan"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Package Details Modal */}
+      {showPackageModal && selectedPackageForModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShowPackageModal(false)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden animate-in slide-in-from-bottom duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-semibold text-gray-900">{selectedPackageForModal.name}</h3>
+                <p className="text-sm text-[hsl(var(--primary-600))] font-medium">
+                  £{(selectedPackageForModal.price || 0).toFixed(2)}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPackageModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">What&apos;s Included</p>
+              <div className="space-y-2.5">
+                {(selectedPackageForModal.whatsIncluded || selectedPackageForModal.features || []).map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <CheckCircle className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <span className="text-gray-700 text-sm pt-0.5">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => setShowPackageModal(false)}
+                className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const SupplierPackagesRouter = ({
   supplier,
@@ -61,6 +275,12 @@ const SupplierPackagesRouter = ({
   
   const isVenueSupplier = supplierType === 'venue'
   const isCakeSupplier = supplierType === 'cake'
+
+  // Check if this is a soft play/activities supplier that should show inline card layout
+  // Note: These are NOT multi-select - only one package can be selected at a time
+  const isSoftPlayOrActivities = supplier?.category?.toLowerCase()?.includes('soft play') ||
+    supplier?.category?.toLowerCase()?.includes('activities') ||
+    supplier?.serviceType === 'activities'
 
   // Venue booking calculations
   const venueBookingDetails = useMemo(() => {
@@ -475,8 +695,20 @@ const SupplierPackagesRouter = ({
   // Render based on supplier type
   return (
     <>
-   
-
+      {/* Soft play/activities get inline card layout (single select) */}
+      {isSoftPlayOrActivities ? (
+        <InlinePackages
+          supplier={supplier}
+          packages={packages}
+          selectedPackageId={selectedPackageId}
+          setSelectedPackageId={setSelectedPackageId}
+          onShowNotification={onShowNotification}
+          isReplacementMode={isReplacementMode}
+          handleAddToPlan={enhancedHandleAddToPlan}
+          getAddToPartyButtonState={getAddToPartyButtonState}
+          getSupplierInPartyDetails={getSupplierInPartyDetails}
+        />
+      ) : (
         <SupplierPackages
           supplier={supplier}
           packages={packages}
@@ -489,7 +721,8 @@ const SupplierPackagesRouter = ({
           isReplacementMode={isReplacementMode}
           selectedDate={selectedDate}
         />
-    
+      )}
+
       {/* Cake Customization Modal - only shows for cake suppliers */}
       {isCakeSupplier && (
         <CakeCustomizationModal
