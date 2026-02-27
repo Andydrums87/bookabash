@@ -153,12 +153,24 @@ class PartyBuilderBackend {
           return 10;
         };
 
-        let sortedByServings = [...supplier.packages].sort((a, b) => {
+        // Filter out 2-tier cakes from auto-builder (they have irregular sizing)
+        const singleTierPackages = supplier.packages.filter(pkg => {
+          const name = (pkg.name || '').toLowerCase();
+          const tiers = pkg.tiers;
+          // Exclude if name contains "2 tier", "two tier", or tiers field is 2
+          return !name.includes('2 tier') && !name.includes('two tier') && tiers !== '2' && tiers !== 2;
+        });
+
+        // Use filtered packages if we have any, otherwise fall back to all packages
+        const packagesToUse = singleTierPackages.length > 0 ? singleTierPackages : supplier.packages;
+
+        let sortedByServings = [...packagesToUse].sort((a, b) => {
           const aServes = parseServingsMin(a.serves || a.feeds || a.servings);
           const bServes = parseServingsMin(b.serves || b.feeds || b.servings);
           return aServes - bServes;
         });
 
+        console.log(`🎂 Filtered out 2-tier, using ${sortedByServings.length} packages`);
         console.log(`🎂 Sorted packages:`, sortedByServings.map(p => ({ name: p.name, serves: p.serves, max: parseServingsMax(p.serves || p.feeds) })));
 
         // For no-theme parties, filter by colour scheme first
