@@ -866,22 +866,22 @@ export default function PartyPlanSummary() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
           <div className="bg-[hsl(var(--primary-500))] rounded-lg p-4 md:p-8 text-white">
             <h3 className="text-xs md:text-sm font-medium text-white/80 mb-2 md:mb-3">Total Cost</h3>
-            <p className="text-2xl md:text-4xl font-bold">£{budgetData.totalSpent}</p>
+            <p className="text-2xl md:text-4xl font-bold">£{Number(budgetData.totalSpent).toFixed(2)}</p>
           </div>
 
           <div className="bg-[hsl(var(--primary-400))] rounded-lg p-4 md:p-8 text-white">
             <h3 className="text-xs md:text-sm font-medium text-white/80 mb-2 md:mb-3">Amount Paid</h3>
-            <p className="text-2xl md:text-4xl font-bold">£{budgetData.amountPaid}</p>
+            <p className="text-2xl md:text-4xl font-bold">£{Number(budgetData.amountPaid).toFixed(2)}</p>
           </div>
 
           <div className="bg-[hsl(var(--primary-300))] rounded-lg p-4 md:p-8 text-[hsl(var(--primary-900))]">
             <h3 className="text-xs md:text-sm font-medium text-[hsl(var(--primary-800))] mb-2 md:mb-3">Remaining</h3>
-            <p className="text-2xl md:text-4xl font-bold">£{budgetData.remainingToPay}</p>
+            <p className="text-2xl md:text-4xl font-bold">£{Number(budgetData.remainingToPay).toFixed(2)}</p>
           </div>
 
           <div className="bg-[hsl(var(--primary-200))] rounded-lg p-4 md:p-8 text-[hsl(var(--primary-900))]">
             <h3 className="text-xs md:text-sm font-medium text-[hsl(var(--primary-800))] mb-2 md:mb-3">Budget Left</h3>
-            <p className="text-2xl md:text-4xl font-bold">£{budgetData.remainingBudget}</p>
+            <p className="text-2xl md:text-4xl font-bold">£{Number(budgetData.remainingBudget).toFixed(2)}</p>
           </div>
         </div>
       </div>
