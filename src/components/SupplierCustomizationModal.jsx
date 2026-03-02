@@ -2730,7 +2730,7 @@ export default function SupplierCustomizationModal({
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
-                      20 min break for food
+                      Includes a break for party food
                     </li>
                   </ul>
                 </div>

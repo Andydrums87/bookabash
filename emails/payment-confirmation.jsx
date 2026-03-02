@@ -181,8 +181,9 @@ export default function PaymentConfirmation({
               <Heading as="h3" style={styles.nextStepsTitle}>What Happens Next?</Heading>
               <Text style={styles.stepItem}>✓ We personally confirm every supplier for your party</Text>
               <Text style={styles.stepItem}>✓ Full confirmation pack sent within 2 working days</Text>
-              <Text style={styles.stepItem}>✓ Suppliers will reach out to finalize details</Text>
+              <Text style={styles.stepItem}>✓ We coordinate directly with suppliers, no chasing required</Text>
               <Text style={styles.stepItem}>✓ Manage everything through your dashboard</Text>
+              <Text style={styles.stepItem}>✓ Need to tweak anything? You can edit your party anytime from your dashboard</Text>
               <Text style={styles.stepItem}>✓ Get ready for an amazing celebration!</Text>
             </Section>
 
