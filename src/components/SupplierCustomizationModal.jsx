@@ -246,15 +246,23 @@ export default function SupplierCustomizationModal({
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
 
 
-  // Helper function to round up to nearest pack size for decorations
-  const getDecorationsPackSize = (guestCount, packSizes = [8, 16, 24, 32, 40, 48]) => {
+  // Helper function to calculate number of sets needed for decorations
+  // Each set covers a fixed number of guests (default 16)
+  const getDecorationsSetsNeeded = (guestCount, guestsPerSet = 16) => {
     const count = Number(guestCount) || 10
-    // Find the smallest pack size that covers the guest count
-    for (const size of packSizes) {
-      if (size >= count) return size
-    }
-    // If guest count exceeds all pack sizes, use the largest one
-    return packSizes[packSizes.length - 1]
+    // Round up to nearest set
+    return Math.ceil(count / guestsPerSet)
+  }
+
+  // Helper function to get guests per set from package (default 16)
+  const getGuestsPerSet = (pkg) => {
+    // Check for explicit guestsPerSet in package
+    if (pkg?.guestsPerSet) return pkg.guestsPerSet
+    // Check for packSize or setSize
+    if (pkg?.packSize) return pkg.packSize
+    if (pkg?.setSize) return pkg.setSize
+    // Default to 16 guests per set
+    return 16
   }
 
   // Package details modal state
@@ -1131,11 +1139,14 @@ export default function SupplierCustomizationModal({
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId)
   const selectedFlavorObj = availableFlavors.find((f) => f.id === selectedFlavor) || availableFlavors[0]
 
-  // Decorations pack size (auto-calculated with buffer)
-  const decorationsPackSize = useMemo(() => {
-    const packSizes = selectedPackage?.packSizes || [8, 16, 24, 32, 40, 48]
-    return getDecorationsPackSize(partyBagsQuantity, packSizes)
-  }, [partyBagsQuantity, selectedPackage?.packSizes])
+  // Decorations: calculate number of sets needed and guests per set
+  const guestsPerSet = useMemo(() => {
+    return getGuestsPerSet(selectedPackage)
+  }, [selectedPackage])
+
+  const decorationsSetsNeeded = useMemo(() => {
+    return getDecorationsSetsNeeded(partyBagsQuantity, guestsPerSet)
+  }, [partyBagsQuantity, guestsPerSet])
 
   // Get party theme for decorations (used for theme-based images)
   // Check multiple possible paths for theme
@@ -1310,15 +1321,17 @@ export default function SupplierCustomizationModal({
       })
     }
 
-    // ✅ DECORATIONS: Adjust price based on pack size (rounds up to nearest pack)
+    // ✅ DECORATIONS: Adjust price based on number of sets needed
+    // Each set covers X guests (default 16), price is per set
     if (supplierTypeDetection.isDecorations) {
       const pricePerSet = selectedPackage.price
-      packagePrice = roundMoney(pricePerSet * decorationsPackSize)
-      console.log("🎨 Decorations pack-size pricing:", {
+      packagePrice = roundMoney(pricePerSet * decorationsSetsNeeded)
+      console.log("🎨 Decorations set-based pricing:", {
         originalPrice: selectedPackage.price,
         pricePerSet,
         guestCount: partyBagsQuantity,
-        packSize: decorationsPackSize,
+        guestsPerSet,
+        setsNeeded: decorationsSetsNeeded,
         newPackagePrice: packagePrice,
       })
     }
@@ -1411,7 +1424,7 @@ export default function SupplierCustomizationModal({
           }
         : null,
     }
-  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsPackSize, selectedCateringId, cateringGuestCount, selectedCupcakeOption])
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity, fulfillmentMethod, cakeFulfillmentOptions, selectedPackageIds, packages, decorationsSetsNeeded, guestsPerSet, selectedCateringId, cateringGuestCount, selectedCupcakeOption])
 
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
@@ -1811,7 +1824,7 @@ export default function SupplierCustomizationModal({
         isLeadBased: supplierTypeDetection.isLeadBased,
       }
     } else if (supplierTypeDetection.isDecorations) {
-      // ✅ DECORATIONS: Include pack size and per-set pricing (rounds up to pack size)
+      // ✅ DECORATIONS: Include sets needed and per-set pricing
       const pricePerSet = selectedPackage.price
       // Get theme-based image for the selected package
       const themeBasedImage = getDecorationsPackageImage(selectedPackage)
@@ -1829,16 +1842,16 @@ export default function SupplierCustomizationModal({
         partyTheme: partyTheme,
         // Decorations specific data
         guestCount: partyBagsQuantity,
-        packSize: decorationsPackSize,
+        guestsPerSet: guestsPerSet,
+        setsNeeded: decorationsSetsNeeded,
         pricePerSet: pricePerSet,
-        bufferCount: decorationsPackSize - partyBagsQuantity,
         // Include decorationsMetadata for pricing calculations
         decorationsMetadata: {
           guestCount: partyBagsQuantity,
-          packSize: decorationsPackSize,
+          guestsPerSet: guestsPerSet,
+          setsNeeded: decorationsSetsNeeded,
           pricePerSet: pricePerSet,
           totalPrice: calculateModalPricing.packagePrice,
-          bufferCount: decorationsPackSize - partyBagsQuantity,
           fixedItems: selectedPackage.fixedItems || [],
         },
         enhancedPricing: calculateModalPricing.pricingInfo,
@@ -2017,10 +2030,10 @@ export default function SupplierCustomizationModal({
         ...(supplierTypeDetection.isDecorations && {
           decorationsMetadata: {
             guestCount: partyBagsQuantity,
-            packSize: decorationsPackSize,
+            guestsPerSet: guestsPerSet,
+            setsNeeded: decorationsSetsNeeded,
             pricePerSet: selectedPackage.price,
             totalPrice: calculateModalPricing.packagePrice,
-            bufferCount: decorationsPackSize - partyBagsQuantity,
             fixedItems: selectedPackage.fixedItems || [],
           },
         }),
@@ -3144,109 +3157,42 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Decorations - Compact Card Layout */}
+            {/* Decorations - Simplified Single Product View */}
             {supplierTypeDetection.isDecorations && (
-              <section>
-                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                  Choose Package
-                </label>
+              <section className="space-y-5">
+                {/* What's Included - Clean checklist */}
+                {(() => {
+                  // Auto-select first package if none selected (decorations only have one effective product)
+                  const pkg = selectedPackage || packages[0]
+                  if (!pkg) return null
 
-                {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
-                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  <div
-                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
-                    style={{
-                      WebkitOverflowScrolling: 'touch'
-                    }}
-                  >
-                    {packages.map((pkg, index) => {
-                      const isSelected = selectedPackageId === pkg.id
-                      const packageImage = getDecorationsPackageImage(pkg) || pkg.image || pkg.images?.[0]
+                  const items = pkg.features?.length > 0
+                    ? pkg.features
+                    : (pkg.contents?.length > 0 ? pkg.contents : (pkg.whatsIncluded || []))
 
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
-                            isSelected
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          onClick={() => {
-                            setSelectedPackageId(pkg.id)
-                            scrollToPackageImage(pkg.id)
-                          }}
-                        >
-                          {/* Package Image */}
-                          <div className="relative w-full h-24 sm:h-28">
-                            {packageImage ? (
-                              <Image
-                                src={packageImage}
-                                alt={pkg.name}
-                                fill
-                                className="object-cover"
-                                sizes="220px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-6 h-6 text-gray-300" />
-                              </div>
-                            )}
-                            {/* Selection checkmark */}
-                            {isSelected && (
-                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
-                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                              </div>
-                            )}
-                          </div>
+                  if (items.length === 0) return null
 
-                          {/* Content */}
-                          <div className="p-3 bg-white flex flex-col h-[165px]">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                                {pkg.name}
-                              </h4>
-                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
-                                £{roundMoney(pkg.price * decorationsPackSize).toFixed(2)}
-                              </p>
+                  return (
+                    <div>
+                      <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-3">
+                        What&apos;s Included
+                      </label>
+                      <div className="space-y-2">
+                        {items.map((item, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
                             </div>
-
-                            {/* Description - fixed height area */}
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                              {pkg.description && (
-                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                  {pkg.description}
-                                </p>
-                              )}
-
-                              {/* Pack size info */}
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                {decorationsPackSize} sets
-                              </p>
-                            </div>
-
-                            {/* What's Included - opens modal - always at bottom */}
-                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="pt-2 border-t border-gray-100 mt-auto">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedPackageForModal(pkg)
-                                    setShowPackageModal(true)
-                                  }}
-                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
-                                >
-                                  <Info className="w-3.5 h-3.5" />
-                                  <span>What&apos;s included</span>
-                                </button>
-                              </div>
-                            )}
+                            <span className="text-gray-700 text-sm">{item}</span>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </section>
             )}
 
@@ -3444,151 +3390,97 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Party Bags - Cards with images */}
+            {/* Party Bags - Simplified Single Product View */}
             {supplierTypeDetection.isPartyBags && !supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isCatering && !supplierTypeDetection.isDecorations && (
-              <section>
-                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                  Choose Package
-                </label>
+              <section className="space-y-5">
+                {/* What's Included - Clean checklist */}
+                {(() => {
+                  // Auto-select first package if none selected (party bags only have one effective product)
+                  const pkg = selectedPackage || packages[0]
+                  if (!pkg) return null
 
-                {/* Horizontal scroll on all screens */}
-                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  <div
-                    className="flex gap-2.5 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
-                    style={{
-                      WebkitOverflowScrolling: 'touch'
-                    }}
-                  >
-                    {packages.map((pkg) => {
-                      const isSelected = selectedPackageId === pkg.id
-                      const packageImage = pkg.image || pkg.images?.[0]
+                  const items = pkg.features?.length > 0
+                    ? pkg.features
+                    : (pkg.contents?.length > 0 ? pkg.contents : (pkg.whatsIncluded || []))
 
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`relative flex-shrink-0 w-[175px] sm:w-[190px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
-                            isSelected
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          onClick={() => {
-                            setSelectedPackageId(pkg.id)
-                            scrollToPackageImage(pkg.id)
-                          }}
-                        >
-                          {/* Package Image */}
-                          <div className="relative w-full h-20 sm:h-22">
-                            {packageImage ? (
-                              <Image
-                                src={packageImage}
-                                alt={pkg.name}
-                                fill
-                                className="object-cover"
-                                sizes="190px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-5 h-5 text-gray-300" />
-                              </div>
-                            )}
-                            {/* Selection checkmark */}
-                            {isSelected && (
-                              <div className="absolute top-1 right-1 w-4.5 h-4.5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
-                                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-                              </div>
-                            )}
-                          </div>
+                  if (items.length === 0) return null
 
-                          {/* Content */}
-                          <div className="p-2.5 bg-white flex flex-col h-[130px]">
-                            <div className="flex items-start justify-between gap-1.5 mb-0.5">
-                              <h4 className="font-semibold text-gray-900 text-[13px] leading-tight">
-                                {pkg.name}
-                              </h4>
-                              <p className="font-bold text-primary-600 text-sm flex-shrink-0">
-                                £{roundMoney(pkg.price * partyBagsQuantity).toFixed(2)}
-                              </p>
+                  return (
+                    <div>
+                      <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-3">
+                        What&apos;s Included
+                      </label>
+                      <div className="space-y-2">
+                        {items.map((item, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
                             </div>
-
-                            {/* Description */}
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                              {pkg.description && (
-                                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
-                                  {pkg.description}
-                                </p>
-                              )}
-
-                              <p className="text-[9px] text-gray-400 mt-0.5">
-                                {partyBagsQuantity} bags
-                              </p>
-                            </div>
-
-                            {/* What's Included */}
-                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="pt-1.5 border-t border-gray-100 mt-auto">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedPackageForModal(pkg)
-                                    setShowPackageModal(true)
-                                  }}
-                                  className="flex items-center gap-1 text-[11px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
-                                >
-                                  <Info className="w-3.5 h-3.5" />
-                                  <span>What&apos;s included</span>
-                                </button>
-                              </div>
-                            )}
+                            <span className="text-gray-700 text-sm">{item}</span>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </section>
             )}
 
-            {supplierTypeDetection.isPartyBags && selectedPackage && (
+            {supplierTypeDetection.isPartyBags && (selectedPackage || packages[0]) && (
               <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                <div className="mb-4">
-                  <h4 className="font-semibold text-gray-900">Number of Party Bags</h4>
-                </div>
+                {(() => {
+                  const pkg = selectedPackage || packages[0]
+                  const pricePerBag = pkg?.price || 3
 
-                <div className="flex items-center justify-center gap-6">
-                  <button
-                    type="button"
-                    onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
-                      Number(partyBagsQuantity) <= 1
-                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
-                    }`}
-                    disabled={Number(partyBagsQuantity) <= 1}
-                  >
-                    −
-                  </button>
+                  return (
+                    <>
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-gray-900">Number of Party Bags</h4>
+                      </div>
 
-                  <div className="text-center min-w-[100px]">
-                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
-                    <div className="text-sm text-gray-500 font-medium">bags</div>
-                    <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
-                      £{roundMoney(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
-                    </div>
-                  </div>
+                      <div className="flex items-center justify-center gap-6">
+                        <button
+                          type="button"
+                          onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
+                          className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
+                            Number(partyBagsQuantity) <= 1
+                              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
+                          }`}
+                          disabled={Number(partyBagsQuantity) <= 1}
+                        >
+                          −
+                        </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
-                  >
-                    +
-                  </button>
-                </div>
+                        <div className="text-center min-w-[100px]">
+                          <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                          <div className="text-sm text-gray-500 font-medium">bags</div>
+                          <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
+                            £{roundMoney(pricePerBag * Number(partyBagsQuantity)).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            (£{pricePerBag.toFixed(2)} each)
+                          </div>
+                        </div>
 
-                <p className="text-xs text-gray-500 text-center mt-4 italic">
-                  Don't worry about exact numbers or themes yet - we'll confirm details closer to your party date.
-                </p>
+                        <button
+                          type="button"
+                          onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
+                          className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-gray-500 text-center mt-4 italic">
+                        Don&apos;t worry about exact numbers or themes yet - we&apos;ll confirm details closer to your party date.
+                      </p>
+                    </>
+                  )
+                })()}
               </section>
             )}
 
@@ -3687,46 +3579,57 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {supplierTypeDetection.isDecorations && selectedPackage && (
+            {supplierTypeDetection.isDecorations && (selectedPackage || packages[0]) && (
               <section className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                <div className="mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-1">Guest Count</h4>
-                  <p className="text-sm text-gray-500">Decoration sets come in packs of 8</p>
-                </div>
+                {(() => {
+                  const pkg = selectedPackage || packages[0]
+                  const pricePerSet = pkg?.price || 30
+                  const effectiveGuestsPerSet = getGuestsPerSet(pkg)
+                  const setsNeeded = getDecorationsSetsNeeded(partyBagsQuantity, effectiveGuestsPerSet)
 
-                <div className="flex items-center justify-center gap-6">
-                  <button
-                    type="button"
-                    onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
-                      Number(partyBagsQuantity) <= 1
-                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
-                    }`}
-                    disabled={Number(partyBagsQuantity) <= 1}
-                  >
-                    −
-                  </button>
+                  return (
+                    <>
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-gray-900 mb-1">Guest Count</h4>
+                        <p className="text-sm text-gray-500">Each set covers {effectiveGuestsPerSet} guests</p>
+                      </div>
 
-                  <div className="text-center min-w-[100px]">
-                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
-                    <div className="text-sm text-gray-500 font-medium">guests</div>
-                    <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
-                      £{roundMoney(selectedPackage.price * decorationsPackSize).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      ({decorationsPackSize} sets @ £{selectedPackage.price.toFixed(2)} each)
-                    </div>
-                  </div>
+                      <div className="flex items-center justify-center gap-6">
+                        <button
+                          type="button"
+                          onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
+                          className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
+                            Number(partyBagsQuantity) <= 1
+                              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
+                          }`}
+                          disabled={Number(partyBagsQuantity) <= 1}
+                        >
+                          −
+                        </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
-                  >
-                    +
-                  </button>
-                </div>
+                        <div className="text-center min-w-[100px]">
+                          <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                          <div className="text-sm text-gray-500 font-medium">guests</div>
+                          <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
+                            £{roundMoney(pricePerSet * setsNeeded).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            ({setsNeeded} {setsNeeded === 1 ? 'set' : 'sets'} @ £{pricePerSet.toFixed(2)} each)
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
+                          className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </>
+                  )
+                })()}
               </section>
             )}
 
