@@ -3174,22 +3174,17 @@ export default function SupplierCustomizationModal({
 
                   return (
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-3">
+                      <h4 className="text-base font-semibold text-gray-900 mb-3">
                         What&apos;s Included
-                      </label>
-                      <div className="space-y-2">
+                      </h4>
+                      <ul className="space-y-1.5 pl-1">
                         {items.map((item, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                            </div>
-                            <span className="text-gray-700 text-sm">{item}</span>
-                          </div>
+                          <li key={i} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-gray-400 mt-0.5">•</span>
+                            <span className="text-[15px]">{item}</span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )
                 })()}
@@ -3407,22 +3402,17 @@ export default function SupplierCustomizationModal({
 
                   return (
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-3">
+                      <h4 className="text-base font-semibold text-gray-900 mb-3">
                         What&apos;s Included
-                      </label>
-                      <div className="space-y-2">
+                      </h4>
+                      <ul className="space-y-1.5 pl-1">
                         {items.map((item, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                            </div>
-                            <span className="text-gray-700 text-sm">{item}</span>
-                          </div>
+                          <li key={i} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-gray-400 mt-0.5">•</span>
+                            <span className="text-[15px]">{item}</span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )
                 })()}
