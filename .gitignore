@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Database dumps and migration files (contain secrets)
+# Database dumps and migration files (contain secrets/seed data)
 production-schema.sql
 all-production-data.sql
 all-production-data-clean.sql
@@ -48,6 +48,13 @@ auth-users-export.sql
 suppliers-data.sql
 users-data.sql
 import-ready.sql
+*.sql
+
+# SQL migrations and seed data
+/migrations/
+/supabase/migrations/
+/scripts/*.sql
+seed.sql
 
 # Database setup scripts with credentials
 check-*.js
