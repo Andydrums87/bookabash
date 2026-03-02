@@ -213,7 +213,8 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     return total;
   }
 
-  // Special handling for decorations (per-set pricing with pack sizes)
+  // Special handling for decorations (per-set pricing)
+  // Each set covers X guests (default 16), calculate how many sets needed
   const isDecorations = supplier.category === 'Decorations' ||
                         supplier.category?.toLowerCase().includes('decoration') ||
                         supplier.category?.toLowerCase().includes('tableware') ||
@@ -240,19 +241,19 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
       return supplier.packageData.decorationsMetadata.totalPrice;
     }
 
-    // Calculate from packageData if available (pricePerSet × packSize)
-    if (supplier.packageData?.price && supplier.decorationsMetadata?.packSize) {
-      const total = roundMoney(supplier.packageData.price * supplier.decorationsMetadata.packSize);
-      return total;
-    }
+    // Calculate sets needed based on guest count
+    // Each set covers guestsPerSet (default 16) guests
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 30;
+    const guestsPerSet = supplier.packageData?.guestsPerSet ||
+                         supplier.decorationsMetadata?.guestsPerSet ||
+                         16; // Default 16 guests per set
+    const guestCount = supplier.decorationsMetadata?.guestCount ||
+                       supplier.packageData?.guestCount ||
+                       getGuestCount(partyDetails);
 
-    // Fall back to calculation using pack size
-    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
-    const packSize = supplier.decorationsMetadata?.packSize ||
-                    supplier.packageData?.packSize ||
-                    supplier.packageData?.quantity ||
-                    getGuestCount(partyDetails);
-    const total = roundMoney(pricePerSet * packSize);
+    // Calculate number of sets needed (round up)
+    const setsNeeded = Math.ceil(guestCount / guestsPerSet);
+    const total = roundMoney(pricePerSet * setsNeeded);
     return total;
   }
 
@@ -619,18 +620,15 @@ export const getDisplayPrice = (supplier, partyDetails = {}, addons = []) => {
     return `£${pricePerChild} per child (${quantity} children = £${pricing.finalPrice} total)`;
   }
 
-  // Special display for decorations (per-set with pack sizes)
+  // Special display for decorations (per-set pricing)
   if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
-    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
-    const packSize = supplier.decorationsMetadata?.packSize ||
-                    supplier.packageData?.packSize ||
-                    getGuestCount(partyDetails);
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 30;
+    const guestsPerSet = supplier.packageData?.guestsPerSet ||
+                         supplier.decorationsMetadata?.guestsPerSet ||
+                         16;
     const guestCount = supplier.decorationsMetadata?.guestCount || getGuestCount(partyDetails);
-    const buffer = packSize - guestCount;
-    if (buffer > 0) {
-      return `£${pricePerSet}/set × ${packSize} sets = £${pricing.finalPrice} (includes ${buffer} spare)`;
-    }
-    return `£${pricePerSet}/set × ${packSize} sets = £${pricing.finalPrice}`;
+    const setsNeeded = Math.ceil(guestCount / guestsPerSet);
+    return `${setsNeeded} ${setsNeeded === 1 ? 'set' : 'sets'} @ £${pricePerSet}/set = £${pricing.finalPrice}`;
   }
 
   return `£${pricing.finalPrice}`;
@@ -663,12 +661,14 @@ export const getPriceBreakdownText = (supplier, partyDetails = {}, addons = []) 
                     getGuestCount(partyDetails);
     parts.push(`${quantity} children × £${pricePerChild}`);
   } else if (supplier.category === 'Decorations' || supplier.category?.toLowerCase().includes('decoration') || supplier.category?.toLowerCase().includes('tableware')) {
-    // Special handling for decorations (per-set with pack sizes)
-    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
-    const packSize = supplier.decorationsMetadata?.packSize ||
-                    supplier.packageData?.packSize ||
-                    getGuestCount(partyDetails);
-    parts.push(`${packSize} sets × £${pricePerSet}`);
+    // Special handling for decorations (per-set pricing)
+    const pricePerSet = supplier.packageData?.price || supplier.originalPrice || supplier.price || supplier.priceFrom || 30;
+    const guestsPerSet = supplier.packageData?.guestsPerSet ||
+                         supplier.decorationsMetadata?.guestsPerSet ||
+                         16;
+    const guestCount = supplier.decorationsMetadata?.guestCount || getGuestCount(partyDetails);
+    const setsNeeded = Math.ceil(guestCount / guestsPerSet);
+    parts.push(`${setsNeeded} ${setsNeeded === 1 ? 'set' : 'sets'} × £${pricePerSet}`);
   } else {
     parts.push(`Base £${pricing.basePrice}`);
   }
