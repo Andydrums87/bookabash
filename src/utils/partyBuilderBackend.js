@@ -915,13 +915,13 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
             score += 50;
           }
         }
-        
+
         if (supplier?.serviceDetails?.themes && Array.isArray(supplier.serviceDetails.themes)) {
           if (supplier.serviceDetails.themes.includes(theme)) {
             score += 30;
           }
         }
-        
+
         // Name and description matching
         if (supplier?.name && typeof supplier.name === 'string') {
           const lowerName = supplier.name.toLowerCase();
@@ -930,12 +930,63 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
             score += 20;
           }
         }
-        
+
         if (supplier?.description && typeof supplier.description === 'string') {
           const lowerDescription = supplier.description.toLowerCase();
           const lowerTheme = theme?.toLowerCase() || '';
           if (lowerDescription.includes(lowerTheme)) {
             score += 10;
+          }
+        }
+
+        // THEME CONFLICT PENALTIES for entertainment suppliers
+        // Penalize suppliers with conflicting character themes to avoid mismatches
+        // (e.g., don't pick Frozen entertainer for Spiderman party)
+        const isEntertainment = supplier?.category === 'Entertainment' ||
+                                supplier?.serviceType === 'entertainer';
+
+        if (isEntertainment && supplier?.themes && Array.isArray(supplier.themes)) {
+          // Define theme conflict groups - themes within the same group are compatible,
+          // but themes from different groups conflict with each other
+          const themeGroups = {
+            superhero: ['spiderman', 'superhero', 'batman', 'avengers', 'marvel', 'dc'],
+            princess: ['princess', 'frozen', 'elsa', 'disney-princess', 'fairy'],
+            dinosaur: ['dinosaur', 'jurassic', 'prehistoric'],
+            unicorn: ['unicorn', 'rainbow', 'magical'],
+            pirate: ['pirate', 'treasure'],
+            space: ['space', 'astronaut', 'galaxy'],
+            safari: ['safari', 'jungle', 'animal', 'zoo']
+          };
+
+          // Find which group the requested theme belongs to
+          let requestedGroup = null;
+          for (const [group, themes] of Object.entries(themeGroups)) {
+            if (themes.includes(theme)) {
+              requestedGroup = group;
+              break;
+            }
+          }
+
+          // If we found the requested theme's group, check for conflicts
+          if (requestedGroup) {
+            const requestedThemes = themeGroups[requestedGroup];
+            const hasMatchingTheme = supplier.themes.some(t => requestedThemes.includes(t));
+
+            // Check if supplier has themes from a DIFFERENT group
+            let hasConflictingTheme = false;
+            for (const [group, themes] of Object.entries(themeGroups)) {
+              if (group !== requestedGroup) {
+                if (supplier.themes.some(t => themes.includes(t))) {
+                  hasConflictingTheme = true;
+                  break;
+                }
+              }
+            }
+
+            // Penalize if they have conflicting themes but not the matching theme
+            if (hasConflictingTheme && !hasMatchingTheme) {
+              score -= 40; // Strong penalty for wrong character theme
+            }
           }
         }
       }

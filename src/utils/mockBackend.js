@@ -929,10 +929,13 @@ export const suppliersAPI = {
   // Theme filtering functions
   getEntertainmentByTheme: async (theme) => {
     await new Promise(resolve => setTimeout(resolve, 300))
-    
+
     try {
       const allSuppliers = await getAllSuppliers()
-      
+
+      console.log(`🎭 [getEntertainmentByTheme] Searching for theme: "${theme}"`)
+      console.log(`🎭 [getEntertainmentByTheme] Total suppliers: ${allSuppliers.length}`)
+
       const entertainmentSuppliers = allSuppliers.filter(supplier => {
         const isEntertainment = supplier.category === 'Entertainment' || 
                                supplier.serviceType === 'entertainer' ||
@@ -985,9 +988,15 @@ export const suppliersAPI = {
             supplier.themes?.includes('pokemon')
           ));
 
+        if (matchesTheme) {
+          console.log(`🎭 [getEntertainmentByTheme] ✅ MATCHED: "${supplier.name}" with themes:`, supplier.themes)
+        }
         return matchesTheme;
       });
-      
+
+      console.log(`🎭 [getEntertainmentByTheme] Found ${entertainmentSuppliers.length} matching entertainment suppliers for theme "${theme}"`)
+      entertainmentSuppliers.forEach(s => console.log(`   - ${s.name} (themes: ${JSON.stringify(s.themes)})`))
+
       return entertainmentSuppliers;
       
     } catch (error) {
