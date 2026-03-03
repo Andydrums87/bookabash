@@ -169,7 +169,7 @@ const SmartStickyBottomBar = ({
                 <span className="text-gray-300">|</span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-green-500" />
-                  Personally confirmed
+                  Confirmed within 2 working days
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-green-500" />

@@ -1130,7 +1130,7 @@ export default function MyPartyTabContent({
               )}
             </button>
             <p className="text-xs text-center text-gray-500 mt-3">
-              ✓ Personally confirmed · ✓ 100% money-back · ✓ Add extras anytime
+              ✓ Confirmed within 2 working days · ✓ 100% money-back · ✓ Add extras anytime
             </p>
           </div>
           )}
