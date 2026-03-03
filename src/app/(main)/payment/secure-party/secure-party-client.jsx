@@ -480,18 +480,18 @@ function PaymentForm({
             <span>Processing...</span>
           </div>
         ) : (
-          <span>Pay Now</span>
+          <span>Secure My Party</span>
         )}
       </button>
 
-      {/* Trust indicators - subtle */}
-      <div className="flex items-center justify-center gap-4 pt-4 text-xs text-gray-400">
-        <span className="flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />
+      {/* Trust indicators */}
+      <div className="flex items-center justify-center gap-4 pt-4 text-sm text-gray-600">
+        <span className="flex items-center gap-1.5">
+          <CheckCircle className="w-4 h-4 text-green-500" />
           Verified suppliers
         </span>
-        <span className="flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />
+        <span className="flex items-center gap-1.5">
+          <CheckCircle className="w-4 h-4 text-green-500" />
           Free cancellation
         </span>
       </div>
@@ -1059,7 +1059,7 @@ export default function PaymentPageContent() {
         <div className="max-w-md ml-auto px-6 lg:px-12 py-8 lg:py-16">
           {/* Party Name & Total */}
           <div className="mb-8">
-            <p className="text-sm text-gray-500 mb-1">{partyDetails.childName}'s {partyDetails.theme} Party</p>
+            <p className="text-sm text-gray-500 mb-1">{partyDetails.childName}'s {partyDetails.theme?.charAt(0).toUpperCase() + partyDetails.theme?.slice(1)} party</p>
             <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</p>
           </div>
 

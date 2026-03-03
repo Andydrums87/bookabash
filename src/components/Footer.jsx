@@ -213,7 +213,7 @@ const Footer = () => {
                   </svg>
                 </a>
               </div>
-              <p className="text-gray-400">© 2025 PartySnap. All rights reserved.</p>
+              <p className="text-gray-400">© 2026 PartySnap. All rights reserved.</p>
             </div>
           </div>
         </div>

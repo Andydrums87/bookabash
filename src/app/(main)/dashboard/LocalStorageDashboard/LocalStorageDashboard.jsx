@@ -2484,7 +2484,7 @@ const handleChildPhotoUpload = async (file) => {
           onClick={() => setShowDesktopCompleteCTA(false)}
         >
           <div
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -2506,7 +2506,7 @@ const handleChildPhotoUpload = async (file) => {
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-300px)] p-6 pb-4">
+            <div className="overflow-y-auto max-h-[calc(95vh-340px)] p-6 pb-4">
               {/* Party Info - Simple List */}
               <div className="space-y-2 text-sm text-gray-700 mb-6">
                 {partyDetails?.childName && (
@@ -2550,7 +2550,7 @@ const handleChildPhotoUpload = async (file) => {
               {/* Suppliers List */}
               {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
                 <div className="border-t border-gray-200 pt-4 mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Your Suppliers</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Your Plan</h4>
                   <div className="space-y-2 text-sm text-gray-700">
                     {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => {
                       // Use unified pricing for accurate display
@@ -2599,7 +2599,7 @@ const handleChildPhotoUpload = async (file) => {
             </div>
 
             {/* Footer with Total and CTA */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
+            <div className="border-t border-gray-200 px-6 pt-6 pb-8 bg-gray-50">
               {/* Total */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
                 <span className="text-lg font-bold text-gray-900">Total</span>
@@ -2632,11 +2632,26 @@ const handleChildPhotoUpload = async (file) => {
                   </>
                 )}
               </button>
-              {/* Trust card */}
-              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-                <p className="text-xs text-gray-500 text-center">
-                  Confirmed within 2 working days · Full refund if unavailable
-                </p>
+              {/* Trust badges */}
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confirmed in 2 days
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Money-back guarantee
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Fully vetted suppliers
+                </span>
               </div>
             </div>
           </div>

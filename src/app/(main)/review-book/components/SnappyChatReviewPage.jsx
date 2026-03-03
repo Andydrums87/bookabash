@@ -109,7 +109,10 @@ export default function SnappyChatReviewPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupFieldErrors, setSignupFieldErrors] = useState({});
 
-  // Supplier messages state - keyed by supplier ID for exact matching in enquiries
+  // Special requests - single text field for all party requirements
+  const [specialRequests, setSpecialRequests] = useState("");
+
+  // Legacy supplier messages state - kept for backwards compatibility
   const [supplierMessages, setSupplierMessages] = useState({});
   const [selectedMessageSupplier, setSelectedMessageSupplier] = useState("");
 
@@ -177,8 +180,8 @@ export default function SnappyChatReviewPage() {
     },
     {
       id: 'supplier-messages',
-      title: "Messages for Suppliers",
-      description: "Add personalised notes to your suppliers (Optional)",
+      title: "Special Requests",
+      description: "Let us know any important details for your party (Optional)",
       showSupplierMessages: true,
       optional: true
     },
@@ -631,18 +634,7 @@ export default function SnappyChatReviewPage() {
         parentPhone: formData.phoneNumber,
         theme: partyDetailsLS.theme || "party",
         budget: parseInt(partyDetailsLS.budget) || 600,
-        specialRequirements: formData.additionalMessage || "",
-        // Supplier-specific messages keyed by supplier ID for exact matching in enquiries
-        supplierMessages: Object.fromEntries(
-          Object.entries(supplierMessages)
-            .filter(([_, data]) => data?.message?.trim())
-            .map(([supplierId, data]) => [supplierId, {
-              supplierId: data.supplierId,
-              supplierName: data.supplierName,
-              supplierType: data.supplierType,
-              message: data.message.trim()
-            }])
-        ),
+        specialRequirements: specialRequests.trim() || formData.additionalMessage || "",
         dietaryRequirements: formData.dietaryRequirements,
         dietaryRequirementsArray: dietaryRequirementsArray,
         hasDietaryRequirements: dietaryRequirementsArray.length > 0,
@@ -1146,15 +1138,15 @@ export default function SnappyChatReviewPage() {
     }
   };
   
-  // Check if any supplier messages have been added
-  const hasSupplierMessages = Object.values(supplierMessages).some(msg => msg?.message?.trim());
+  // Check if special requests have been added
+  const hasSpecialRequests = specialRequests.trim().length > 0;
 
   const getButtonText = (stepData) => {
     if (stepData.id === 'forgotten') {
       return hasAddedOnCurrentStep ? 'Continue' : 'Skip this';
     }
     if (stepData.id === 'supplier-messages') {
-      return hasSupplierMessages ? 'Continue' : 'Skip this';
+      return hasSpecialRequests ? 'Continue' : 'No special requests';
     }
     if (stepData.optional) return 'Skip this';
     return 'Continue';
@@ -1164,7 +1156,7 @@ export default function SnappyChatReviewPage() {
     if (stepData.id === 'forgotten' && hasAddedOnCurrentStep) {
       return <ArrowRight className="w-4 h-4 ml-2" />;
     }
-    if (stepData.id === 'supplier-messages' && hasSupplierMessages) {
+    if (stepData.id === 'supplier-messages' && hasSpecialRequests) {
       return <ArrowRight className="w-4 h-4 ml-2" />;
     }
     if (!stepData.optional) return <ArrowRight className="w-4 h-4 ml-2" />;
@@ -1390,98 +1382,29 @@ export default function SnappyChatReviewPage() {
                       </div>
                     )}
 
-                    {/* Supplier Messages */}
+                    {/* Special Requests - Single text area */}
                     {currentStepData.showSupplierMessages && (
-                      <div className="space-y-3">
-                        <p className="text-xs text-gray-500 mb-3">
-                          Tap to add a message (optional)
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Allergies, special requests, or important details about your child - we&apos;ll make sure the right people know.
                         </p>
 
-                        {/* Simple list of all suppliers */}
-                        {selectedSuppliers.length > 0 ? (
-                          <div className="space-y-2">
-                            {selectedSuppliers.map((supplier) => {
-                              const supplierId = supplier.id || supplier.supplierId;
-                              const supplierName = supplier.name || supplier.supplierName || 'Unknown Supplier';
-                              const supplierType = supplier.type || supplier.supplierType || supplier.category || 'supplier';
-                              const hasMessage = supplierMessages[supplierId]?.message?.trim();
-                              const isExpanded = selectedMessageSupplier === supplierId;
+                        <Textarea
+                          placeholder="e.g. My child has a nut allergy, please write 'Happy Birthday Theo' on the cake, we need early access to set up decorations..."
+                          value={specialRequests}
+                          onChange={(e) => setSpecialRequests(e.target.value)}
+                          className="min-h-[140px] text-sm placeholder:text-gray-400 placeholder:text-sm border-gray-200 focus:border-primary-300 resize-none rounded-xl bg-white"
+                        />
 
-                              return (
-                                <div
-                                  key={supplierId}
-                                  className={`border rounded-lg overflow-hidden transition-all duration-200 ${
-                                    isExpanded
-                                      ? 'border-gray-300 bg-white shadow-sm'
-                                      : hasMessage
-                                        ? 'border-green-200 bg-green-50/50'
-                                        : 'border-gray-200 bg-white'
-                                  }`}
-                                >
-                                  {/* Supplier header - always visible */}
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedMessageSupplier(isExpanded ? '' : supplierId)}
-                                    className="w-full p-3 flex items-center justify-between text-left"
-                                  >
-                                    <span className="font-medium text-gray-900 text-sm">{supplierName}</span>
-                                    <div className="flex items-center gap-2">
-                                      {hasMessage && !isExpanded && (
-                                        <CheckCircle className="w-4 h-4 text-green-500" />
-                                      )}
-                                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                      </svg>
-                                    </div>
-                                  </button>
-
-                                  {/* Expanded message input */}
-                                  {isExpanded && (
-                                    <div className="px-3 pb-3">
-                                      <Textarea
-                                        placeholder="Add a note for this supplier..."
-                                        value={supplierMessages[supplierId]?.message || ''}
-                                        onChange={(e) => {
-                                          setSupplierMessages(prev => ({
-                                            ...prev,
-                                            [supplierId]: {
-                                              supplierId: supplierId,
-                                              supplierName: supplierName,
-                                              supplierType: supplierType,
-                                              message: e.target.value
-                                            }
-                                          }));
-                                        }}
-                                        className="min-h-[100px] text-sm placeholder:text-gray-400 placeholder:text-sm border-gray-200 focus:border-gray-300 resize-none rounded-lg bg-gray-50"
-                                        autoFocus
-                                      />
-                                      {hasMessage && (
-                                        <div className="flex items-center justify-end mt-2">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setSupplierMessages(prev => {
-                                                const updated = { ...prev };
-                                                delete updated[supplierId];
-                                                return updated;
-                                              });
-                                            }}
-                                            className="text-xs text-gray-400 hover:text-red-500"
-                                          >
-                                            Clear
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6 text-gray-500">
-                            <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No suppliers selected yet. Add suppliers to your party first.</p>
+                        {specialRequests.trim() && (
+                          <div className="flex items-center justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setSpecialRequests("")}
+                              className="text-xs text-gray-400 hover:text-red-500"
+                            >
+                              Clear
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1859,6 +1782,15 @@ export default function SnappyChatReviewPage() {
                     )}
                   </div>
 
+                  {/* Trust Message - Final Step Only */}
+                  {currentStep === chatSteps.length - 1 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
+                      <p className="text-xs text-gray-500 text-center leading-relaxed">
+                        We&apos;ll confirm every detail and send your personalised party pack within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Navigation Buttons */}
                   <div className={`pt-4 mt-4 border-t border-gray-200 ${currentStepData.showSignupForm ? "max-w-md mx-auto" : ""}`}>
                     <div className="flex justify-between items-center gap-3">
@@ -1892,7 +1824,7 @@ export default function SnappyChatReviewPage() {
                             {currentStepData.showSignupForm
                               ? (authMode === "signin" ? 'Sign In & Continue' : 'Sign Up & Continue')
                               : currentStep === chatSteps.length - 1
-                                ? 'Proceed to Payment'
+                                ? 'Secure My Party'
                                 : getButtonText(currentStepData)}
                             {currentStep === chatSteps.length - 1 || currentStepData.showSignupForm ? null : getButtonIcon(currentStepData)}
                           </>

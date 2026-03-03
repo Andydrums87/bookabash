@@ -979,7 +979,7 @@ export default function MyPartyTabContent({
             {/* Suppliers List */}
             {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
               <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-3 text-sm">Selected Suppliers</h4>
+                <h4 className="font-semibold text-gray-900 mb-3 text-sm">Your Plan</h4>
                 <div className="space-y-2">
                   {Object.entries(suppliers)
                     .filter(([type, supplier]) =>
@@ -1131,8 +1131,8 @@ export default function MyPartyTabContent({
             </button>
             {/* Trust card */}
             <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-              <p className="text-xs text-gray-500 text-center">
-                Confirmed within 2 working days · Full refund if unavailable
+              <p className="text-xs text-gray-500 text-center leading-relaxed">
+                We&apos;ll confirm every detail within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
               </p>
             </div>
           </div>
