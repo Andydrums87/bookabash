@@ -41,10 +41,67 @@ const nunito = Nunito({
 
 export const metadata = {
   metadataBase: new URL(getBaseUrl()),
-  title: "PartySnap",
-  description: "PartySnap - Your Ultimate Children's Party Planning Platform",
+  title: {
+    default: "PartySnap | Kids' Party Planning in St Albans",
+    template: "%s | PartySnap",
+  },
+  description:
+    "Stress-free kids' party planning in St Albans. Choose your date, theme and budget — we'll organise the venue and suppliers. Confirmation within 2 working days.",
+  keywords: [
+    "kids party planning St Albans",
+    "children's party St Albans",
+    "kids party venues St Albans",
+    "hire a hall St Albans",
+    "kids party entertainment St Albans",
+    "bouncy castle hire St Albans",
+    "face painter St Albans",
+    "kids birthday party St Albans",
+    "party organisers St Albans",
+  ],
+  authors: [{ name: "PartySnap" }],
+  creator: "PartySnap",
+  publisher: "PartySnap",
   icons: {
     icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_GB",
+    url: "https://partysnap.co.uk",
+    siteName: "PartySnap",
+    title: "PartySnap | Kids' Party Planning in St Albans",
+    description:
+      "Stress-free kids' party planning in St Albans. Choose your date, theme and budget — we'll organise the venue and suppliers. Confirmation within 2 working days.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PartySnap - Kids' Party Planning in St Albans",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PartySnap | Kids' Party Planning in St Albans",
+    description:
+      "Stress-free kids' party planning in St Albans. Choose your date, theme and budget — we'll organise the venue and suppliers.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://partysnap.co.uk",
   },
 };
 
