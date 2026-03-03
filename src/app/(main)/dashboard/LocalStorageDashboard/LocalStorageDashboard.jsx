@@ -2625,7 +2625,7 @@ const handleChildPhotoUpload = async (file) => {
                   </>
                 ) : (
                   <>
-                    Complete Booking
+                    Secure My Party
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -2633,7 +2633,7 @@ const handleChildPhotoUpload = async (file) => {
                 )}
               </button>
               <p className="text-sm text-gray-600 text-center mt-3">
-                ✓ Personally confirmed · ✓ 100% money-back · ✓ Add extras anytime
+                We&apos;ll confirm every detail and send your personalised party pack within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
               </p>
             </div>
           </div>

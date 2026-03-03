@@ -1130,7 +1130,7 @@ export default function MyPartyTabContent({
               )}
             </button>
             <p className="text-xs text-center text-gray-500 mt-3">
-              ✓ Confirmed within 2 working days · ✓ 100% money-back · ✓ Add extras anytime
+              We&apos;ll confirm every detail and send your personalised party pack within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
             </p>
           </div>
           )}
