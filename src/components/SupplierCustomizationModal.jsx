@@ -2297,7 +2297,7 @@ export default function SupplierCustomizationModal({
             <div className="lg:hidden">
               {/* Full image - scrolls naturally with content */}
               <div
-                className="relative w-full h-56 bg-gray-200 overflow-hidden touch-pan-y"
+                className="relative w-full h-72 bg-gray-200 overflow-hidden touch-pan-y"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(supplierImages.length)}
