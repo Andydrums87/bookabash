@@ -1129,11 +1129,22 @@ export default function MyPartyTabContent({
                 'Secure My Party'
               )}
             </button>
-            {/* Trust card */}
-            <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-              <p className="text-xs text-gray-500 text-center leading-relaxed">
-                We&apos;ll confirm every detail within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
-              </p>
+            {/* Trust badges */}
+            <div className="mt-4 flex flex-col items-center gap-1.5">
+              <div className="flex gap-4">
+                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  Confirmed in 2 days
+                </span>
+                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  Money-back guarantee
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
+                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                Fully vetted suppliers
+              </span>
             </div>
           </div>
           )}
