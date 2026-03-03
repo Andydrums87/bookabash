@@ -367,14 +367,14 @@ function PartyEnquiryGroup({ partyId, partyEnquiries, onAccept, onDecline }) {
                           <p className="text-sm font-semibold text-primary-600 mt-1">£{enquiry.quoted_price}</p>
 
                           {/* Customer Message to Supplier */}
-                          {party?.supplier_messages?.[enquiry.supplier_id]?.message && (
+                          {(enquiry.special_requests || party?.special_requirements || party?.supplier_messages?.[enquiry.supplier_id]?.message) && (
                             <div className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
                               <div className="flex items-start gap-2">
                                 <MessageSquare className="w-3.5 h-3.5 text-primary-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-gray-700 mb-0.5">Message from customer</p>
                                   <p className="text-xs text-gray-600 whitespace-pre-wrap">
-                                    {party.supplier_messages[enquiry.supplier_id].message}
+                                    {enquiry.special_requests || party?.special_requirements || party?.supplier_messages?.[enquiry.supplier_id]?.message}
                                   </p>
                                 </div>
                               </div>
@@ -733,14 +733,14 @@ function PartyBookingGroup({ partyId, partyBookings, onView, isCakeOrder, handle
                           <p className="text-sm font-semibold text-green-600 mt-1">£{booking.quoted_price}</p>
 
                           {/* Customer Message to Supplier */}
-                          {party?.supplier_messages?.[booking.supplier_id]?.message && (
+                          {(booking.special_requests || party?.special_requirements || party?.supplier_messages?.[booking.supplier_id]?.message) && (
                             <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
                               <div className="flex items-start gap-2">
                                 <MessageSquare className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-gray-700 mb-0.5">Message from customer</p>
                                   <p className="text-xs text-gray-600 whitespace-pre-wrap">
-                                    {party.supplier_messages[booking.supplier_id].message}
+                                    {booking.special_requests || party?.special_requirements || party?.supplier_messages?.[booking.supplier_id]?.message}
                                   </p>
                                 </div>
                               </div>
