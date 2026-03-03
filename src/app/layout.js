@@ -75,7 +75,7 @@ export const metadata = {
       "Stress-free kids' party planning in St Albans. Choose your date, theme and budget — we'll organise the venue and suppliers. Confirmation within 2 working days.",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://res.cloudinary.com/dghzq6xtd/image/upload/c_fit,w_1200,h_630,b_white/v1752578794/Transparent_With_Text_1_nfb1pi.png",
         width: 1200,
         height: 630,
         alt: "PartySnap - Kids' Party Planning in St Albans",
@@ -87,7 +87,7 @@ export const metadata = {
     title: "PartySnap | Kids' Party Planning in St Albans",
     description:
       "Stress-free kids' party planning in St Albans. Choose your date, theme and budget — we'll organise the venue and suppliers.",
-    images: ["/og-image.png"],
+    images: ["https://res.cloudinary.com/dghzq6xtd/image/upload/c_fit,w_1200,h_630,b_white/v1752578794/Transparent_With_Text_1_nfb1pi.png"],
   },
   robots: {
     index: true,

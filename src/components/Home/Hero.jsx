@@ -41,14 +41,19 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
           <div className="grid lg:grid-cols-2 gap-8 items-center mb-8">
             {/* Hero Text - Left Side */}
             <div className="space-y-8">
-              <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
-                Plan your child's <span className="text-primary-500 relative">
-                  perfect party
-                </span> in minutes.
-              </h1>
+              <div>
+                <p className="text-sm font-semibold text-primary-500 uppercase tracking-wide mb-3">
+                  St Albans' stress-free kids' party planner
+                </p>
+                <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
+                  Plan your child's <span className="text-primary-500 relative">
+                    perfect party
+                  </span> in minutes.
+                </h1>
+              </div>
 
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
-                We handle the suppliers. You enjoy the day.
+                We handle the venue and suppliers. You enjoy the day.
               </h2>
             </div>
 
@@ -336,6 +341,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
             <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
+                <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2">
+                  St Albans' stress-free kids' party planner
+                </p>
                 <h1 className="text-4xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
                   <span className="block">Plan your child's</span>
                   <span className="text-primary-500 block">perfect party</span>
