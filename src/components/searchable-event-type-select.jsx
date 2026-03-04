@@ -256,6 +256,17 @@ export default function SearchableEventTypeSelect({
     setSelectedValue(recommendedTheme)
     onValueChange?.(recommendedTheme)
     setShowThemePickerModal(false)
+
+    // Save the age to localStorage so welcome dashboard can pre-fill it
+    try {
+      const existingDetails = JSON.parse(localStorage.getItem('party_details') || '{}')
+      localStorage.setItem('party_details', JSON.stringify({
+        ...existingDetails,
+        childAge: pickerAge
+      }))
+    } catch (e) {
+      console.error('Error saving age to localStorage:', e)
+    }
   }
 
   // Go back in the picker flow

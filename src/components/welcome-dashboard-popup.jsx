@@ -11,21 +11,16 @@ import { User, Cake } from "lucide-react"
 export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, partyTheme }) {
   const [firstName, setFirstName] = useState("")
   const [childAge, setChildAge] = useState("")
-  const [gender, setGender] = useState("")
   const [existingChildData, setExistingChildData] = useState(null)
   const [showErrors, setShowErrors] = useState(false)
 
-  // Show gender field only when theme is "no-theme" or null/undefined (no theme selected)
-  const isNoTheme = !partyTheme || partyTheme === "no-theme"
-
-  // Check if all required fields are filled (gender only required if no theme)
-  const isFormValid = firstName.trim() && childAge && (!isNoTheme || gender)
+  // Check if all required fields are filled
+  const isFormValid = firstName.trim() && childAge
 
   // Individual field validation
   const errors = {
     firstName: !firstName.trim(),
-    childAge: !childAge,
-    gender: isNoTheme && !gender
+    childAge: !childAge
   }
 
   // Check for existing party details and auto-submit if available
@@ -35,35 +30,35 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
         const partyDetails = localStorage.getItem('party_details')
         if (partyDetails) {
           const parsed = JSON.parse(partyDetails)
-          
-  
-          
+
           // If we have child data from à la carte, use it and auto-submit
           if (parsed.source === 'a_la_carte' && parsed.firstName && parsed.childAge) {
-
-
             const childData = {
               childName: parsed.childName || parsed.firstName,
               childAge: parsed.childAge,
               firstName: parsed.firstName
             }
-            
+
             // Auto-submit and close immediately
             if (onNameSubmit) {
               onNameSubmit(childData)
             }
             onClose() // Close popup immediately
-            
+
             return // Early return
           }
+
+          // Pre-fill age if it exists (e.g., from "Choose for me" theme picker)
+          if (parsed.childAge && !childAge) {
+            setChildAge(String(parsed.childAge))
+          }
         }
-        
 
       } catch (error) {
         console.log('Error checking existing data:', error)
       }
     }
-    
+
     if (isOpen) {
       checkExistingData()
     }
@@ -82,11 +77,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
       firstName: firstName.trim()
     }
 
-    // Include gender only if it was collected (no-theme parties)
-    if (isNoTheme && gender) {
-      submitData.gender = gender
-    }
-
     onNameSubmit?.(submitData)
     // Close immediately instead of going to step 2
     handleClose()
@@ -99,7 +89,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
     }
     setFirstName("")
     setChildAge("")
-    setGender("")
     setExistingChildData(null)
     onClose()
   }
@@ -207,59 +196,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
                 <p className="text-xs text-red-500 mt-1">Please select age</p>
               )}
             </div>
-
-            {/* Gender - Only shown for no-theme parties */}
-            {isNoTheme && (
-              <div className="space-y-2">
-                <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
-                  Gender <span className="text-gray-400 text-xs">(helps us pick colours)</span>
-                </Label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={gender === "boy"}
-                      onChange={() => {
-                        setGender("boy")
-                        if (showErrors) setShowErrors(false)
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Boy</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={gender === "girl"}
-                      onChange={() => {
-                        setGender("girl")
-                        if (showErrors) setShowErrors(false)
-                      }}
-                      className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
-                    />
-                    <span className="text-sm text-gray-700">Girl</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={gender === "neutral"}
-                      onChange={() => {
-                        setGender("neutral")
-                        if (showErrors) setShowErrors(false)
-                      }}
-                      className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                    />
-                    <span className="text-sm text-gray-700">Surprise</span>
-                  </label>
-                </div>
-                {showErrors && errors.gender && (
-                  <p className="text-xs text-red-500 mt-1">Please select an option</p>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
