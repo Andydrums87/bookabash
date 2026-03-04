@@ -3278,22 +3278,18 @@ export default function SupplierCustomizationModal({
                         <h4 className="font-semibold text-gray-900">Number of Party Bags</h4>
                       </div>
 
-                      <div className="flex items-center justify-center gap-6">
+                      <div className="flex items-center justify-center gap-4">
                         <button
                           type="button"
                           onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                          className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
-                            Number(partyBagsQuantity) <= 1
-                              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
-                          }`}
                           disabled={Number(partyBagsQuantity) <= 1}
+                          className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                         >
                           −
                         </button>
 
-                        <div className="text-center min-w-[100px]">
-                          <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                        <div className="text-center min-w-[80px]">
+                          <div className="text-5xl font-bold text-gray-900">{partyBagsQuantity}</div>
                           <div className="text-sm text-gray-500 font-medium">bags</div>
                           <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
                             £{roundMoney(pricePerBag * Number(partyBagsQuantity)).toFixed(2)}
@@ -3306,7 +3302,7 @@ export default function SupplierCustomizationModal({
                         <button
                           type="button"
                           onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                          className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
+                          className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                         >
                           +
                         </button>
@@ -3383,22 +3379,18 @@ export default function SupplierCustomizationModal({
                   <h4 className="font-semibold text-gray-900">Number of Lunchboxes</h4>
                 </div>
 
-                <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={() => setPartyBagsQuantity(Math.max(supplier?.minimumOrder || 10, Number(partyBagsQuantity) - 1))}
-                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
-                      Number(partyBagsQuantity) <= (supplier?.minimumOrder || 10)
-                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
-                    }`}
                     disabled={Number(partyBagsQuantity) <= (supplier?.minimumOrder || 10)}
+                    className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                   >
                     −
                   </button>
 
-                  <div className="text-center min-w-[100px]">
-                    <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                  <div className="text-center min-w-[80px]">
+                    <div className="text-5xl font-bold text-gray-900">{partyBagsQuantity}</div>
                     <div className="text-sm text-gray-500 font-medium">lunchboxes</div>
                     <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
                       £{roundMoney(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
@@ -3408,7 +3400,7 @@ export default function SupplierCustomizationModal({
                   <button
                     type="button"
                     onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
+                    className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                   >
                     +
                   </button>
@@ -3431,22 +3423,18 @@ export default function SupplierCustomizationModal({
                         <p className="text-sm text-gray-500">Each set covers {effectiveGuestsPerSet} guests</p>
                       </div>
 
-                      <div className="flex items-center justify-center gap-6">
+                      <div className="flex items-center justify-center gap-4">
                         <button
                           type="button"
                           onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                          className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium transition-all duration-200 ${
-                            Number(partyBagsQuantity) <= 1
-                              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm'
-                          }`}
                           disabled={Number(partyBagsQuantity) <= 1}
+                          className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                         >
                           −
                         </button>
 
-                        <div className="text-center min-w-[100px]">
-                          <div className="text-4xl font-bold text-gray-900">{partyBagsQuantity}</div>
+                        <div className="text-center min-w-[80px]">
+                          <div className="text-5xl font-bold text-gray-900">{partyBagsQuantity}</div>
                           <div className="text-sm text-gray-500 font-medium">guests</div>
                           <div className="text-lg font-bold text-[hsl(var(--primary-500))] mt-1">
                             £{roundMoney(pricePerSet * setsNeeded).toFixed(2)}
@@ -3459,7 +3447,7 @@ export default function SupplierCustomizationModal({
                         <button
                           type="button"
                           onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                          className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-medium bg-white border-2 border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-500))] active:scale-95 shadow-sm transition-all duration-200"
+                          className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
                         >
                           +
                         </button>

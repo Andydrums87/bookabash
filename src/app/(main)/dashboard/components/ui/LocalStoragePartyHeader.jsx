@@ -310,13 +310,22 @@ const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
 const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
   const [selectedDate, setSelectedDate] = useState(currentDate || new Date())
 
+  // Calculate minimum date (3 weeks from today)
+  const getMinDate = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const minDate = new Date(today)
+    minDate.setDate(minDate.getDate() + 21) // 3-week lead time
+    return minDate
+  }
+
   const handleSave = () => {
     onSave({ date: selectedDate })
     onClose()
   }
 
   return (
-    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="md" theme="fun">
       <ModalHeader
         title="Change Party Date"
         subtitle="Pick the perfect date for your celebration"
@@ -326,13 +335,18 @@ const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
 
       <ModalContent>
         <div className="space-y-4">
-          <CalendarPicker
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            className="rounded-md border w-full"
-            disabled={(date) => date < new Date()}
-          />
+          <div className="flex justify-center">
+            <CalendarPicker
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border"
+              disabled={(date) => date < getMinDate()}
+            />
+          </div>
+          <p className="text-xs text-gray-500 text-center">
+            Minimum 3 weeks advance booking required
+          </p>
         </div>
       </ModalContent>
 
@@ -446,6 +460,14 @@ const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onS
 const AgeEditModal = ({ isOpen, onClose, currentAge, onSave }) => {
   const [age, setAge] = useState(currentAge || 6)
 
+  const increment = () => {
+    setAge(prev => Math.min(prev + 1, 12))
+  }
+
+  const decrement = () => {
+    setAge(prev => Math.max(prev - 1, 2))
+  }
+
   const handleSave = () => {
     onSave({ childAge: age })
     onClose()
@@ -463,19 +485,29 @@ const AgeEditModal = ({ isOpen, onClose, currentAge, onSave }) => {
       <ModalContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Age</label>
-            <Select value={age.toString()} onValueChange={(value) => setAge(Number.parseInt(value))}>
-              <SelectTrigger className="w-full pl-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((ageOption) => (
-                  <SelectItem key={ageOption} value={ageOption.toString()}>
-                    {ageOption} years old
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium text-gray-700 text-center block">Age</label>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={decrement}
+                disabled={age <= 2}
+                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
+              >
+                −
+              </button>
+              <div className="w-20 text-center">
+                <span className="text-3xl font-bold text-gray-900">{age}</span>
+              </div>
+              <button
+                type="button"
+                onClick={increment}
+                disabled={age >= 12}
+                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center">years old</p>
           </div>
         </div>
       </ModalContent>
@@ -496,19 +528,18 @@ const AgeEditModal = ({ isOpen, onClose, currentAge, onSave }) => {
 
 // Guests Edit Modal
 const GuestsEditModal = ({ isOpen, onClose, currentGuestCount, onSave }) => {
-  const [guestCount, setGuestCount] = useState(currentGuestCount || "")
+  const [guestCount, setGuestCount] = useState(parseInt(currentGuestCount) || 10)
 
-  const guestOptions = [
-    { value: "5", label: "5 guests" },
-    { value: "10", label: "10 guests" },
-    { value: "15", label: "15 guests" },
-    { value: "20", label: "20 guests" },
-    { value: "25", label: "25 guests" },
-    { value: "30", label: "30+ guests" },
-  ]
+  const increment = () => {
+    setGuestCount(prev => Math.min(prev + 1, 100))
+  }
+
+  const decrement = () => {
+    setGuestCount(prev => Math.max(prev - 1, 1))
+  }
 
   const handleSave = () => {
-    onSave({ guestCount })
+    onSave({ guestCount: guestCount.toString() })
     onClose()
   }
 
@@ -524,19 +555,29 @@ const GuestsEditModal = ({ isOpen, onClose, currentGuestCount, onSave }) => {
       <ModalContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Number of Guests</label>
-            <Select value={guestCount} onValueChange={setGuestCount}>
-              <SelectTrigger className="w-full pl-2">
-                <SelectValue placeholder="Select guest count" />
-              </SelectTrigger>
-              <SelectContent>
-                {guestOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium text-gray-700 text-center block">Number of Guests</label>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={decrement}
+                disabled={guestCount <= 1}
+                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
+              >
+                −
+              </button>
+              <div className="w-20 text-center">
+                <span className="text-3xl font-bold text-gray-900">{guestCount}</span>
+              </div>
+              <button
+                type="button"
+                onClick={increment}
+                disabled={guestCount >= 100}
+                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center">guests</p>
           </div>
         </div>
       </ModalContent>
@@ -548,8 +589,7 @@ const GuestsEditModal = ({ isOpen, onClose, currentGuestCount, onSave }) => {
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!guestCount}
-            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50"
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
           >
             Save Guest Count
           </Button>
@@ -1106,27 +1146,24 @@ export default function LocalStoragePartyHeader({
                           <span className="text-white/60 flex-shrink-0">•</span>
                           <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="whitespace-nowrap">{displayTimeRange.split(" - ")[0]}</span>
-                          <span className="text-white/60 flex-shrink-0">•</span>
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="whitespace-nowrap">{getLocation()}</span>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Edit button - positioned absolutely on mobile */}
-                <div className="md:hidden absolute top-4 right-4 flex-shrink-0">
+                {/* Edit button - positioned at top-left on mobile */}
+                <div className="md:hidden absolute top-3 left-3 flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       updateExpanded(!isExpanded)
                     }}
-                    className="bg-white/20 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-white/30 transition-all flex items-center gap-2"
+                    className="bg-white/90 hover:bg-white px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 shadow-md"
                     aria-label="Edit party details"
                   >
-                    <Edit2 className="w-4 h-4 md:w-4 md:h-4 text-white drop-shadow-lg" />
-                    <span className="text-white text-sm md:text-base font-semibold drop-shadow-lg">
+                    <Edit2 className="w-3 h-3 text-gray-700" />
+                    <span className="text-gray-700 text-xs font-medium">
                       Edit
                     </span>
                   </button>
@@ -1191,20 +1228,11 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                <button
-                  onClick={() => handleCardClick("location")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
-                >
-                  <p className="text-xs text-white/70 font-medium mb-1">Location</p>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm text-white leading-tight truncate">
-                    {getLocation()}
-                  </p>
-                </button>
               </div>
             </div>
 
             {/* Desktop: Grid Layout - Always Visible */}
-            <div className="hidden md:grid md:grid-cols-5 gap-4">
+            <div className="hidden md:grid md:grid-cols-4 gap-4">
               <button
                 onClick={() => handleCardClick("date")}
                 className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -1265,20 +1293,6 @@ export default function LocalStoragePartyHeader({
                 </p>
               </button>
 
-              <button
-                onClick={() => handleCardClick("location")}
-                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-white/20 rounded-full">
-                    <MapPin className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-sm opacity-90 font-medium">Where</p>
-                </div>
-                <p suppressHydrationWarning={true} className="font-bold text-base truncate">
-                  {getLocation()}
-                </p>
-              </button>
             </div>
           </div>
         </div>

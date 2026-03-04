@@ -117,10 +117,15 @@ export default function MobileSearchForm({
                       const today = new Date()
                       today.setHours(0, 0, 0, 0)
                       const minDate = new Date(today)
-                      minDate.setDate(minDate.getDate() + 7) // 7-day lead time
+                      minDate.setDate(minDate.getDate() + 21) // 3-week lead time
                       return date < minDate
                     }}
                     className="rounded-lg border-0"
+                    footer={
+                      <p className="text-xs text-gray-500 text-center pt-2 border-t border-gray-100 mt-2">
+                        Minimum 3 weeks advance booking required
+                      </p>
+                    }
                   />
                 </PopoverContent>
               </Popover>
