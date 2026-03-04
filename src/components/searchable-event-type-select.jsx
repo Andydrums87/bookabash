@@ -2,13 +2,65 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, Search, X, UsersIcon } from "lucide-react"
+import { ChevronDown, Search, X, UsersIcon, RefreshCw, Sparkles, Check } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
+// Theme recommendations based on age and gender
+// Structure: { gender: { ageGroup: [themes] } }
+const THEME_RECOMMENDATIONS = {
+  boy: {
+    toddler: ['dinosaur', 'safari', 'pirate'], // Ages 1-2
+    young: ['dinosaur', 'superhero', 'pirate', 'spiderman'], // Ages 3-5
+    older: ['superhero', 'spiderman', 'space', 'science'] // Ages 6+
+  },
+  girl: {
+    toddler: ['princess', 'unicorn', 'safari'], // Ages 1-2
+    young: ['princess', 'unicorn', 'mermaid', 'frozen'], // Ages 3-5
+    older: ['mermaid', 'frozen', 'unicorn', 'kpop-demon-hunters'] // Ages 6+
+  },
+  neutral: {
+    toddler: ['safari', 'dinosaur', 'unicorn'], // Ages 1-2
+    young: ['safari', 'pirate', 'space', 'science'], // Ages 3-5
+    older: ['space', 'science', 'pirate', 'safari'] // Ages 6+
+  }
+}
+
+// Theme display names for showing in the modal
+const THEME_DISPLAY_NAMES = {
+  dinosaur: { label: 'Dinosaur', emoji: '🦕' },
+  safari: { label: 'Safari', emoji: '🦁' },
+  pirate: { label: 'Pirate Adventure', emoji: '🏴‍☠️' },
+  princess: { label: 'Princess', emoji: '👸' },
+  unicorn: { label: 'Unicorn Magic', emoji: '🦄' },
+  mermaid: { label: 'Mermaid', emoji: '🧜‍♀️' },
+  frozen: { label: 'Frozen', emoji: '❄️' },
+  superhero: { label: 'Superhero', emoji: '🦸' },
+  spiderman: { label: 'Spiderman', emoji: '🕷️' },
+  space: { label: 'Space Adventure', emoji: '🚀' },
+  science: { label: 'Science Lab', emoji: '🔬' },
+  'kpop-demon-hunters': { label: 'K-Pop Demon Hunters', emoji: '🎤' }
+}
+
+// Get age group from age
+const getAgeGroup = (age) => {
+  if (age <= 2) return 'toddler'
+  if (age <= 5) return 'young'
+  return 'older'
+}
+
+// Get a random theme recommendation based on age and gender
+const getRandomTheme = (age, gender) => {
+  const ageGroup = getAgeGroup(age)
+  const themes = THEME_RECOMMENDATIONS[gender]?.[ageGroup] || THEME_RECOMMENDATIONS.neutral[ageGroup]
+  return themes[Math.floor(Math.random() * themes.length)]
+}
 
 const eventTypes = [
 
+  // Undecided option - shows gender picker modal
+  { value: "undecided", label: "Choose for me", category: "Not Sure?" },
+
   // Popular themes
-  // { value: "no-theme", label: "No theme", category: "Popular"   },
   { value: "princess", label: "Princess", category: "Popular" },
   { value: "superhero", label: "Superhero", category: "Popular" },
 
@@ -87,6 +139,11 @@ export default function SearchableEventTypeSelect({
   const [isPressed, setIsPressed] = useState(false)
   const [ripples, setRipples] = useState([])
   const [itemRipples, setItemRipples] = useState([])
+  const [showThemePickerModal, setShowThemePickerModal] = useState(false)
+  const [pickerStep, setPickerStep] = useState('age') // 'age' | 'gender' | 'result'
+  const [pickerAge, setPickerAge] = useState(null)
+  const [pickerGender, setPickerGender] = useState(null)
+  const [recommendedTheme, setRecommendedTheme] = useState(null)
   const dropdownRef = useRef(null)
   const inputRef = useRef(null)
   const buttonRef = useRef(null)
@@ -153,11 +210,64 @@ export default function SearchableEventTypeSelect({
 
   // Handle selection
   const handleSelect = value => {
+    // If "Choose for me" is selected, show theme picker modal
+    if (value === 'undecided') {
+      setIsOpen(false)
+      setSearchQuery("")
+      setHighlightedIndex(-1)
+      // Reset picker state
+      setPickerStep('age')
+      setPickerAge(null)
+      setPickerGender(null)
+      setRecommendedTheme(null)
+      setShowThemePickerModal(true)
+      return
+    }
+
     setSelectedValue(value)
     onValueChange?.(value)
     setIsOpen(false)
     setSearchQuery("")
     setHighlightedIndex(-1)
+  }
+
+  // Handle age selection in picker
+  const handleAgeSelect = (age) => {
+    setPickerAge(age)
+    setPickerStep('gender')
+  }
+
+  // Handle gender selection in picker - generates theme recommendation
+  const handleGenderSelect = (gender) => {
+    setPickerGender(gender)
+    const theme = getRandomTheme(pickerAge, gender)
+    setRecommendedTheme(theme)
+    setPickerStep('result')
+  }
+
+  // Shuffle to get a new theme recommendation
+  const handleShuffleTheme = () => {
+    const theme = getRandomTheme(pickerAge, pickerGender)
+    setRecommendedTheme(theme)
+  }
+
+  // Confirm the selected theme
+  const handleConfirmTheme = () => {
+    setSelectedValue(recommendedTheme)
+    onValueChange?.(recommendedTheme)
+    setShowThemePickerModal(false)
+  }
+
+  // Go back in the picker flow
+  const handlePickerBack = () => {
+    if (pickerStep === 'gender') {
+      setPickerStep('age')
+      setPickerAge(null)
+    } else if (pickerStep === 'result') {
+      setPickerStep('gender')
+      setPickerGender(null)
+      setRecommendedTheme(null)
+    }
   }
 
   // Handle keyboard navigation
@@ -351,6 +461,106 @@ export default function SearchableEventTypeSelect({
           </div>
         </div>
       )}
+
+      {/* Theme Picker Modal */}
+      <Dialog open={showThemePickerModal} onOpenChange={setShowThemePickerModal}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              {pickerStep === 'age' && "How old is the birthday child?"}
+              {pickerStep === 'gender' && "Boy or girl?"}
+              {pickerStep === 'result' && "We recommend..."}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Age Selection Step */}
+          {pickerStep === 'age' && (
+            <div className="grid grid-cols-4 gap-2 py-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((age) => (
+                <button
+                  key={age}
+                  onClick={() => handleAgeSelect(age)}
+                  className="p-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:bg-primary-50 transition-all font-semibold text-gray-700"
+                >
+                  {age}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Gender Selection Step */}
+          {pickerStep === 'gender' && (
+            <div className="flex flex-col gap-3 py-4">
+              <button
+                onClick={() => handleGenderSelect('boy')}
+                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <span className="text-2xl">👦</span>
+                <span className="font-medium text-gray-700">Boy</span>
+              </button>
+              <button
+                onClick={() => handleGenderSelect('girl')}
+                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-pink-400 hover:bg-pink-50 transition-all"
+              >
+                <span className="text-2xl">👧</span>
+                <span className="font-medium text-gray-700">Girl</span>
+              </button>
+              <button
+                onClick={() => handleGenderSelect('neutral')}
+                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all"
+              >
+                <span className="text-2xl">🎉</span>
+                <span className="font-medium text-gray-700">Surprise / Either</span>
+              </button>
+              <button
+                onClick={handlePickerBack}
+                className="text-sm text-gray-500 hover:text-gray-700 mt-2"
+              >
+                ← Back
+              </button>
+            </div>
+          )}
+
+          {/* Result Step - Show recommended theme with shuffle option */}
+          {pickerStep === 'result' && recommendedTheme && (
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="text-6xl animate-bounce">
+                {THEME_DISPLAY_NAMES[recommendedTheme]?.emoji || '🎉'}
+              </div>
+              <div className="text-2xl font-bold text-gray-800">
+                {THEME_DISPLAY_NAMES[recommendedTheme]?.label || recommendedTheme}
+              </div>
+              <p className="text-sm text-gray-500 text-center">
+                Perfect for a {pickerAge} year old!
+              </p>
+
+              <div className="flex gap-3 w-full mt-4">
+                <button
+                  onClick={handleShuffleTheme}
+                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-gray-600"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Shuffle</span>
+                </button>
+                <button
+                  onClick={handleConfirmTheme}
+                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-primary-500 bg-primary-500 hover:bg-primary-600 transition-all text-white font-medium"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Choose this</span>
+                </button>
+              </div>
+
+              <button
+                onClick={handlePickerBack}
+                className="text-sm text-gray-500 hover:text-gray-700 mt-2"
+              >
+                ← Back
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
