@@ -388,12 +388,13 @@ export default function SelectedSupplierCard({
                           </div>
                         )}
 
-                        {/* Show delivery included for cake suppliers */}
+                        {/* Show delivery included for cake suppliers - TEMPORARILY HIDDEN
                         {isCakeSupplier && cakeCustomization?.fulfillmentMethod === 'delivery' && (
                           <div className="text-xs text-white/90 mt-1 drop-shadow flex items-center gap-1">
                             <span>✓ Delivery included</span>
                           </div>
                         )}
+                        */}
 
                         {/* Show add-ons count */}
                         {hasAddons && (

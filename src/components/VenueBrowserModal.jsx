@@ -626,7 +626,7 @@ export default function VenueBrowserModal({
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-3">Amenities</h4>
                       <div className="space-y-3">
-                        {/* Instant Book */}
+                        {/* Instant Book - TEMPORARILY HIDDEN
                         <label className="flex items-center justify-between cursor-pointer">
                           <span className="flex items-center gap-2 text-sm text-gray-700">
                             <Zap className={`w-4 h-4 ${instantBookOnly ? 'fill-teal-500 text-teal-500' : 'text-gray-400'}`} />
@@ -652,6 +652,7 @@ export default function VenueBrowserModal({
                             />
                           </button>
                         </label>
+                        */}
 
                         {/* Bouncy Castle */}
                         <label className="flex items-center justify-between cursor-pointer">
@@ -1024,7 +1025,7 @@ export default function VenueBrowserModal({
                     Offers Catering
                   </button>
 
-                  {/* Instant Book Toggle */}
+                  {/* Instant Book Toggle - TEMPORARILY HIDDEN
                   <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-300 bg-white whitespace-nowrap flex-shrink-0">
                     <Zap className={`w-4 h-4 flex-shrink-0 ${instantBookOnly ? 'fill-teal-500 text-teal-500' : 'text-gray-400'}`} />
                     <span className="text-sm font-medium text-gray-700">Instant</span>
@@ -1048,6 +1049,7 @@ export default function VenueBrowserModal({
                       />
                     </button>
                   </div>
+                  */}
 
                   {/* Clear filters */}
                   {(sortBy !== 'distance' || venueTypeFilter !== 'all' || bouncyCastleOnly || cateringOnly || offersCateringOnly || instantBookOnly) && (
