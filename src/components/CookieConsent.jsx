@@ -125,7 +125,7 @@ export default function CookieConsent() {
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
                     Read our <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a> and{" "}
-                    <a href="/privacy-policy#cookies" className="text-primary-600 hover:underline">Cookie Policy</a> for more information.
+                    <a href="/cookies" className="text-primary-600 hover:underline">Cookie Policy</a> for more information.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
