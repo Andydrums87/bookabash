@@ -202,12 +202,14 @@ const PartyDetailsCard = ({ partyDetails, currentParty, dataSource }) => {
   };
 
   const getTheme = () => {
+    const formatTheme = (theme) => theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
     if (dataSource === 'database' && currentParty?.theme) {
-      return currentParty.theme.charAt(0).toUpperCase() + currentParty.theme.slice(1);
+      return formatTheme(currentParty.theme);
     }
-    
-    return partyDetails?.theme ? 
-      partyDetails.theme.charAt(0).toUpperCase() + partyDetails.theme.slice(1) : 
+
+    return partyDetails?.theme ?
+      formatTheme(partyDetails.theme) :
       "Superhero";
   };
 

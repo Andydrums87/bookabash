@@ -793,7 +793,7 @@ export default function MyPartyTabContent({
         <div>
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-gray-700 leading-tight">
-              {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.charAt(0).toUpperCase() + partyDetails.theme.slice(1)} ` : ''}Party is Ready 🎉
+              {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} ` : ''}Party is Ready 🎉
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               We've selected everything for you. Tweak anything in seconds.

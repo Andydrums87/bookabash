@@ -53,8 +53,9 @@ export async function generateMetadata({ params }) {
       }
     }
 
-    const title = `You're Invited to ${childName}'s ${theme.charAt(0).toUpperCase() + theme.slice(1)} Party!`
-    const description = `Join ${childName} for an amazing ${theme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
+    const formattedTheme = theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    const title = `You're Invited to ${childName}'s ${formattedTheme} Party!`
+    const description = `Join ${childName} for an amazing ${formattedTheme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
     const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.co.uk' : 'http://localhost:3000'}/e-invites/${inviteId}`
 
     // USE YOUR STATIC CLOUDINARY IMAGE

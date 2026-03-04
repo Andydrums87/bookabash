@@ -133,11 +133,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                           return date < minDate
                         }}
                         className="rounded-t-lg"
-                        footer={
-                          <p className="text-xs text-gray-500 text-center pt-2 border-t border-gray-100 mt-2">
-                            Minimum 3 weeks advance booking required
-                          </p>
-                        }
                       />
 
                       {/* Party Time Segmented Control - inside calendar */}
