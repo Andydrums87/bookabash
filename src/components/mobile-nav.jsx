@@ -9,6 +9,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 // Cart Indicator Component for Mobile - FIXED to use prop
 function MobileCartIndicator({ className = "", onCartClick, currentPartyId }) {
@@ -99,6 +100,7 @@ export default function MobileNav({ user, onSignOut, loading, currentPartyId }) 
   const [loadingPartyData, setLoadingPartyData] = useState(false)
   const [isSupplier, setIsSupplier] = useState(false)
   const [hasDatabaseParties, setHasDatabaseParties] = useState(false)
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false)
   const router = useRouter()
 
 // Check if user is a supplier
@@ -279,9 +281,15 @@ useEffect(() => {
     return user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
   }
 
-  const handleSignOut = () => {
-    console.log("Mobile handleSignOut called")
+  const handleSignOutClick = () => {
+    console.log("Mobile handleSignOut dialog triggered")
     closeMenu()
+    setShowSignOutDialog(true)
+  }
+
+  const handleSignOutConfirm = () => {
+    console.log("Mobile handleSignOut confirmed")
+    setShowSignOutDialog(false)
     onSignOut()
   }
 
@@ -480,7 +488,7 @@ useEffect(() => {
         <div className="flex-shrink-0 pb-6 px-8 border-t border-white/20">
           {user && (
             <button
-              onClick={handleSignOut}
+              onClick={handleSignOutClick}
               className="block w-full text-left py-3 text-white/70 text-base font-medium transition-colors duration-200 hover:text-white mt-4"
             >
               Sign Out
@@ -498,6 +506,17 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSignOutDialog}
+        onOpenChange={setShowSignOutDialog}
+        title="Sign out"
+        description="Are you sure you want to sign out of your account?"
+        confirmText="Sign out"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={handleSignOutConfirm}
+      />
     </>
   )
 }
