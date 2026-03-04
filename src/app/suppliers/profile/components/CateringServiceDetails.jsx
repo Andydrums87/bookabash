@@ -19,6 +19,9 @@ import {
   DollarSign,
   User,
   ChevronDown,
+  Package,
+  Plus,
+  Minus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -87,6 +90,14 @@ const CateringServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData
     },
     menuItems: [],
     packages: [],
+    cateringPackage: {
+      name: '',
+      description: '',
+      price: '',
+      priceType: 'per_person',
+      minimumGuests: 10,
+      includes: [],
+    },
     addOnServices: [],
     policies: {
       cancellation: 48,
@@ -159,6 +170,15 @@ const CateringServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData
         menuItems: [],
         packages: [],
         cakeFlavors: [],
+        cateringPackage: {
+          name: '',
+          description: '',
+          price: '',
+          priceType: 'per_person',
+          minimumGuests: 10,
+          includes: [],
+          ...businessServiceDetails.cateringPackage,
+        },
         addOnServices: [],
         policies: {
           cancellation: 48,
@@ -461,6 +481,36 @@ const CateringServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData
     const newDetails = { ...details, [field]: newArray }
     setDetails(newDetails)
     onUpdate(newDetails)
+  }
+
+  // Catering Package handlers
+  const handlePackageFieldChange = (field, value) => {
+    const newDetails = {
+      ...details,
+      cateringPackage: {
+        ...details.cateringPackage,
+        [field]: value,
+      },
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+  }
+
+  const handlePackageIncludeAdd = () => {
+    const newIncludes = [...(details.cateringPackage?.includes || []), '']
+    handlePackageFieldChange('includes', newIncludes)
+  }
+
+  const handlePackageIncludeRemove = (index) => {
+    const newIncludes = [...(details.cateringPackage?.includes || [])]
+    newIncludes.splice(index, 1)
+    handlePackageFieldChange('includes', newIncludes)
+  }
+
+  const handlePackageIncludeChange = (index, value) => {
+    const newIncludes = [...(details.cateringPackage?.includes || [])]
+    newIncludes[index] = value
+    handlePackageFieldChange('includes', newIncludes)
   }
 
   // Add-ons management functions
@@ -1094,6 +1144,129 @@ const CateringServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData
                 placeholder="25"
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Catering Package - What's Included */}
+      <Card>
+        <CardHeader className="p-8 bg-gradient-to-r from-amber-50 to-amber-100">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            Your Catering Package
+          </CardTitle>
+          <CardDescription className="text-base">
+            Define your main catering package and what's included
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label className="text-base font-semibold text-gray-700">
+                Package Name *
+              </Label>
+              <Input
+                value={details.cateringPackage?.name || ''}
+                onChange={(e) => handlePackageFieldChange('name', e.target.value)}
+                className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                placeholder="e.g. Kids Party Food Package"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base font-semibold text-gray-700">
+                Price (£) *
+              </Label>
+              <div className="flex gap-3">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.50"
+                  value={details.cateringPackage?.price || ''}
+                  onChange={(e) => handlePackageFieldChange('price', e.target.value)}
+                  className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base flex-1"
+                  placeholder="12.50"
+                />
+                <Select
+                  value={details.cateringPackage?.priceType || 'per_person'}
+                  onValueChange={(value) => handlePackageFieldChange('priceType', value)}
+                >
+                  <SelectTrigger className="h-12 w-40 bg-white border-2 border-gray-200 rounded-xl text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="per_person">per person</SelectItem>
+                    <SelectItem value="fixed">fixed price</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-base font-semibold text-gray-700">
+              Package Description *
+            </Label>
+            <Textarea
+              value={details.cateringPackage?.description || ''}
+              onChange={(e) => handlePackageFieldChange('description', e.target.value)}
+              placeholder="Describe your catering package and what makes it special for parties..."
+              rows={3}
+              className="bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-base font-semibold text-gray-700">
+              What's Included in This Package *
+            </Label>
+            {(details.cateringPackage?.includes || []).map((item, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <Input
+                  value={item}
+                  onChange={(e) => handlePackageIncludeChange(index, e.target.value)}
+                  className="flex-1 h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                  placeholder="e.g. Mini sandwiches, Party snacks, Fresh fruit platter"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePackageIncludeRemove(index)}
+                  className="h-12 px-3"
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePackageIncludeAdd}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Item
+            </Button>
+            <p className="text-sm text-gray-600">
+              💡 <strong>Tip:</strong> List each food item or service that's included, such as "Mini sandwiches", "Party snacks", "Fresh fruit platter", "Napkins & plates included"
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-base font-semibold text-gray-700">
+              Minimum Guests
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              value={details.cateringPackage?.minimumGuests || 10}
+              onChange={(e) => handlePackageFieldChange('minimumGuests', parseInt(e.target.value))}
+              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base w-32"
+              placeholder="10"
+            />
           </div>
         </CardContent>
       </Card>
