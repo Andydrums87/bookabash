@@ -1,16 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Mail, Phone, MapPin, Clock, Send, MessageCircle, Users, Headphones } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    subject: '',
-    message: '',
-    inquiryType: 'general'
+    message: ''
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,24 +26,18 @@ export default function ContactUs() {
     e.preventDefault()
     setSubmitStatus({ type: '', message: '' })
 
-    // Client-side validation - check for whitespace-only values
-    const trimmedName = formData.name.trim()
+    const trimmedFirstName = formData.firstName.trim()
+    const trimmedLastName = formData.lastName.trim()
     const trimmedEmail = formData.email.trim()
-    const trimmedSubject = formData.subject.trim()
     const trimmedMessage = formData.message.trim()
 
-    if (!trimmedName) {
-      setSubmitStatus({ type: 'error', message: 'Please enter your name.' })
+    if (!trimmedFirstName) {
+      setSubmitStatus({ type: 'error', message: 'Please enter your first name.' })
       return
     }
 
     if (!trimmedEmail || !trimmedEmail.includes('@')) {
       setSubmitStatus({ type: 'error', message: 'Please enter a valid email address.' })
-      return
-    }
-
-    if (!trimmedSubject) {
-      setSubmitStatus({ type: 'error', message: 'Please enter a subject.' })
       return
     }
 
@@ -63,10 +55,10 @@ export default function ContactUs() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: trimmedName,
+          name: `${trimmedFirstName} ${trimmedLastName}`.trim(),
           email: trimmedEmail,
-          inquiryType: formData.inquiryType,
-          subject: trimmedSubject,
+          inquiryType: 'general',
+          subject: 'Contact Form Submission',
           message: trimmedMessage,
         }),
       })
@@ -79,14 +71,13 @@ export default function ContactUs() {
 
       setSubmitStatus({
         type: 'success',
-        message: 'Thank you for your message! We\'ll get back to you within 24 hours.'
+        message: "Thank you for your message! We'll get back to you within 24 hours."
       })
       setFormData({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
-        subject: '',
-        message: '',
-        inquiryType: 'general'
+        message: ''
       })
     } catch (error) {
       setSubmitStatus({
@@ -98,89 +89,67 @@ export default function ContactUs() {
     }
   }
 
-  const contactMethods = [
-    {
-      icon: Mail,
-      title: "Email Us",
-      description: "Get in touch via email",
-      contact: "hello@partysnap.co.uk",
-      action: "mailto:hello@partysnap.co.uk",
-      color: "from-blue-400 to-blue-500"
-    },
-    {
-      icon: Phone,
-      title: "Call Us",
-      description: "Speak with our team",
-      contact: "+44 20 1234 5678",
-      action: "tel:+442012345678",
-      color: "from-green-400 to-green-500"
-    },
-    {
-      icon: MessageCircle,
-      title: "Live Chat",
-      description: "Chat with us instantly",
-      contact: "Available 9am-6pm GMT",
-      action: "#",
-      color: "from-purple-400 to-purple-500"
-    },
-    {
-      icon: Users,
-      title: "For Suppliers",
-      description: "Join our network",
-      contact: "andrew@partysnap.co.uk",
-      action: "mailto:andrew@partysnap.co.uk",
-      color: "from-orange-400 to-orange-500"
-    }
-  ]
-
-  const inquiryTypes = [
-    { value: 'general', label: 'General Inquiry' },
-    { value: 'support', label: 'Technical Support' },
-    { value: 'booking', label: 'Booking Help' },
-    { value: 'supplier', label: 'Become a Supplier' },
-    { value: 'press', label: 'Press & Media' },
-    { value: 'partnership', label: 'Partnership' }
-  ]
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section  style={{
-        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '100px, cover',
-        backgroundPosition: 'center',
-      }}  className="py-20 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+      <section className="py-16 md:py-24 lg:py-32">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-6">
-              Get in Touch
-            </h1>
-            <p className="text-xl text-white max-w-3xl mx-auto">
-              Have questions about PartySnap? Need help planning your party? We're here to help make your celebration magical.
-            </p>
-          </div>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
 
+              {/* Left Side - Heading & Contact Info */}
+              <div className="lg:sticky lg:top-32">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                  Get in —<br />
+                  touch with us
+                </h1>
 
-        </div>
-      </section>
+                <p className="text-gray-600 text-lg mb-10 max-w-md">
+                  We're here to help! Whether you have a question about our services, need assistance with your party, or want to provide feedback, our team is ready to assist you.
+                </p>
 
-      {/* Contact Form & Info */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16">
-              {/* Contact Form */}
-              <div className="bg-white rounded-3xl p-8 shadow-2xl border border-gray-100">
-                <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Send Us a Message</h2>
-                  <p className="text-gray-600">Fill out the form below and we'll get back to you within 24 hours.</p>
+                {/* Email */}
+                <div className="mb-6">
+                  <p className="text-gray-500 text-sm mb-1">Email:</p>
+                  <a
+                    href="mailto:hello@partysnap.co.uk"
+                    className="text-xl md:text-2xl font-semibold text-gray-900 hover:text-primary-600 transition-colors"
+                  >
+                    hello@partysnap.co.uk
+                  </a>
                 </div>
 
+                {/* Phone */}
+                <div className="mb-8">
+                  <p className="text-gray-500 text-sm mb-1">Phone:</p>
+                  <a
+                    href="tel:+447835444903"
+                    className="text-xl md:text-2xl font-semibold text-gray-900 hover:text-primary-600 transition-colors"
+                  >
+                    +44 7835 444903
+                  </a>
+                  <p className="text-gray-500 text-sm mt-1">Available Monday to Friday, 9 AM - 6 PM GMT</p>
+                </div>
+
+                {/* WhatsApp Button */}
+                <a
+                  href="https://wa.me/447835444903"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"
+                >
+                  WhatsApp Us
+                  <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                    <ArrowRight className="w-4 h-4 text-gray-900" />
+                  </span>
+                </a>
+              </div>
+
+              {/* Right Side - Form */}
+              <div>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Status Message */}
                   {submitStatus.message && (
-                    <div className={`p-4 rounded-lg ${
+                    <div className={`p-4 rounded-xl ${
                       submitStatus.type === 'success'
                         ? 'bg-green-50 text-green-800 border border-green-200'
                         : 'bg-red-50 text-red-800 border border-red-200'
@@ -189,209 +158,86 @@ export default function ContactUs() {
                     </div>
                   )}
 
-                  {/* Name & Email Row */}
-                  <div className="grid md:grid-cols-2 gap-6">
+                  {/* Name Row */}
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
-                        Full Name *
+                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name
                       </label>
                       <input
                         type="text"
-                        id="name"
-                        name="name"
-                        required
-                        value={formData.name}
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] transition-colors"
-                        placeholder="Your full name"
+                        className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
+                        placeholder="Enter your first name..."
                       />
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
-                        Email Address *
+                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name
                       </label>
                       <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required
-                        value={formData.email}
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] transition-colors"
-                        placeholder="your.email@example.com"
+                        className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
+                        placeholder="Enter your last name..."
                       />
                     </div>
                   </div>
 
-                  {/* Inquiry Type */}
+                  {/* Email */}
                   <div>
-                    <label htmlFor="inquiryType" className="block text-sm font-semibold text-gray-900 mb-2">
-                      What can we help you with?
-                    </label>
-                    <select
-                      id="inquiryType"
-                      name="inquiryType"
-                      value={formData.inquiryType}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] transition-colors"
-                    >
-                      {inquiryTypes.map(type => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-semibold text-gray-900 mb-2">
-                      Subject *
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
                     </label>
                     <input
-                      type="text"
-                      id="subject"
-                      name="subject"
-                      required
-                      value={formData.subject}
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] transition-colors"
-                      placeholder="Brief subject of your message"
+                      className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
+                      placeholder="Enter your email address..."
                     />
                   </div>
 
                   {/* Message */}
                   <div>
-                    <label htmlFor="message" className="block text-sm font-semibold text-gray-900 mb-2">
-                      Message *
+                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                      How can we help you?
                     </label>
                     <textarea
                       id="message"
                       name="message"
-                      required
                       rows={5}
                       value={formData.message}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] transition-colors resize-vertical"
-                      placeholder="Tell us more about how we can help..."
+                      className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400 resize-none"
+                      placeholder="Enter your message..."
                     />
                   </div>
 
                   {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white font-bold text-lg py-4 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        Send Message
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="inline-flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                      <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4 text-gray-900" />
+                      </span>
+                    </button>
+                  </div>
                 </form>
               </div>
-
-              {/* Contact Info & FAQ */}
-              <div className="space-y-8">
-                {/* Quick Info */}
-                <div className="bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-3xl p-8 text-white">
-                  <h3 className="text-2xl font-bold mb-6">Get Quick Answers</h3>
-                  
-                  <div className="space-y-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-1">Response Time</h4>
-                        <p className="opacity-90">We typically respond within 24 hours during business days.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-4">
-                      <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
-                        <Headphones className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-1">Support Hours</h4>
-                        <p className="opacity-90">Monday - Friday: 9:00 AM - 6:00 PM GMT</p>
-                        <p className="opacity-90">Weekend: Limited support available</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-4">
-                      <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-1">Location</h4>
-                        <p className="opacity-90">London, United Kingdom</p>
-                        <p className="opacity-90">Serving the UK & Ireland</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Common Questions */}
-                <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Common Questions</h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">How far in advance should I book?</h4>
-                      <p className="text-gray-600 text-sm">We recommend booking 2-4 weeks in advance for the best supplier availability, though last-minute bookings are often possible.</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">What if a supplier cancels?</h4>
-                      <p className="text-gray-600 text-sm">We provide backup options and full support to ensure your party goes ahead as planned. Our guarantee covers you.</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Do you cover my area?</h4>
-                      <p className="text-gray-600 text-sm">We currently serve most of the UK and Ireland. Contact us to check availability in your specific location.</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
-                      Can't find what you're looking for? Check out our 
-                      <a href="/faq" className="text-primary-600 hover:text-primary-700 font-semibold"> FAQ page </a>
-                      or send us a message above.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Methods Grid */}
-      <section className="pb-20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            {contactMethods.map((method, index) => (
-              <a
-                key={index}
-                href={method.action}
-                target={method.action.startsWith('mailto:') || method.action.startsWith('tel:') ? '_self' : '_blank'}
-                rel={method.action.startsWith('mailto:') || method.action.startsWith('tel:') ? undefined : 'noopener noreferrer'}
-                className="group bg-white rounded-3xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 text-center cursor-pointer"
-              >
-                <div className={`w-16 h-16 bg-gradient-to-br ${method.color} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <method.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{method.title}</h3>
-                <p className="text-gray-600 text-sm mb-3">{method.description}</p>
-                <p className="text-primary-600 font-semibold">{method.contact}</p>
-              </a>
-            ))}
           </div>
         </div>
       </section>
