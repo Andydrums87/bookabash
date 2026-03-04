@@ -16,83 +16,123 @@ function CustomerTermsBody() {
           <li>You must be at least 18 years old to create an account.</li>
           <li>Provide accurate and complete information during registration.</li>
           <li>Keep your login details secure and confidential.</li>
-          <li>Respect other users and use the platform lawfully.</li>
+          <li>Use the platform lawfully and respectfully.</li>
         </ul>
       </section>
 
-      {/* Booking Terms */}
+      {/* How Party Snap Works */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-          2. Booking & Payment Terms
+          2. How Party Snap Works
         </h2>
-
-        <h3 className="text-base font-medium text-gray-900 mt-6 mb-3">Booking Confirmation</h3>
-        <ul className="space-y-2 text-gray-600 list-disc list-inside mb-6">
-          <li>Your booking is <strong>instantly confirmed</strong> once your deposit is processed.</li>
-          <li>You'll receive an email confirmation with supplier details.</li>
-          <li>In the rare event a supplier cannot fulfil, PartySnap will find a replacement or provide a refund.</li>
-        </ul>
-
-        <h3 className="text-base font-medium text-gray-900 mt-6 mb-3">Payment & Fees</h3>
-        <ul className="space-y-2 text-gray-600 list-disc list-inside mb-6">
-          <li>Deposit is taken at booking to secure services.</li>
-          <li>Remaining balance is collected <strong>14 days</strong> before the party.</li>
-          <li>A £5 booking fee may apply.</li>
-        </ul>
-
-        <h3 className="text-base font-medium text-gray-900 mt-6 mb-3">Cancellation Policy</h3>
-        <p className="text-gray-600 mb-2"><strong>Customer cancellations:</strong></p>
-        <ul className="space-y-1 text-gray-600 list-disc list-inside ml-4 mb-4">
-          <li>More than 48 hours: Full refund minus 5% processing fee.</li>
-          <li>24–48 hours: 50% refund of deposit, no refund of full payments.</li>
-          <li>Less than 24 hours: No refund.</li>
-        </ul>
+        <p className="text-gray-600 mb-4">
+          Party Snap is a party planning service. When you place an order, we coordinate everything on your behalf using our network of carefully selected local service providers. You choose your theme, venue, and extras. We handle the rest.
+        </p>
         <p className="text-gray-600">
-          <strong>Supplier cancellations:</strong> Full refund provided; PartySnap will help find a replacement where possible.
+          Your order is not instantly confirmed at the point of payment. Our team personally confirms every element of your party — venue availability, service provider bookings, and all logistics — and sends you a personalised confirmation pack within 2 working days.
         </p>
       </section>
 
-      {/* Liability & Safety */}
+      {/* Payment Terms */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-          3. Liability & Safety
+          3. Payment Terms
+        </h2>
+        <ul className="space-y-2 text-gray-600 list-disc list-inside">
+          <li>Full payment is taken at the time of booking to secure your order.</li>
+          <li>Payments are processed securely via Stripe.</li>
+          <li>Klarna interest-free instalments are available on eligible orders.</li>
+          <li>You will receive an email receipt immediately after payment.</li>
+          <li>A booking fee may apply.</li>
+        </ul>
+      </section>
+
+      {/* Confirmation & Changes */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+          4. Confirmation & Changes
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Within 2 working days of your order, you will receive a confirmation pack with all party details confirmed. If any element of your booking is unavailable, we will contact you to offer a suitable alternative or a full refund for that item.
+        </p>
+        <p className="text-gray-600">
+          You can add extras to your party at any time through your dashboard, subject to availability. To make changes or remove items, contact us at <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a>. Changes made less than 7 days before your party may not be possible.
+        </p>
+      </section>
+
+      {/* Cancellation Policy */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+          5. Cancellation Policy
         </h2>
 
-        <h3 className="text-base font-medium text-gray-900 mt-6 mb-3">Safety</h3>
+        <h3 className="text-base font-medium text-gray-900 mt-4 mb-3">Customer cancellations:</h3>
         <ul className="space-y-2 text-gray-600 list-disc list-inside mb-6">
-          <li>Parents/guardians must supervise children at all times.</li>
-          <li>Suppliers are background-checked where legally required.</li>
-          <li>Inform suppliers of allergies or special requirements.</li>
+          <li><strong>More than 14 days before your party:</strong> full refund.</li>
+          <li><strong>Between 7 and 14 days before your party:</strong> 50% refund.</li>
+          <li><strong>Less than 7 days before your party:</strong> no refund.</li>
         </ul>
 
-        <h3 className="text-base font-medium text-gray-900 mt-6 mb-3">Liability</h3>
-        <ul className="space-y-2 text-gray-600 list-disc list-inside">
-          <li>Suppliers are independent businesses responsible for their services.</li>
-          <li>PartySnap's liability is limited to amounts paid through the platform.</li>
-          <li>We are not responsible for supplier performance or child supervision.</li>
-        </ul>
+        <h3 className="text-base font-medium text-gray-900 mt-4 mb-3">If we cannot fulfil your booking:</h3>
+        <p className="text-gray-600">
+          If we are unable to confirm or deliver any part of your party, you will receive a full refund for that item. We will always try to find a suitable alternative first.
+        </p>
       </section>
 
-      {/* Data & Contact */}
+      {/* Safety & Responsibilities */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-          4. Data & Contact
+          6. Safety & Responsibilities
         </h2>
         <ul className="space-y-2 text-gray-600 list-disc list-inside">
-          <li>Your data is processed under our <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a>.</li>
-          <li>Booking details are shared only with your selected suppliers.</li>
-          <li>For support: <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a></li>
+          <li>Parents and guardians are responsible for the supervision of children at all times during the party.</li>
+          <li>Please inform us of any allergies, medical conditions, or special requirements at the time of booking.</li>
+          <li>Ensure venue access is available at the agreed time.</li>
+          <li>An adult must be present to receive deliveries and during all activities.</li>
         </ul>
       </section>
 
-      {/* Your Rights */}
+      {/* Liability */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+          7. Liability
+        </h2>
+        <p className="text-gray-600">
+          Party Snap coordinates and manages your party booking on your behalf. We work with carefully selected local service providers but are not the direct provider of all services. Our total liability is limited to the amount you paid through the platform. We are not responsible for the supervision of children at any time.
+        </p>
+      </section>
+
+      {/* Data & Privacy */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+          8. Data & Privacy
+        </h2>
+        <ul className="space-y-2 text-gray-600 list-disc list-inside">
+          <li>Your data is processed in accordance with our <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a>.</li>
+          <li>Personal and booking details are shared only with service providers where necessary to deliver your party.</li>
+          <li>We will never share your data for third-party marketing without your consent.</li>
+          <li>You can request deletion of your data at any time.</li>
+        </ul>
+      </section>
+
+      {/* Contact & Support */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+          9. Contact & Support
+        </h2>
+        <p className="text-gray-600">
+          For any questions, changes, or support: <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a>
+        </p>
+      </section>
+
+      {/* Your Guarantees */}
       <section className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Your Rights & Guarantees</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Your Guarantees</h3>
         <ul className="space-y-2 text-gray-600 text-sm">
-          <li>• Instant booking confirmation on deposit.</li>
-          <li>• Replacement or refund if a supplier cancels.</li>
-          <li>• Clear cancellation windows and policies.</li>
-          <li>• Support from PartySnap throughout your booking.</li>
+          <li>• Personalised confirmation within 2 working days.</li>
+          <li>• Full refund if we can't arrange any part of your booking.</li>
+          <li>• Add extras anytime through your dashboard.</li>
+          <li>• Dedicated support throughout your party journey.</li>
         </ul>
       </section>
     </div>
@@ -213,7 +253,7 @@ export default function TermsOfService() {
             <p className="text-gray-600 mb-4">
               View the terms that apply to you as a Customer or as a Supplier on PartySnap.
             </p>
-            <p className="text-sm text-gray-500">Last updated: 1 October 2025</p>
+            <p className="text-sm text-gray-500">Last updated: March 2026</p>
 
             {/* Role switcher */}
             <div className="mt-8 inline-flex rounded-lg bg-gray-100 p-1">
