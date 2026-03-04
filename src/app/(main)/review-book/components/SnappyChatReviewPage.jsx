@@ -947,7 +947,13 @@ export default function SnappyChatReviewPage() {
       router.push(paymentUrl);
     } catch (error) {
       console.error("❌ Migration failed:", error);
-      setLoadingError(error.message);
+
+      // Check for duplicate email constraint error
+      if (error.message?.includes('users_email_unique') || error.message?.includes('duplicate key value')) {
+        setLoadingError("This email address is already associated with another account. Please sign in with that account or use a different email address.");
+      } else {
+        setLoadingError(error.message);
+      }
       setIsSubmitting(false);
     }
   };
@@ -1782,17 +1788,15 @@ export default function SnappyChatReviewPage() {
                     )}
                   </div>
 
-                  {/* Trust Message - Final Step Only */}
-                  {currentStep === chatSteps.length - 1 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
-                      <p className="text-xs text-gray-500 text-center leading-relaxed">
-                        We&apos;ll confirm every detail and send your personalised party pack within 2 working days. If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
-                      </p>
-                    </div>
-                  )}
-
                   {/* Navigation Buttons */}
                   <div className={`pt-4 mt-4 border-t border-gray-200 ${currentStepData.showSignupForm ? "max-w-md mx-auto" : ""}`}>
+                    {/* Confirmation message - above CTA on final step */}
+                    {currentStep === chatSteps.length - 1 && (
+                      <p className="text-sm text-gray-600 text-center mb-4">
+                        We&apos;ll confirm every detail and send your personalised party pack within 2 working days.
+                      </p>
+                    )}
+
                     <div className="flex justify-between items-center gap-3">
                       {currentStep > 0 && (
                         <button
@@ -1832,6 +1836,13 @@ export default function SnappyChatReviewPage() {
                       </Button>
                       </div>
                     </div>
+
+                    {/* Safety net message - below CTA on final step, subtle */}
+                    {currentStep === chatSteps.length - 1 && (
+                      <p className="text-[11px] text-gray-400 text-center mt-3">
+                        If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
