@@ -3132,7 +3132,7 @@ export default function SupplierCustomizationModal({
                   Choose Package
                 </label>
 
-                {/* Horizontal scroll on all screens */}
+                {/* Horizontal scroll on all screens - cards sized to show partial 3rd card on mobile */}
                 <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div
                     className="flex gap-2.5 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
@@ -3147,7 +3147,7 @@ export default function SupplierCustomizationModal({
                       return (
                         <div
                           key={pkg.id}
-                          className={`relative flex-shrink-0 w-[175px] sm:w-[190px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                          className={`relative flex-shrink-0 w-[140px] sm:w-[175px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
                             isSelected
                               ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
                               : "border-gray-200 hover:border-gray-300"
@@ -3158,14 +3158,14 @@ export default function SupplierCustomizationModal({
                           }}
                         >
                           {/* Package Image */}
-                          <div className="relative w-full h-20 sm:h-22">
+                          <div className="relative w-full h-[72px] sm:h-22">
                             {packageImage ? (
                               <Image
                                 src={packageImage}
                                 alt={pkg.name}
                                 fill
                                 className="object-cover"
-                                sizes="190px"
+                                sizes="175px"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -3181,12 +3181,12 @@ export default function SupplierCustomizationModal({
                           </div>
 
                           {/* Content */}
-                          <div className="p-2.5 bg-white flex flex-col h-[130px]">
-                            <div className="flex items-start justify-between gap-1.5 mb-0.5">
-                              <h4 className="font-semibold text-gray-900 text-[13px] leading-tight">
+                          <div className="p-2 sm:p-2.5 bg-white flex flex-col h-[115px] sm:h-[130px]">
+                            <div className="flex items-start justify-between gap-1 mb-0.5">
+                              <h4 className="font-semibold text-gray-900 text-[12px] sm:text-[13px] leading-tight line-clamp-2">
                                 {pkg.name}
                               </h4>
-                              <p className="font-bold text-primary-600 text-sm flex-shrink-0">
+                              <p className="font-bold text-primary-600 text-[13px] sm:text-sm flex-shrink-0">
                                 £{parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
                               </p>
                             </div>
@@ -3194,7 +3194,7 @@ export default function SupplierCustomizationModal({
                             {/* Description */}
                             <div className="flex-1 min-h-0 overflow-hidden">
                               {pkg.description && (
-                                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+                                <p className="text-[10px] sm:text-[11px] text-gray-500 leading-relaxed line-clamp-2">
                                   {pkg.description}
                                 </p>
                               )}
@@ -3202,7 +3202,7 @@ export default function SupplierCustomizationModal({
 
                             {/* What's Included */}
                             {(pkg.features?.length > 0 || pkg.contents?.length > 0 || pkg.whatsIncluded?.length > 0) && (
-                              <div className="pt-1.5 border-t border-gray-100 mt-auto">
+                              <div className="pt-1 sm:pt-1.5 border-t border-gray-100 mt-auto">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -3210,9 +3210,9 @@ export default function SupplierCustomizationModal({
                                     setSelectedPackageForModal(pkg)
                                     setShowPackageModal(true)
                                   }}
-                                  className="flex items-center gap-1 text-[11px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
+                                  className="flex items-center gap-1 text-[10px] sm:text-xs text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
                                 >
-                                  <Info className="w-3.5 h-3.5" />
+                                  <Info className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                                   <span>What&apos;s included</span>
                                 </button>
                               </div>
