@@ -20,7 +20,7 @@ export default function FloatingCTA() {
 
       // Get the mobile search form element
       const mobileForm = document.getElementById('search-form')
-      
+
       if (!mobileForm) {
         // If mobile form doesn't exist, don't show CTA
         setShowFloatingCTA(false)
@@ -34,11 +34,16 @@ export default function FloatingCTA() {
       // Check if mobile form is visible in viewport
       const isFormVisible = formRect.top < windowHeight && formRect.bottom > 0
 
+      // Check if footer is visible in viewport
+      const footer = document.querySelector('footer')
+      const isFooterVisible = footer ? footer.getBoundingClientRect().top < windowHeight : false
+
       // Show CTA only if:
       // 1. We're on mobile
       // 2. User has scrolled down more than 50px
       // 3. Mobile form is NOT visible in viewport
-      if (window.scrollY > 50 && !isFormVisible) {
+      // 4. Footer is NOT visible in viewport
+      if (window.scrollY > 50 && !isFormVisible && !isFooterVisible) {
         setShowFloatingCTA(true)
       } else {
         setShowFloatingCTA(false)

@@ -1,25 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import {
   User,
   Mail,
   Calendar,
   MapPin,
-  Edit,
   Save,
   X,
   Phone,
   Home,
-  Clock,
   Package,
-  LogOut
+  LogOut,
+  Camera,
+  ArrowLeft
 } from 'lucide-react'
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -29,29 +29,34 @@ export default function UserSettings() {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
   const [currentParty, setCurrentParty] = useState(null)
-  const [deliveryAddress, setDeliveryAddress] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [editingProfile, setEditingProfile] = useState(false)
-  const [editingDelivery, setEditingDelivery] = useState(false)
-  const [profileForm, setProfileForm] = useState({
+  const [saving, setSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [profileImage, setProfileImage] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
-  })
-  const [deliveryForm, setDeliveryForm] = useState({
-    full_name: '',
     address_line_1: '',
     address_line_2: '',
     city: '',
     postal_code: '',
-    country: 'United Kingdom',
-    phone: '',
     delivery_notes: ''
   })
+
+  const [originalData, setOriginalData] = useState({})
   const router = useRouter()
 
   useEffect(() => {
     loadUserData()
   }, [])
+
+  // Track changes
+  useEffect(() => {
+    const changed = JSON.stringify(formData) !== JSON.stringify(originalData)
+    setHasChanges(changed)
+  }, [formData, originalData])
 
   const loadUserData = async () => {
     try {
@@ -64,47 +69,25 @@ export default function UserSettings() {
       }
 
       setUser(user)
+      setProfileImage(user.user_metadata?.avatar_url || null)
 
       const userResult = await partyDatabaseBackend.getCurrentUser()
       if (userResult.success && userResult.user) {
         const userData = userResult.user
         setUserProfile(userData)
 
-        setProfileForm({
+        const data = {
           full_name: userData.full_name || user.user_metadata?.full_name || '',
           phone: userData.phone || '',
-        })
-
-        if (userData.address_line_1 || userData.city || userData.postcode) {
-          setDeliveryAddress(userData)
-
-          setDeliveryForm({
-            full_name: userData.first_name && userData.last_name
-              ? `${userData.first_name} ${userData.last_name}`.trim()
-              : userData.full_name || '',
-            address_line_1: userData.address_line_1 || '',
-            address_line_2: userData.address_line_2 || '',
-            city: userData.city || '',
-            postal_code: userData.postcode || '',
-            country: 'United Kingdom',
-            phone: userData.phone || '',
-            delivery_notes: userData.delivery_notes || ''
-          })
-        } else {
-          setDeliveryAddress(null)
-          setDeliveryForm({
-            full_name: userData.first_name && userData.last_name
-              ? `${userData.first_name} ${userData.last_name}`.trim()
-              : userData.full_name || '',
-            address_line_1: '',
-            address_line_2: '',
-            city: '',
-            postal_code: '',
-            country: 'United Kingdom',
-            phone: userData.phone || '',
-            delivery_notes: ''
-          })
+          address_line_1: userData.address_line_1 || '',
+          address_line_2: userData.address_line_2 || '',
+          city: userData.city || '',
+          postal_code: userData.postcode || '',
+          delivery_notes: userData.delivery_notes || ''
         }
+
+        setFormData(data)
+        setOriginalData(data)
       }
 
       const partyResult = await partyDatabaseBackend.getCurrentParty()
@@ -119,8 +102,10 @@ export default function UserSettings() {
     }
   }
 
-  const handleSaveProfile = async () => {
+  const handleSave = async () => {
     try {
+      setSaving(true)
+
       const userResult = await partyDatabaseBackend.getCurrentUser()
       if (!userResult.success) {
         console.error('Could not get current user for update')
@@ -130,48 +115,31 @@ export default function UserSettings() {
       const { error } = await supabase
         .from('users')
         .update({
-          full_name: profileForm.full_name,
-          phone: profileForm.phone,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          address_line_1: formData.address_line_1,
+          address_line_2: formData.address_line_2,
+          city: formData.city,
+          postcode: formData.postal_code,
+          delivery_notes: formData.delivery_notes,
           updated_at: new Date().toISOString()
         })
         .eq('id', userResult.user.id)
 
       if (!error) {
-        setEditingProfile(false)
-        await loadUserData()
+        setOriginalData(formData)
+        setHasChanges(false)
       }
     } catch (error) {
       console.error('Error saving profile:', error)
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleSaveDelivery = async () => {
-    try {
-      const userResult = await partyDatabaseBackend.getCurrentUser()
-      if (!userResult.success) {
-        console.error('Could not get current user for update')
-        return
-      }
-
-      const { error } = await supabase
-        .from('users')
-        .update({
-          address_line_1: deliveryForm.address_line_1,
-          address_line_2: deliveryForm.address_line_2,
-          city: deliveryForm.city,
-          postcode: deliveryForm.postal_code,
-          delivery_notes: deliveryForm.delivery_notes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userResult.user.id)
-
-      if (!error) {
-        setEditingDelivery(false)
-        await loadUserData()
-      }
-    } catch (error) {
-      console.error('Error saving delivery address:', error)
-    }
+  const handleCancel = () => {
+    setFormData(originalData)
+    setHasChanges(false)
   }
 
   const handleSignOut = async () => {
@@ -179,10 +147,13 @@ export default function UserSettings() {
     router.push('/')
   }
 
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
   const getUserInitials = () => {
-    if (user?.user_metadata?.full_name || profileForm.full_name) {
-      const name = profileForm.full_name || user?.user_metadata?.full_name
-      return name
+    if (formData.full_name) {
+      return formData.full_name
         .split(' ')
         .map(name => name.charAt(0))
         .join('')
@@ -204,11 +175,11 @@ export default function UserSettings() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
-            <div className="h-32 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-48 bg-gray-200 rounded animate-pulse"></div>
+        <div className="max-w-3xl mx-auto">
+          <div className="h-32 bg-gray-200 animate-pulse" />
+          <div className="px-6 py-8 space-y-6">
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3" />
+            <div className="h-48 bg-gray-200 rounded animate-pulse" />
           </div>
         </div>
       </div>
@@ -217,284 +188,272 @@ export default function UserSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-14 h-14 bg-primary-500 text-white rounded-full flex items-center justify-center text-lg font-semibold">
-              {getUserInitials()}
+      <div className="max-w-3xl mx-auto">
+        {/* Cover Image */}
+        <div className="relative h-32 sm:h-40 bg-gradient-to-r from-primary-100 via-primary-50 to-pink-100">
+          <button className="absolute bottom-3 right-3 p-2 bg-white/80 hover:bg-white rounded-lg shadow-sm transition-colors">
+            <Camera className="w-4 h-4 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Profile Header */}
+        <div className="relative px-4 sm:px-6 pb-6">
+          {/* Profile Photo - Overlapping */}
+          <div className="absolute -top-12 left-4 sm:left-6">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-200 flex items-center justify-center">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-12 h-12 text-gray-400" />
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* Title and Actions */}
+          <div className="pt-16 sm:pt-4 sm:pl-32 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
-              <p className="text-gray-500 text-sm">{user?.email}</p>
+              <h1 className="text-2xl font-semibold text-gray-900">Profile</h1>
+              <p className="text-sm text-gray-500">Update your photo and personal details.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={!hasChanges || saving}
+                className="px-4"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!hasChanges || saving}
+                className="px-4 bg-primary-500 hover:bg-primary-600"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <div>
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <User className="w-5 h-5" />
-                  <span>Personal Information</span>
-                </CardTitle>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (editingProfile) {
-                    setEditingProfile(false)
-                    setProfileForm({
-                      full_name: userProfile?.full_name || user?.user_metadata?.full_name || '',
-                      phone: userProfile?.phone || '',
-                    })
-                  } else {
-                    setEditingProfile(true)
-                  }
-                }}
-              >
-                {editingProfile ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {editingProfile ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      id="full_name"
-                      value={profileForm.full_name}
-                      onChange={(e) => setProfileForm({...profileForm, full_name: e.target.value})}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={profileForm.phone}
-                      onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                      placeholder="07XXX XXXXXX"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      value={user?.email || ''}
-                      disabled
-                      className="bg-gray-100"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                  </div>
-                  <Button onClick={handleSaveProfile} className="w-full bg-primary-500 hover:bg-primary-600">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Name</span>
-                    <span className="font-medium">{profileForm.full_name || 'Not provided'}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Email</span>
-                    <span className="font-medium">{user?.email}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Phone</span>
-                    <span className="font-medium">{profileForm.phone || 'Not provided'}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Form Content */}
+        <div className="px-4 sm:px-6 pb-12">
+          <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
 
-          {/* Delivery Address */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <div>
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Package className="w-5 h-5" />
-                  <span>Delivery Address</span>
-                </CardTitle>
+            {/* Full Name */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                Full name
+              </Label>
+              <div className="sm:col-span-2">
+                <Input
+                  value={formData.full_name}
+                  onChange={(e) => updateField('full_name', e.target.value)}
+                  placeholder="Enter your full name"
+                  className="max-w-md"
+                />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (editingDelivery) {
-                    setEditingDelivery(false)
-                    if (deliveryAddress) {
-                      setDeliveryForm({
-                        full_name: deliveryAddress.first_name && deliveryAddress.last_name
-                          ? `${deliveryAddress.first_name} ${deliveryAddress.last_name}`.trim()
-                          : deliveryAddress.full_name || '',
-                        address_line_1: deliveryAddress.address_line_1 || '',
-                        address_line_2: deliveryAddress.address_line_2 || '',
-                        city: deliveryAddress.city || '',
-                        postal_code: deliveryAddress.postcode || '',
-                        country: 'United Kingdom',
-                        phone: deliveryAddress.phone || '',
-                        delivery_notes: deliveryAddress.delivery_notes || ''
-                      })
-                    }
-                  } else {
-                    setEditingDelivery(true)
-                  }
-                }}
-              >
-                {editingDelivery ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {editingDelivery ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="address_line_1">Address Line 1</Label>
-                    <Input
-                      id="address_line_1"
-                      value={deliveryForm.address_line_1}
-                      onChange={(e) => setDeliveryForm({...deliveryForm, address_line_1: e.target.value})}
-                      placeholder="Street address"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address_line_2">Address Line 2 (Optional)</Label>
-                    <Input
-                      id="address_line_2"
-                      value={deliveryForm.address_line_2}
-                      onChange={(e) => setDeliveryForm({...deliveryForm, address_line_2: e.target.value})}
-                      placeholder="Apartment, suite, etc."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        value={deliveryForm.city}
-                        onChange={(e) => setDeliveryForm({...deliveryForm, city: e.target.value})}
-                        placeholder="London"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postal_code">Postcode</Label>
-                      <Input
-                        id="postal_code"
-                        value={deliveryForm.postal_code}
-                        onChange={(e) => setDeliveryForm({...deliveryForm, postal_code: e.target.value})}
-                        placeholder="SW1A 1AA"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="delivery_notes">Delivery Notes (Optional)</Label>
-                    <Input
-                      id="delivery_notes"
-                      value={deliveryForm.delivery_notes}
-                      onChange={(e) => setDeliveryForm({...deliveryForm, delivery_notes: e.target.value})}
-                      placeholder="Special instructions"
-                    />
-                  </div>
-                  <Button onClick={handleSaveDelivery} className="w-full bg-primary-500 hover:bg-primary-600">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Address
-                  </Button>
-                </div>
-              ) : deliveryAddress ? (
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="font-medium">{deliveryForm.address_line_1}</p>
-                    {deliveryForm.address_line_2 && <p className="text-gray-600">{deliveryForm.address_line_2}</p>}
-                    <p className="text-gray-600">{deliveryForm.city}, {deliveryForm.postal_code}</p>
-                    {deliveryForm.delivery_notes && (
-                      <p className="text-sm text-gray-500 mt-1 italic">"{deliveryForm.delivery_notes}"</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Home className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-3">No address saved</p>
-                  <Button onClick={() => setEditingDelivery(true)} variant="outline" size="sm">
-                    Add Address
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Current Party */}
+            {/* Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                Email address
+              </Label>
+              <div className="sm:col-span-2">
+                <Input
+                  value={user?.email || ''}
+                  disabled
+                  className="max-w-md bg-gray-50 text-gray-500"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Email cannot be changed</p>
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                Phone number
+              </Label>
+              <div className="sm:col-span-2">
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="07XXX XXXXXX"
+                  className="max-w-md"
+                />
+              </div>
+            </div>
+
+            {/* Your Photo */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Your photo
+                </Label>
+                <p className="text-xs text-gray-400 mt-0.5">This will be displayed on your profile.</p>
+              </div>
+              <div className="sm:col-span-2 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <button className="text-gray-500 hover:text-gray-700 font-medium">
+                    Delete
+                  </button>
+                  <button className="text-primary-600 hover:text-primary-700 font-medium">
+                    Update
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address Section Header */}
+            <div className="p-4 sm:p-6 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Delivery Address
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">For items that need delivering to you before the party</p>
+            </div>
+
+            {/* Address Line 1 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                Address line 1
+              </Label>
+              <div className="sm:col-span-2">
+                <Input
+                  value={formData.address_line_1}
+                  onChange={(e) => updateField('address_line_1', e.target.value)}
+                  placeholder="House number and street"
+                  className="max-w-md"
+                />
+              </div>
+            </div>
+
+            {/* Address Line 2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                Address line 2
+              </Label>
+              <div className="sm:col-span-2">
+                <Input
+                  value={formData.address_line_2}
+                  onChange={(e) => updateField('address_line_2', e.target.value)}
+                  placeholder="Apartment, suite, floor (optional)"
+                  className="max-w-md"
+                />
+              </div>
+            </div>
+
+            {/* City & Postcode */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <Label className="text-sm font-medium text-gray-700 sm:pt-2">
+                City & Postcode
+              </Label>
+              <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 max-w-md">
+                <Input
+                  value={formData.city}
+                  onChange={(e) => updateField('city', e.target.value)}
+                  placeholder="City"
+                  className="flex-1"
+                />
+                <Input
+                  value={formData.postal_code}
+                  onChange={(e) => updateField('postal_code', e.target.value)}
+                  placeholder="Postcode"
+                  className="w-full sm:w-32"
+                />
+              </div>
+            </div>
+
+            {/* Delivery Notes */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 items-start">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Delivery notes
+                </Label>
+                <p className="text-xs text-gray-400 mt-0.5">Special instructions for deliveries</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Textarea
+                  value={formData.delivery_notes}
+                  onChange={(e) => updateField('delivery_notes', e.target.value)}
+                  placeholder="e.g. Leave with neighbour if not home"
+                  rows={3}
+                  className="max-w-md resize-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Current Party Card */}
           {currentParty && (
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Calendar className="w-5 h-5" />
-                  <span>Current Party</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Party for</span>
-                    <span className="font-medium">{currentParty.child_name}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Date</span>
-                    <span className="font-medium">{formatDate(currentParty.party_date)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Guests</span>
-                    <span className="font-medium">{currentParty.guest_count}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-500">Status</span>
-                    <Badge variant={currentParty.status === 'confirmed' ? 'default' : 'secondary'}>
-                      {currentParty.status}
-                    </Badge>
-                  </div>
+            <div className="mt-6 bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <Calendar className="w-4 h-4" />
+                Current Party
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Party for</p>
+                  <p className="font-medium text-gray-900">{currentParty.child_name}</p>
                 </div>
-                <Button variant="outline" className="w-full mt-4" asChild>
-                  <a href="/dashboard">View Dashboard</a>
-                </Button>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-gray-500">Date</p>
+                  <p className="font-medium text-gray-900">{formatDate(currentParty.party_date)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Guests</p>
+                  <p className="font-medium text-gray-900">{currentParty.guest_count}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Status</p>
+                  <Badge variant={currentParty.status === 'confirmed' ? 'default' : 'secondary'} className="mt-0.5">
+                    {currentParty.status}
+                  </Badge>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="mt-4" asChild>
+                <a href="/dashboard">View Dashboard</a>
+              </Button>
+            </div>
           )}
 
-          {/* Legal Links */}
-          <Card>
-            <CardContent className="py-4">
-              <div className="flex flex-wrap gap-4 text-sm">
-                <a href="/terms" className="text-gray-500 hover:text-gray-700">Terms of Service</a>
-                <a href="/privacy-policy" className="text-gray-500 hover:text-gray-700">Privacy Policy</a>
-                <a href="/cookies" className="text-gray-500 hover:text-gray-700">Cookie Policy</a>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Sign Out */}
-          <Button
-            variant="outline"
-            className="w-full text-gray-600 hover:text-gray-800"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          {/* Footer Links */}
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-gray-200">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <a href="/terms" className="text-gray-500 hover:text-gray-700">Terms of Service</a>
+              <a href="/privacy-policy" className="text-gray-500 hover:text-gray-700">Privacy Policy</a>
+              <a href="/cookies" className="text-gray-500 hover:text-gray-700">Cookie Policy</a>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-red-600"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
 
           {/* Support */}
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 mt-6">
             Need help? Contact us at{' '}
             <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">
               hello@partysnap.co.uk
