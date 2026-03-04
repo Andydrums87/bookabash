@@ -1065,16 +1065,9 @@ checkSupplierLocation(supplier, partyLocation) {
     const isLargeParty = guests >= 30;
     const age = parseInt(childAge) || 6;
 
-    // AGE-BASED RECOMMENDATIONS: For ages 1-2, we recommend a simpler party
-    // - Pub/restaurant with catering (no blank canvas venue)
-    // - Cake and party bags
-    // - NO entertainer (too young to engage)
-    // - NO bouncy castles/activities (safety concern)
-    const isToddlerParty = age <= 2;
-
-    if (isToddlerParty) {
-      console.log(`👶 Toddler party detected (age ${age}) - using simplified party recommendations`);
-    }
+    // AGE-BASED RECOMMENDATIONS - DISABLED: Previously excluded entertainers for ages 1-2
+    // Now treating all ages the same for party building
+    const isToddlerParty = false; // Disabled - was: age <= 2
 
     // Create party details object for pricing calculations
     const partyDetails = {

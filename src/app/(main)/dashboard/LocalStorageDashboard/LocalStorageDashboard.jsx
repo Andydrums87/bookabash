@@ -1952,11 +1952,12 @@ const handleChildPhotoUpload = async (file) => {
         {/* Container for rest of content */}
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8 lg:pb-20">
           <div>
-            {/* Age-based recommendation banner for ages 1-2 */}
+            {/* Age-based recommendation banner for ages 1-2 - TEMPORARILY HIDDEN
             <AgeBasedRecommendationBanner
               childAge={partyDetails?.childAge}
               childName={partyDetails?.childName}
             />
+            */}
 
             {/* Main Content */}
             <main className="space-y-8">
