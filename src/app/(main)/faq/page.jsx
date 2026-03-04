@@ -21,43 +21,68 @@ export default function FAQ() {
   const faqs = [
     {
       id: 1,
-      question: "How far in advance should I book?",
-      answer: "We recommend booking 2-4 weeks in advance for the best supplier availability. However, we often accommodate last-minute bookings depending on supplier availability in your area."
+      question: "How does PartySnap work?",
+      answer: "Pick a theme, and we'll build a complete party plan for you — venue, entertainment, cakes, decorations, and more. You can customise everything from your dashboard, then book it all in one go. We handle everything so you don't have to."
     },
     {
       id: 2,
-      question: "What areas do you cover?",
-      answer: "We currently cover most of England, with strongest coverage in London and the South East. Our network is rapidly expanding. Enter your postcode on our platform to see available suppliers in your area."
+      question: "How does the booking process work?",
+      answer: "Once you've secured your party, our team gets to work sourcing and arranging everything with our partners. Within 2 working days, you'll receive a full confirmation email with all the details locked in. Everything is subject to availability — if anything isn't available, we'll contact you with a great alternative or give you a full refund. You're never left in the dark."
     },
     {
       id: 3,
-      question: "How much does PartySnap cost?",
-      answer: "PartySnap is completely free to use! You only pay the suppliers directly for their services. We don't add any platform fees or hidden charges."
+      question: "How much does it cost?",
+      answer: "Every party is different. Your total depends on which categories and options you choose. You'll see the full price breakdown before you pay — no hidden fees."
     },
     {
       id: 4,
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards (Visa, Mastercard, American Express), debit cards, and Apple Pay. All payments are processed securely through Stripe."
+      question: "What areas do you cover?",
+      answer: "We currently cover St Albans and surrounding areas in Hertfordshire. We're expanding soon — if you're outside our area, get in touch and we'll see what we can do."
     },
     {
       id: 5,
-      question: "Can I change or cancel my booking?",
-      answer: "Yes! You can modify your booking up to 7 days before your party date without any fees. Cancellations made more than 7 days in advance receive a full refund."
+      question: "How far in advance should I book?",
+      answer: "We recommend at least 3-4 weeks before your party date. The earlier you book, the more availability you'll have — especially for popular dates like weekends in summer."
     },
     {
       id: 6,
-      question: "What if a supplier doesn't show up?",
-      answer: "This is extremely rare due to our vetting process, but if it happens, we have emergency backup suppliers and will do everything possible to save your party. If we can't provide a suitable replacement, you'll receive a full refund."
+      question: "Can I change my party plan after booking?",
+      answer: "Yes. Your dashboard stays live after booking. You can add extras, swap options, or update details anytime."
     },
     {
       id: 7,
-      question: "How do you vet your suppliers?",
-      answer: "Every supplier goes through our verification process including background checks, insurance verification, and portfolio review. Only suppliers who consistently deliver excellent service remain in our network."
+      question: "Can I cancel my booking?",
+      answer: "Yes — free cancellation is available. Check our terms and conditions for the full cancellation policy and timeframes."
     },
     {
       id: 8,
-      question: "Can I book multiple suppliers for one party?",
-      answer: "Absolutely! Most parties benefit from multiple suppliers - entertainers, decorators, catering, etc. Our platform makes it easy to coordinate everything in one place."
+      question: "What if a partner doesn't show up?",
+      answer: "We vet every partner on our platform. In the rare event something goes wrong, we'll arrange an alternative or refund you. You'll also receive partner contact details 48 hours before your party."
+    },
+    {
+      id: 9,
+      question: "How do you choose your partners?",
+      answer: "Every partner is vetted before they join the platform. We check reviews, experience, insurance, and reliability. Only the best make it into Snappy's squad."
+    },
+    {
+      id: 10,
+      question: "What payment methods do you accept?",
+      answer: "We accept all major credit and debit cards through Stripe. Your payment is fully secure."
+    },
+    {
+      id: 11,
+      question: "Can I add more to my party later?",
+      answer: "Absolutely. After booking, you can add categories you skipped — balloons, face painting, photography, and more — directly from your dashboard."
+    },
+    {
+      id: 12,
+      question: "How do invitations work?",
+      answer: "Once your venue is confirmed, you can create and send digital invitations from your dashboard. Share them via WhatsApp, email, or our built-in invite builder."
+    },
+    {
+      id: 13,
+      question: "How do I contact you?",
+      answer: "Reply to any of our emails or drop us a line at hello@partysnap.co.uk. Real humans, no bots."
     }
   ]
 
