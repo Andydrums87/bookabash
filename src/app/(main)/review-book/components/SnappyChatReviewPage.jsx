@@ -181,14 +181,14 @@ export default function SnappyChatReviewPage() {
     {
       id: 'supplier-messages',
       title: "Special Requests",
-      description: "Let us know any important details for your party (Optional)",
+      description: "",
       showSupplierMessages: true,
       optional: true
     },
     {
       id: 'forgotten',
       title: "Anything Missing?",
-      description: "Not ready to decide? You can always add more from your dashboard later.",
+      description: "",
       showMissingSuppliers: true,
       optional: true
     }
@@ -1201,14 +1201,16 @@ export default function SnappyChatReviewPage() {
 
               {/* Main Content Card */}
               <Card className="border border-gray-200 bg-white shadow-sm">
-                <CardHeader className="bg-[hsl(var(--primary-500))] p-6 rounded-t-lg">
+                <CardHeader className={`bg-[hsl(var(--primary-500))] p-6 rounded-t-lg ${!currentStepData.description ? 'pb-5' : ''}`}>
                 <div className="">
-                    <h2 className="text-lg font-bold text-white mb-1">
+                    <h2 className={`text-lg font-bold text-white ${currentStepData.description ? 'mb-1' : 'mb-0'}`}>
                       {currentStepData.title}
                     </h2>
-                    <p className="text-sm text-white font-light">
-                      {currentStepData.description}
-                    </p>
+                    {currentStepData.description && (
+                      <p className="text-sm text-white font-light">
+                        {currentStepData.description}
+                      </p>
+                    )}
                     </div>
                     </CardHeader>
                 <CardContent className="p-6">
@@ -1275,10 +1277,10 @@ export default function SnappyChatReviewPage() {
                         <div className="rounded-lg ">
                           <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
-                            Delivery Address
+                            Your Address
                           </h3>
                           <p className="text-xs text-gray-600 mb-3">
-                          Where should items be delivered?
+                          For items that need delivering to you before the party (e.g. party bags, decorations)
                           </p>
                           
                           <div className="space-y-3">
@@ -1399,7 +1401,7 @@ export default function SnappyChatReviewPage() {
                           placeholder="e.g. My child has a nut allergy, please write 'Happy Birthday Theo' on the cake, we need early access to set up decorations..."
                           value={specialRequests}
                           onChange={(e) => setSpecialRequests(e.target.value)}
-                          className="min-h-[140px] text-sm placeholder:text-gray-400 placeholder:text-sm border-gray-200 focus:border-primary-300 resize-none rounded-xl bg-white"
+                          className="min-h-[140px] text-sm placeholder:text-gray-300 placeholder:text-xs border-gray-200 focus:border-primary-300 resize-none rounded-xl bg-white"
                         />
 
                         {specialRequests.trim() && (
@@ -1419,6 +1421,9 @@ export default function SnappyChatReviewPage() {
                     {/* Missing Suppliers */}
                     {currentStepData.showMissingSuppliers && (
                       <div>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Not ready to decide? You can always add more from your dashboard later.
+                        </p>
                         <MissingSuppliersSuggestions
                           partyPlan={fullSupplierData}
                           partyDetails={partyDetails}
@@ -1793,7 +1798,7 @@ export default function SnappyChatReviewPage() {
                     {/* Confirmation message - above CTA on final step */}
                     {currentStep === chatSteps.length - 1 && (
                       <p className="text-sm text-gray-600 text-center mb-4">
-                        We&apos;ll confirm every detail and send your personalised party pack within 2 working days.
+                        You sit back and relax, we&apos;ll handle the rest.
                       </p>
                     )}
 
@@ -1842,6 +1847,20 @@ export default function SnappyChatReviewPage() {
                       <p className="text-[11px] text-gray-400 text-center mt-3">
                         If anything isn&apos;t available, we&apos;ll find a great alternative or give you a full refund.
                       </p>
+                    )}
+
+                    {/* Error Message for Migration/Payment Errors */}
+                    {loadingError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                        <p className="text-sm text-red-700">{loadingError}</p>
+                        <button
+                          type="button"
+                          onClick={() => setLoadingError(null)}
+                          className="mt-2 text-xs text-red-600 hover:text-red-800 underline"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     )}
                   </div>
                 </CardContent>

@@ -8,16 +8,19 @@ import { ChevronDown, Search, X, UsersIcon } from "lucide-react"
 const eventTypes = [
 
   // Popular themes
-  { value: "no-theme", label: "No theme", category: "Popular"   },
+  // { value: "no-theme", label: "No theme", category: "Popular"   },
   { value: "princess", label: "Princess", category: "Popular" },
   { value: "superhero", label: "Superhero", category: "Popular" },
-  { value: "spiderman", label: "Spiderman", category: "Popular" },
+
   { value: "unicorn", label: "Unicorn Magic", category: "Popular" },
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
-  { value: "frozen", label: "Frozen", category: "Popular" },
+ 
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },
   { value: "mermaid", label: "Mermaid", category: "Popular" },
+
   { value: "kpop-demon-hunters", label: "K-Pop Demon Hunters", category: "Popular" },
+  { value: "spiderman", label: "Spiderman", category: "Popular" },
+  { value: "frozen", label: "Frozen", category: "Popular" },
 
 
   // Adventure themes
@@ -57,7 +60,7 @@ const eventTypes = [
 
   // Character themes
   // { value: "paw-patrol", label: "Paw Patrol", category: "Characters" },
-  { value: "frozen", label: "Frozen", category: "Characters" },
+  // { value: "frozen", label: "Frozen", category: "Characters" },
   // { value: "peppa-pig", label: "Peppa Pig", category: "Characters" },
   // { value: "minecraft", label: "Minecraft", category: "Characters" },
   // { value: "pokemon", label: "Pokemon", category: "Characters" },

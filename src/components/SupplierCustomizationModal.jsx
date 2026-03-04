@@ -2567,104 +2567,17 @@ export default function SupplierCustomizationModal({
                   )}
                 </div>
 
-                {/* Delivery Method */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2.5">
-                    Delivery Method
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Collection Option */}
-                    {cakeFulfillmentOptions.offersPickup && (
-                      <button
-                        type="button"
-                        onClick={() => setFulfillmentMethod("pickup")}
-                        className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
-                          fulfillmentMethod === "pickup"
-                            ? "border-[hsl(var(--primary-300))] bg-primary-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
-                      >
-                        {/* Header row */}
-                        <div className="flex items-center justify-between w-full mb-2">
-                          <span className={`text-sm ${fulfillmentMethod === "pickup" ? "text-gray-900" : "text-gray-700"}`}>
-                            Collection
-                          </span>
-                          {fulfillmentMethod === "pickup" && (
-                            <CheckCircle className="w-5 h-5 text-primary-500" />
-                          )}
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-xs text-gray-500 mb-3">Collect from the baker's location</p>
-
-                        {/* Price row */}
-                        <div className="flex items-center w-full mt-auto">
-                          <span className="text-sm text-gray-900">Free</span>
-                        </div>
-                      </button>
-                    )}
-
-                    {/* Delivery Option */}
-                    {cakeFulfillmentOptions.offersDelivery && (
-                      <button
-                        type="button"
-                        onClick={() => setFulfillmentMethod("delivery")}
-                        className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
-                          fulfillmentMethod === "delivery"
-                            ? "border-[hsl(var(--primary-300))] bg-primary-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
-                      >
-                        {/* Header row */}
-                        <div className="flex items-center justify-between w-full mb-2">
-                          <span className={`text-sm ${fulfillmentMethod === "delivery" ? "text-gray-900" : "text-gray-700"}`}>
-                            Delivery
-                          </span>
-                          {fulfillmentMethod === "delivery" && (
-                            <CheckCircle className="w-5 h-5 text-primary-500" />
-                          )}
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-xs text-gray-500 mb-3">Delivered 1-2 days before your party</p>
-
-                        {/* Price row */}
-                        <div className="flex items-center justify-between w-full mt-auto">
-                          {(() => {
-                            // Get delivery fee for currently selected package
-                            const pkgDeliveryFee = selectedPackage?.deliveryFee
-                            const effectiveDeliveryFee = pkgDeliveryFee !== undefined && pkgDeliveryFee !== null && pkgDeliveryFee !== ''
-                              ? parseFloat(pkgDeliveryFee) || 0
-                              : cakeFulfillmentOptions.deliveryFee || 0
-                            return (
-                              <span className="text-sm text-gray-900">
-                                {effectiveDeliveryFee > 0 ? `+£${effectiveDeliveryFee.toFixed(2)}` : "Free"}
-                              </span>
-                            )
-                          })()}
-                        </div>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Pickup Location Info */}
-                  {fulfillmentMethod === "pickup" && (
-                    <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <div className="flex items-start gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm text-gray-900">Collection Address</p>
-                          <p className="text-xs text-gray-500 mt-1">The collection address will be shared after booking is confirmed.</p>
-                        </div>
-                      </div>
+                {/* Delivery Included Message */}
+                <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Truck className="w-4 h-4 text-green-600" />
                     </div>
-                  )}
-
-                  {/* Delivery/Collection Note */}
-                  <p className="text-xs text-gray-500 mt-3">
-                    Delivery date and collection details are confirmed after booking.
-                  </p>
+                    <div>
+                      <p className="text-sm font-medium text-green-900">Free delivery included</p>
+                      <p className="text-xs text-green-700 mt-0.5">Delivered to your home 1-2 days before your party</p>
+                    </div>
+                  </div>
                 </div>
 
               </section>
@@ -4265,17 +4178,9 @@ export default function SupplierCustomizationModal({
                           <p>{serviceDetails.deliveryInfo}</p>
                         ) : (
                           <>
-                            <p><span className="font-medium text-gray-900">Delivery:</span> Delivered to your venue or home address</p>
-                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm delivery window after booking</p>
+                            <p><span className="font-medium text-gray-900">Free delivery:</span> Delivered to your home 1-2 days before your party</p>
+                            <p><span className="font-medium text-gray-900">Timing:</span> We'll confirm the exact delivery window after booking</p>
                           </>
-                        )}
-                      </AccordionItem>
-
-                      <AccordionItem id="collection" title="Collection Information">
-                        {serviceDetails.collectionInfo ? (
-                          <p>{serviceDetails.collectionInfo}</p>
-                        ) : (
-                          <p>Collection available — address provided after booking confirmation.</p>
                         )}
                       </AccordionItem>
 
