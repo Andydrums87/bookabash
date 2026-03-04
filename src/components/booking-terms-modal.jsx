@@ -15,8 +15,8 @@ export function BookingTermsModal({ children, partyDetails }) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b">
-          <DialogTitle className="text-lg font-semibold text-gray-900">Booking Terms & Conditions</DialogTitle>
-          <p className="text-sm text-gray-600 mt-1">Terms for booking services through PartySnap.</p>
+          <DialogTitle className="text-lg font-semibold text-gray-900">Party Snap — Booking Terms & Conditions</DialogTitle>
+          <p className="text-sm text-gray-500 mt-1">Last updated: March 2026</p>
           {partyDetails && (
             <div className="border border-gray-200 rounded p-3 mt-3 bg-gray-50">
               <p className="text-sm text-gray-700">
@@ -27,187 +27,125 @@ export function BookingTermsModal({ children, partyDetails }) {
         </DialogHeader>
 
         <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto">
-          <div className="space-y-4 text-sm leading-relaxed">
+          <div className="space-y-5 text-sm leading-relaxed">
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">1. Booking Confirmation</h2>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>Your booking is confirmed once payment is processed</li>
-                <li>You'll receive email confirmation with supplier details</li>
-                <li>Suppliers are notified immediately and will contact you</li>
-                <li>All bookings are subject to these terms</li>
-              </ul>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">1. How Your Booking Works</h2>
+              <p className="text-gray-700">
+                When you place your order, our team gets to work confirming every element of your party. You'll receive a personalised confirmation pack within 2 working days. If any part of your party can't be arranged as planned, we'll offer you a suitable alternative or a full refund for that item.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">2. Payment Terms</h2>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>
-                  <strong>Deposits:</strong> 30% deposit secures service bookings, remainder due on party day
-                </li>
-                <li>
-                  <strong>Full Payments:</strong> Products (cakes, party bags) require full payment upfront
-                </li>
-                <li>
-                  <strong>Processing:</strong> Payments processed securely via Stripe
-                </li>
-                <li>
-                  <strong>Receipts:</strong> Email confirmation sent immediately
-                </li>
-              </ul>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">2. Payment</h2>
+              <p className="text-gray-700">
+                Full payment is taken at the time of booking. Payments are processed securely via Stripe. Klarna interest-free instalments are available on eligible orders. You'll receive an email receipt immediately after payment.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">3. Cancellation Policy</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">3. Your Confirmation Pack</h2>
+              <p className="text-gray-700 mb-2">
+                Within 2 working days of your order, we'll send you a confirmation pack including:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li>Confirmed venue details and access times</li>
+                <li>A summary of everything booked for your party</li>
+                <li>Delivery and setup information</li>
+                <li>What to expect on the day</li>
+              </ul>
+              <p className="text-gray-700 mt-2">
+                If we need to make any changes to your selections, we'll contact you before confirming.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">4. Cancellation Policy</h2>
 
               <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-800 mb-1">3.1 Customer Cancellations</h3>
+                <h3 className="text-sm font-medium text-gray-800 mb-1">If you cancel:</h3>
                 <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>
-                    <strong>More than 48 hours:</strong> Full refund minus 5% processing fee
-                  </li>
-                  <li>
-                    <strong>24-48 hours:</strong> 50% refund for deposits, no refund for full payments
-                  </li>
-                  <li>
-                    <strong>Less than 24 hours:</strong> No refund
-                  </li>
-                  <li>Weather cancellations: Full refund if outdoor services affected</li>
+                  <li><strong>More than 14 days before your party:</strong> full refund</li>
+                  <li><strong>Between 7 and 14 days before your party:</strong> 50% refund</li>
+                  <li><strong>Less than 7 days before your party:</strong> no refund</li>
+                  <li>If we are unable to confirm any part of your booking within our 2 working day window: full refund for that item</li>
                 </ul>
 
-                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">3.2 Supplier Cancellations</h3>
+                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">If we cancel:</h3>
                 <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Full refund if supplier cancels for any reason</li>
-                  <li>We'll help find replacement suppliers when possible</li>
-                  <li>Additional compensation may apply for late cancellations</li>
+                  <li>If we're unable to fulfil any part of your party, you'll receive a full refund for that item</li>
+                  <li>We'll always try to find a suitable alternative first</li>
                 </ul>
               </div>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">4. Party Day Responsibilities</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">5. Changes to Your Booking</h2>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li>You can add extras to your party at any time through your dashboard, subject to availability</li>
+                <li>To remove or change items, contact us at bookings@partysnap.co.uk</li>
+                <li>Changes are subject to availability and may affect pricing</li>
+                <li>Changes made less than 7 days before your party may not be possible</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">6. On the Day</h2>
 
               <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-800 mb-1">4.1 Your Responsibilities</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Provide safe, suitable venue access for suppliers</li>
-                  <li>Ensure adult supervision of children at all times</li>
-                  <li>Inform suppliers of any allergies or special requirements</li>
-                  <li>Have remaining payment ready (if deposits were paid)</li>
-                  <li>Provide parking information and access details</li>
-                </ul>
+                <h3 className="text-sm font-medium text-gray-800 mb-1">What we handle:</h3>
+                <p className="text-gray-700 mb-2">
+                  All deliveries, setup, and coordination with our service providers. Everything arrives at the right place at the right time.
+                </p>
 
-                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">4.2 Supplier Responsibilities</h3>
+                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">What we need from you:</h3>
                 <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Arrive on time with all equipment and materials</li>
-                  <li>Provide services as described in their profile</li>
-                  <li>Maintain appropriate insurance and safety standards</li>
-                  <li>Clean up their area after service completion</li>
+                  <li>Ensure venue access at the agreed time</li>
+                  <li>An adult present to receive deliveries and supervise children at all times</li>
+                  <li>Let us know in advance about any allergies, medical conditions, or special requirements</li>
+                  <li>Provide parking information and access details where needed</li>
                 </ul>
               </div>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">5. Safety & Child Protection</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">7. Allergies and Dietary Requirements</h2>
+              <p className="text-gray-700">
+                Please inform us of any allergies or dietary requirements at the time of booking. This applies to cakes, party bags containing sweets, face painting products, and any other items that may come into contact with children. While we take every care, parents are responsible for checking suitability for their children.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">8. Liability</h2>
+              <p className="text-gray-700">
+                Party Snap coordinates and manages your party booking. We work with carefully selected local service providers to deliver your party. While we take every care to ensure quality and reliability, our total liability is limited to the amount you paid for your booking. Parents and guardians are responsible for the supervision of children at all times.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">9. Data and Privacy</h2>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>All suppliers are background checked where required by law</li>
-                <li>Parents/guardians must supervise children during activities</li>
-                <li>Inform suppliers of any medical conditions or allergies</li>
-                <li>PartySnap is not responsible for child supervision</li>
-                <li>Report any safety concerns immediately</li>
+                <li>Your personal and booking details are used solely for the purpose of arranging your party</li>
+                <li>Your contact information may be shared with our service providers where necessary to deliver your booking</li>
+                <li>We will never share your details for marketing purposes without your consent</li>
+                <li>You can request deletion of your data at any time</li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">6. Liability & Insurance</h2>
-
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-800 mb-1">6.1 Supplier Insurance</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>All suppliers carry public liability insurance</li>
-                  <li>Coverage details available on request</li>
-                  <li>Suppliers responsible for their equipment and actions</li>
-                </ul>
-
-                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">6.2 Platform Liability</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>PartySnap connects customers with independent suppliers</li>
-                  <li>We are not liable for supplier performance or safety</li>
-                  <li>Our liability is limited to refund of payments made</li>
-                  <li>You use the platform at your own risk</li>
-                </ul>
-              </div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">10. Feedback</h2>
+              <p className="text-gray-700">
+                After your party, we'd love to hear how it went. Your feedback helps us improve and helps other parents make decisions. We may follow up by email to ask about your experience.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">7. Communication & Changes</h2>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>Direct communication with suppliers after booking</li>
-                <li>Changes to bookings must be agreed by both parties</li>
-                <li>Contact PartySnap support for assistance</li>
-                <li>Emergency contact details provided after booking</li>
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">8. Reviews & Feedback</h2>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>You may review suppliers after your party</li>
-                <li>Reviews must be honest and based on actual experience</li>
-                <li>Suppliers may respond to reviews publicly</li>
-                <li>Inappropriate reviews will be removed</li>
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">9. Disputes & Resolution</h2>
-
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-800 mb-1">9.1 Service Issues</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Report issues within 48 hours of your party</li>
-                  <li>We'll mediate between you and suppliers</li>
-                  <li>Partial refunds may be offered for service issues</li>
-                  <li>Suppliers have opportunity to resolve complaints</li>
-                </ul>
-
-                <h3 className="text-sm font-medium text-gray-800 mb-1 mt-3">9.2 Payment Disputes</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Contact us before disputing with your bank</li>
-                  <li>We'll investigate all payment concerns</li>
-                  <li>Bank chargebacks may affect future bookings</li>
-                </ul>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">10. Data Protection</h2>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>Your booking details shared with selected suppliers only</li>
-                <li>Contact information used for booking coordination</li>
-                <li>Party photos may be used for marketing (with permission)</li>
-                <li>You can request data deletion after your party</li>
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">11. Contact Information</h2>
-              <p className="text-gray-700 mb-2">For booking support and queries:</p>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>Email: bookings@partysnap.co.uk</li>
-                <li>Phone: [YOUR PHONE NUMBER]</li>
-                <li>Emergency support available during party hours</li>
-              </ul>
-            </div>
-
-            <div className="border border-gray-200 rounded p-4 bg-gray-50 mt-6">
-              <h4 className="font-medium text-gray-900 mb-2">Your Booking Rights:</h4>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Professional service guarantee</li>
-                <li>• Full refund if suppliers cancel</li>
-                <li>• 48-hour booking protection</li>
-                <li>• Customer support throughout your party journey</li>
-              </ul>
-              <p className="text-xs text-gray-500 mt-3">Last updated: January 2025</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">11. Contact Us</h2>
+              <p className="text-gray-700 mb-3">
+                For any questions, changes, or support: <a href="mailto:bookings@partysnap.co.uk" className="text-primary-600 underline">bookings@partysnap.co.uk</a>
+              </p>
+              <p className="text-gray-700 font-medium">
+                Party Snap is here to make your child's party effortless. If anything isn't right, get in touch and we'll sort it.
+              </p>
             </div>
           </div>
         </ScrollArea>
