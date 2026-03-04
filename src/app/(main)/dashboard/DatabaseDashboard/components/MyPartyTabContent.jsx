@@ -61,11 +61,11 @@ export default function MyPartyTabContent({
   }
 
   const handleImHappy = async () => {
-    // Show loading state
+    // Show loading state - keep it active until navigation completes
     setIsProcessing(true)
 
     // Small delay to show the loading animation
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 300))
 
     // Call onImHappy if provided (for custom handlers)
     if (onImHappy) {
@@ -75,10 +75,8 @@ export default function MyPartyTabContent({
       router.push('/review-book')
     }
 
-    // Reset loading state after navigation
-    setTimeout(() => {
-      setIsProcessing(false)
-    }, 100)
+    // Don't reset loading state - let navigation handle it
+    // The component will unmount when navigation completes
   }
 
   // Fetch full supplier data for customization
