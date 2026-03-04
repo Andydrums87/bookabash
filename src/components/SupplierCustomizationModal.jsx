@@ -3095,11 +3095,11 @@ export default function SupplierCustomizationModal({
 
                           {/* Content */}
                           <div className="p-2 sm:p-2.5 bg-white flex flex-col h-[115px] sm:h-[130px]">
-                            <div className="flex items-start justify-between gap-1 mb-0.5">
-                              <h4 className="font-semibold text-gray-900 text-[12px] sm:text-[13px] leading-tight line-clamp-2">
+                            <div className="mb-1">
+                              <h4 className="font-semibold text-gray-900 text-[13px] sm:text-sm leading-tight line-clamp-2">
                                 {pkg.name}
                               </h4>
-                              <p className="font-bold text-primary-600 text-[13px] sm:text-sm flex-shrink-0">
+                              <p className="font-bold text-primary-600 text-[12px] sm:text-[13px] mt-0.5">
                                 £{parseFloat(pkg.enhancedPrice || pkg.price).toFixed(2)}
                               </p>
                             </div>
@@ -3107,7 +3107,7 @@ export default function SupplierCustomizationModal({
                             {/* Description */}
                             <div className="flex-1 min-h-0 overflow-hidden">
                               {pkg.description && (
-                                <p className="text-[10px] sm:text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+                                <p className="text-[10px] sm:text-[11px] text-gray-500 leading-relaxed line-clamp-1">
                                   {pkg.description}
                                 </p>
                               )}
