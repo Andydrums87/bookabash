@@ -3051,109 +3051,43 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Catering Suppliers - Same card style as party bags/decorations */}
+            {/* Catering Suppliers - Simplified Single Product View (like decorations) */}
             {supplierTypeDetection.isCatering && (
-              <section>
-                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                  Choose Lunchbox
-                </label>
+              <section className="space-y-5">
+                {/* What's Included - Clean checklist */}
+                {(() => {
+                  // Auto-select first package if none selected (catering typically has one main package)
+                  const pkg = selectedPackage || packages[0]
+                  if (!pkg) return null
 
-                {/* Horizontal scroll on all screens - uses negative margin to break out of padding */}
-                <div className="-mx-5 lg:-mx-6 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  <div
-                    className="flex gap-3 py-1 px-5 lg:px-6 snap-x snap-mandatory w-max"
-                    style={{
-                      WebkitOverflowScrolling: 'touch'
-                    }}
-                  >
-                    {packages.map((pkg) => {
-                      const isSelected = selectedPackageId === pkg.id
-                      const packageImage = typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl)
+                  // Check for includes from cateringPackage, or fall back to features/contents
+                  const serviceDetails = supplier?.serviceDetails || supplier?.data?.serviceDetails || {}
+                  const cateringPackageIncludes = serviceDetails?.cateringPackage?.includes || []
 
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`relative flex-shrink-0 w-[200px] sm:w-[220px] rounded-xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
-                            isSelected
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          onClick={() => {
-                            setSelectedPackageId(pkg.id)
-                            scrollToPackageImage(pkg.id)
-                          }}
-                        >
-                          {/* Package Image */}
-                          <div className="relative w-full h-24 sm:h-28">
-                            {packageImage ? (
-                              <Image
-                                src={packageImage}
-                                alt={pkg.name}
-                                fill
-                                className="object-cover"
-                                sizes="220px"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package className="w-6 h-6 text-gray-300" />
-                              </div>
-                            )}
-                            {/* Selection checkmark */}
-                            {isSelected && (
-                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shadow-md">
-                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                              </div>
-                            )}
-                          </div>
+                  const items = cateringPackageIncludes.length > 0
+                    ? cateringPackageIncludes
+                    : (pkg.features?.length > 0
+                        ? pkg.features
+                        : (pkg.contents?.length > 0 ? pkg.contents : (pkg.whatsIncluded || [])))
 
-                          {/* Content */}
-                          <div className="p-3 bg-white flex flex-col h-[165px]">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                                {pkg.name}
-                              </h4>
-                              <p className="font-bold text-primary-600 text-base flex-shrink-0">
-                                £{roundMoney(pkg.price * partyBagsQuantity).toFixed(2)}
-                              </p>
-                            </div>
+                  if (items.length === 0) return null
 
-                            {/* Description - fixed height area */}
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                              {pkg.description && (
-                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                  {pkg.description}
-                                </p>
-                              )}
-
-                              {/* Guest count info */}
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                {partyBagsQuantity} guests × £{pkg.price.toFixed(2)} each
-                              </p>
-                            </div>
-
-                            {/* What's Included - opens modal - always at bottom */}
-                            {(pkg.features?.length > 0 || pkg.contents?.length > 0) && (
-                              <div className="pt-2 border-t border-gray-100 mt-auto">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedPackageForModal(pkg)
-                                    setShowPackageModal(true)
-                                  }}
-                                  className="flex items-center gap-1 text-xs sm:text-sm text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] font-medium transition-colors"
-                                >
-                                  <Info className="w-3.5 h-3.5" />
-                                  <span>What&apos;s included</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                  return (
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-900 mb-3">
+                        What&apos;s Included
+                      </h4>
+                      <ul className="space-y-1.5 pl-1">
+                        {items.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-gray-400 mt-0.5">•</span>
+                            <span className="text-[15px]">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })()}
               </section>
             )}
 
