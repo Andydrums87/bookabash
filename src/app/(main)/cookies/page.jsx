@@ -90,7 +90,7 @@ export default function CookiePolicy() {
                   Contact
                 </h2>
                 <p className="text-gray-600">
-                  If you have questions about our use of cookies: <a href="mailto:privacy@partysnap.co.uk" className="text-primary-600 hover:underline">privacy@partysnap.co.uk</a>
+                  If you have questions about our use of cookies: <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a>
                 </p>
               </section>
 

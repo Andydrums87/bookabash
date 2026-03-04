@@ -264,7 +264,7 @@ export function PrivacyPolicyModal({ children }) {
                   For privacy-related questions or to exercise your rights:
                 </p>
                 <ul className="text-sm text-gray-600 space-y-0.5 ml-8">
-                  <li>• Email: privacy@partysnap.co.uk</li>
+                  <li>• Email: hello@partysnap.co.uk</li>
                   <li>• Address: [YOUR BUSINESS ADDRESS]</li>
                   <li>• Phone: [YOUR PHONE NUMBER]</li>
                 </ul>

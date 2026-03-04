@@ -150,7 +150,7 @@ export default function PrivacyPolicy() {
                 </ul>
 
                 <p className="text-gray-600">
-                  Contact <a href="mailto:privacy@partysnap.co.uk" className="text-primary-600 hover:underline">privacy@partysnap.co.uk</a> to exercise any of these rights. We will respond within 30 days.
+                  Contact <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a> to exercise any of these rights. We will respond within 30 days.
                 </p>
               </section>
 
@@ -206,7 +206,7 @@ export default function PrivacyPolicy() {
                 </h2>
 
                 <p className="text-gray-600 mb-4">
-                  For privacy questions: <a href="mailto:privacy@partysnap.co.uk" className="text-primary-600 hover:underline">privacy@partysnap.co.uk</a>
+                  For privacy questions: <a href="mailto:hello@partysnap.co.uk" className="text-primary-600 hover:underline">hello@partysnap.co.uk</a>
                 </p>
 
                 <p className="text-gray-600">
