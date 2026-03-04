@@ -733,44 +733,65 @@ const PortfolioGalleryTabContent = () => {
               {portfolioImages.map((img, index) => (
                 <div
                   key={img.id}
-                  className="relative group cursor-move"
-                  draggable={true}
-                  onDragStart={(e) => handleDragStart(e, img.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, img.id)}
+                  className="relative group"
                 >
-                  {/* Photo */}
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100">
-                    <img
-                      src={img.src || "/placeholder.svg"}
-                      alt={img.alt}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                  <div
+                    className="cursor-move"
+                    draggable={true}
+                    onDragStart={(e) => handleDragStart(e, img.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, img.id)}
+                  >
+                    {/* Photo */}
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100">
+                      <img
+                        src={img.src || "/placeholder.svg"}
+                        alt={img.alt}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+
+                    {/* Cover Photo Badge - Only on first image */}
+                    {index === 0 && (
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-flex items-center px-3 py-1.5 bg-white rounded-full text-sm font-medium text-gray-900 shadow-sm">
+                          Cover photo
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Delete Button - Shows on hover */}
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDeleteImage(img.id)
+                        }}
+                        className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors"
+                        title="Delete photo"
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Cover Photo Badge - Only on first image */}
-                  {index === 0 && (
-                    <div className="absolute top-3 left-3">
-                      <span className="inline-flex items-center px-3 py-1.5 bg-white rounded-full text-sm font-medium text-gray-900 shadow-sm">
-                        Cover photo
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Delete Button - Shows on hover */}
-                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleDeleteImage(img.id)
+                  {/* Package Selector */}
+                  <div className="mt-2">
+                    <select
+                      value={img.packageId || ""}
+                      onChange={(e) => {
+                        const packageId = e.target.value || null
+                        handleUpdateImage(img.id, { packageId })
                       }}
-                      className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors"
-                      title="Delete photo"
+                      className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300"
                     >
-                      <Trash2 className="w-4 h-4 text-gray-600" />
-                    </button>
+                      <option value="">Select package</option>
+                      <option value="balloon-starter">Starter</option>
+                      <option value="balloon-statement">Statement</option>
+                      <option value="balloon-showstopper">Showstopper</option>
+                    </select>
                   </div>
                 </div>
               ))}
@@ -900,6 +921,24 @@ const PortfolioGalleryTabContent = () => {
                   onChange={(e) => setEditingImage((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
+              {/* Package Selector in Edit Modal */}
+              <div>
+                <Label htmlFor="image-package" className="text-sm font-medium">
+                  Package
+                </Label>
+                <select
+                  id="image-package"
+                  value={editingImage.packageId || ""}
+                  onChange={(e) => setEditingImage((prev) => ({ ...prev, packageId: e.target.value || null }))}
+                  className="mt-1 w-full h-12 px-4 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                >
+                  <option value="">Select package</option>
+                  <option value="balloon-starter">Starter</option>
+                  <option value="balloon-statement">Statement</option>
+                  <option value="balloon-showstopper">Showstopper</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Link this image to a specific package</p>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
@@ -913,6 +952,7 @@ const PortfolioGalleryTabContent = () => {
                   handleUpdateImage(editingImage.id, {
                     title: editingImage.title,
                     description: editingImage.description,
+                    packageId: editingImage.packageId,
                   })
                 }
                 className="flex-1 h-12 px-4 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
