@@ -4,33 +4,46 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MapPin, Mail, Sparkles } from "lucide-react"
+import { MapPin, Mail, Sparkles, AlertCircle } from "lucide-react"
 
 export default function PostcodeRestrictionModal({ isOpen, onClose, enteredPostcode }) {
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [error, setError] = useState("")
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError("")
 
-    // TODO: Add your email submission logic here (e.g., API call to save the email)
-    // For now, we'll simulate a submission
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
 
-    setIsSubmitted(true)
-    setIsSubmitting(false)
-
-    // Close modal after 2 seconds
-    setTimeout(() => {
-      onClose()
-      // Reset state for next time
-      setTimeout(() => {
-        setEmail("")
-        setIsSubmitted(false)
-      }, 300)
-    }, 2000)
+      if (res.ok) {
+        setIsSubmitted(true)
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          onClose()
+          // Reset state for next time
+          setTimeout(() => {
+            setEmail("")
+            setIsSubmitted(false)
+          }, 300)
+        }, 2000)
+      } else {
+        const data = await res.json()
+        setError(data.error || "Something went wrong. Please try again.")
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -73,6 +86,13 @@ export default function PostcodeRestrictionModal({ isOpen, onClose, enteredPostc
                     />
                   </div>
                 </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <Button
