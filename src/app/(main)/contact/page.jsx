@@ -122,17 +122,17 @@ export default function ContactUs() {
                 <div className="mb-8">
                   <p className="text-gray-500 text-sm mb-1">Phone:</p>
                   <a
-                    href="tel:+447835444903"
+                    href="tel:+447405243293"
                     className="text-xl md:text-2xl font-semibold text-gray-900 hover:text-primary-600 transition-colors"
                   >
-                    +44 7835 444903
+                    +44 7405 243293
                   </a>
                   <p className="text-gray-500 text-sm mt-1">Available Monday to Friday, 9 AM - 6 PM GMT</p>
                 </div>
 
                 {/* WhatsApp Button */}
                 <a
-                  href="https://wa.me/447835444903"
+                  href="https://wa.me/447405243293"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"

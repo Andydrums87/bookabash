@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin, Navigation, Info } from "lucide-react"
+import { Check, AlertCircle, Calendar as CalendarIcon, UsersIcon, MapPin, Info } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
@@ -13,24 +13,8 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { useGeolocation } from "@/hooks/useGeolocation"
-
-
 export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
   const router = useRouter()
-  const { getPostcodeFromLocation, isLoading: isGettingLocation, error: locationError } = useGeolocation()
-
-  const handleUseMyLocation = async () => {
-    const result = await getPostcodeFromLocation()
-
-    if (result.success && result.postcode) {
-      handleFieldChange('postcode', result.postcode)
-      const { isValid } = validateAndFormatPostcode(result.postcode)
-      setPostcodeValid(isValid)
-    } else if (result.error) {
-      alert(result.error)
-    }
-  }
 
   return (
     <section id="hero" className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen overflow-visible">
@@ -275,37 +259,20 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   )}
                 </div>
 
-                {/* Action buttons row */}
-                <div className="flex items-center justify-between gap-3 mt-1.5">
-                  {/* Use My Location Button */}
-                  <button
-                    type="button"
-                    onClick={handleUseMyLocation}
-                    disabled={isGettingLocation}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                {/* Own Venue Checkbox */}
+                <div className="flex items-center gap-2 mt-2">
+                  <Checkbox
+                    id="hasOwnVenue"
+                    checked={formData.hasOwnVenue === true}
+                    onCheckedChange={(checked) => handleFieldChange('hasOwnVenue', checked === true)}
+                    className="border-[hsl(var(--primary-500))] data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))]"
+                  />
+                  <label
+                    htmlFor="hasOwnVenue"
+                    className="text-sm text-gray-600 cursor-pointer select-none"
                   >
-                    <Navigation className={`w-3.5 h-3.5 ${isGettingLocation ? 'animate-pulse' : ''}`} />
-                    {isGettingLocation ? 'Finding...' : 'Use my location'}
-                  </button>
-
-                  {/* Divider */}
-                  <span className="text-gray-300">|</span>
-
-                  {/* Own Venue Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('hasOwnVenue', !formData.hasOwnVenue)}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1.5 transition-colors"
-                  >
-                    {formData.hasOwnVenue ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        Own venue
-                      </>
-                    ) : (
-                      <>Have own venue?</>
-                    )}
-                  </button>
+                    I have my own venue
+                  </label>
                 </div>
               </div>
 
