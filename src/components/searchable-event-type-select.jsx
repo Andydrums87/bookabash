@@ -25,20 +25,20 @@ const THEME_RECOMMENDATIONS = {
   }
 }
 
-// Theme display names for showing in the modal
+// Theme display names and images for showing in the modal
 const THEME_DISPLAY_NAMES = {
-  dinosaur: { label: 'Dinosaur', emoji: '🦕' },
-  safari: { label: 'Safari', emoji: '🦁' },
-  pirate: { label: 'Pirate Adventure', emoji: '🏴‍☠️' },
-  princess: { label: 'Princess', emoji: '👸' },
-  unicorn: { label: 'Unicorn Magic', emoji: '🦄' },
-  mermaid: { label: 'Mermaid', emoji: '🧜‍♀️' },
-  frozen: { label: 'Frozen', emoji: '❄️' },
-  superhero: { label: 'Superhero', emoji: '🦸' },
-  spiderman: { label: 'Spiderman', emoji: '🕷️' },
-  space: { label: 'Space Adventure', emoji: '🚀' },
-  science: { label: 'Science Lab', emoji: '🔬' },
-  'kpop-demon-hunters': { label: 'K-Pop Demon Hunters', emoji: '🎤' }
+  dinosaur: { label: 'Dinosaur', emoji: '🦕', image: '/choose-for-me/dinosaur.webp' },
+  safari: { label: 'Safari', emoji: '🦁', image: '/choose-for-me/safari.webp' },
+  pirate: { label: 'Pirate Adventure', emoji: '🏴‍☠️', image: '/choose-for-me/pirate.webp' },
+  princess: { label: 'Princess', emoji: '👸', image: '/choose-for-me/princess.webp' },
+  unicorn: { label: 'Unicorn Magic', emoji: '🦄', image: '/choose-for-me/unicorn.webp' },
+  mermaid: { label: 'Mermaid', emoji: '🧜‍♀️', image: '/choose-for-me/mermaid.webp' },
+  frozen: { label: 'Frozen', emoji: '❄️', image: '/choose-for-me/frozen.webp' },
+  superhero: { label: 'Superhero', emoji: '🦸', image: '/choose-for-me/superhero.webp' },
+  spiderman: { label: 'Spiderman', emoji: '🕷️', image: '/choose-for-me/spiderman.webp' },
+  space: { label: 'Space Adventure', emoji: '🚀', image: '/choose-for-me/space.webp' },
+  science: { label: 'Science Lab', emoji: '🔬', image: '/choose-for-me/science.webp' },
+  'kpop-demon-hunters': { label: 'K-Pop Demon Hunters', emoji: '🎤', image: '/choose-for-me/kpop.webp' }
 }
 
 // Get age group from age
@@ -534,9 +534,14 @@ export default function SearchableEventTypeSelect({
 
           {/* Result Step - Show recommended theme with shuffle option */}
           {pickerStep === 'result' && recommendedTheme && (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <div className="text-6xl animate-bounce">
-                {THEME_DISPLAY_NAMES[recommendedTheme]?.emoji || '🎉'}
+            <div className="flex flex-col items-center gap-4 py-4">
+              {/* Theme Image */}
+              <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                <img
+                  src={THEME_DISPLAY_NAMES[recommendedTheme]?.image || '/choose-for-me/superhero.webp'}
+                  alt={THEME_DISPLAY_NAMES[recommendedTheme]?.label || 'Party theme'}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="text-2xl font-bold text-gray-800">
                 {THEME_DISPLAY_NAMES[recommendedTheme]?.label || recommendedTheme}
@@ -545,7 +550,7 @@ export default function SearchableEventTypeSelect({
                 Perfect for a {pickerAge} year old!
               </p>
 
-              <div className="flex gap-3 w-full mt-4">
+              <div className="flex gap-3 w-full mt-2">
                 <button
                   onClick={handleShuffleTheme}
                   className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-gray-600"
@@ -564,7 +569,7 @@ export default function SearchableEventTypeSelect({
 
               <button
                 onClick={handlePickerBack}
-                className="text-sm text-gray-500 hover:text-gray-700 mt-2"
+                className="text-sm text-gray-500 hover:text-gray-700 mt-1"
               >
                 ← Back
               </button>
