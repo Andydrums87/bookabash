@@ -501,27 +501,24 @@ export default function SearchableEventTypeSelect({
 
           {/* Gender Selection Step */}
           {pickerStep === 'gender' && (
-            <div className="flex flex-col gap-3 py-4">
+            <div className="flex flex-col gap-2 py-4">
               <button
                 onClick={() => handleGenderSelect('boy')}
-                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                className="w-full py-3 px-4 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all text-gray-700 font-medium text-sm"
               >
-                <span className="text-2xl">👦</span>
-                <span className="font-medium text-gray-700">Boy</span>
+                Boy
               </button>
               <button
                 onClick={() => handleGenderSelect('girl')}
-                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-pink-400 hover:bg-pink-50 transition-all"
+                className="w-full py-3 px-4 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all text-gray-700 font-medium text-sm"
               >
-                <span className="text-2xl">👧</span>
-                <span className="font-medium text-gray-700">Girl</span>
+                Girl
               </button>
               <button
                 onClick={() => handleGenderSelect('neutral')}
-                className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all"
+                className="w-full py-3 px-4 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all text-gray-700 font-medium text-sm"
               >
-                <span className="text-2xl">🎉</span>
-                <span className="font-medium text-gray-700">Surprise / Either</span>
+                Surprise me
               </button>
               <button
                 onClick={handlePickerBack}
@@ -534,42 +531,43 @@ export default function SearchableEventTypeSelect({
 
           {/* Result Step - Show recommended theme with shuffle option */}
           {pickerStep === 'result' && recommendedTheme && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              {/* Theme Image */}
-              <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+            <div className="flex flex-col items-center">
+              {/* Theme Image as Header - positioned below dialog title */}
+              <div className="w-[calc(100%+3rem)] h-40 sm:h-48 -mx-6 mb-4 overflow-hidden">
                 <img
                   src={THEME_DISPLAY_NAMES[recommendedTheme]?.image || '/choose-for-me/superhero.webp'}
                   alt={THEME_DISPLAY_NAMES[recommendedTheme]?.label || 'Party theme'}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="text-2xl font-bold text-gray-800">
+
+              <div className="text-xl sm:text-2xl font-bold text-gray-800">
                 {THEME_DISPLAY_NAMES[recommendedTheme]?.label || recommendedTheme}
               </div>
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-gray-500 text-center mt-1">
                 Perfect for a {pickerAge} year old!
               </p>
 
-              <div className="flex gap-3 w-full mt-2">
+              <div className="flex gap-2 w-full mt-4">
                 <button
                   onClick={handleShuffleTheme}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-gray-600"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-gray-600 text-sm"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-3.5 h-3.5" />
                   <span>Shuffle</span>
                 </button>
                 <button
                   onClick={handleConfirmTheme}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-primary-500 bg-primary-500 hover:bg-primary-600 transition-all text-white font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg bg-primary-500 hover:bg-primary-600 transition-all text-white font-medium text-sm"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Choose this</span>
                 </button>
               </div>
 
               <button
                 onClick={handlePickerBack}
-                className="text-sm text-gray-500 hover:text-gray-700 mt-1"
+                className="text-sm text-gray-500 hover:text-gray-700 mt-3"
               >
                 ← Back
               </button>
