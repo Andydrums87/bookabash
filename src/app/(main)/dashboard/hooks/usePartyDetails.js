@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { calculateFinalPrice } from '@/utils/unifiedPricing' // ✅ Import pricing system
+import { updateChildDetails } from '@/utils/partyTracking' // ✅ Import party tracking
 
 export function usePartyDetails(user = null, currentParty = null, cachedPartyDetails = null, cachedPartyTheme = null) {
   const [partyDetails, setPartyDetails] = useState(cachedPartyDetails)
@@ -333,6 +334,9 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
 
     // Save gender along with other details
     await handlePartyDetailsUpdate({ childName, childAge, firstName, lastName, gender });
+
+    // ✅ Update party tracking with child details from welcome popup
+    updateChildDetails({ childName, childAge });
 
     // REBUILD PARTY if theme was undecided - this will recommend an appropriate theme
     if (needsRebuild) {

@@ -540,6 +540,47 @@ const updatePartyColumns = async (columns) => {
 };
 
 /**
+ * Update child details in party tracking (called from welcome popup)
+ * @param {object} childData - Object with childName, childAge, hasOwnVenue
+ */
+export const updateChildDetails = async (childData) => {
+  // Try to get sessionId from memory or localStorage
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('updateChildDetails: No session to update');
+    return;
+  }
+
+  try {
+    const updateData = {
+      last_activity: new Date().toISOString()
+    };
+
+    if (childData.childName) updateData.child_name = childData.childName;
+    if (childData.childAge) updateData.child_age = parseInt(childData.childAge) || null;
+    if (childData.hasOwnVenue !== undefined) updateData.has_own_venue = childData.hasOwnVenue;
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update(updateData)
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.log('Update child details failed (non-critical):', error.message);
+    } else {
+      console.log('✅ Child details updated in party tracking:', updateData);
+    }
+  } catch (err) {
+    console.log('Update child details error (non-critical):', err.message);
+  }
+};
+
+/**
  * Helper: Extract supplier summary from party plan
  */
 const extractSupplierSummary = (partyPlan) => {
