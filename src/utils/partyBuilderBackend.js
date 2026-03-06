@@ -31,7 +31,59 @@ export const calculateTotalAttendees = (childrenCount, options = {}) => {
   };
 };
 
+// Theme recommendations based on age and gender
+// Used when user selects "Undecided / Choose for me"
+const THEME_RECOMMENDATIONS = {
+  // Girl themes by age group
+  girl: {
+    toddler: ['princess', 'unicorn', 'frozen'],      // Ages 1-3
+    young: ['princess', 'unicorn', 'frozen', 'mermaid'], // Ages 4-7
+    older: ['kpop-demon-hunters', 'unicorn', 'mermaid', 'science'] // Ages 8+
+  },
+  // Boy themes by age group
+  boy: {
+    toddler: ['dinosaur', 'safari', 'pirate'],       // Ages 1-3
+    young: ['superhero', 'spiderman', 'dinosaur', 'pirate'], // Ages 4-7
+    older: ['superhero', 'spiderman', 'science', 'space'] // Ages 8+
+  },
+  // Neutral/surprise - mix of popular themes
+  neutral: {
+    toddler: ['safari', 'dinosaur', 'unicorn'],
+    young: ['science', 'space', 'pirate', 'safari'],
+    older: ['science', 'space', 'kpop-demon-hunters']
+  }
+};
+
+// Function to recommend a theme based on age and gender
+const recommendTheme = (childAge, gender = 'neutral') => {
+  const age = parseInt(childAge) || 6;
+  const genderKey = gender?.toLowerCase() || 'neutral';
+
+  // Determine age group
+  let ageGroup = 'young'; // default
+  if (age <= 3) ageGroup = 'toddler';
+  else if (age >= 8) ageGroup = 'older';
+
+  // Get the recommendations for this gender and age group
+  const genderRecommendations = THEME_RECOMMENDATIONS[genderKey] || THEME_RECOMMENDATIONS.neutral;
+  const themes = genderRecommendations[ageGroup] || genderRecommendations.young;
+
+  // Return the first (most recommended) theme
+  const recommendedTheme = themes[0];
+
+  console.log(`🎯 Theme recommendation: age ${age} (${ageGroup}), gender ${genderKey} → ${recommendedTheme}`);
+
+  return recommendedTheme;
+};
+
 const THEMES = {
+  'undecided': {
+    name: "Undecided",
+    keywords: ["undecided", "choose", "recommend", "help"],
+    colors: ["multicolor"],
+    decorationStyle: "general",
+    priority: "simple"
+  },
   'no-theme': {
     name: "No Theme",
     keywords: ["simple", "general", "basic", "standard", "no-theme"],
@@ -1357,8 +1409,22 @@ async buildParty(partyDetails) {
       childAge = 6, childName = "Your Child",
       firstName = "Your", lastName = "Child",
       timeSlot, duration = 2, time,
-      hasOwnVenue = false // NEW: Extract this flag
+      hasOwnVenue = false, // Extract this flag
+      gender // Extract gender for theme recommendation
     } = partyDetails;
+
+    // If theme is "undecided", only recommend a theme if we have gender data
+    // (gender is collected in the welcome modal, so if it's missing, this is the initial build)
+    let processedTheme = theme;
+    if ((theme === 'undecided' || theme === 'no-theme') && gender) {
+      // We have gender data from welcome modal - recommend an appropriate theme
+      processedTheme = recommendTheme(childAge, gender);
+      console.log(`🎨 User selected "${theme}" - recommending "${processedTheme}" based on age ${childAge} and gender ${gender}`);
+    } else if (theme === 'undecided' || theme === 'no-theme') {
+      // No gender yet (initial build) - keep as undecided, will recommend after welcome modal
+      console.log(`🎨 Theme is "${theme}" but no gender provided yet - keeping as undecided for now`);
+      processedTheme = theme; // Keep it as undecided
+    }
 
     // Smart budget handling
     let finalBudget = budget && budget > 0 ? budget : this.getDefaultBudgetForGuests(guestCount);
@@ -1387,6 +1453,8 @@ async buildParty(partyDetails) {
     // Create enhanced party details for pricing
     const enhancedPartyDetails = {
       ...partyDetails,
+      theme: processedTheme, // Use the recommended theme (may differ from original if "undecided")
+      originalTheme: theme,   // Keep track of what user originally selected
       budget: finalBudget,
       timeSlot: processedTimeSlot,
       duration,
@@ -1396,17 +1464,17 @@ async buildParty(partyDetails) {
       time: time || this.convertTimeSlotToTime(processedTimeSlot),
       displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
       displayDuration: this.formatDurationForDisplay(duration),
-      hasOwnVenue // NEW: Pass this through
+      hasOwnVenue // Pass this through
     };
 
-    // Get suppliers
+    // Get suppliers - use processedTheme for matching
     const allSuppliers = await suppliersAPI.getAllSuppliers();
-    const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
-    
+    const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(processedTheme);
+
     // Always get venue options, but only set main venue if needed
     const venueCarouselResult = await this.selectMultipleVenuesForCarousel(
       allSuppliers,
-      theme,
+      processedTheme,
       processedTimeSlot,
       duration,
       date,
@@ -1420,7 +1488,7 @@ async buildParty(partyDetails) {
     const selectedSuppliers = this.selectSuppliersForParty({
       suppliers: allSuppliers,
       themedEntertainment,
-      theme,
+      theme: processedTheme, // Use recommended theme
       guestCount,
       location,
       budget: finalBudget,
@@ -1428,7 +1496,7 @@ async buildParty(partyDetails) {
       timeSlot: processedTimeSlot,
       duration,
       date,
-      hasOwnVenue // NEW: Pass this flag
+      hasOwnVenue // Pass this flag
     });
 
     // Always set venue carousel options
@@ -1461,7 +1529,7 @@ async buildParty(partyDetails) {
       partyPlan,
       selectedSuppliers,
       totalCost,
-      theme: THEMES[theme] || { name: theme },
+      theme: THEMES[processedTheme] || { name: processedTheme },
       budget: finalBudget,
       timeSlot: processedTimeSlot,
       duration,
@@ -1469,8 +1537,14 @@ async buildParty(partyDetails) {
       fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
       enhancedPricingUsed: true,
       venueCarouselOptions: venueCarouselResult.venues,
-      hasOwnVenue, // NEW: Include in response
-      venueInfo // NEW: Include venue info
+      hasOwnVenue,
+      venueInfo,
+      // Include party details with recommended theme for updating localStorage
+      partyDetails: {
+        ...enhancedPartyDetails,
+        theme: processedTheme,
+        originalTheme: theme // What user originally selected
+      }
     };
 
   } catch (error) {

@@ -21,6 +21,8 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
         childAge: partyDetails?.childAge || 6,
         location: partyDetails?.postcode || partyDetails?.location || 'W1A 1AA',
         theme: partyDetails?.theme || 'superhero',
+        originalTheme: partyDetails?.originalTheme, // Track if theme was recommended
+        gender: partyDetails?.gender, // For theme recommendations
         startTime: partyDetails?.startTime || '14:00',
         duration: partyDetails?.duration || 2,
         displayTimeRange: partyDetails?.displayTimeRange,
@@ -34,7 +36,7 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
     } catch {
       return {
         childName: 'Emma',
-        date: 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM', 
+        date: 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM',
         childAge: 6,
         location: 'W1A 1AA',
         theme: 'superhero',
@@ -313,22 +315,28 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
   };
 
   // Handle name submission (for welcome popup)
-  // For age-specific parties (toddlers, teens, etc.), we rebuild the party plan with appropriate recommendations
-  const handleNameSubmit = async ({ childName, childAge, firstName, lastName }) => {
-    // Check if we need to rebuild for age-specific recommendations BEFORE updating
-    const needsRebuild = childAge && childAge <= 2; // Toddler party (ages 1-2)
-    // Future: Add more age-specific rebuilds here (e.g., teen parties, etc.)
+  // For undecided themes or age-specific parties, we rebuild the party plan with appropriate recommendations
+  const handleNameSubmit = async ({ childName, childAge, firstName, lastName, gender }) => {
+    // Get current theme to check if it's undecided
+    const currentTheme = partyTheme || partyDetails?.theme;
+    const isUndecidedTheme = currentTheme === 'undecided' || currentTheme === 'no-theme';
+
+    // Check if we need to rebuild the party
+    // - Undecided theme: rebuild to get recommended theme based on age + gender
+    // - Toddler party: rebuild with age-appropriate recommendations (DISABLED for now)
+    const needsRebuild = isUndecidedTheme; // || (childAge && childAge <= 2);
 
     // Set rebuilding state BEFORE closing the popup so dashboard shows loading
     if (needsRebuild) {
       setIsRebuilding(true);
     }
 
-    await handlePartyDetailsUpdate({ childName, childAge, firstName, lastName });
+    // Save gender along with other details
+    await handlePartyDetailsUpdate({ childName, childAge, firstName, lastName, gender });
 
-    // AGE-SPECIFIC PARTY REBUILD: Rebuild the party plan with age-appropriate recommendations
+    // REBUILD PARTY if theme was undecided - this will recommend an appropriate theme
     if (needsRebuild) {
-      console.log(`👶 Toddler party detected (age ${childAge}) - rebuilding party plan`);
+      console.log(`🎨 Rebuilding party plan - theme: ${currentTheme}, age: ${childAge}, gender: ${gender}`);
       try {
         const { partyBuilderBackend } = await import('@/utils/partyBuilderBackend');
         const existingDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
@@ -338,11 +346,24 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
           childName,
           childAge,
           firstName,
-          lastName
+          lastName,
+          gender // Pass gender for theme recommendation
         });
 
         if (rebuildResult.success) {
-          console.log('👶 Party plan rebuilt for toddler:', rebuildResult);
+          console.log('✅ Party plan rebuilt with recommended theme:', rebuildResult);
+
+          // Update the theme in party details with the recommended theme
+          if (rebuildResult.partyDetails?.theme) {
+            const updatedDetails = {
+              ...existingDetails,
+              theme: rebuildResult.partyDetails.theme,
+              originalTheme: currentTheme // Keep track of original selection
+            };
+            localStorage.setItem('party_details', JSON.stringify(updatedDetails));
+            setPartyTheme(rebuildResult.partyDetails.theme);
+          }
+
           // Trigger storage event so components update
           window.dispatchEvent(new StorageEvent('storage', {
             key: 'user_party_plan',
@@ -350,7 +371,7 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
           }));
         }
       } catch (rebuildError) {
-        console.error('Error rebuilding party for toddler:', rebuildError);
+        console.error('Error rebuilding party:', rebuildError);
       } finally {
         // Always clear rebuilding state
         setIsRebuilding(false);

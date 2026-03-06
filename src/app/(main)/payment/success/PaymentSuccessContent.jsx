@@ -44,9 +44,14 @@ export default function PaymentSuccessPage() {
     trackingFired.current = true;
 
     if (window.gtag) {
+      // GA4 event for Analytics
       window.gtag('event', 'booking_completed', {
         event_category: 'conversion',
         event_label: 'payment_success'
+      });
+      // Google Ads conversion tracking
+      window.gtag('event', 'conversion', {
+        'send_to': 'AW-17997070672/pw9tCNn50IMcENCC1oVD'
       });
     }
     if (typeof window !== 'undefined' && window.fbq) {

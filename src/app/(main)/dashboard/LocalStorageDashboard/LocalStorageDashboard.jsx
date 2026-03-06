@@ -2372,7 +2372,7 @@ const handleChildPhotoUpload = async (file) => {
             setShowWelcomePopup(false)
           }}
           onNameSubmit={handleNameSubmit}
-          partyTheme={partyDetails?.theme}
+          partyTheme={partyTheme || partyDetails?.theme}
         />
       )}
 

@@ -120,6 +120,8 @@ export default function HomePage() {
 
   const mapThemeValue = (formTheme) => {
     const themeMapping = {
+      "undecided": "undecided",
+      "choose for me": "undecided",
       "no-theme": "no-theme",
       "simple": "no-theme",
       "general": "no-theme",
@@ -212,9 +214,14 @@ export default function HomePage() {
 
     // Track Plan My Party click
     if (window.gtag) {
+      // GA4 event for Analytics
       window.gtag('event', 'booking_started', {
         event_category: 'engagement',
         event_label: 'plan_my_party_click'
+      });
+      // Google Ads conversion tracking for Plan My Party
+      window.gtag('event', 'conversion', {
+        'send_to': 'AW-17997070672/NpkFCM2U0YMcENCC1oVD'
       });
     }
     if (typeof window !== 'undefined' && window.fbq) {
