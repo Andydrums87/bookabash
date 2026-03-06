@@ -19,6 +19,28 @@ export default function Blog() {
 
   const featuredPosts = [
     {
+      id: 8,
+      title: "11 Most Popular Kids' Party Themes Right Now (2026)",
+      slug: slugify("11 Most Popular Kids Party Themes Right Now 2026"),
+      excerpt: "Wondering what party theme to choose? Here are the 11 most popular kids' party themes right now — based on what real parents are booking and what children are actually asking for.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1768566783/e7n0hwmpkfsydwxzzege.jpg",
+      category: "Themes",
+      date: "March 6, 2026",
+      readTime: "8 min read",
+      featured: true,
+    },
+    {
+      id: 9,
+      title: "How Much Does a Kids' Party Cost in 2026? A Realistic Breakdown",
+      slug: slugify("How Much Does a Kids Party Cost 2026"),
+      excerpt: "How much should you actually spend on a kids' party? Here's a realistic breakdown of what things cost in 2026 — from venue hire to party bags — so you can plan with confidence.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
+      category: "Budget",
+      date: "March 6, 2026",
+      readTime: "9 min read",
+      featured: true,
+    },
+    {
       id: 7,
       title: "Best Kids' Party Venues in St Albans (2026)",
       slug: slugify("Best Kids Party Venues in St Albans 2026"),
@@ -29,62 +51,9 @@ export default function Blog() {
       readTime: "10 min read",
       featured: true,
     },
-    {
-      id: 1,
-      title: "The Ultimate Guide to Planning a Children's Party in St Albans: 2025 Edition",
-      slug: slugify("The Ultimate Guide to Planning a Children's Party in St Albans: 2025"),
-      excerpt: "Everything you need to know about planning the perfect children's party in St Albans this year, from venues to entertainment.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
-      category: "Planning",
-      date: "May 15, 2025",
-      readTime: "8 min read",
-      featured: true,
-    },
-    {
-      id: 2,
-      title: "How Much Does a Children's Party Cost in London? A Complete Breakdown",
-      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
-      excerpt: "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies for parents.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
-      category: "Budget",
-      date: "May 10, 2025",
-      readTime: "6 min read",
-      featured: true,
-    },
   ];
 
-  const recentPosts = [
-    {
-      id: 4,
-      title: "10 Outdoor Party Games That London Kids Can't Get Enough Of",
-      slug: slugify("10 Outdoor Party Games That London Kids Can't Get Enough Of"),
-      excerpt: "Get kids moving with these popular outdoor party games that are perfect for London parks and gardens.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595136/blog-post-4_d2bv5i.png",
-      category: "Activities",
-      date: "April 28, 2025",
-      readTime: "5 min read",
-    },
-    {
-      id: 5,
-      title: "DIY Party Decorations That Will Wow Your Guests",
-      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
-      excerpt: "Create stunning party decorations on a budget with these simple DIY ideas that anyone can master.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
-      category: "Planning",
-      date: "April 22, 2025",
-      readTime: "4 min read",
-    },
-    {
-      id: 6,
-      title: "Healthy Party Food Options That Kids Actually Love",
-      slug: slugify("Healthy Party Food Options That Kids Actually Love"),
-      excerpt: "Nutritious and delicious party food ideas that will keep both kids and parents happy at your next celebration.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
-      category: "Food",
-      date: "April 15, 2025",
-      readTime: "5 min read",
-    },
-  ];
+  const recentPosts = [];
 
   const allPosts = [...featuredPosts, ...recentPosts];
 
@@ -134,7 +103,8 @@ export default function Blog() {
       </section>
 
       {/* Featured & Recent Posts */}
-      {["Featured Articles", "Recent Articles"].map((sectionTitle, index) => {
+      {/* "Recent Articles" commented out since recentPosts is empty */}
+      {["Featured Articles" /*, "Recent Articles" */].map((sectionTitle, index) => {
         const posts = sectionTitle === "Featured Articles" ? filteredPosts.filter(post => post.featured) : filteredPosts.filter(post => !post.featured || selectedCategory !== "All");
         return (
           <section key={sectionTitle} className="py-12 bg-white">
