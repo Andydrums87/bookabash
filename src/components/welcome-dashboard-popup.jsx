@@ -17,6 +17,9 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
   // Check if all required fields are filled
   const isFormValid = firstName.trim() && childAge
 
+  // Check if user skipped (has placeholder name)
+  const wasSkipped = firstName === "Your Child"
+
   // Individual field validation
   const errors = {
     firstName: !firstName.trim(),
@@ -80,6 +83,21 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
     onNameSubmit?.(submitData)
     // Close immediately instead of going to step 2
     handleClose()
+  }
+
+  const handleSkip = () => {
+    // Submit with placeholder values
+    const skipData = {
+      childName: "Your Child",
+      childAge: 6, // Default age
+      firstName: "Your Child",
+      skipped: true
+    }
+    onNameSubmit?.(skipData)
+    setFirstName("")
+    setChildAge("")
+    setExistingChildData(null)
+    onClose()
   }
 
   const handleClose = () => {
@@ -207,6 +225,12 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit, p
             >
               Continue to {firstName.trim() ? `${firstName.trim()}'s` : "My"} Party!
             </Button>
+            <button
+              onClick={handleSkip}
+              className="text-sm text-gray-500 hover:text-gray-700 underline transition-colors"
+            >
+              Skip for now
+            </button>
             <p className="text-xs text-gray-500 text-center">
               No payment required — review everything before booking.
             </p>

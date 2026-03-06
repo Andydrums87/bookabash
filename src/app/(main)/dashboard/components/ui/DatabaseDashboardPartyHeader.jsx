@@ -79,8 +79,14 @@ export default function DatabasePartyHeader({
       const nameParts = partyDetails.childName.split(' ');
       return nameParts[0];
     }
-    
+
     return "Emma";
+  };
+
+  // Check if the name was skipped (placeholder name)
+  const isPlaceholderName = () => {
+    const name = getFirstName();
+    return name === "Your Child" || name === "Your";
   };
 
   // Format party date

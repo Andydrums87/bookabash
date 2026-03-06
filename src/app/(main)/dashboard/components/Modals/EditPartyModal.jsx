@@ -14,33 +14,22 @@ import { CalendarIcon, Clock, MapPin, Users, PoundSterling, FileText, User, Cake
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 
 export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }) {
-  // Initialize names
-  const initializeNames = () => {
-    // Priority 1: Use firstName/lastName if available
-    if (partyDetails?.firstName || partyDetails?.lastName) {
-      return {
-        firstName: partyDetails.firstName || "",
-        lastName: partyDetails.lastName || ""
-      };
+  // Initialize first name only
+  const initializeFirstName = () => {
+    // Priority 1: Use firstName if available
+    if (partyDetails?.firstName) {
+      return partyDetails.firstName;
     }
-    // Priority 2: Split childName if available
+    // Priority 2: Get first name from childName if available
     if (partyDetails?.childName) {
       const nameParts = partyDetails.childName.trim().split(' ');
-      return {
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(' ') || ""
-      };
+      return nameParts[0] || "";
     }
     // Priority 3: Fallback
-    return {
-      firstName: "",
-      lastName: ""
-    };
+    return "";
   };
 
-  const { firstName: initFirstName, lastName: initLastName } = initializeNames()
-  const [firstName, setFirstName] = useState(initFirstName)
-  const [lastName, setLastName] = useState(initLastName)
+  const [firstName, setFirstName] = useState(initializeFirstName())
   const [childAge, setChildAge] = useState(partyDetails?.childAge || "")
 
   // Safe date initialization
@@ -147,12 +136,10 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
   })()
 
   const handleSave = () => {
-    const fullName = `${firstName} ${lastName}`.trim();
     const updatedDetails = {
-      childName: fullName, // This maps to child_name in database
+      childName: firstName.trim(), // Just use first name
       childAge,
       firstName: firstName.trim(), // Keep for UI components
-      lastName: lastName.trim(), // Keep for UI components
       date,
       startTime, // New field instead of timeSlot
       duration,
@@ -200,10 +187,10 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
             </h3>
             
             <div className="space-y-4">
-              {/* First Name */}
+              {/* Child's First Name */}
               <div className="space-y-2">
                 <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-                  First name
+                  Child's first name
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -215,25 +202,6 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
                     onKeyPress={handleKeyPress}
                     className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-primary-500 rounded-xl"
                     placeholder="e.g. Emma"
-                  />
-                </div>
-              </div>
-
-              {/* Last Name */}
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                  Last name <span className="text-gray-400 text-xs">(optional)</span>
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-primary-500 rounded-xl"
-                    placeholder="e.g. Smith"
                   />
                 </div>
               </div>

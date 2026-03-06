@@ -30,18 +30,18 @@ export default function PlanningPartyPage() {
   useEffect(() => {
     const messageInterval = setInterval(() => {
       setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % funMessages.length)
-    }, 1500) // Change message every 1.5 seconds
+    }, 1000) // Change message every 1 second
 
     const iconInterval = setInterval(() => {
       setCurrentIconIndex((prevIndex) => (prevIndex + 1) % icons.length)
-    }, 750) // Change icon faster
+    }, 500) // Change icon faster
 
     // Simulate planning time and then redirect
     const planningTimeout = setTimeout(
       () => {
         router.push("/dashboard?show_welcome=true")
       },
-      funMessages.length * 1500 + 500,
+      funMessages.length * 1000 + 500,
     ) // Total time based on messages
 
     return () => {
@@ -73,7 +73,7 @@ export default function PlanningPartyPage() {
       <div className="mt-10 w-full max-w-md bg-white/50 p-3 rounded-full shadow-lg">
         <div
           className="h-4 bg-primary-500 rounded-full animate-loading-bar"
-          style={{ animationDuration: `${funMessages.length * 1.5}s` }}
+          style={{ animationDuration: `${funMessages.length * 1}s` }}
         ></div>
       </div>
       <style jsx global>{`

@@ -1972,7 +1972,17 @@ const handleChildPhotoUpload = async (file) => {
                   />
                   <div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
-                      {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} ` : ''}Party is Ready 🎉
+                      {(() => {
+                        const childName = partyDetails?.childName || partyDetails?.firstName;
+                        const firstName = childName?.split(' ')[0];
+                        const isPlaceholder = firstName === 'Your' || firstName === 'Your Child';
+                        const theme = partyDetails?.theme?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+                        if (isPlaceholder || !firstName) {
+                          return `Your ${theme ? `${theme} ` : ''}Party is Ready 🎉`;
+                        }
+                        return `${firstName}'s ${theme ? `${theme} ` : ''}Party is Ready 🎉`;
+                      })()}
                     </h2>
                     <p className="text-sm md:text-base text-gray-600 mt-1">
                       We've selected everything for you. Tweak anything in seconds.

@@ -219,26 +219,20 @@ const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) =
 
 // Name Edit Modal
 const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
-  const initializeNames = () => {
-    if (!currentName) return { firstName: "", lastName: "" }
+  const initializeFirstName = () => {
+    if (!currentName) return ""
+    // Get only the first name (first word)
     const nameParts = currentName.trim().split(" ")
-    return {
-      firstName: nameParts[0] || "",
-      lastName: nameParts.slice(1).join(" ") || "",
-    }
+    return nameParts[0] || ""
   }
 
-  const { firstName: initFirstName, lastName: initLastName } = initializeNames()
-  const [firstName, setFirstName] = useState(initFirstName)
-  const [lastName, setLastName] = useState(initLastName)
+  const [firstName, setFirstName] = useState(initializeFirstName())
 
   const handleSave = () => {
     if (firstName.trim()) {
-      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
       onSave({
-        childName: fullName,
+        childName: firstName.trim(),
         firstName: firstName.trim(),
-        lastName: lastName.trim(),
       })
       onClose()
     }
@@ -262,7 +256,7 @@ const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
       <ModalContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">First Name</label>
+            <label className="text-sm font-medium text-gray-700">Child's first name</label>
             <Input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -270,19 +264,6 @@ const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
               placeholder="e.g., Emma"
               className="w-full"
               autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Last Name <span className="text-gray-400 text-xs">(optional)</span>
-            </label>
-            <Input
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="e.g., Smith"
-              className="w-full"
             />
           </div>
         </div>
@@ -781,6 +762,12 @@ export default function LocalStoragePartyHeader({
     return "Emma"
   }
 
+  // Check if the name was skipped (placeholder name)
+  const isPlaceholderName = () => {
+    const name = getFirstName()
+    return name === "Your Child" || name === "Your"
+  }
+
   // Enhanced save function that properly persists to memory
   const savePartyDetails = (details) => {
     try {
@@ -1108,35 +1095,63 @@ export default function LocalStoragePartyHeader({
 
                   {/* Name and Info */}
                   <div className="flex-1 min-w-0 pr-14 md:pr-0">
-                    {/* Mobile: Static name */}
-                    <h1
-                      suppressHydrationWarning={true}
-                      className="md:hidden text-4xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
-                      style={{
-                        textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
-                      }}
-                    >
-                      {getFirstName()}'s Party
-                    </h1>
-
-                    {/* Desktop: Clickable name */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleCardClick("name")
-                      }}
-                      className="hidden md:block text-left hover:opacity-80 transition-opacity group"
-                    >
+                    {/* Mobile: Name with edit button for placeholder */}
+                    <div className="md:hidden flex items-center gap-2">
                       <h1
                         suppressHydrationWarning={true}
-                        className="text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight group-hover:underline decoration-2 underline-offset-4"
+                        className="text-4xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
                         style={{
                           textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
                         }}
                       >
-                        {getFirstName()}'s Party
+                        {isPlaceholderName() ? "Your Child's" : `${getFirstName()}'s`} Party
                       </h1>
-                    </button>
+                      {isPlaceholderName() && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCardClick("name")
+                          }}
+                          className="bg-white text-primary-500 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg hover:bg-primary-50 transition-colors flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Add Name
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Desktop: Clickable name with edit button for placeholder */}
+                    <div className="hidden md:flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCardClick("name")
+                        }}
+                        className="text-left hover:opacity-80 transition-opacity group"
+                      >
+                        <h1
+                          suppressHydrationWarning={true}
+                          className="text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight group-hover:underline decoration-2 underline-offset-4"
+                          style={{
+                            textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
+                          }}
+                        >
+                          {isPlaceholderName() ? "Your Child's" : `${getFirstName()}'s`} Party
+                        </h1>
+                      </button>
+                      {isPlaceholderName() && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCardClick("name")
+                          }}
+                          className="bg-white text-primary-500 px-4 py-2 rounded-full text-sm font-bold shadow-lg hover:bg-primary-50 transition-colors flex items-center gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Add Name
+                        </button>
+                      )}
+                    </div>
 
                     {!isExpanded && (
                       <div className="md:hidden mt-2">
