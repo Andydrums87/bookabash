@@ -19,10 +19,21 @@ export default function Blog() {
 
   const featuredPosts = [
     {
+      id: 7,
+      title: "Best Kids' Party Venues in St Albans (2026)",
+      slug: slugify("Best Kids Party Venues in St Albans 2026"),
+      excerpt: "Looking for the perfect place to host your child's birthday party? We've put together a guide to the best halls and community centres in and around St Albans — all tried and tested by local parents.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772792255/iStock-2194928280_2_v2fj0v.jpg",
+      category: "Venues",
+      date: "March 6, 2026",
+      readTime: "10 min read",
+      featured: true,
+    },
+    {
       id: 1,
-      title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
-      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
-      excerpt: "Everything you need to know about planning the perfect children's party in London this year, from venues to entertainment.",
+      title: "The Ultimate Guide to Planning a Children's Party in St Albans: 2025 Edition",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in St Albans: 2025"),
+      excerpt: "Everything you need to know about planning the perfect children's party in St Albans this year, from venues to entertainment.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
       category: "Planning",
       date: "May 15, 2025",
@@ -38,17 +49,6 @@ export default function Blog() {
       category: "Budget",
       date: "May 10, 2025",
       readTime: "6 min read",
-      featured: true,
-    },
-    {
-      id: 3,
-      title: "15 Trending Children's Party Themes in London for 2025",
-      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
-      excerpt: "Discover the hottest party themes that London kids are loving this year, from tech-inspired celebrations to eco-friendly gatherings.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
-      category: "Themes",
-      date: "May 5, 2025",
-      readTime: "7 min read",
       featured: true,
     },
   ];
@@ -83,16 +83,6 @@ export default function Blog() {
       category: "Food",
       date: "April 15, 2025",
       readTime: "5 min read",
-    },
-    {
-      id: 7,
-      title: "Best Kids' Party Venues in St Albans (2026)",
-      slug: slugify("Best Kids Party Venues in St Albans 2026"),
-      excerpt: "Looking for the perfect place to host your child's birthday party? We've put together a guide to the best halls and community centres in and around St Albans — all tried and tested by local parents.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772792255/iStock-2194928280_2_v2fj0v.jpg",
-      category: "Venues",
-      date: "March 6, 2026",
-      readTime: "10 min read",
     },
   ];
 

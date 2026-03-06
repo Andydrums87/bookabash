@@ -9,16 +9,16 @@ function slugify(text) {
 export const allPosts = [
     {
       id: 1,
-      title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
-      metaTitle: "Ultimate 2025 Guide to Planning a Children's Party in London | BookABash",
-      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
-      metaDescription: "Your essential guide to planning the perfect children's party in London 2025, packed with venue ideas, themes, and entertainment options for every budget.",
+      title: "The Ultimate Guide to Planning a Children's Party in St Albans: 2025 Edition",
+      metaTitle: "Ultimate 2025 Guide to Planning a Children's Party in St Albans | PartySnap",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in St Albans: 2025"),
+      metaDescription: "Your essential guide to planning the perfect children's party in St Albans 2025, packed with venue ideas, themes, and entertainment options for every budget.",
       excerpt:
-        "Everything you need to know about planning the perfect children's party in London this year, from venues to entertainment.",
+        "Everything you need to know about planning the perfect children's party in St Albans this year, from venues to entertainment.",
       content: `<section class="prose max-w-none">
-  <p class="mb-6">Planning a children’s party in London? This can be tough, especially for busy parents! That’s where this kids birthday party guide comes in.</p>
+  <p class="mb-6">Planning a children's party in St Albans? This can be tough, especially for busy parents! That's where this kids birthday party guide comes in.</p>
 
-  <p class="mb-6">How to plan a children’s party they’ll love? This guide is here to take the pressure off and walk you through each step of children’s party planning London-style. We've packed it with practical tips, from first ideas to the final party checklist for parents.</p>
+  <p class="mb-6">How to plan a children's party they'll love? This guide is here to take the pressure off and walk you through each step of children's party planning St Albans-style. We've packed it with practical tips, from first ideas to the final party checklist for parents.</p>
 
   <p class="mb-6">And if you ever feel like it’s all a bit much, just know help is out there when you need it. Let’s get started.</p>
   <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1747830618/joyce-adams-eF_3z15RmWY-unsplash_dnzifw.jpg" alt="Dinosaur" />
@@ -26,7 +26,7 @@ export const allPosts = [
   <p class="mb-4">How to plan a children’s party: the golden rule is simple — start early.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">When Should You Start Planning?</h3>
-  <p class="mb-4">For most parties, six to eight weeks in advance is ideal. That gives you enough breathing room to sort out the essentials without it taking over your life. If you’re thinking about one of the more popular kids party venues London offers, or hoping to book a well-known entertainer, then even earlier is better, as some are snapped up months in advance.</p>
+  <p class="mb-4">For most parties, six to eight weeks in advance is ideal. That gives you enough breathing room to sort out the essentials without it taking over your life. If you're thinking about one of the more popular kids party venues St Albans offers, or hoping to book a well-known entertainer, then even earlier is better, as some are snapped up months in advance.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Key Tasks to Tackle First</h3>
   <p class="mb-4">At this early stage, it helps to sketch out a few core decisions:</>
@@ -61,8 +61,8 @@ export const allPosts = [
   <div class="p-4 border-l-4 border-[#FC6B57] bg-[#FFF8F7] rounded shadow mb-6">
     <strong>Tip:</strong> You don’t need to go overboard to make a theme work. A few thoughtful touches, like themed invites and coordinated colors, go a long way. The best children’s birthday party ideas are the ones that tap into your child’s personality.
   </div>
-  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 3 – Find the Perfect London Venue for Your 2025 Children's Party</h2>
-  <p class="mb-4">Once you’ve picked a theme, the next step is finding a venue that suits your party style, guest list, and budget. There’s no shortage of fantastic kids party venues London families can choose from.</p>
+  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 3 – Find the Perfect St Albans Venue for Your 2025 Children's Party</h2>
+  <p class="mb-4">Once you've picked a theme, the next step is finding a venue that suits your party style, guest list, and budget. There's no shortage of fantastic kids party venues St Albans families can choose from.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Questions to Ask Before Booking</h3>
   <p class="mb-4">Before you commit, ask yourself:</p>
@@ -75,7 +75,7 @@ export const allPosts = [
   </ul>
 <p class="mb-4">The answers will help you narrow down the best options for your celebration.</p>
 
-  <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Popular Venue Types and London Options</h3>
+  <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Popular Venue Types and St Albans Options</h3>
   <p class="mb-4">Here are some ideas to spark inspiration:</p>
   <ul class="list-disc list-inside space-y-1 text-[#2F2F2F] mb-6">
     <li><strong>Soft play centres:</strong> Ideal for younger children to bounce, climb, and slide. Places like indoor play zones or play cafés are local favourites.</li>
@@ -85,7 +85,7 @@ export const allPosts = [
   </ul>
 
   <div class="p-4 border-l-4 border-[#FC6B57] bg-[#FFF8F7] rounded shadow mb-6">
-    <strong>Note:</strong> With so many possibilities, children’s party planning London offers plenty of flexibility; it’s just about choosing what works best for your child and your space.
+    <strong>Note:</strong> With so many possibilities, children's party planning St Albans offers plenty of flexibility; it's just about choosing what works best for your child and your space.
   </div>
  <img class="mb-4" src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1747830613/evgeniy-alyoshin-YF80qEzcEW8-unsplash_odk5fv.jpg" alt="Children at a bowling party />
   <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 4 – Book Brilliant Entertainers </h2>
@@ -105,7 +105,7 @@ export const allPosts = [
   </ul>
   <p class="mb-4">Think about your party’s age range, energy level, and space when deciding what kind of entertainment will work best.</p>
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Tips for Booking Early and Stress-Free</h3>
-  <p class="mb-4">Top entertainers often get booked well in advance in the world of kids party planning London, especially around weekends and school holidays. Try to:</p>
+  <p class="mb-4">Top entertainers often get booked well in advance in the world of kids party planning St Albans, especially around weekends and school holidays. Try to:</p>
 
   <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 5 – Set a Budget That Works for Your Family</h2>
   <p class="mb-4">With a clear budget in place, you can stay in control while still making the party magical.</p>
@@ -162,7 +162,7 @@ export const allPosts = [
   </div>
 
   <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 8 – The Finishing Touches</h2>
-  <p class="mb-4">This part of children’s party planning London parents often overlook, but it can make all the difference on the day.</p>
+  <p class="mb-4">This part of children's party planning St Albans parents often overlook, but it can make all the difference on the day.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">What to Prepare Ahead</h3>
   <ul class="list-disc list-inside space-y-1 text-[#2F2F2F] mb-6">
@@ -205,7 +205,7 @@ export const allPosts = [
     <li>Ask for help when needed — it’s okay to outsource</li>
   </ul>
 
-  <p class="mt-6">With this complete guide, you're well-equipped to plan a joyful, manageable children's party in London. Whether you keep it simple or go all-out, your child’s laughter and memories will make it all worth it. Happy planning!</p>
+  <p class="mt-6">With this complete guide, you're well-equipped to plan a joyful, manageable children's party in St Albans. Whether you keep it simple or go all-out, your child's laughter and memories will make it all worth it. Happy planning!</p>
 
 
 </section>
@@ -221,7 +221,7 @@ export const allPosts = [
         image: "/andrew.jpg",
       },
     link: "childrenspartysupersite.super.site",
-      tags: ["Party Planning", "London", "Children's Parties", "Budget", "Entertainment"],
+      tags: ["Party Planning", "St Albans", "Children's Parties", "Budget", "Entertainment"],
       relatedPosts: [2, 3, 5],
     },
     {
