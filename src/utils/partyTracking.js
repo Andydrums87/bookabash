@@ -97,12 +97,15 @@ export const trackStep = async (step, data = {}) => {
     };
 
     // If this is party_planning_started, also populate dedicated columns and update status
-    // The data object has theme, guestCount, postcode directly from the form
+    // The data object has theme, guestCount, postcode, childName, childAge, hasOwnVenue directly from the form
     if (step === 'party_planning_started') {
       updateObj.status = 'started_planning'; // Change from 'browsing' to 'started_planning'
       if (data.theme) updateObj.party_theme = data.theme;
       if (data.guestCount) updateObj.guest_count = parseInt(data.guestCount) || null;
       if (data.postcode) updateObj.party_location = data.postcode;
+      if (data.childName) updateObj.child_name = data.childName;
+      if (data.childAge) updateObj.child_age = parseInt(data.childAge) || null;
+      if (data.hasOwnVenue !== undefined) updateObj.has_own_venue = data.hasOwnVenue;
     }
 
     // Update with new timeline and party columns

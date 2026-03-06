@@ -260,6 +260,7 @@ export default function HomePage() {
       await trackStep('party_planning_started', {
         theme: data.theme,
         guestCount: data.guestCount,
+        childName: data.childName,
         childAge: data.childAge,
         hasOwnVenue: data.hasOwnVenue,
         timeSlot: data.timeSlot,
