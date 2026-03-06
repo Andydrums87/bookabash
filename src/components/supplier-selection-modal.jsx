@@ -273,7 +273,7 @@ useEffect(() => {
         console.log('🎁 Party bags card: Showing per-bag price for browsing:', unitPrice)
         return {
           displayPrice: unitPrice,
-          formattedPrice: `From £${unitPrice} per bag`,
+          formattedPrice: `From £${parseFloat(unitPrice).toFixed(2)} per bag`,
           hasEnhancedPricing: false, // Lead-based suppliers don't have enhanced pricing
           isLeadBased: true,
           pricingBreakdown: { base: unitPrice, weekend: 0, extraHours: 0, addons: 0 },
@@ -283,7 +283,7 @@ useEffect(() => {
         // Other lead-based suppliers (cakes, decorations, etc.)
         return {
           displayPrice: unitPrice,
-          formattedPrice: `From £${unitPrice}`,
+          formattedPrice: `From £${parseFloat(unitPrice).toFixed(2)}`,
           hasEnhancedPricing: false,
           isLeadBased: true,
           pricingBreakdown: { base: unitPrice, weekend: 0, extraHours: 0, addons: 0 },
@@ -312,7 +312,7 @@ useEffect(() => {
 
     return {
       displayPrice: pricingResult.finalPrice,
-      formattedPrice: `From £${pricingResult.finalPrice}`,
+      formattedPrice: `From £${parseFloat(pricingResult.finalPrice).toFixed(2)}`,
       hasEnhancedPricing,
       isLeadBased: false,
       pricingBreakdown: pricingResult.breakdown,

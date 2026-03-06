@@ -85,7 +85,7 @@ export default function AddonSelectionModal({
       {/* Fixed Header */}
       <ModalHeader 
         title="Add Some Extras?"
-        subtitle={`${selectedPackage.name} • £${selectedPackage.price}`}
+        subtitle={`${selectedPackage.name} • £${parseFloat(selectedPackage.price).toFixed(2)}`}
         theme="fun"
         icon={<Plus className="w-5 h-5 text-white" />}
         className="flex-shrink-0"
@@ -125,7 +125,7 @@ export default function AddonSelectionModal({
                             {addon.name}
                           </h4>
                           <span className="text-lg font-bold text-primary-600 ml-2">
-                            +£{addon.price}
+                            +£{parseFloat(addon.price).toFixed(2)}
                           </span>
                         </div>
                         
@@ -169,7 +169,7 @@ export default function AddonSelectionModal({
                   Package + {selectedAddons.length} extra{selectedAddons.length > 1 ? 's' : ''}
                 </span>
                 <span className="font-bold text-primary-600">
-                  £{totalPrice}
+                  £{totalPrice.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -185,9 +185,9 @@ export default function AddonSelectionModal({
             onClick={handleConfirm}
             className="flex-2 h-12 bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white"
           >
-            {selectedAddons.length > 0 
-              ? `Add ${selectedAddons.length} Extra${selectedAddons.length > 1 ? 's' : ''} - £${totalPrice}`
-              : `Continue - £${totalPrice}`
+            {selectedAddons.length > 0
+              ? `Add ${selectedAddons.length} Extra${selectedAddons.length > 1 ? 's' : ''} - £${totalPrice.toFixed(2)}`
+              : `Continue - £${totalPrice.toFixed(2)}`
             }
           </Button>
         </div>

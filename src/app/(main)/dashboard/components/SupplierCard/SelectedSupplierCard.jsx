@@ -382,9 +382,9 @@ export default function SelectedSupplierCard({
                         
                         {(showDurationInfo || showWeekendInfo) && !needsAdditionalEntertainers && (
                           <div className="text-xs text-white/90 mt-1 drop-shadow">
-                             £{pricing.breakdown.base}
-                            {showWeekendInfo && ` + Weekend £${pricing.breakdown.weekend}`}
-                            {showDurationInfo && ` + ${pricing.details.extraHours}h £${pricing.breakdown.extraHours}`}
+                             £{parseFloat(pricing.breakdown.base).toFixed(2)}
+                            {showWeekendInfo && ` + Weekend £${parseFloat(pricing.breakdown.weekend).toFixed(2)}`}
+                            {showDurationInfo && ` + ${pricing.details.extraHours}h £${parseFloat(pricing.breakdown.extraHours).toFixed(2)}`}
                           </div>
                         )}
 

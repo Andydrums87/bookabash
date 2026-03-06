@@ -214,7 +214,7 @@ const MobileBottomTabBar = ({
         color: "text-white",
         activeColor: "text-white",
         isPayment: true,
-        amount: `£${totalDepositAmount}`,
+        amount: `£${parseFloat(totalDepositAmount).toFixed(2)}`,
         count: outstandingSuppliers.length
       })
     } else {

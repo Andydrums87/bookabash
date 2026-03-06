@@ -357,9 +357,9 @@ const DecorationsDisplay = ({ supplier, serviceDetails }) => {
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Design Consultation</h4>
                   <p className="text-gray-700">
-                    {serviceDetails.pricing.consultationFee === 0 
-                      ? 'Free consultation' 
-                      : `£${serviceDetails.pricing.consultationFee} consultation fee`
+                    {serviceDetails.pricing.consultationFee === 0
+                      ? 'Free consultation'
+                      : `£${parseFloat(serviceDetails.pricing.consultationFee).toFixed(2)} consultation fee`
                     }
                   </p>
                 </div>
@@ -368,7 +368,7 @@ const DecorationsDisplay = ({ supplier, serviceDetails }) => {
               {serviceDetails.pricing.minimumOrder && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Minimum Order</h4>
-                  <p className="text-gray-700">£{serviceDetails.pricing.minimumOrder}</p>
+                  <p className="text-gray-700">£{parseFloat(serviceDetails.pricing.minimumOrder).toFixed(2)}</p>
                 </div>
               )}
               
@@ -378,7 +378,7 @@ const DecorationsDisplay = ({ supplier, serviceDetails }) => {
                   <p className="text-gray-700">
                     {serviceDetails.pricing.deliveryFee === 0
                       ? 'Free delivery within service area'
-                      : `£${serviceDetails.pricing.deliveryFee} delivery fee`
+                      : `£${parseFloat(serviceDetails.pricing.deliveryFee).toFixed(2)} delivery fee`
                     }
                   </p>
                 </div>
@@ -390,7 +390,7 @@ const DecorationsDisplay = ({ supplier, serviceDetails }) => {
                   <p className="text-gray-700">
                     {serviceDetails.pricing.setupFee === 0
                       ? 'Setup included'
-                      : `£${serviceDetails.pricing.setupFee} setup fee`
+                      : `£${parseFloat(serviceDetails.pricing.setupFee).toFixed(2)} setup fee`
                     }
                   </p>
                 </div>

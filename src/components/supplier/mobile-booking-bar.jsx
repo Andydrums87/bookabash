@@ -195,7 +195,7 @@ const MobileBookingBar = ({
       extraHourCost: extraHourCost,
       weekendCost: weekendCost,
       manualTotal: manualCalculation,
-      breakdown: `£${packageBasePrice} + £${extraHourCost} (${extraHours}h × £${supplierForPricing.extraHourRate}) + £${weekendCost} = £${manualCalculation}`,
+      breakdown: `£${parseFloat(packageBasePrice).toFixed(2)} + £${parseFloat(extraHourCost).toFixed(2)} (${extraHours}h × £${parseFloat(supplierForPricing.extraHourRate).toFixed(2)}) + £${parseFloat(weekendCost).toFixed(2)} = £${parseFloat(manualCalculation).toFixed(2)}`,
     })
 
     const pricingResult = calculateFinalPrice(supplierForPricing, partyDetailsForPricing, [])

@@ -818,7 +818,7 @@ export default function Settings() {
                     {cakeSettings.offersDelivery && (
                       <SettingRow
                         label="Delivery fee"
-                        value={cakeSettings.deliveryFee > 0 ? `£${cakeSettings.deliveryFee}` : 'Free delivery'}
+                        value={cakeSettings.deliveryFee > 0 ? `£${parseFloat(cakeSettings.deliveryFee).toFixed(2)}` : 'Free delivery'}
                         description="This fee is added to customer orders when they choose delivery"
                         onEdit={() => openEditModal('deliveryFee', { deliveryFee: cakeSettings.deliveryFee })}
                       />

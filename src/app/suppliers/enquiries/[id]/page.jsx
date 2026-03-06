@@ -56,7 +56,7 @@ async function createCalendarEventsForBooking(enquiry, party, customer) {
   const { startDateTime, endDateTime } = calculatePartyTimes(party)
   const eventData = {
     title: `${party.theme} Party - ${party.child_name}`,
-    description: `Party Booking - ${customer.first_name} ${customer.last_name}\nChild: ${party.child_name}, Age ${party.child_age}\nGuests: ${party.guest_count}\nPrice: £${enquiry.final_price || enquiry.quoted_price}`,
+    description: `Party Booking - ${customer.first_name} ${customer.last_name}\nChild: ${party.child_name}, Age ${party.child_age}\nGuests: ${party.guest_count}\nPrice: £${parseFloat(enquiry.final_price || enquiry.quoted_price).toFixed(2)}`,
     location: `${party.location}${party.postcode ? `, ${party.postcode}` : ''}`,
     startTime: startDateTime,
     endTime: endDateTime,

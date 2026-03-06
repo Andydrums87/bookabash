@@ -44,7 +44,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, showWeekendIndicator }) => 
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-2">
                 <span className="text-3xl font-bold text-primary">
-                  {pkg.displayPrice || `£${pkg.price}`}
+                  {pkg.displayPrice || `£${parseFloat(pkg.price).toFixed(2)}`}
                 </span>
                 {/* Weekend indicator in modal */}
                 {showWeekendIndicator && pkg._smartPricing?.isWeekendRate && (
@@ -278,7 +278,7 @@ const PackageCard = ({
             <p className={`font-bold text-primary group-hover:text-primary transition-colors duration-200 ${
               isMobileView ? 'text-lg' : 'text-base sm:text-lg'
             }`}>
-              {pkg.displayPrice || `£${pkg.price}`}
+              {pkg.displayPrice || `£${parseFloat(pkg.price).toFixed(2)}`}
             </p>
 
           </div>
@@ -616,7 +616,7 @@ export default function SupplierPackages({
         return {
           ...pkg,
           originalPrice: pkg.price,
-          displayPrice: `£${pkg.price}`,
+          displayPrice: `£${parseFloat(pkg.price).toFixed(2)}`,
           _smartPricing: {
             isWeekendRate: false,
             premiumAmount: 0,
@@ -645,23 +645,23 @@ export default function SupplierPackages({
         breakdown: pricing.breakdown,
         weekendPremium: pricing.breakdown.weekend,
         extraHourCost: pricing.breakdown.extraHours,
-        calculation: `£${pkg.price} + £${pricing.breakdown.weekend} (weekend) + £${pricing.breakdown.extraHours} (extra ${pricing.details.extraHours}h) = £${pricing.finalPrice}`
+        calculation: `£${parseFloat(pkg.price).toFixed(2)} + £${parseFloat(pricing.breakdown.weekend).toFixed(2)} (weekend) + £${parseFloat(pricing.breakdown.extraHours).toFixed(2)} (extra ${pricing.details.extraHours}h) = £${parseFloat(pricing.finalPrice).toFixed(2)}`
       })
-      
+
       // Build breakdown text
       const breakdownParts = []
       if (pricing.breakdown.weekend > 0) {
-        breakdownParts.push(`+£${pricing.breakdown.weekend} weekend`)
+        breakdownParts.push(`+£${parseFloat(pricing.breakdown.weekend).toFixed(2)} weekend`)
       }
       if (pricing.breakdown.extraHours > 0) {
-        breakdownParts.push(`+£${pricing.breakdown.extraHours} extra ${pricing.details.extraHours}h`)
+        breakdownParts.push(`+£${parseFloat(pricing.breakdown.extraHours).toFixed(2)} extra ${pricing.details.extraHours}h`)
       }
-      
+
       return {
         ...pkg,
         originalPrice: pkg.price,
         price: pricing.finalPrice,
-        displayPrice: `£${pricing.finalPrice}`,
+        displayPrice: `£${parseFloat(pricing.finalPrice).toFixed(2)}`,
         _smartPricing: {
           isWeekendRate: pricing.breakdown.weekend > 0,
           premiumAmount: pricing.breakdown.weekend,

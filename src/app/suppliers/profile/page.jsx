@@ -1020,7 +1020,7 @@ if (loading) {
                         {mobileAddOnServices.slice(0, 3).map((addon, i) => (
                           <p key={i} className="font-medium text-gray-900">
                             {typeof addon === 'string' ? addon : addon.name || addon.label || 'Service'}
-                            {addon.price ? ` - £${addon.price}` : ''}
+                            {addon.price ? ` - £${parseFloat(addon.price).toFixed(2)}` : ''}
                           </p>
                         ))}
                         {mobileAddOnServices.length > 3 && (
@@ -1744,7 +1744,7 @@ if (loading) {
                             {addOnServices.slice(0, 5).map((addon, i) => (
                               <p key={i} className="text-sm text-gray-500">
                                 {typeof addon === 'string' ? addon : addon.name || addon.label || 'Service'}
-                                {addon.price ? ` - £${addon.price}` : ''}
+                                {addon.price ? ` - £${parseFloat(addon.price).toFixed(2)}` : ''}
                               </p>
                             ))}
                             {addOnServices.length > 5 && (

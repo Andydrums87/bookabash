@@ -498,7 +498,7 @@ const FacePaintingDisplay = ({ supplier, serviceDetails }) => {
                   <p className="text-gray-700">
                     {serviceDetails.pricing.travelFee === 0
                       ? 'Free within service area'
-                      : `£${serviceDetails.pricing.travelFee} outside standard area`
+                      : `£${parseFloat(serviceDetails.pricing.travelFee).toFixed(2)} outside standard area`
                     }
                   </p>
                 </div>
@@ -507,7 +507,7 @@ const FacePaintingDisplay = ({ supplier, serviceDetails }) => {
               {serviceDetails.pricing.weekendSurcharge && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Weekend Rate</h4>
-                  <p className="text-gray-700">£{serviceDetails.pricing.weekendSurcharge} weekend surcharge</p>
+                  <p className="text-gray-700">£{parseFloat(serviceDetails.pricing.weekendSurcharge).toFixed(2)} weekend surcharge</p>
                 </div>
               )}
             </div>

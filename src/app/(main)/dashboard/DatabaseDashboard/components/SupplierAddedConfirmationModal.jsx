@@ -339,7 +339,7 @@ export default function SupplierAddedConfirmationModal({
                                 {isPartyBags ? (
                                   `£${roundMoney(pkg.price * partyBagsQuantity).toFixed(2)}`
                                 ) : (
-                                  `£${pkg.price}`
+                                  `£${parseFloat(pkg.price).toFixed(2)}`
                                 )}
                               </p>
                             </div>

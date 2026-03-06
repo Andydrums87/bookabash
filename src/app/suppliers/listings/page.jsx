@@ -204,8 +204,8 @@ function BusinessCard({ business, onSelect, onClick, isCake }) {
     if (prices.length === 0) return null
     const min = Math.min(...prices)
     const max = Math.max(...prices)
-    if (min === max) return `£${min}`
-    return `£${min} - £${max}`
+    if (min === max) return `£${parseFloat(min).toFixed(2)}`
+    return `£${parseFloat(min).toFixed(2)} - £${parseFloat(max).toFixed(2)}`
   }
 
   const priceRange = isCake ? getPriceRange() : null

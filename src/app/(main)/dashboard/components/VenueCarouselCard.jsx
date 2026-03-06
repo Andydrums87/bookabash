@@ -358,10 +358,10 @@ export default function VenueCarouselCard({
                 {/* Show compact price breakdown */}
                 {(showDurationInfo || showWeekendInfo || hasAddons) && (
                   <div className="text-xs text-white/90 mt-1 drop-shadow">
-                    £{pricing.breakdown.base}
-                    {showWeekendInfo && ` + Weekend £${pricing.breakdown.weekend}`}
-                    {showDurationInfo && ` + ${pricing.details.extraHours}h £${pricing.breakdown.extraHours}`}
-                    {hasAddons && ` + Addons £${pricing.breakdown.addons}`}
+                    £{parseFloat(pricing.breakdown.base).toFixed(2)}
+                    {showWeekendInfo && ` + Weekend £${parseFloat(pricing.breakdown.weekend).toFixed(2)}`}
+                    {showDurationInfo && ` + ${pricing.details.extraHours}h £${parseFloat(pricing.breakdown.extraHours).toFixed(2)}`}
+                    {hasAddons && ` + Addons £${parseFloat(pricing.breakdown.addons).toFixed(2)}`}
                   </div>
                 )}
               </div>

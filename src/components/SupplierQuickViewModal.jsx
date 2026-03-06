@@ -1392,7 +1392,7 @@ export default function SupplierQuickViewModal({
                             <div className="space-y-2 text-gray-600 text-sm">
                               <p><span className="font-medium text-gray-900">Delivery days:</span> Tuesday – Saturday</p>
                               <p><span className="font-medium text-gray-900">Delivery times:</span> You'll receive an email with a 2-hour delivery window</p>
-                              <p><span className="font-medium text-gray-900">Delivery charge:</span> {deliveryFee === 0 ? 'Free' : `From £${deliveryFee}`}</p>
+                              <p><span className="font-medium text-gray-900">Delivery charge:</span> {deliveryFee === 0 ? 'Free' : `From £${parseFloat(deliveryFee).toFixed(2)}`}</p>
                             </div>
                           </AccordionSection>
                         )}

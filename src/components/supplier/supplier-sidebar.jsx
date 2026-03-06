@@ -197,7 +197,7 @@ export default function SupplierSidebar({
       finalPrice: pricingResult.finalPrice,
       breakdown: pricingResult.breakdown,
       details: pricingResult.details,
-      calculation: `£${selectedPkgDetails.price} + £${pricingResult.breakdown.weekend} (weekend) + £${pricingResult.breakdown.extraHours} (extra ${pricingResult.details.extraHours}h) = £${pricingResult.finalPrice}`
+      calculation: `£${parseFloat(selectedPkgDetails.price).toFixed(2)} + £${parseFloat(pricingResult.breakdown.weekend).toFixed(2)} (weekend) + £${parseFloat(pricingResult.breakdown.extraHours).toFixed(2)} (extra ${pricingResult.details.extraHours}h) = £${parseFloat(pricingResult.finalPrice).toFixed(2)}`
     })
   
     const hasWeekendPremium = pricingResult.breakdown.weekend > 0

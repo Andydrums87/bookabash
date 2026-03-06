@@ -15,7 +15,7 @@ export default function ProductDetailModal({ item, isOpen, onClose, onClaim, isC
   };
 
   const getItemPrice = () => {
-    if (item.gift_items?.price) return `£${item.gift_items.price}`;
+    if (item.gift_items?.price) return `£${parseFloat(item.gift_items.price).toFixed(2)}`;
     if (item.gift_items?.price_range) return item.gift_items.price_range;
     return item.custom_price || 'Price varies';
   };

@@ -30,7 +30,7 @@ export default function AddonDetailsModal({ isOpen, onClose, addon, onAddToParty
   // Format price for display
   const formatPrice = (price) => {
     if (!price) return "Price on request"
-    if (typeof price === "number") return `£${price}`
+    if (typeof price === "number") return `£${price.toFixed(2)}`
     return price
   }
 

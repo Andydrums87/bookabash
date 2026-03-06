@@ -206,7 +206,7 @@ export const createNotification = {
     type: 'all_confirmed',
     title: '🎉 All Suppliers Confirmed!',
     message: `Your party team is complete! ${totalSuppliers} suppliers ready to make your day amazing.`,
-    badge: `£${totalCost} Total`,
+    badge: `£${parseFloat(totalCost).toFixed(2)} Total`,
     actions: [
       {
         label: 'Secure Booking',
@@ -227,7 +227,7 @@ export const createNotification = {
     progress: 100,
     actions: [
       {
-        label: `Pay £${totalCost}`,
+        label: `Pay £${parseFloat(totalCost).toFixed(2)}`,
         variant: 'default',
         onClick: () => console.log('Process payment'),
         dismissOnClick: false

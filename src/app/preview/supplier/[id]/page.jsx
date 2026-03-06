@@ -54,7 +54,7 @@ export default async function PreviewSupplierPage(props) {
       "@type": "Offer",
       price: supplier.priceFrom,
       priceCurrency: "GBP",
-      description: `Starting from £${supplier.priceFrom} ${supplier.priceUnit || ""}`.trim(),
+      description: `Starting from £${parseFloat(supplier.priceFrom).toFixed(2)} ${supplier.priceUnit || ""}`.trim(),
     };
   }
 
@@ -74,7 +74,7 @@ export default async function PreviewSupplierPage(props) {
         <h1>{supplier.name}</h1>
         <p>
           {supplier.category} · {supplier.location}
-          {supplier.priceFrom ? ` · From £${supplier.priceFrom}` : ""}
+          {supplier.priceFrom ? ` · From £${parseFloat(supplier.priceFrom).toFixed(2)}` : ""}
         </p>
         <p>{supplier.description}</p>
       </div>
@@ -95,7 +95,7 @@ export async function generateMetadata({ params }) {
 
   const title = `PREVIEW: ${supplier.name} - ${supplier.category} | PartySnap`;
   const description = `Preview of ${supplier.description} Located in ${supplier.location}${
-    supplier.priceFrom ? `. From £${supplier.priceFrom}` : ""
+    supplier.priceFrom ? `. From £${parseFloat(supplier.priceFrom).toFixed(2)}` : ""
   }${supplier.rating ? `. Rated ${supplier.rating}/5` : ""}.`;
 
   return {

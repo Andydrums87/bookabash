@@ -273,7 +273,7 @@ const SimpleMobileBottomTabBar = ({
                 </div>
                 <div className="text-right">
                   <div className={`text-xl font-bold ${isOverBudget ? 'text-red-600' : 'text-purple-600'}`}>
-                    {isOverBudget ? `-£${overBudgetAmount}` : `£${Math.abs(remaining)}`}
+                    {isOverBudget ? `-£${parseFloat(overBudgetAmount).toFixed(2)}` : `£${parseFloat(Math.abs(remaining)).toFixed(2)}`}
                   </div>
                   <div className={`text-sm ${isOverBudget ? 'text-red-500' : 'text-gray-600'}`}>
                     {isOverBudget ? 'over budget' : 'remaining'}

@@ -161,7 +161,7 @@ const isProductInRegistry = (productId) => {
       id: product.id,
       gift_items: product,
       custom_name: product.name,
-      custom_price: product.price ? `£${product.price}` : product.price_range,
+      custom_price: product.price ? `£${parseFloat(product.price).toFixed(2)}` : product.price_range,
       custom_description: product.description,
       external_image_url: product.image_url,
       external_buy_url: product.buy_url || product.amazon_url,
@@ -1466,11 +1466,11 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <div>
               <span className="text-sm sm:text-lg font-bold text-[hsl(var(--primary-600))]">
-                {product.price ? `£${product.price}` : product.price_range}
+                {product.price ? `£${parseFloat(product.price).toFixed(2)}` : product.price_range}
               </span>
               {product.originalPrice && (
                 <span className="text-xs sm:text-sm text-gray-500 line-through ml-2">
-                  £{product.originalPrice}
+                  £{parseFloat(product.originalPrice).toFixed(2)}
                 </span>
               )}
             </div>
