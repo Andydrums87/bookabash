@@ -127,9 +127,13 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
-        {/* Load Google Analytics */}
+        {/* Load Google Analytics & Google Ads */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-94HSGBH0MK"
+          strategy="afterInteractive"
+        />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17997070672"
           strategy="afterInteractive"
         />
         <Script id="gtag-init" strategy="afterInteractive">
@@ -138,6 +142,7 @@ export default function RootLayout({ children }) {
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-94HSGBH0MK');
+            gtag('config', 'AW-17997070672');
           `}
         </Script>
 
