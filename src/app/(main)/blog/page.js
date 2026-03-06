@@ -84,6 +84,16 @@ export default function Blog() {
       date: "April 15, 2025",
       readTime: "5 min read",
     },
+    {
+      id: 7,
+      title: "Best Kids' Party Venues in St Albans (2026)",
+      slug: slugify("Best Kids Party Venues in St Albans 2026"),
+      excerpt: "Looking for the perfect place to host your child's birthday party? We've put together a guide to the best halls and community centres in and around St Albans — all tried and tested by local parents.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772792255/iStock-2194928280_2_v2fj0v.jpg",
+      category: "Venues",
+      date: "March 6, 2026",
+      readTime: "10 min read",
+    },
   ];
 
   const allPosts = [...featuredPosts, ...recentPosts];
