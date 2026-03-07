@@ -223,10 +223,20 @@ const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
     if (!currentName) return ""
     // Get only the first name (first word)
     const nameParts = currentName.trim().split(" ")
-    return nameParts[0] || ""
+    const first = nameParts[0] || ""
+    // If it's a placeholder name, return empty so user enters fresh
+    if (first === "Your" || first === "Child") return ""
+    return first
   }
 
-  const [firstName, setFirstName] = useState(initializeFirstName())
+  const [firstName, setFirstName] = useState("")
+
+  // Reset firstName when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFirstName(initializeFirstName())
+    }
+  }, [isOpen, currentName])
 
   const handleSave = () => {
     if (firstName.trim()) {
@@ -738,11 +748,25 @@ export default function LocalStoragePartyHeader({
 
   // Helper functions
   const getFullName = () => {
-    if (partyDetails?.firstName || partyDetails?.lastName) {
-      return `${partyDetails?.firstName || ""} ${partyDetails?.lastName || ""}`.trim()
+    if (partyDetails?.firstName) {
+      // Don't include lastName if it's a placeholder like "Child"
+      const lastName = partyDetails?.lastName
+      if (lastName && lastName !== "Child" && lastName !== "Your Child") {
+        return `${partyDetails.firstName} ${lastName}`.trim()
+      }
+      return partyDetails.firstName
     }
 
     if (partyDetails?.childName) {
+      // If childName contains placeholder, just return first part
+      if (partyDetails.childName.includes("Your Child")) {
+        return "Your Child"
+      }
+      // Filter out "Child" suffix if it's a placeholder
+      const parts = partyDetails.childName.split(" ")
+      if (parts.length > 1 && parts[parts.length - 1] === "Child") {
+        return parts.slice(0, -1).join(" ")
+      }
       return partyDetails.childName
     }
 
