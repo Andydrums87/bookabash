@@ -1095,8 +1095,8 @@ export default function LocalStoragePartyHeader({
 
                   {/* Name and Info */}
                   <div className="flex-1 min-w-0 pr-14 md:pr-0">
-                    {/* Mobile: Name with edit button for placeholder */}
-                    <div className="md:hidden flex items-center gap-2">
+                    {/* Mobile: Name only (Edit button is at top-left) */}
+                    <div className="md:hidden">
                       <h1
                         suppressHydrationWarning={true}
                         className="text-4xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
@@ -1106,18 +1106,6 @@ export default function LocalStoragePartyHeader({
                       >
                         {isPlaceholderName() ? "Your Child's" : `${getFirstName()}'s`} Party
                       </h1>
-                      {isPlaceholderName() && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCardClick("name")
-                          }}
-                          className="bg-white text-primary-500 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg hover:bg-primary-50 transition-colors flex items-center gap-1"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          Add Name
-                        </button>
-                      )}
                     </div>
 
                     {/* Desktop: Clickable name with edit button for placeholder */}
