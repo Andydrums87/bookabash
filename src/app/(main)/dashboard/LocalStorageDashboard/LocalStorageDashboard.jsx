@@ -47,6 +47,7 @@ import { useSupplierManager } from '../hooks/useSupplierManager'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 import useDisableScroll from "@/hooks/useDisableScroll"
+import { useDashboardEngagement } from '../hooks/useDashboardEngagement'
 import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
 import { calculateFinalPrice, calculatePartyTotal, getDisplayPrice, getPriceBreakdownText, roundMoney } from '@/utils/unifiedPricing'
@@ -222,6 +223,9 @@ const childPhotoRef = useRef(null)
     setShowAdvancedControls,
     updateSuppliersForBudget
   } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
+
+  // Track scroll engagement and section views
+  useDashboardEngagement(isMounted && !showWelcomePopup)
 
   const {
     loadingCards,
@@ -1933,7 +1937,7 @@ const handleChildPhotoUpload = async (file) => {
         addons={addons}
       >
         {/* Full Width Header */}
-        <div data-tour="party-header" className="mb-8">
+        <div data-tour="party-header" data-section="party-header" className="mb-8">
           <LocalStoragePartyHeader
             theme={partyTheme}
             partyDetails={partyDetails}
@@ -1998,7 +2002,7 @@ const handleChildPhotoUpload = async (file) => {
               </div>
 
 {/* Supplier Grid */}
-<div className="w-full">
+<div className="w-full" data-section="supplier-grid">
                 {/* Desktop Grid */}
                 <div className="hidden md:grid md:grid-cols-4 gap-6">
                   {(!recommendationsLoaded || isRebuilding) ? (
@@ -2325,7 +2329,7 @@ const handleChildPhotoUpload = async (file) => {
                 </div>
               </div>
 
-              <div className="md:hidden block">
+              <div className="md:hidden block" data-section="refer-friend">
                 <ReferFriend />
               </div>
 
@@ -2336,12 +2340,14 @@ const handleChildPhotoUpload = async (file) => {
       </AddonProvider>
 
       {/* Sticky Bottom CTA - Desktop Only */}
-      <SmartStickyBottomBar
-        suppliers={suppliers}
-        totalCost={totalCost}
-        onContinue={() => setShowDesktopCompleteCTA(true)}
-        isVisible={showStickyBottomCTA}
-      />
+      <div data-section="book-cta">
+        <SmartStickyBottomBar
+          suppliers={suppliers}
+          totalCost={totalCost}
+          onContinue={() => setShowDesktopCompleteCTA(true)}
+          isVisible={showStickyBottomCTA}
+        />
+      </div>
 
       {/* Loading Overlay */}
       {isUpdating && (

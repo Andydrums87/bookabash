@@ -581,6 +581,74 @@ export const updateChildDetails = async (childData) => {
 };
 
 /**
+ * Track dashboard engagement - scroll depth and section views
+ * @param {object} engagementData - Object with sections viewed, scroll depth, first interaction time
+ */
+export const trackDashboardEngagement = async (engagementData) => {
+  // Try to get sessionId from memory or localStorage
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('trackDashboardEngagement: No session to update');
+    return;
+  }
+
+  try {
+    // First get the current tracking record
+    const { data: currentTracking } = await supabase
+      .from('party_tracking')
+      .select('action_timeline, dashboard_engagement')
+      .eq('session_id', sessionId)
+      .single();
+
+    const timeline = currentTracking?.action_timeline || [];
+    const existingEngagement = currentTracking?.dashboard_engagement || {};
+
+    // Create engagement event for timeline
+    const engagementEvent = {
+      action: 'dashboard_engagement',
+      timestamp: new Date().toISOString(),
+      data: engagementData
+    };
+
+    timeline.push(engagementEvent);
+
+    // Merge with existing engagement data (keep max scroll depth, combine sections)
+    const mergedEngagement = {
+      max_scroll_depth: Math.max(existingEngagement.max_scroll_depth || 0, engagementData.maxScrollDepth || 0),
+      sections_viewed: [...new Set([
+        ...(existingEngagement.sections_viewed || []),
+        ...(engagementData.sectionsViewed || [])
+      ])],
+      first_interaction_ms: existingEngagement.first_interaction_ms || engagementData.firstInteractionMs,
+      total_interactions: (existingEngagement.total_interactions || 0) + (engagementData.interactionCount || 0),
+      last_updated: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update({
+        action_timeline: timeline,
+        dashboard_engagement: mergedEngagement,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.log('Track dashboard engagement failed (non-critical):', error.message);
+    } else {
+      console.log('✅ Dashboard engagement tracked:', mergedEngagement);
+    }
+  } catch (err) {
+    console.log('Track dashboard engagement error (non-critical):', err.message);
+  }
+};
+
+/**
  * Helper: Extract supplier summary from party plan
  */
 const extractSupplierSummary = (partyPlan) => {
