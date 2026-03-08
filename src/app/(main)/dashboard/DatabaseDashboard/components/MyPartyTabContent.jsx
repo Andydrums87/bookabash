@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { roundMoney } from "@/utils/unifiedPricing"
+import { trackSupplierViewed } from "@/utils/partyTracking"
 
 export default function MyPartyTabContent({
   suppliers = {},
@@ -82,6 +83,9 @@ export default function MyPartyTabContent({
   // Fetch full supplier data for customization
   const fetchFullSupplierData = async (supplier, supplierType = null) => {
     if (!supplier?.id) return
+
+    // Track that user viewed this supplier
+    trackSupplierViewed(supplierType, supplier?.name || supplier?.data?.name, supplier.id)
 
     try {
       const { suppliersAPI } = await import('@/utils/mockBackend')

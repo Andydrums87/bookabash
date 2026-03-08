@@ -13,6 +13,7 @@ import SupplierCustomizationModal from '@/components/SupplierCustomizationModal'
 import { checkSupplierAvailability } from '@/utils/availabilityChecker'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/toast'
+import { trackSupplierViewed } from '@/utils/partyTracking'
 
 // Generic category images mapping
 const CATEGORY_IMAGES = {
@@ -489,6 +490,8 @@ export default function EmptySupplierCard({
 
   // Helper to open the customization modal
   const openCustomizationModal = () => {
+    // Track that user clicked to view this supplier category
+    trackSupplierViewed(type, recommendedSupplier?.name, recommendedSupplier?.id)
     setShowCustomizationModal(true)
   }
 

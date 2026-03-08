@@ -1513,6 +1513,8 @@ function TimelineEvent({ event, isLast }) {
       case 'party_planning_started': return '🎉'
       case 'supplier_added': return '➕'
       case 'supplier_removed': return '➖'
+      case 'supplier_viewed': return '👁️'
+      case 'dashboard_engagement': return '📊'
       case 'review_book_started': return '📋'
       case 'payment_page_started': return '💰'
       case 'checkout_started': return '🛒'
@@ -1525,11 +1527,23 @@ function TimelineEvent({ event, isLast }) {
     }
   }
 
-  const getEventLabel = (action) => {
+  const getEventLabel = (action, data) => {
     switch (action) {
       case 'party_planning_started': return 'Started Planning'
       case 'supplier_added': return 'Added Supplier'
       case 'supplier_removed': return 'Removed Supplier'
+      case 'supplier_viewed':
+        // Show supplier name if available, otherwise show category
+        if (data?.supplier_name) {
+          return `Viewed: ${data.supplier_name}`
+        }
+        if (data?.category) {
+          // Capitalize the category name for display
+          const categoryName = data.category.charAt(0).toUpperCase() + data.category.slice(1).replace(/([A-Z])/g, ' $1')
+          return `Viewed ${categoryName}`
+        }
+        return 'Viewed Supplier'
+      case 'dashboard_engagement': return 'Dashboard Engagement'
       case 'review_book_started': return 'Reached Review & Book'
       case 'payment_page_started': return 'Reached Payment Page'
       case 'checkout_started': return 'Started Checkout'
@@ -1570,7 +1584,7 @@ function TimelineEvent({ event, isLast }) {
       </div>
       <div className="pb-4 flex-1">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{getEventLabel(event.action)}</span>
+          <span className="text-sm font-medium">{getEventLabel(event.action, event.data)}</span>
           <span className="text-xs text-gray-500">{formatTime(event.timestamp)}</span>
         </div>
         {event.time_since_start && (
