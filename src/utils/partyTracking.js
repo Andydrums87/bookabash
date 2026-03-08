@@ -649,6 +649,66 @@ export const trackDashboardEngagement = async (engagementData) => {
 };
 
 /**
+ * Track when user views/opens a supplier customization modal
+ * @param {string} supplierCategory - The supplier category (venue, entertainment, etc.)
+ * @param {string} supplierName - Name of the supplier being viewed
+ * @param {string} supplierId - ID of the supplier
+ */
+export const trackSupplierViewed = async (supplierCategory, supplierName = null, supplierId = null) => {
+  // Try to get sessionId from memory or localStorage
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('trackSupplierViewed: No session to update');
+    return;
+  }
+
+  try {
+    // First get the current timeline
+    const { data: currentTracking } = await supabase
+      .from('party_tracking')
+      .select('action_timeline')
+      .eq('session_id', sessionId)
+      .single();
+
+    const timeline = currentTracking?.action_timeline || [];
+
+    // Create view event
+    const viewEvent = {
+      action: 'supplier_viewed',
+      timestamp: new Date().toISOString(),
+      data: {
+        category: supplierCategory,
+        supplier_name: supplierName,
+        supplier_id: supplierId
+      }
+    };
+
+    timeline.push(viewEvent);
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update({
+        action_timeline: timeline,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.log('Track supplier viewed failed (non-critical):', error.message);
+    } else {
+      console.log('✅ Supplier view tracked:', supplierCategory, supplierName);
+    }
+  } catch (err) {
+    console.log('Track supplier viewed error (non-critical):', err.message);
+  }
+};
+
+/**
  * Helper: Extract supplier summary from party plan
  */
 const extractSupplierSummary = (partyPlan) => {

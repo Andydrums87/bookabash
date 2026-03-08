@@ -10,6 +10,7 @@ import { CheckCircle, X, Clock, Users, Star, Info, Eye, Trash2, Wand2, RefreshCw
 import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
+import { trackSupplierViewed } from '@/utils/partyTracking'
 import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
 import {
   Tooltip,
@@ -49,8 +50,11 @@ export default function SelectedSupplierCard({
   const fetchFullSupplierData = async () => {
     if (!supplier?.id) return
 
+    // Track that user viewed this supplier
+    trackSupplierViewed(type, supplier?.name || supplier?.data?.name, supplier.id)
+
     try {
-  
+
 
       const { suppliersAPI } = await import('@/utils/mockBackend')
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
