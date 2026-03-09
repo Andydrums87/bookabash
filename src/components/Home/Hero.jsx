@@ -13,31 +13,50 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
+export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode, isFlyer = false }){
   const router = useRouter()
 
   return (
     <section id="hero" className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen overflow-visible">
       <div className="container mx-auto overflow-visible">
-        
+
         {/* Desktop Layout - Original */}
         <div className="hidden lg:block">
           <div className="grid lg:grid-cols-2 gap-8 items-center mb-8">
             {/* Hero Text - Left Side */}
             <div className="space-y-8">
               <div>
-                <p className="text-sm font-semibold text-primary-500 uppercase tracking-wide mb-3">
-                  St Albans' stress-free kids' party planner
-                </p>
-                <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
-                  Plan your child's <span className="text-primary-500 relative">
-                    perfect party
-                  </span> in minutes.
-                </h1>
+                {isFlyer ? (
+                  <>
+                    {/* Launch Offer Badge */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
+                      <span className="text-lg">🎉</span>
+                      LAUNCH OFFER: 30% OFF
+                    </div>
+                    <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
+                      Get <span className="text-green-500 relative">30% off</span> your child's{' '}
+                      <span className="text-primary-500 relative">perfect party</span>
+                    </h1>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-primary-500 uppercase tracking-wide mb-3">
+                      St Albans' stress-free kids' party planner
+                    </p>
+                    <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
+                      Plan your child's <span className="text-primary-500 relative">
+                        perfect party
+                      </span> in minutes.
+                    </h1>
+                  </>
+                )}
               </div>
 
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
-                We handle the venue and suppliers. You enjoy the day.
+                {isFlyer
+                  ? "Limited time launch offer. We handle the venue and suppliers - you enjoy the day."
+                  : "We handle the venue and suppliers. You enjoy the day."
+                }
               </h2>
             </div>
 
@@ -308,17 +327,37 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
             <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
-                <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2">
-                  St Albans' stress-free kids' party planner
-                </p>
-                <h1 className="text-4xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
-                  <span className="block">Plan your child's</span>
-                  <span className="text-primary-500 block">perfect party</span>
-                  <span className="block">in minutes.</span>
-                </h1>
-                <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
-                  We handle the suppliers. You enjoy the day.
-                </p>
+                {isFlyer ? (
+                  <>
+                    {/* Launch Offer Badge - Mobile */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
+                      <span>🎉</span>
+                      LAUNCH OFFER: 30% OFF
+                    </div>
+                    <h1 className="text-3xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
+                      <span className="block">Get <span className="text-green-500">30% off</span></span>
+                      <span className="block">your child's</span>
+                      <span className="text-primary-500 block">perfect party</span>
+                    </h1>
+                    <p className="text-sm text-gray-700 max-w-4xl leading-relaxed font-medium">
+                      Limited time launch offer. We handle the suppliers - you enjoy the day.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2">
+                      St Albans' stress-free kids' party planner
+                    </p>
+                    <h1 className="text-4xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
+                      <span className="block">Plan your child's</span>
+                      <span className="text-primary-500 block">perfect party</span>
+                      <span className="block">in minutes.</span>
+                    </h1>
+                    <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
+                      We handle the suppliers. You enjoy the day.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 

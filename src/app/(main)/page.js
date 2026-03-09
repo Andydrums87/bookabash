@@ -57,6 +57,9 @@ export default function HomePage() {
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
+  // Check if user came from flyer QR code
+  const isFlyer = searchParams.get('flyer') !== null || searchParams.get('source') === 'flyer'
+
   // Initialize tracking on mount and capture referral code from URL
   useEffect(() => {
     initTracking();
@@ -67,7 +70,14 @@ export default function HomePage() {
       storeReferralCode(refCode)
       console.log('📎 Referral code captured from URL:', refCode)
     }
-  }, [searchParams]);
+
+    // Store flyer source if present (for applying discount later)
+    if (isFlyer) {
+      localStorage.setItem('flyer_source', 'true')
+      localStorage.setItem('flyer_discount', '30')
+      console.log('🎫 Flyer source captured - 30% discount available')
+    }
+  }, [searchParams, isFlyer]);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
@@ -442,6 +452,7 @@ export default function HomePage() {
         validateAndFormatPostcode={validateAndFormatPostcode}
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
+        isFlyer={isFlyer}
       />
 
       <FloatingCTA />
@@ -455,6 +466,7 @@ export default function HomePage() {
         validateAndFormatPostcode={validateAndFormatPostcode}
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
+        isFlyer={isFlyer}
       />
 
       <TrustIndicators />
