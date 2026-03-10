@@ -8,11 +8,12 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Loader2, Building } from "lucide-react"
+import { Eye, EyeOff, Loader2, Building, Download } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { getBaseUrl } from '@/utils/env'
 import { linkEmail } from "@/utils/partyTracking"
+import RecoverPartyModal from "@/components/RecoverPartyModal"
 
 export default function SignInPageContent() {
   const router = useRouter()
@@ -26,6 +27,7 @@ export default function SignInPageContent() {
   const [oauthLoading, setOauthLoading] = useState(null)
   const [businessAccountWarning, setBusinessAccountWarning] = useState(false)
   const [supplierBlockedWarning, setSupplierBlockedWarning] = useState(false)
+  const [showRecoverModal, setShowRecoverModal] = useState(false)
 
   // Get URL parameters
   const returnTo = searchParams.get('return_to')
@@ -373,8 +375,26 @@ export default function SignInPageContent() {
               Sign up
             </Link>
           </p>
+
+          {/* Recover Party Plan Link */}
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <button
+              type="button"
+              onClick={() => setShowRecoverModal(true)}
+              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Saved a party plan? Recover it here
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Recover Party Modal */}
+      <RecoverPartyModal
+        isOpen={showRecoverModal}
+        onClose={() => setShowRecoverModal(false)}
+      />
     </div>
   )
 }

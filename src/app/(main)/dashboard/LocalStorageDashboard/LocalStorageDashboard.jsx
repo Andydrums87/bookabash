@@ -40,6 +40,7 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 // import PartySummarySection from "../components/PartySummarySection" // Removed - functionality moved to SmartStickyBottomBar
 import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
+import SavePartyPlanModal from "@/components/SavePartyPlanModal"
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import { usePartyDetails } from '../hooks/usePartyDetails'
@@ -146,6 +147,11 @@ const childPhotoRef = useRef(null)
   // Debug state (remove in production)
   const [debugInfo, setDebugInfo] = useState({})
 
+  // Flyer discount state
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
+
+  // Save party plan modal state
+  const [showSavePartyModal, setShowSavePartyModal] = useState(false)
 
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
 
@@ -170,6 +176,17 @@ const childPhotoRef = useRef(null)
     setIsMounted(true)
     setIsClient(typeof window !== 'undefined')
     // Note: isCheckingWelcome starts as true, so loading screen shows immediately
+  }, [])
+
+  // Check for flyer discount from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountPercent > 0) {
+        setFlyerDiscount(flyerDiscountPercent)
+      }
+    }
   }, [])
 
   // Show sticky bottom CTA after scrolling 400px (desktop only)
@@ -1950,6 +1967,7 @@ const handleChildPhotoUpload = async (file) => {
             onPhotoUpload={handleChildPhotoUpload}
             uploadingPhoto={uploadingChildPhoto}
             totalCost={enhancedTotalCost}
+            onSaveForLater={() => setShowSavePartyModal(true)}
           />
         </div>
 
@@ -2324,6 +2342,7 @@ const handleChildPhotoUpload = async (file) => {
                       childPhoto={partyDetails?.childPhoto}
                       onPhotoUpload={handleChildPhotoUpload}
                       uploadingPhoto={uploadingChildPhoto}
+                      onSaveForLater={() => setShowSavePartyModal(true)}
                     />
                   )}
                 </div>
@@ -2346,6 +2365,7 @@ const handleChildPhotoUpload = async (file) => {
           totalCost={totalCost}
           onContinue={() => setShowDesktopCompleteCTA(true)}
           isVisible={showStickyBottomCTA}
+          onSaveForLater={() => setShowSavePartyModal(true)}
         />
       </div>
 
@@ -2618,9 +2638,28 @@ const handleChildPhotoUpload = async (file) => {
             {/* Footer with Total and CTA */}
             <div className="border-t border-gray-200 px-6 pt-6 pb-8 bg-gray-50">
               {/* Total */}
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                {flyerDiscount > 0 && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
+                      🎉 Launch Offer ({flyerDiscount}% off)
+                    </span>
+                    <span className="text-sm text-teal-600 font-semibold">
+                      -£{(totalCost * flyerDiscount / 100).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-gray-900">Total</span>
+                  {flyerDiscount > 0 ? (
+                    <div className="text-right">
+                      <span className="text-lg text-gray-400 line-through mr-2">£{totalCost.toFixed(2)}</span>
+                      <span className="text-3xl font-bold text-primary-600">£{(totalCost * (1 - flyerDiscount / 100)).toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>
+                  )}
+                </div>
               </div>
 
               {/* CTA Button */}
@@ -2674,6 +2713,15 @@ const handleChildPhotoUpload = async (file) => {
           </div>
         </div>
       )}
+
+      {/* Save Party Plan Modal */}
+      <SavePartyPlanModal
+        isOpen={showSavePartyModal}
+        onClose={() => setShowSavePartyModal(false)}
+        partyDetails={partyDetails}
+        partyPlan={partyPlan}
+        totalCost={totalCost}
+      />
 
       {/* Mobile Add Supplier Button */}
       {/* <div className="md:hidden fixed bottom-5 right-4 z-40" data-tour="mobile-add-supplier">

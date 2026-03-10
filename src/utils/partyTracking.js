@@ -231,6 +231,90 @@ export const linkEmail = async (email) => {
 };
 
 /**
+ * Save party plan with email for abandoned cart recovery
+ * Links email to existing session and saves full party plan data
+ *
+ * @param {string} email - User's email address
+ * @param {boolean} marketingConsent - User's marketing consent
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const savePartyPlanWithEmail = async (email, marketingConsent = false) => {
+  // Ensure we have a session
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('savePartyPlanWithEmail: No tracking session found');
+    return { success: false, error: 'No tracking session found' };
+  }
+
+  try {
+    // Get complete party data from localStorage
+    const completeData = getCompletePartyData();
+
+    // Get raw localStorage data for full preservation
+    const partyDetailsRaw = typeof window !== 'undefined'
+      ? localStorage.getItem('party_details')
+      : null;
+    const partyPlanRaw = typeof window !== 'undefined'
+      ? localStorage.getItem('user_party_plan')
+      : null;
+
+    const partyDetails = partyDetailsRaw ? JSON.parse(partyDetailsRaw) : null;
+    const partyPlan = partyPlanRaw ? JSON.parse(partyPlanRaw) : null;
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update({
+        email: email.toLowerCase().trim(),
+        status: 'saved',
+        saved_party_details: partyDetails,
+        saved_party_plan: partyPlan,
+        saved_at: new Date().toISOString(),
+        marketing_consent: marketingConsent,
+        child_name: completeData.childName,
+        party_theme: completeData.theme,
+        party_date: completeData.partyDate,
+        party_location: completeData.location,
+        guest_count: completeData.guestCount,
+        supplier_count: completeData.supplierCount,
+        estimated_value: completeData.totalCost,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.error('Save party plan failed:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    // Store email in localStorage for checkout pre-fill
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('saved_party_email', email.toLowerCase().trim());
+    }
+
+    // Track this action in timeline
+    await trackStep('party_saved_with_email', {
+      email: email.toLowerCase().trim(),
+      marketing_consent: marketingConsent,
+      supplier_count: completeData.supplierCount,
+      estimated_value: completeData.totalCost,
+      child_name: completeData.childName,
+      theme: completeData.theme
+    });
+
+    console.log('✅ Party plan saved with email:', email);
+    return { success: true };
+  } catch (err) {
+    console.error('Save party plan error:', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+/**
  * Track when user reaches the review-book page (Step 1 of checkout)
  * This is when they're reviewing their party plan before proceeding
  */

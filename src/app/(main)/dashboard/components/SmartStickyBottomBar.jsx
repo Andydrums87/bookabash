@@ -7,10 +7,27 @@ const SmartStickyBottomBar = ({
   suppliers = {},
   totalCost = 0,
   onContinue,
+  onSaveForLater,
   isVisible = true
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
+  const [hasSavedParty, setHasSavedParty] = useState(false)
   const panelRef = useRef(null)
+
+  // Check for flyer discount and saved party on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountPercent > 0) {
+        setFlyerDiscount(flyerDiscountPercent)
+      }
+      // Check if user has already saved their party
+      const savedEmail = localStorage.getItem('saved_party_email')
+      setHasSavedParty(!!savedEmail)
+    }
+  }, [])
 
   // Get selected suppliers
   const selectedSuppliers = Object.entries(suppliers)
@@ -185,16 +202,36 @@ const SmartStickyBottomBar = ({
             {/* Right: Total + CTA */}
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
-                <p className="text-2xl font-bold text-gray-900">£{totalCost.toLocaleString()}</p>
+                {flyerDiscount > 0 ? (
+                  <>
+                    <p className="text-xs text-teal-600 font-semibold">🎉 {flyerDiscount}% OFF</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-400 line-through">£{totalCost.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">£{Math.round(totalCost * (1 - flyerDiscount / 100)).toLocaleString()}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">£{totalCost.toLocaleString()}</p>
+                  </>
+                )}
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={onContinue}
                   className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md"
                 >
                   Secure My Party
                 </button>
+                {onSaveForLater && (
+                  <button
+                    onClick={onSaveForLater}
+                    className="text-primary-600 hover:text-primary-700 text-sm font-medium underline underline-offset-2 transition-colors"
+                  >
+                    {hasSavedParty ? 'Update saved plan' : 'Save for later'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

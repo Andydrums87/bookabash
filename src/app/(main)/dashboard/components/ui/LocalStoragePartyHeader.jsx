@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles, Camera, Info } from "lucide-react"
+import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles, Camera, Info, Bookmark, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar as CalendarPicker } from "@/components/ui/calendar"
@@ -662,11 +662,21 @@ export default function LocalStoragePartyHeader({
   forceExpanded = false, // ✅ NEW: Allow external control of expansion
   onExpandChange = null, // ✅ NEW: Callback when expansion changes
   totalCost = 0, // ✅ NEW: Total party cost
+  onSaveForLater = null, // ✅ NEW: Save party plan callback
 }) {
   const [editingModal, setEditingModal] = useState(null)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [pendingChanges, setPendingChanges] = useState(null)
   const [isExpanded, setIsExpanded] = useState(forceExpanded)
+  const [hasSavedParty, setHasSavedParty] = useState(false)
+
+  // Check if user has already saved their party
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('saved_party_email')
+      setHasSavedParty(!!savedEmail)
+    }
+  }, [])
 
   const currentTheme = theme
   const { toast } = useToast()
@@ -1066,6 +1076,35 @@ export default function LocalStoragePartyHeader({
             paddingBottom: '3rem'
           }}
         >
+          {/* Desktop: Save button at top-right */}
+          {onSaveForLater && (
+            <div className="hidden md:block absolute top-6 right-6">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSaveForLater()
+                }}
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-colors flex items-center gap-2 ${
+                  hasSavedParty
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-white/90 text-gray-700 hover:bg-white'
+                }`}
+              >
+                {hasSavedParty ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4" />
+                    Save for later
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           <div className="md:space-y-6">
             <div className="space-y-3 md:space-y-4">
               <div className="flex items-start gap-3 md:gap-4">
@@ -1179,8 +1218,8 @@ export default function LocalStoragePartyHeader({
                   </div>
                 </div>
 
-                {/* Edit button - positioned at top-left on mobile */}
-                <div className="md:hidden absolute top-3 left-3 flex-shrink-0">
+                {/* Edit and Save buttons - positioned at top-left on mobile */}
+                <div className="md:hidden absolute top-3 left-3 flex-shrink-0 flex items-center gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -1194,6 +1233,25 @@ export default function LocalStoragePartyHeader({
                       Edit
                     </span>
                   </button>
+                  {onSaveForLater && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSaveForLater()
+                      }}
+                      className="bg-white/90 hover:bg-white px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 shadow-md"
+                      aria-label={hasSavedParty ? "Update saved plan" : "Save for later"}
+                    >
+                      {hasSavedParty ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Bookmark className="w-3 h-3 text-gray-700" />
+                      )}
+                      <span className="text-gray-700 text-xs font-medium">
+                        {hasSavedParty ? 'Saved' : 'Save'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

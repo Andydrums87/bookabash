@@ -1,7 +1,7 @@
 // MyPartyTabContent.jsx - Complete booking journey in My Party tab
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -30,6 +30,7 @@ export default function MyPartyTabContent({
   onPhotoUpload, // ✅ NEW PROP for photo upload
   childPhoto, // ✅ NEW PROP for child photo
   uploadingPhoto, // ✅ NEW PROP for upload state
+  onSaveForLater, // ✅ NEW PROP for save party plan
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -37,6 +38,22 @@ export default function MyPartyTabContent({
   const [selectedSupplierType, setSelectedSupplierType] = useState(null) // Track supplier type for modal
   const [showPlanInfo, setShowPlanInfo] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
+  const [hasSavedParty, setHasSavedParty] = useState(false)
+
+  // Check for flyer discount and saved party on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountPercent > 0) {
+        setFlyerDiscount(flyerDiscountPercent)
+      }
+      // Check if user has already saved their party
+      const savedEmail = localStorage.getItem('saved_party_email')
+      setHasSavedParty(!!savedEmail)
+    }
+  }, [])
 
   // Photo upload handler
   const handlePhotoChange = async (e) => {
@@ -1100,11 +1117,34 @@ export default function MyPartyTabContent({
               const totalCost = supplierTotal + addonTotal
 
               return totalCost > 0 ? (
-                <div className="pt-4 border-t-2 border-gray-300 flex items-center justify-between">
-                  <span className="font-bold text-base text-gray-900">Total</span>
-                  <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
-                    £{totalCost.toFixed(2)}
-                  </span>
+                <div className="pt-4 border-t-2 border-gray-300">
+                  {flyerDiscount > 0 && (
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
+                        🎉 Launch Offer ({flyerDiscount}% off)
+                      </span>
+                      <span className="text-sm text-teal-600 font-semibold">
+                        -£{(totalCost * flyerDiscount / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-base text-gray-900">Total</span>
+                    {flyerDiscount > 0 ? (
+                      <div className="text-right">
+                        <span className="text-sm text-gray-400 line-through mr-2">
+                          £{totalCost.toFixed(2)}
+                        </span>
+                        <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
+                          £{(totalCost * (1 - flyerDiscount / 100)).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
+                        £{totalCost.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : null
             })()}
@@ -1131,6 +1171,17 @@ export default function MyPartyTabContent({
                 'Secure My Party'
               )}
             </button>
+
+            {/* Save for later link */}
+            {onSaveForLater && (
+              <button
+                onClick={onSaveForLater}
+                className="w-full mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium underline underline-offset-2 transition-colors"
+              >
+                {hasSavedParty ? 'Update saved plan' : 'Save for later'}
+              </button>
+            )}
+
             {/* Trust badges */}
             <div className="mt-4 flex flex-col items-center gap-1.5">
               <div className="flex gap-4">
