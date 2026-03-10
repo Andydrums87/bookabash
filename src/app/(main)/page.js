@@ -274,7 +274,8 @@ export default function HomePage() {
         childAge: data.childAge,
         hasOwnVenue: data.hasOwnVenue,
         timeSlot: data.timeSlot,
-        postcode: data.postcode
+        postcode: data.postcode,
+        date: data.date
       });
 
       setTimeout(() => {
