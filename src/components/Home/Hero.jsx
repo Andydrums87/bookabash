@@ -29,12 +29,12 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 {isFlyer ? (
                   <>
                     {/* Launch Offer Badge */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
                       <span className="text-lg">🎉</span>
                       LAUNCH OFFER: 30% OFF
                     </div>
                     <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
-                      Get <span className="text-green-500 relative">30% off</span> your child's{' '}
+                      Get <span className="text-primary-500 relative">30% off</span> your child's{' '}
                       <span className="text-primary-500 relative">perfect party</span>
                     </h1>
                   </>
@@ -316,6 +316,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     </div>
                   )}
                 </Button>
+                <p className="text-center text-xs text-gray-500 mt-1">
+                  No sign-up required • Free to plan
+                </p>
               </div>
             </div>
           </form>
@@ -330,12 +333,12 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 {isFlyer ? (
                   <>
                     {/* Launch Offer Badge - Mobile */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
                       <span>🎉</span>
                       LAUNCH OFFER: 30% OFF
                     </div>
                     <h1 className="text-3xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
-                      <span className="block">Get <span className="text-green-500">30% off</span></span>
+                      <span className="block">Get <span className="text-primary-500">30% off</span></span>
                       <span className="block">your child's</span>
                       <span className="text-primary-500 block">perfect party</span>
                     </h1>

@@ -66,12 +66,12 @@ export default function MobileSearchForm({
 
   return (
     <div className="lg:hidden px-4 pt-2 pb-4 relative z-30 bg-white " id="search-form">
-      <form onSubmit={handleMobileSearch} className={`bg-white rounded-3xl p-4 shadow-2xl border-2 ${isFlyer ? 'border-green-500' : 'border-[hsl(var(--primary-500))]'}`}>
+      <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-4 shadow-2xl border-2 border-[hsl(var(--primary-500))]">
         <div className="space-y-4">
 
           {/* Launch Offer Banner - Only shown for flyer visitors */}
           {isFlyer && (
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-xl text-center -mt-1 mb-2">
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-2 rounded-xl text-center -mt-1 mb-2">
               <p className="text-xs font-bold">🎉 Your 30% launch discount will be applied at checkout</p>
             </div>
           )}
@@ -378,6 +378,11 @@ export default function MobileSearchForm({
               )}
             </Button>
           )}
+
+          {/* No sign-up reassurance */}
+          <p className="text-center text-xs text-gray-500 mt-2">
+            No sign-up required • Free to plan
+          </p>
         </div>
       </form>
     </div>
