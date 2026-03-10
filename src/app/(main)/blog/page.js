@@ -19,6 +19,17 @@ export default function Blog() {
 
   const featuredPosts = [
     {
+      id: 1,
+      title: "The Ultimate Guide to Planning a Children's Party in St Albans: 2025 Edition",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in St Albans: 2025"),
+      excerpt: "Everything you need to know about planning the perfect children's party in St Albans this year, from venues to entertainment.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
+      category: "Planning",
+      date: "May 15, 2025",
+      readTime: "8 min read",
+      featured: true,
+    },
+    {
       id: 8,
       title: "11 Most Popular Kids' Party Themes Right Now (2026)",
       slug: slugify("11 Most Popular Kids Party Themes Right Now 2026"),
