@@ -8,14 +8,14 @@ const SmartStickyBottomBar = ({
   totalCost = 0,
   onContinue,
   onSaveForLater,
-  isVisible = true
+  isVisible = true,
+  hasSavedParty = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [flyerDiscount, setFlyerDiscount] = useState(0)
-  const [hasSavedParty, setHasSavedParty] = useState(false)
   const panelRef = useRef(null)
 
-  // Check for flyer discount and saved party on mount
+  // Check for flyer discount on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
@@ -23,9 +23,6 @@ const SmartStickyBottomBar = ({
       if (isFlyerSource && flyerDiscountPercent > 0) {
         setFlyerDiscount(flyerDiscountPercent)
       }
-      // Check if user has already saved their party
-      const savedEmail = localStorage.getItem('saved_party_email')
-      setHasSavedParty(!!savedEmail)
     }
   }, [])
 

@@ -54,6 +54,7 @@ export default function MobileSupplierNavigation({
   childPhoto, // ✅ NEW PROP for child photo
   uploadingPhoto, // ✅ NEW PROP for upload state
   onSaveForLater, // ✅ NEW PROP for save party plan
+  hasSavedParty = false, // ✅ NEW PROP for saved state
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -447,6 +448,7 @@ export default function MobileSupplierNavigation({
         onImHappy={onPaymentReady}
         getSupplierDisplayPricing={getSupplierDisplayPricing}
         onSaveForLater={onSaveForLater}
+        hasSavedParty={hasSavedParty}
       />
     )
   }

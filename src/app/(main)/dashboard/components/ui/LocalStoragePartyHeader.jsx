@@ -663,20 +663,12 @@ export default function LocalStoragePartyHeader({
   onExpandChange = null, // ✅ NEW: Callback when expansion changes
   totalCost = 0, // ✅ NEW: Total party cost
   onSaveForLater = null, // ✅ NEW: Save party plan callback
+  hasSavedParty = false, // ✅ NEW: Whether party has been saved
 }) {
   const [editingModal, setEditingModal] = useState(null)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [pendingChanges, setPendingChanges] = useState(null)
   const [isExpanded, setIsExpanded] = useState(forceExpanded)
-  const [hasSavedParty, setHasSavedParty] = useState(false)
-
-  // Check if user has already saved their party
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedEmail = localStorage.getItem('saved_party_email')
-      setHasSavedParty(!!savedEmail)
-    }
-  }, [])
 
   const currentTheme = theme
   const { toast } = useToast()
@@ -1084,15 +1076,11 @@ export default function LocalStoragePartyHeader({
                   e.stopPropagation()
                   onSaveForLater()
                 }}
-                className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-colors flex items-center gap-2 ${
-                  hasSavedParty
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-white/90 text-gray-700 hover:bg-white'
-                }`}
+                className="px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-colors flex items-center gap-2 bg-white/90 text-gray-700 hover:bg-white"
               >
                 {hasSavedParty ? (
                   <>
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 text-green-500" />
                     Saved
                   </>
                 ) : (

@@ -10,6 +10,7 @@ import { Mail, Loader2, CheckCircle, Bookmark } from "lucide-react"
 export default function SavePartyPlanModal({
   isOpen,
   onClose,
+  onSuccess,
   partyDetails,
   partyPlan,
   totalCost,
@@ -59,6 +60,8 @@ export default function SavePartyPlanModal({
         setStatus("success")
         // Store email locally for checkout pre-fill
         localStorage.setItem('saved_party_email', email.toLowerCase().trim())
+        // Notify parent component of success
+        onSuccess?.()
       } else {
         const data = await res.json()
         setStatus("error")

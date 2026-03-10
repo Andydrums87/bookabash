@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
+import { UniversalModal, ModalHeader, ModalContent } from "@/components/ui/UniversalModal"
 import { roundMoney } from "@/utils/unifiedPricing"
 import { trackSupplierViewed } from "@/utils/partyTracking"
 
@@ -31,6 +32,7 @@ export default function MyPartyTabContent({
   childPhoto, // ✅ NEW PROP for child photo
   uploadingPhoto, // ✅ NEW PROP for upload state
   onSaveForLater, // ✅ NEW PROP for save party plan
+  hasSavedParty = false, // ✅ NEW PROP for saved state
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -39,9 +41,9 @@ export default function MyPartyTabContent({
   const [showPlanInfo, setShowPlanInfo] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [flyerDiscount, setFlyerDiscount] = useState(0)
-  const [hasSavedParty, setHasSavedParty] = useState(false)
+  const [showGuaranteeModal, setShowGuaranteeModal] = useState(false)
 
-  // Check for flyer discount and saved party on mount
+  // Check for flyer discount on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
@@ -49,9 +51,6 @@ export default function MyPartyTabContent({
       if (isFlyerSource && flyerDiscountPercent > 0) {
         setFlyerDiscount(flyerDiscountPercent)
       }
-      // Check if user has already saved their party
-      const savedEmail = localStorage.getItem('saved_party_email')
-      setHasSavedParty(!!savedEmail)
     }
   }, [])
 
@@ -196,211 +195,23 @@ export default function MyPartyTabContent({
   }
 
   const getCategoryTagline = (type) => {
-    const theme = partyDetails?.theme?.toLowerCase() || 'party'
-
-    const themeTaglines = {
-      dinosaur: {
-        venue: 'Where the prehistoric adventure begins',
-        entertainment: 'Roar-some fun for little explorers',
-        catering: 'Dino-mite food for hungry adventurers',
-        cakes: 'A roar-some centerpiece',
-        facePainting: 'Transform into a fearsome dinosaur',
-        activities: 'Jurassic games and dino discoveries',
-        partyBags: 'Prehistoric treats to take home',
-        decorations: 'Journey back to the Jurassic',
-        balloons: 'Dino eggs and prehistoric colors',
-        photography: 'Capture prehistoric memories',
-        bouncyCastle: 'Bounce with the dinosaurs'
-      },
-      princess: {
-        venue: 'A royal palace for the celebration',
-        entertainment: 'Enchanting magic for little royals',
-        catering: 'A feast fit for a princess',
-        cakes: 'A magical royal masterpiece',
-        facePainting: 'Become a beautiful princess',
-        activities: 'Enchanting games for little royalty',
-        partyBags: 'Royal treasures for each guest',
-        decorations: 'Transform into an enchanted castle',
-        balloons: 'Sparkles and princess colors',
-        photography: 'Capture royal memories',
-        bouncyCastle: 'Bounce in the royal court'
-      },
-      superhero: {
-        venue: 'The hero headquarters awaits',
-        entertainment: 'Super-powered fun for heroes',
-        catering: 'Power-up food for little heroes',
-        cakes: 'A super-powered showstopper',
-        facePainting: 'Become your favorite superhero',
-        activities: 'Hero training and super missions',
-        partyBags: 'Super supplies for every hero',
-        decorations: 'Create an epic hero hideout',
-        balloons: 'Bold colors for brave heroes',
-        photography: 'Capture heroic action shots',
-        bouncyCastle: 'Bounce like a superhero'
-      },
-      unicorn: {
-        venue: 'A magical realm for unicorns',
-        entertainment: 'Magical fun for believers',
-        catering: 'Rainbow treats and magical delights',
-        cakes: 'A magical unicorn masterpiece',
-        facePainting: 'Transform into a magical unicorn',
-        activities: 'Enchanted games and unicorn quests',
-        partyBags: 'Magical treasures to take home',
-        decorations: 'Create a rainbow wonderland',
-        balloons: 'Pastel magic and rainbow colors',
-        photography: 'Capture magical unicorn moments',
-        bouncyCastle: 'Bounce through the rainbow'
-      },
-      space: {
-        venue: 'Launch pad for cosmic adventures',
-        entertainment: 'Out-of-this-world entertainment',
-        catering: 'Astronaut fuel for space explorers',
-        cakes: 'A stellar cosmic creation',
-        facePainting: 'Become a space explorer',
-        activities: 'Galactic missions and star games',
-        partyBags: 'Space treasures for young astronauts',
-        decorations: 'Transform into outer space',
-        balloons: 'Planets and cosmic colors',
-        photography: 'Capture cosmic adventures',
-        bouncyCastle: 'Bounce to the moon'
-      },
-      pirate: {
-        venue: 'Set sail for adventure',
-        entertainment: 'Swashbuckling fun for buccaneers',
-        catering: 'Pirate feast for hungry crew',
-        cakes: 'A treasure-worthy masterpiece',
-        facePainting: 'Become a fearsome pirate',
-        activities: 'Treasure hunts and pirate games',
-        partyBags: 'Booty for every buccaneer',
-        decorations: 'Transform into a pirate ship',
-        balloons: 'Treasure chest colors',
-        photography: 'Capture pirate adventures',
-        bouncyCastle: 'Bounce on the high seas'
-      },
-      jungle: {
-        venue: 'A wild jungle adventure awaits',
-        entertainment: 'Wild fun for jungle explorers',
-        catering: 'Jungle feast for wild adventurers',
-        cakes: 'A wild jungle masterpiece',
-        facePainting: 'Transform into jungle animals',
-        activities: 'Safari games and jungle expeditions',
-        partyBags: 'Jungle treasures to discover',
-        decorations: 'Create a tropical jungle',
-        balloons: 'Lush jungle greens and wildlife',
-        photography: 'Capture wild safari moments',
-        bouncyCastle: 'Bounce through the jungle'
-      },
-      mermaid: {
-        venue: 'Dive into an underwater palace',
-        entertainment: 'Magical fun under the sea',
-        catering: 'Ocean treasures and sea delights',
-        cakes: 'A magical underwater creation',
-        facePainting: 'Become a beautiful mermaid',
-        activities: 'Ocean adventures and pearl hunts',
-        partyBags: 'Sea treasures for every mermaid',
-        decorations: 'Transform into an ocean paradise',
-        balloons: 'Ocean blues and shimmering scales',
-        photography: 'Capture underwater memories',
-        bouncyCastle: 'Bounce like ocean waves'
-      },
-      underwater: {
-        venue: 'Explore the ocean depths',
-        entertainment: 'Splashing fun for sea explorers',
-        catering: 'Sea-inspired treats and delights',
-        cakes: 'A stunning ocean masterpiece',
-        facePainting: 'Become a sea creature',
-        activities: 'Underwater adventures and games',
-        partyBags: 'Ocean treasures to take home',
-        decorations: 'Create an underwater wonderland',
-        balloons: 'Deep sea blues and bubbles',
-        photography: 'Capture deep sea adventures',
-        bouncyCastle: 'Bounce beneath the waves'
-      },
-      football: {
-        venue: 'The ultimate stadium experience',
-        entertainment: 'Championship fun for players',
-        catering: 'Match day fuel for champions',
-        cakes: 'A winning goal celebration',
-        facePainting: 'Team colors and player pride',
-        activities: 'Skills training and football games',
-        partyBags: 'Championship goodies for players',
-        decorations: 'Transform into a football stadium',
-        balloons: 'Team colors and victory vibes',
-        photography: 'Capture championship moments',
-        bouncyCastle: 'Bounce like a champion'
-      },
-      cars: {
-        venue: 'Rev up at the race track',
-        entertainment: 'High-speed fun for racers',
-        catering: 'Pit stop fuel for champions',
-        cakes: 'A turbocharged masterpiece',
-        facePainting: 'Racing stripes and checkered flags',
-        activities: 'Racing games and speed challenges',
-        partyBags: 'Racing goodies for champions',
-        decorations: 'Create the ultimate race track',
-        balloons: 'Racing colors and checkered flags',
-        photography: 'Capture racing action',
-        bouncyCastle: 'Bounce to victory lane'
-      },
-      spiderman: {
-        venue: 'Swing into action headquarters',
-        entertainment: 'Web-slinging fun for heroes',
-        catering: 'Hero fuel for web-slingers',
-        cakes: 'A spectacular spider masterpiece',
-        facePainting: 'Become the friendly neighborhood hero',
-        activities: 'Web-slinging missions and hero training',
-        partyBags: 'Spider-gear for every hero',
-        decorations: 'Transform into New York City',
-        balloons: 'Red, blue, and web-tastic',
-        photography: 'Capture spider-tacular moments',
-        bouncyCastle: 'Bounce like Spider-Man'
-      },
-      'taylor-swift': {
-        venue: 'The ultimate Swiftie stage',
-        entertainment: 'Shake it off with amazing fun',
-        catering: 'Treats fit for Swifties',
-        cakes: 'A fearless masterpiece',
-        facePainting: 'Glitter and Swiftie sparkles',
-        activities: 'Sing-along and dance party fun',
-        partyBags: 'Era-inspired treats for Swifties',
-        decorations: 'Create the Eras Tour experience',
-        balloons: 'Sparkles and Swiftie colors',
-        photography: 'Capture your era',
-        bouncyCastle: 'Bounce to the beat'
-      },
-      science: {
-        venue: 'The ultimate science laboratory',
-        entertainment: 'Mind-blowing experiments and fun',
-        catering: 'Brain food for young scientists',
-        cakes: 'An explosive scientific creation',
-        facePainting: 'Transform into a mad scientist',
-        activities: 'Experiments and discovery missions',
-        partyBags: 'Science kits for young explorers',
-        decorations: 'Create a working laboratory',
-        balloons: 'Bright colors and bubbling reactions',
-        photography: 'Document your experiments',
-        bouncyCastle: 'Bounce with physics'
-      }
+    // Trust-focused taglines that highlight vetting, local suppliers, and convenience
+    const trustTaglines = {
+      venue: 'Verified for safety • Hand-picked local venues',
+      entertainment: 'DBS checked • Insured • Personally selected',
+      catering: 'Local caterers • Food hygiene certified',
+      cakes: 'Hand-selected local bakers • Made fresh for you',
+      facePainting: 'DBS checked • Child-safe paints',
+      activities: 'Safety checked • Personally vetted',
+      partyBags: 'Pre-filled • Ready to hand out • Delivered to your door',
+      decorations: 'Quality checked • Local suppliers',
+      balloons: 'Hand-picked local artists',
+      photography: 'Portfolio reviewed • Personally selected',
+      bouncyCastle: 'PAT tested • Fully insured',
+      sweetTreats: 'Local suppliers • Quality assured'
     }
 
-    // Default taglines if theme not found
-    const defaultTaglines = {
-      venue: 'Where the party happens',
-      entertainment: 'Keep them laughing for hours',
-      catering: 'Delicious food everyone will love',
-      cakes: 'Every party needs a showstopper',
-      facePainting: 'Transform into their favorite character',
-      activities: 'Fun games and activities',
-      partyBags: 'Send them home with a smile',
-      decorations: 'Set the perfect party scene',
-      balloons: 'Add color and excitement',
-      photography: 'Capture all the magical moments',
-      bouncyCastle: 'Non-stop bouncing fun',
-      sweetTreats: 'Candy carts, ice cream & sweet delights'
-    }
-
-    const taglines = themeTaglines[theme] || defaultTaglines
-    return taglines[type] || ''
+    return trustTaglines[type] || ''
   }
 
   const renderSupplierCard = ([type, supplier]) => {
@@ -603,7 +414,18 @@ export default function MyPartyTabContent({
           {/* Supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
-              {/* Subtle image context removed - now shown below buttons */}
+              {/* PartySnap Verified Badge */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowGuaranteeModal(true)
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/95 hover:bg-white backdrop-blur-sm rounded-full text-xs font-semibold text-emerald-700 mb-2 transition-all duration-200 shadow-md cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                PartySnap Verified
+              </button>
+
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                 {supplierName}
               </h3>

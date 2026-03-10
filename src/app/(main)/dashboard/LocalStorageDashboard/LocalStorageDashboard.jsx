@@ -152,6 +152,7 @@ const childPhotoRef = useRef(null)
 
   // Save party plan modal state
   const [showSavePartyModal, setShowSavePartyModal] = useState(false)
+  const [hasSavedParty, setHasSavedParty] = useState(false)
 
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
 
@@ -178,7 +179,7 @@ const childPhotoRef = useRef(null)
     // Note: isCheckingWelcome starts as true, so loading screen shows immediately
   }, [])
 
-  // Check for flyer discount from localStorage
+  // Check for flyer discount and saved party from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
@@ -186,6 +187,9 @@ const childPhotoRef = useRef(null)
       if (isFlyerSource && flyerDiscountPercent > 0) {
         setFlyerDiscount(flyerDiscountPercent)
       }
+      // Check if user has already saved their party
+      const savedEmail = localStorage.getItem('saved_party_email')
+      setHasSavedParty(!!savedEmail)
     }
   }, [])
 
@@ -1968,6 +1972,7 @@ const handleChildPhotoUpload = async (file) => {
             uploadingPhoto={uploadingChildPhoto}
             totalCost={enhancedTotalCost}
             onSaveForLater={() => setShowSavePartyModal(true)}
+            hasSavedParty={hasSavedParty}
           />
         </div>
 
@@ -2343,6 +2348,7 @@ const handleChildPhotoUpload = async (file) => {
                       onPhotoUpload={handleChildPhotoUpload}
                       uploadingPhoto={uploadingChildPhoto}
                       onSaveForLater={() => setShowSavePartyModal(true)}
+                      hasSavedParty={hasSavedParty}
                     />
                   )}
                 </div>
@@ -2366,6 +2372,7 @@ const handleChildPhotoUpload = async (file) => {
           onContinue={() => setShowDesktopCompleteCTA(true)}
           isVisible={showStickyBottomCTA}
           onSaveForLater={() => setShowSavePartyModal(true)}
+          hasSavedParty={hasSavedParty}
         />
       </div>
 
@@ -2718,6 +2725,7 @@ const handleChildPhotoUpload = async (file) => {
       <SavePartyPlanModal
         isOpen={showSavePartyModal}
         onClose={() => setShowSavePartyModal(false)}
+        onSuccess={() => setHasSavedParty(true)}
         partyDetails={partyDetails}
         partyPlan={partyPlan}
         totalCost={totalCost}
