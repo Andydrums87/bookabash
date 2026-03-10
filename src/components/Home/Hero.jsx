@@ -55,7 +55,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
                 {isFlyer
                   ? "Limited time launch offer. We handle the venue and suppliers - you enjoy the day."
-                  : "No sign-up required. Build your party plan for free."
+                  : "Build your party plan for free in seconds. No sign-up required."
                 }
               </h2>
               {/* Original subheading - kept for reference
@@ -362,7 +362,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       <span className="block">in minutes.</span>
                     </h1>
                     <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
-                      No sign-up required. Build your party plan for free.
+                      Build your party plan for free in seconds. No sign-up required.
                     </p>
                     {/* Original: We handle the suppliers. You enjoy the day. */}
                   </>
