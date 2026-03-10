@@ -1311,57 +1311,23 @@ const handleNameSubmit = async (nameData) => {
   }
 
   const getCategoryTagline = (type) => {
-    const theme = partyDetails?.theme?.toLowerCase() || 'party'
-
-    const themeTaglines = {
-      superhero: {
-        venue: 'The hero headquarters awaits',
-        entertainment: 'Super-powered fun for heroes',
-        catering: 'Power-up food for little heroes',
-        cakes: 'A super-powered showstopper',
-        facePainting: 'Become your favorite superhero',
-        activities: 'Hero training and super missions',
-        partyBags: 'Super supplies for every hero',
-        decorations: 'Create an epic hero hideout',
-        balloons: 'Bold colors for brave heroes',
-        photography: 'Capture heroic action shots',
-        bouncyCastle: 'Bounce like a superhero',
-        sweetTreats: 'Super sweet treats for heroes'
-      },
-      princess: {
-        venue: 'A royal palace for the celebration',
-        entertainment: 'Enchanting magic for little royals',
-        catering: 'A feast fit for a princess',
-        cakes: 'A magical royal masterpiece',
-        facePainting: 'Become a beautiful princess',
-        activities: 'Enchanting games for little royalty',
-        partyBags: 'Royal treasures for each guest',
-        decorations: 'Transform into an enchanted castle',
-        balloons: 'Sparkles and princess colors',
-        photography: 'Capture royal memories',
-        bouncyCastle: 'Bounce in the royal court',
-        sweetTreats: 'Royal sweets for little princesses'
-      },
-      // Add more themes as needed
+    // Trust-focused taglines that highlight vetting, local suppliers, and convenience
+    const trustTaglines = {
+      venue: 'Verified for safety • Hand-picked local venues',
+      entertainment: 'DBS checked • Insured • Personally selected',
+      catering: 'Local caterers • Food hygiene certified',
+      cakes: 'Hand-selected local bakers • Made fresh for you',
+      facePainting: 'DBS checked • Child-safe paints',
+      activities: 'Safety checked • Personally vetted',
+      partyBags: 'Pre-filled • Ready to hand out • Delivered to your door',
+      decorations: 'Quality checked • Local suppliers',
+      balloons: 'Hand-picked local artists',
+      photography: 'Portfolio reviewed • Personally selected',
+      bouncyCastle: 'PAT tested • Fully insured',
+      sweetTreats: 'Local suppliers • Quality assured'
     }
 
-    const defaultTaglines = {
-      venue: 'Where the party happens',
-      entertainment: 'Keep them laughing for hours',
-      catering: 'Delicious food everyone will love',
-      cakes: 'Every party needs a showstopper',
-      facePainting: 'Transform into their favorite character',
-      activities: 'Fun games and activities',
-      partyBags: 'Send them home with a smile',
-      decorations: 'Set the perfect party scene',
-      balloons: 'Add color and excitement',
-      photography: 'Capture all the magical moments',
-      bouncyCastle: 'Non-stop bouncing fun',
-      sweetTreats: 'Candy carts, ice cream & sweet delights'
-    }
-
-    const taglines = themeTaglines[theme] || defaultTaglines
-    return taglines[type] || ''
+    return trustTaglines[type] || ''
   }
 
 

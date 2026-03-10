@@ -15,72 +15,84 @@ const SUPPLIER_PITCHES = {
   venue: {
     headline: "Where's the party at?",
     pitch: "Lock in a venue first — it sets the date, time, and vibe for everything else.",
+    trustTagline: "Verified for safety • Hand-picked local venues",
     icon: "🏛️",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/venues-hero.jpg"
   },
   entertainment: {
     headline: "Keep the kids entertained",
     pitch: "From magicians to discos — make it a party they'll never forget.",
+    trustTagline: "DBS checked • Insured • Personally selected",
     icon: "🎭",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/entertainment-hero.jpg"
   },
   cakes: {
     headline: "No party without cake!",
     pitch: "The showstopper moment. Find your perfect birthday cake.",
+    trustTagline: "Hand-selected local bakers • Made fresh for you",
     icon: "🎂",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/cakes-hero.jpg"
   },
   partyBags: {
     headline: "Send them home happy",
     pitch: "Party bags are the #1 most-added extra. Kids love them!",
+    trustTagline: "Pre-filled • Ready to hand out • Delivered to your door",
     icon: "🎁",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/partybags-hero.jpg"
   },
   balloons: {
     headline: "Add some pop!",
     pitch: "Balloon arches, bouquets, and more — instant wow factor.",
+    trustTagline: "Hand-picked local artists",
     icon: "🎈",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/balloons-hero.jpg"
   },
   bouncyCastle: {
     headline: "Let them bounce it out",
     pitch: "Hours of entertainment. Safe, supervised, and seriously fun.",
+    trustTagline: "PAT tested • Fully insured",
     icon: "🏰",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/bouncycastle-hero.jpg"
   },
   activities: {
     headline: "Perfect for the little ones",
     pitch: "Soft play keeps toddlers safe and entertained while you relax.",
+    trustTagline: "Safety checked • Personally vetted",
     icon: "🎪",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/softplay-hero.jpg"
   },
   catering: {
     headline: "Feed the party people",
     pitch: "From finger food to full spreads — let someone else handle it.",
+    trustTagline: "Local caterers • Food hygiene certified",
     icon: "🍽️",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/catering-hero.jpg"
   },
   decorations: {
     headline: "Transform your space",
     pitch: "Themed decorations that set the scene for magic.",
+    trustTagline: "Quality checked • Local suppliers",
     icon: "🎊",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/decorations-hero.jpg"
   },
   sweetTreats: {
     headline: "Add a sweet touch",
     pitch: "Candy carts, ice cream, and treats that make faces light up.",
+    trustTagline: "Local suppliers • Quality assured",
     icon: "🍭",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/sweettreats-hero.jpg"
   },
   photography: {
     headline: "Capture the memories",
     pitch: "Professional photos you'll treasure forever.",
+    trustTagline: "Portfolio reviewed • Personally selected",
     icon: "📸",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/photography-hero.jpg"
   },
   facePainting: {
     headline: "Creative fun for everyone",
     pitch: "Watch them transform into their favourite characters.",
+    trustTagline: "DBS checked • Child-safe paints",
     icon: "🎨",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/facepainting-hero.jpg"
   }
@@ -371,6 +383,9 @@ export default function AddTabContent({
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-900 text-base">{pitch.headline}</h3>
                   <p className="text-sm text-gray-600 mt-0.5">{pitch.pitch}</p>
+                  {pitch.trustTagline && (
+                    <p className="text-xs text-emerald-600 mt-1 font-medium">{pitch.trustTagline}</p>
+                  )}
                 </div>
               </div>
 
@@ -468,6 +483,9 @@ export default function AddTabContent({
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 text-base">{pitch.headline}</h3>
                       <p className="text-sm text-gray-600 mt-0.5">{pitch.pitch}</p>
+                      {pitch.trustTagline && (
+                        <p className="text-xs text-emerald-600 mt-1 font-medium">{pitch.trustTagline}</p>
+                      )}
                     </div>
                   </div>
 

@@ -54,6 +54,30 @@ export default function MyPartyTabContent({
     }
   }, [])
 
+  // Social proof notification - show once per session after 5 seconds
+  const [showSocialProof, setShowSocialProof] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeenSocialProof = sessionStorage.getItem('seen_social_proof')
+      if (!hasSeenSocialProof) {
+        const showTimer = setTimeout(() => {
+          setShowSocialProof(true)
+          sessionStorage.setItem('seen_social_proof', 'true')
+        }, 5000)
+
+        const hideTimer = setTimeout(() => {
+          setShowSocialProof(false)
+        }, 10000) // Hide after 10 seconds total (5s delay + 5s visible)
+
+        return () => {
+          clearTimeout(showTimer)
+          clearTimeout(hideTimer)
+        }
+      }
+    }
+  }, [])
+
   // Photo upload handler
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0]
@@ -414,18 +438,6 @@ export default function MyPartyTabContent({
           {/* Supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
-              {/* PartySnap Verified Badge */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowGuaranteeModal(true)
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/95 hover:bg-white backdrop-blur-sm rounded-full text-xs font-semibold text-emerald-700 mb-2 transition-all duration-200 shadow-md cursor-pointer"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                PartySnap Verified
-              </button>
-
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                 {supplierName}
               </h3>
@@ -1054,6 +1066,94 @@ export default function MyPartyTabContent({
           desktopHeight="md:h-[95vh]"
           supplierType={selectedSupplierType}
         />
+      )}
+
+      {/* PartySnap Guarantee Modal */}
+      <UniversalModal
+        isOpen={showGuaranteeModal}
+        onClose={() => setShowGuaranteeModal(false)}
+        size="md"
+        theme="default"
+      >
+        <ModalHeader
+          icon={<ShieldCheck className="w-6 h-6 text-emerald-600" />}
+          title="The PartySnap Guarantee"
+          subtitle="Every supplier is personally vetted by our team"
+          onClose={() => setShowGuaranteeModal(false)}
+        />
+        <ModalContent>
+          <div className="space-y-4 py-2">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Personally Selected</h4>
+                <p className="text-sm text-gray-600">Every supplier is hand-picked and interviewed by our team. We only work with the best local professionals.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">DBS Checked</h4>
+                <p className="text-sm text-gray-600">All entertainers and staff working with children have valid DBS certificates on file.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Fully Insured</h4>
+                <p className="text-sm text-gray-600">Every supplier carries public liability insurance for your peace of mind.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Quality Assured</h4>
+                <p className="text-sm text-gray-600">We review portfolios, check references, and ensure every supplier meets our high standards.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <p className="text-sm text-emerald-800 font-medium text-center">
+                If you're not completely satisfied, we'll make it right. That's our promise.
+              </p>
+            </div>
+          </div>
+        </ModalContent>
+      </UniversalModal>
+
+      {/* Social Proof Notification */}
+      {showSocialProof && (
+        <div
+          className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 z-50 animate-in slide-in-from-bottom duration-300"
+        >
+          <div className="bg-white rounded-full shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2.5 w-fit mx-auto sm:mx-0">
+            {/* Pulsing green dot */}
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+            </span>
+            <span className="text-sm text-gray-700 font-medium">
+              50+ parents planning parties this week
+            </span>
+            <button
+              onClick={() => setShowSocialProof(false)}
+              className="text-gray-400 hover:text-gray-600 ml-1"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
+  ShieldCheck,
 } from "lucide-react"
 import Image from "next/image"
 import SupplierNote from '@/components/SupplierNote'
@@ -2644,6 +2645,28 @@ export default function SupplierCustomizationModal({
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
                       Includes a break for party food
+                    </li>
+                  </ul>
+                </div>
+
+                {/* PartySnap Guarantee */}
+                <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                    <h4 className="font-semibold text-gray-900">PartySnap Guarantee</h4>
+                  </div>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      DBS checked & verified
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      Public liability insured
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      Personally selected by our team
                     </li>
                   </ul>
                 </div>
