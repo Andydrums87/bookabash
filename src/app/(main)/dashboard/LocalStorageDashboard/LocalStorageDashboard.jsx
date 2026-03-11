@@ -33,7 +33,7 @@ import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import AgeBasedRecommendationBanner from "@/components/AgeBasedRecommendationBanner"
-import ReferFriend from "@/components/ReferFriend"
+// ReferFriend removed - replaced with How it works section
 // Make sure you have this import
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
 // import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
@@ -2320,8 +2320,46 @@ const handleChildPhotoUpload = async (file) => {
                 </div>
               </div>
 
-              <div className="md:hidden block" data-section="refer-friend">
-                <ReferFriend />
+              {/* How PartySnap works - Mobile only */}
+              <div className="md:hidden block px-4 mt-6" data-section="how-it-works">
+                <h4 className="text-center text-base font-bold text-gray-900 mb-4">How PartySnap works</h4>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Secure your party</p>
+                      <p className="text-xs text-gray-500">Book your party with PartySnap in minutes.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">We organise everything</p>
+                      <p className="text-xs text-gray-500">We confirm and book everything in your party plan.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Your party is guaranteed</p>
+                      <p className="text-xs text-gray-500">If anything changes, PartySnap fixes it.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Edit your party anytime</p>
+                      <p className="text-xs text-gray-500">Add suppliers, send invitations and manage RSVPs.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">5</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Enjoy the party 🎉</p>
+                      <p className="text-xs text-gray-500">Sit back and relax on the big day.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Party Summary removed - now handled by SmartStickyBottomBar */}

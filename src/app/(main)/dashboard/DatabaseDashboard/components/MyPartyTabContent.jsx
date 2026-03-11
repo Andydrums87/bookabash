@@ -1046,6 +1046,7 @@ export default function MyPartyTabContent({
                 Fully vetted suppliers
               </span>
             </div>
+
           </div>
           )}
         </>
