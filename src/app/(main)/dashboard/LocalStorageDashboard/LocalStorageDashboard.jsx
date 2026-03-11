@@ -2406,7 +2406,7 @@ const handleChildPhotoUpload = async (file) => {
                   {/* Bottom middle - Kids running around */}
                   <div className="relative rounded-xl overflow-hidden aspect-square">
                     <Image
-                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773229258/bt__GRAFRn7QZkKTaIEVL_XHERxlwq_ev3n0i.png"
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773233236/COctqxoR0lMoLAC6Y0TIT_79zVB5rd_xagudd.png"
                       alt="Kids running around"
                       fill
                       className="object-cover"
