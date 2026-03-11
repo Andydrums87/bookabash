@@ -33,6 +33,7 @@ export default function MyPartyTabContent({
   uploadingPhoto, // ✅ NEW PROP for upload state
   onSaveForLater, // ✅ NEW PROP for save party plan
   hasSavedParty = false, // ✅ NEW PROP for saved state
+  onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -793,6 +794,7 @@ export default function MyPartyTabContent({
               preventNavigation={true}
               horizontalScroll={true}
               onBrowseVenues={onBrowseVenues}
+              onShowVenueChoice={onShowVenueChoice}
             />
           </div>
 

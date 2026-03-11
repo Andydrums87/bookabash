@@ -63,14 +63,19 @@ const calculatePaymentBreakdown = (suppliers) => {
 
 export async function POST(request) {
   try {
-    const { 
-      amount, 
-      currency, 
-      partyDetails, 
-      suppliers, 
-      addons, 
+    const {
+      amount,
+      currency,
+      partyDetails,
+      suppliers,
+      addons,
       paymentType,
-      enableKlarna = false 
+      enableKlarna = false,
+      // Discount fields
+      referralCreditApplied = 0,
+      flyerDiscountApplied = 0,
+      promoCodeApplied = '',
+      promoCodeDiscountApplied = 0
     } = await request.json()
 
     // Calculate payment breakdown for metadata
@@ -91,17 +96,41 @@ export async function POST(request) {
     // Since we're taking FULL PAYMENT now (not deposits), remaining balance should always be 0
     const remainingBalance = '0.00'
 
+    // Calculate total discounts applied
+    const totalDiscount = (flyerDiscountApplied || 0) + (promoCodeDiscountApplied || 0) + (referralCreditApplied || 0)
+
     const metadata = {
       party_id: partyDetails.id?.toString() || 'unknown',
-      payment_type: paymentType || 'full_payment', // Changed from 'mixed'
+      payment_type: paymentType || 'full_payment',
       supplier_count: suppliers.length.toString(),
-      deposit_amount: '0.00', // No longer taking deposits
+      deposit_amount: '0.00',
       full_payment_amount: totalSupplierCost.toFixed(2),
       remaining_balance: remainingBalance,
       total_amount: totalSupplierCost.toFixed(2),
+      // Discount tracking
+      subtotal: totalSupplierCost.toFixed(2),
+      flyer_discount: (flyerDiscountApplied || 0).toFixed(2),
+      promo_code: promoCodeApplied || '',
+      promo_discount: (promoCodeDiscountApplied || 0).toFixed(2),
+      referral_credit: (referralCreditApplied || 0).toFixed(2),
+      total_discount: totalDiscount.toFixed(2),
+      final_amount: (totalSupplierCost - totalDiscount).toFixed(2),
       // Keep categories short and truncated if needed (for reference)
       categories: suppliers.map(s => s.category.substring(0, 15)).join(',').substring(0, 490)
     };
+
+    // Log discount info
+    if (totalDiscount > 0) {
+      console.log('🎫 Discounts applied:', {
+        flyerDiscount: flyerDiscountApplied,
+        promoCode: promoCodeApplied,
+        promoDiscount: promoCodeDiscountApplied,
+        referralCredit: referralCreditApplied,
+        totalDiscount,
+        subtotal: totalSupplierCost,
+        finalAmount: totalSupplierCost - totalDiscount
+      })
+    }
 
     // If single supplier, add specific supplier info for targeted receipt emails
     if (suppliers.length === 1) {

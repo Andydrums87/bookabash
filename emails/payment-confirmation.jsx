@@ -34,8 +34,16 @@ export default function PaymentConfirmation({
   totalPaidToday = '250.00',
   remainingBalance = 0,
   dashboardLink = 'https://partysnap.co.uk/dashboard',
+  // Discount props
+  subtotal = null,
+  flyerDiscount = null,
+  promoCode = null,
+  promoDiscount = null,
+  referralCredit = null,
+  totalDiscount = null,
 }) {
   const hasRemainingBalance = remainingBalance > 0;
+  const hasDiscount = totalDiscount && parseFloat(totalDiscount) > 0;
 
   return (
     <Html>
@@ -126,6 +134,56 @@ export default function PaymentConfirmation({
 
               <Hr style={styles.divider} />
 
+              {/* Show subtotal if there are discounts */}
+              {hasDiscount && subtotal && (
+                <Row style={styles.subtotalRow}>
+                  <Column>
+                    <Text style={styles.subtotalLabel}>Subtotal</Text>
+                  </Column>
+                  <Column style={{ textAlign: 'right', width: '100px' }}>
+                    <Text style={styles.subtotalAmount}>£{subtotal}</Text>
+                  </Column>
+                </Row>
+              )}
+
+              {/* Flyer discount */}
+              {flyerDiscount && parseFloat(flyerDiscount) > 0 && (
+                <Row style={styles.discountRow}>
+                  <Column>
+                    <Text style={styles.discountLabel}>🎉 Launch Offer (30% off)</Text>
+                  </Column>
+                  <Column style={{ textAlign: 'right', width: '100px' }}>
+                    <Text style={styles.discountAmount}>-£{flyerDiscount}</Text>
+                  </Column>
+                </Row>
+              )}
+
+              {/* Promo code discount */}
+              {promoDiscount && parseFloat(promoDiscount) > 0 && (
+                <Row style={styles.discountRow}>
+                  <Column>
+                    <Text style={styles.discountLabel}>🎉 Promo Code{promoCode ? ` (${promoCode})` : ''}</Text>
+                  </Column>
+                  <Column style={{ textAlign: 'right', width: '100px' }}>
+                    <Text style={styles.discountAmount}>-£{promoDiscount}</Text>
+                  </Column>
+                </Row>
+              )}
+
+              {/* Referral credit */}
+              {referralCredit && parseFloat(referralCredit) > 0 && (
+                <Row style={styles.discountRow}>
+                  <Column>
+                    <Text style={styles.discountLabel}>🎁 Referral Credit</Text>
+                  </Column>
+                  <Column style={{ textAlign: 'right', width: '100px' }}>
+                    <Text style={styles.discountAmount}>-£{referralCredit}</Text>
+                  </Column>
+                </Row>
+              )}
+
+              {hasDiscount && <Hr style={styles.divider} />}
+
               <Row style={styles.totalRow}>
                 <Column>
                   <Text style={styles.totalLabel}>Total Paid Today</Text>
@@ -134,6 +192,15 @@ export default function PaymentConfirmation({
                   <Text style={styles.totalAmount}>£{totalPaidToday}</Text>
                 </Column>
               </Row>
+
+              {/* Savings callout */}
+              {hasDiscount && (
+                <Row style={styles.savingsRow}>
+                  <Column>
+                    <Text style={styles.savingsText}>🎉 You saved £{totalDiscount} on this booking!</Text>
+                  </Column>
+                </Row>
+              )}
             </Section>
 
             {/* Remaining Balance Alert */}
@@ -391,6 +458,48 @@ const styles = {
     fontSize: '24px',
     fontWeight: '700',
     color: '#10b981',
+  },
+  subtotalRow: {
+    padding: '8px 0',
+  },
+  subtotalLabel: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#6b7280',
+  },
+  subtotalAmount: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#6b7280',
+  },
+  discountRow: {
+    padding: '8px 0',
+  },
+  discountLabel: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#0d9488',
+    fontWeight: '600',
+  },
+  discountAmount: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#0d9488',
+    fontWeight: '600',
+  },
+  savingsRow: {
+    padding: '15px 0 0 0',
+    textAlign: 'center',
+  },
+  savingsText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#0d9488',
+    fontWeight: '600',
+    backgroundColor: '#ccfbf1',
+    padding: '8px 16px',
+    borderRadius: '20px',
+    display: 'inline-block',
   },
   balanceAlert: {
     padding: '20px',

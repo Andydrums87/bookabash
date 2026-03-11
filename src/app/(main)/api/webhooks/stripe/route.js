@@ -472,6 +472,14 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         }
       }
 
+      // Extract discount information from payment metadata
+      const subtotal = parseFloat(paymentMetadata.subtotal || paymentMetadata.full_payment_amount || '0')
+      const flyerDiscount = parseFloat(paymentMetadata.flyer_discount || '0')
+      const promoCode = paymentMetadata.promo_code || ''
+      const promoDiscount = parseFloat(paymentMetadata.promo_discount || '0')
+      const referralCredit = parseFloat(paymentMetadata.referral_credit || '0')
+      const totalDiscount = parseFloat(paymentMetadata.total_discount || '0')
+
       const customerEmailPayload = {
         customerEmail: user.email,
         customerName: `${user.first_name} ${user.last_name}`.trim(),
@@ -487,8 +495,15 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         paymentIntentId: paymentIntentId,
         paymentMethod: 'Card',
         services: services,
-        addons: isSingleSupplierAddition ? [] : addons, // Don't show all addons for single supplier addition
-        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/dashboard`
+        addons: isSingleSupplierAddition ? [] : addons,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/dashboard`,
+        // Discount information
+        subtotal: subtotal > 0 ? subtotal.toFixed(2) : null,
+        flyerDiscount: flyerDiscount > 0 ? flyerDiscount.toFixed(2) : null,
+        promoCode: promoCode || null,
+        promoDiscount: promoDiscount > 0 ? promoDiscount.toFixed(2) : null,
+        referralCredit: referralCredit > 0 ? referralCredit.toFixed(2) : null,
+        totalDiscount: totalDiscount > 0 ? totalDiscount.toFixed(2) : null
       }
 
       const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/email/payment-confirmation`, {

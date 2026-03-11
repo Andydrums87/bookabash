@@ -128,6 +128,8 @@ export default function LocalStorageDashboard() {
   const [showStickyBottomCTA, setShowStickyBottomCTA] = useState(false)
   const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
   const [venueConflictData, setVenueConflictData] = useState(null)
+  const [showVenueChoiceModal, setShowVenueChoiceModal] = useState(false)
+  const [skipVenueChoice, setSkipVenueChoice] = useState(false) // Bypass venue choice on next click
   // Add these state variables near your other useState declarations
 
 
@@ -2309,6 +2311,7 @@ const handleChildPhotoUpload = async (file) => {
                       onCustomizationComplete={handleCustomizationComplete}
                       showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
                       onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                      onShowVenueChoice={skipVenueChoice ? null : () => setShowVenueChoiceModal(true)}
                       onEditPartyDetails={handleEditPartyDetails}
                       childPhoto={partyDetails?.childPhoto}
                       onPhotoUpload={handleChildPhotoUpload}
@@ -2582,6 +2585,62 @@ const handleChildPhotoUpload = async (file) => {
             </Button>
           </div>
         </ModalFooter>
+      </UniversalModal>
+
+      {/* Venue Choice Modal - Own Venue Users */}
+      <UniversalModal
+        isOpen={showVenueChoiceModal}
+        onClose={() => setShowVenueChoiceModal(false)}
+        size="sm"
+        theme="fun"
+      >
+        <ModalHeader
+          title="Choose your venue"
+          subtitle="How would you like to pick your venue?"
+          theme="fun"
+          icon={<Building className="w-6 h-6" />}
+        />
+
+        <ModalContent className="space-y-3 pb-6">
+          <Button
+            onClick={() => {
+              setShowVenueChoiceModal(false)
+              // Set flag to bypass venue choice modal on next click, then simulate clicking venue card
+              setSkipVenueChoice(true)
+              // Small delay to let modal close and state to update, then trigger venue card click
+              setTimeout(() => {
+                const venueCard = document.querySelector('[data-supplier-type="venue"]')
+                if (venueCard) {
+                  const addButton = venueCard.querySelector('button')
+                  if (addButton) addButton.click()
+                }
+                // Reset flag after click
+                setTimeout(() => setSkipVenueChoice(false), 100)
+              }, 200)
+            }}
+            className="w-full h-auto py-4 px-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-semibold text-base">Let PartySnap choose</span>
+              <span className="text-xs text-gray-500 font-normal">We'll recommend the best venue</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Button>
+
+          <Button
+            onClick={() => {
+              setShowVenueChoiceModal(false)
+              setShowVenueBrowserModal(true)
+            }}
+            className="w-full h-auto py-4 px-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-semibold text-base">Browse venues</span>
+              <span className="text-xs text-gray-500 font-normal">See all available venues</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Button>
+        </ModalContent>
       </UniversalModal>
 
       {/* Party Plan Review Modal - Desktop Only */}

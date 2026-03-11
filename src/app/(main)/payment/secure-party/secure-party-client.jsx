@@ -49,6 +49,7 @@ const formatDateWithOrdinal = (dateString) => {
   if (!dateString) return '';
 
   const date = new Date(dateString);
+  const dayOfWeek = date.toLocaleString('en-GB', { weekday: 'long' });
   const day = date.getDate();
   const month = date.toLocaleString('en-GB', { month: 'long' });
   const year = date.getFullYear();
@@ -60,7 +61,7 @@ const formatDateWithOrdinal = (dateString) => {
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  return `${getOrdinal(day)} ${month} ${year}`;
+  return `${dayOfWeek} ${getOrdinal(day)} ${month} ${year}`;
 };
 
 // ========================================
@@ -631,6 +632,12 @@ export default function PaymentPageContent() {
   })
   const [referralCredit, setReferralCredit] = useState(0)
   const [creditApplied, setCreditApplied] = useState(0)
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoCodeDiscount, setPromoCodeDiscount] = useState(0)
+  const [promoCodeError, setPromoCodeError] = useState('')
+  const [promoCodeApplied, setPromoCodeApplied] = useState(false)
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false)
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [editedDetails, setEditedDetails] = useState({
     addressLine1: '',
@@ -883,8 +890,22 @@ export default function PaymentPageContent() {
         const creditToApply = Math.min(availableCredit, breakdown.totalPaymentToday)
         setCreditApplied(creditToApply)
 
-        // Calculate final payment amount after credit
-        const finalPaymentAmount = breakdown.totalPaymentToday - creditToApply
+        // Check for flyer discount (30% off for flyer visitors)
+        let flyerDiscountAmount = 0
+        if (typeof window !== 'undefined') {
+          const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+          const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+
+          if (isFlyerSource && flyerDiscountPercent > 0) {
+            // Calculate 30% of subtotal (before referral credit)
+            flyerDiscountAmount = Math.round((breakdown.totalPaymentToday * flyerDiscountPercent / 100) * 100) / 100
+            setFlyerDiscount(flyerDiscountAmount)
+            console.log('🎫 Flyer discount applied:', flyerDiscountAmount, `(${flyerDiscountPercent}% off)`)
+          }
+        }
+
+        // Calculate final payment amount after flyer discount and referral credit
+        const finalPaymentAmount = breakdown.totalPaymentToday - flyerDiscountAmount - creditToApply
         const paymentAmount = Math.round(finalPaymentAmount * 100)
 
         // Only enable Klarna for orders £200+ (20000 pence)
@@ -903,7 +924,8 @@ export default function PaymentPageContent() {
               addons: partyResult.party.party_plan?.addons || [],
               paymentType: 'unified',
               enableKlarna: shouldEnableKlarna,
-              referralCreditApplied: creditToApply
+              referralCreditApplied: creditToApply,
+              flyerDiscountApplied: flyerDiscountAmount
             }),
           })
 
@@ -914,9 +936,9 @@ export default function PaymentPageContent() {
           } else if (secret) {
             setClientSecret(secret)
           }
-        } else if (creditToApply > 0 && finalPaymentAmount === 0) {
-          // Credit covers entire payment - no Stripe needed
-          console.log('🎉 Referral credit covers entire payment!')
+        } else if (finalPaymentAmount <= 0) {
+          // Discounts cover entire payment - no Stripe needed
+          console.log('🎉 Discounts cover entire payment!')
           setClientSecret('credit_only')
         }
   
@@ -1049,6 +1071,76 @@ export default function PaymentPageContent() {
     }
   }
 
+  // Handle promo code application
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) return
+
+    setIsApplyingPromo(true)
+    setPromoCodeError('')
+
+    // Valid promo codes (case-insensitive)
+    const validPromoCodes = {
+      'PARTYSNAP30': 30,  // Instagram followers - 30% off
+    }
+
+    const code = promoCode.trim().toUpperCase()
+    const discountPercent = validPromoCodes[code]
+
+    if (discountPercent) {
+      // Calculate discount amount
+      const discountAmount = Math.round((paymentBreakdown.totalPaymentToday * discountPercent / 100) * 100) / 100
+      setPromoCodeDiscount(discountAmount)
+      setPromoCodeApplied(true)
+      console.log(`🎫 Promo code ${code} applied: ${discountPercent}% off = £${discountAmount}`)
+
+      // Store in localStorage for tracking
+      localStorage.setItem('promo_code', code)
+      localStorage.setItem('promo_discount', String(discountPercent))
+
+      // Re-create payment intent with new amount
+      const finalPaymentAmount = paymentBreakdown.totalPaymentToday - discountAmount - creditApplied
+      const paymentAmount = Math.round(finalPaymentAmount * 100)
+
+      if (paymentAmount > 0) {
+        try {
+          const response = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: paymentAmount,
+              currency: 'gbp',
+              partyDetails: { id: partyId },
+              suppliers: confirmedSuppliers,
+              addons: [],
+              paymentType: 'unified',
+              enableKlarna: paymentAmount >= 20000,
+              referralCreditApplied: creditApplied,
+              promoCodeApplied: code,
+              promoCodeDiscountApplied: discountAmount
+            }),
+          })
+
+          const { clientSecret: secret, error: backendError } = await response.json()
+
+          if (backendError) {
+            console.error('❌ Payment intent update failed:', backendError)
+          } else if (secret) {
+            setClientSecret(secret)
+          }
+        } catch (error) {
+          console.error('Error updating payment intent:', error)
+        }
+      } else {
+        // Promo code covers entire payment
+        setClientSecret('credit_only')
+      }
+    } else {
+      setPromoCodeError('Invalid promo code')
+    }
+
+    setIsApplyingPromo(false)
+  }
+
   // SHOW SKELETON WHILE LOADING
   if (loading) {
     return <PaymentPageSkeleton />
@@ -1076,7 +1168,10 @@ export default function PaymentPageContent() {
           {/* Party Name & Total */}
           <div className="mb-8">
             <p className="text-sm text-gray-500 mb-1">{partyDetails.childName}'s {partyDetails.theme?.charAt(0).toUpperCase() + partyDetails.theme?.slice(1)} party</p>
-            <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</p>
+            {partyDetails.date && (
+              <p className="text-sm text-gray-500 mb-2">{formatDateWithOrdinal(partyDetails.date)}</p>
+            )}
+            <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - creditApplied).toFixed(2)}</p>
           </div>
 
           {/* Order Items */}
@@ -1099,6 +1194,72 @@ export default function PaymentPageContent() {
               <span className="text-gray-900">£{paymentBreakdown.totalPaymentToday.toFixed(2)}</span>
             </div>
 
+            {/* Promo Code Input */}
+            <div className="py-2">
+              {promoCodeApplied ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-teal-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Promo: {promoCode.toUpperCase()}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setPromoCode('')
+                      setPromoCodeDiscount(0)
+                      setPromoCodeApplied(false)
+                      setPromoCodeError('')
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase())
+                        setPromoCodeError('')
+                      }}
+                      placeholder="Promo code"
+                      className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                      disabled={isApplyingPromo || flyerDiscount > 0}
+                    />
+                    <button
+                      onClick={handleApplyPromoCode}
+                      disabled={!promoCode.trim() || isApplyingPromo || flyerDiscount > 0}
+                      className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isApplyingPromo ? '...' : 'Apply'}
+                    </button>
+                  </div>
+                  {promoCodeError && (
+                    <p className="text-xs text-red-600">{promoCodeError}</p>
+                  )}
+                  {flyerDiscount > 0 && (
+                    <p className="text-xs text-gray-500">Launch offer already applied</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {flyerDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-teal-600">🎉 Launch Offer (30% off)</span>
+                <span className="text-teal-600">-£{flyerDiscount.toFixed(2)}</span>
+              </div>
+            )}
+
+            {promoCodeDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-teal-600">🎉 Promo Code (30% off)</span>
+                <span className="text-teal-600">-£{promoCodeDiscount.toFixed(2)}</span>
+              </div>
+            )}
+
             {creditApplied > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-green-600">Referral Credit</span>
@@ -1108,7 +1269,7 @@ export default function PaymentPageContent() {
 
             <div className="flex justify-between pt-2 border-t border-gray-200">
               <span className="text-sm font-medium text-gray-900">Total due today</span>
-              <span className="text-sm font-medium text-gray-900">£{(paymentBreakdown.totalPaymentToday - creditApplied).toFixed(2)}</span>
+              <span className="text-sm font-medium text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - creditApplied).toFixed(2)}</span>
             </div>
           </div>
 

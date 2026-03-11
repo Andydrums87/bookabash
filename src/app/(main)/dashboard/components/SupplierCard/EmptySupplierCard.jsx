@@ -228,6 +228,7 @@ export default function EmptySupplierCard({
   disableSuccessState = false, // NEW: If true, don't show "In Plan" state or confetti
   selectedVenue = null, // Venue data to check for restrictions (e.g., bouncy castles not allowed)
   onBrowseVenues = null, // Callback to open venue browser modal (for "find different venue" CTA)
+  onShowVenueChoice = null, // Callback for venue choice modal (own venue users)
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -346,6 +347,12 @@ export default function EmptySupplierCard({
     // Don't allow adding unavailable categories
     if (isUnavailable || isUnavailableCategory) {
       console.log('Cannot add unavailable supplier/category')
+      return
+    }
+
+    // For venue type with venue choice callback, show venue choice modal instead
+    if (isVenueSupplier && onShowVenueChoice) {
+      onShowVenueChoice()
       return
     }
 
@@ -687,6 +694,7 @@ export default function EmptySupplierCard({
       <>
         <Card
           className="overflow-hidden bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-300))] h-full relative"
+          data-supplier-type={type}
         >
           <div className="flex flex-col h-full">
             {/* Image section - clickable to show unified modal */}

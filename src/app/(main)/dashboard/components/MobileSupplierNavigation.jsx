@@ -55,6 +55,7 @@ export default function MobileSupplierNavigation({
   uploadingPhoto, // ✅ NEW PROP for upload state
   onSaveForLater, // ✅ NEW PROP for save party plan
   hasSavedParty = false, // ✅ NEW PROP for saved state
+  onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -449,6 +450,7 @@ export default function MobileSupplierNavigation({
         getSupplierDisplayPricing={getSupplierDisplayPricing}
         onSaveForLater={onSaveForLater}
         hasSavedParty={hasSavedParty}
+        onShowVenueChoice={onShowVenueChoice}
       />
     )
   }

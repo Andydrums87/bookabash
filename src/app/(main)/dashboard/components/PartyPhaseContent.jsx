@@ -46,8 +46,20 @@ export default function PartyPhaseContent({
   const [showPartyTeamModal, setShowPartyTeamModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [supplierToDelete, setSupplierToDelete] = useState(null)
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
 
   const { registry, itemCount, loading: registryLoading } = useGiftRegistry(partyDetails?.id)
+
+  // Check for flyer discount on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountPercent > 0) {
+        setFlyerDiscount(flyerDiscountPercent)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchPartyData() {
@@ -233,10 +245,26 @@ export default function PartyPhaseContent({
               <div className="space-y-6">
                 {/* Total Cost Summary - No progress bar */}
                 <div className="bg-primary-500 rounded-xl p-6 text-white text-center">
+                  {flyerDiscount > 0 && (
+                    <div className="inline-flex items-center gap-1 bg-teal-500 text-white px-3 py-1 rounded-full text-xs font-bold mb-2">
+                      🎉 {flyerDiscount}% Launch Discount
+                    </div>
+                  )}
                   <div className="text-sm font-medium text-white/80 mb-2">Total Party Cost</div>
-                  <div className="text-4xl font-bold">
-                    £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
-                  </div>
+                  {flyerDiscount > 0 ? (
+                    <div>
+                      <div className="text-lg text-white/60 line-through">
+                        £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
+                      </div>
+                      <div className="text-4xl font-bold">
+                        £{typeof totalCost === 'number' ? (totalCost * (1 - flyerDiscount / 100)).toFixed(2) : '0.00'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-4xl font-bold">
+                      £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
+                    </div>
+                  )}
                   <p className="text-xs text-white/70 mt-2">
                     {confirmedSuppliers} of {totalPossibleSuppliers} suppliers confirmed
                   </p>

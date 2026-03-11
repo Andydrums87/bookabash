@@ -20,6 +20,18 @@ export async function POST(req) {
     const paymentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const paymentIntentShort = requestData.paymentIntentId.substring(requestData.paymentIntentId.length - 8);
 
+    // Log discount information if present
+    if (requestData.totalDiscount) {
+      console.log('🎫 Discount info in email:', {
+        subtotal: requestData.subtotal,
+        flyerDiscount: requestData.flyerDiscount,
+        promoCode: requestData.promoCode,
+        promoDiscount: requestData.promoDiscount,
+        referralCredit: requestData.referralCredit,
+        totalDiscount: requestData.totalDiscount
+      });
+    }
+
     // Render the email using React Email
     const emailHtml = await render(
       <PaymentConfirmation
@@ -43,6 +55,13 @@ export async function POST(req) {
         totalPaidToday={requestData.totalPaidToday || '0'}
         remainingBalance={requestData.remainingBalance || 0}
         dashboardLink={requestData.dashboardLink || 'https://partysnap.co.uk/dashboard'}
+        // Discount props
+        subtotal={requestData.subtotal}
+        flyerDiscount={requestData.flyerDiscount}
+        promoCode={requestData.promoCode}
+        promoDiscount={requestData.promoDiscount}
+        referralCredit={requestData.referralCredit}
+        totalDiscount={requestData.totalDiscount}
       />
     );
 
