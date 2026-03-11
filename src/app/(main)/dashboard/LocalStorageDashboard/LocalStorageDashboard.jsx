@@ -2360,6 +2360,47 @@ const handleChildPhotoUpload = async (file) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Party moments image grid */}
+                <p className="text-xs text-gray-500 text-center mt-8 mb-3">The kind of party PartySnap helps create</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Left large image - Birthday candles */}
+                  <div className="col-span-2 row-span-3 relative rounded-xl overflow-hidden aspect-[3/4]">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226799/ChatGPT_Image_Mar_11_2026_10_59_46_AM_pjagbv.png"
+                      alt="Birthday candles moment"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  {/* Top right - Party table setup */}
+                  <div className="relative rounded-xl overflow-hidden aspect-square">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226229/image_66_dqc9rk.jpg"
+                      alt="Party table setup"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  {/* Middle right - Entertainer with kids */}
+                  <div className="relative rounded-xl overflow-hidden aspect-square">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226219/image_65_pej2yq.jpg"
+                      alt="Entertainer with kids"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  {/* Bottom right - Relaxed parent */}
+                  <div className="relative rounded-xl overflow-hidden aspect-square">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226216/image_67_dwr0oh.jpg"
+                      alt="Relaxed parent"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Party Summary removed - now handled by SmartStickyBottomBar */}
