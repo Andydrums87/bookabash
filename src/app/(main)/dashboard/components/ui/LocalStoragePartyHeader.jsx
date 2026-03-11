@@ -1068,7 +1068,7 @@ export default function LocalStoragePartyHeader({
             paddingBottom: '3rem'
           }}
         >
-          {/* Desktop: Save button at top-right */}
+          {/* Desktop: Email Plan button at top-right */}
           {onSaveForLater && (
             <div className="hidden md:block absolute top-6 right-6">
               <button
@@ -1086,7 +1086,7 @@ export default function LocalStoragePartyHeader({
                 ) : (
                   <>
                     <Bookmark className="w-4 h-4" />
-                    Save for later
+                    Email Plan
                   </>
                 )}
               </button>
@@ -1228,7 +1228,7 @@ export default function LocalStoragePartyHeader({
                         onSaveForLater()
                       }}
                       className="bg-white/90 hover:bg-white px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 shadow-md"
-                      aria-label={hasSavedParty ? "Update saved plan" : "Save for later"}
+                      aria-label={hasSavedParty ? "Update saved plan" : "Email plan"}
                     >
                       {hasSavedParty ? (
                         <Check className="w-3 h-3 text-green-600" />
@@ -1236,7 +1236,7 @@ export default function LocalStoragePartyHeader({
                         <Bookmark className="w-3 h-3 text-gray-700" />
                       )}
                       <span className="text-gray-700 text-xs font-medium">
-                        {hasSavedParty ? 'Saved' : 'Save'}
+                        {hasSavedParty ? 'Saved' : 'Email Plan'}
                       </span>
                     </button>
                   )}
