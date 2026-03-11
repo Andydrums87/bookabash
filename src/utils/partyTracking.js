@@ -18,6 +18,42 @@ let sessionId = null;
 let isInitialized = false;
 
 /**
+ * Capture and persist referrer on first visit
+ * This runs early to capture the referrer before any navigation occurs
+ */
+const captureReferrer = () => {
+  if (typeof window === 'undefined') return null;
+
+  // Check if we already captured a referrer for this session
+  const storedReferrer = localStorage.getItem('tracking_referrer');
+
+  if (storedReferrer === null) {
+    // First time - capture from document.referrer
+    const currentReferrer = document.referrer || '';
+
+    // Only store external referrers (not our own domain)
+    const isExternal = currentReferrer && !currentReferrer.includes(window.location.hostname);
+
+    if (isExternal) {
+      localStorage.setItem('tracking_referrer', currentReferrer);
+      return currentReferrer;
+    } else {
+      // Mark as captured but empty (prevents re-checking)
+      localStorage.setItem('tracking_referrer', '');
+      return null;
+    }
+  }
+
+  // Return stored referrer (could be empty string meaning "no external referrer")
+  return storedReferrer || null;
+};
+
+// Capture referrer immediately when module loads
+if (typeof window !== 'undefined') {
+  captureReferrer();
+}
+
+/**
  * Initialize tracking session
  * Creates anonymous session on first visit
  */
@@ -33,6 +69,9 @@ export const initTracking = async () => {
       sessionId = crypto.randomUUID();
       localStorage.setItem('tracking_session_id', sessionId);
 
+      // Get referrer from our persisted value (captured on first page load)
+      const referrer = captureReferrer();
+
       // Create database entry
       const { error } = await supabase
         .from('party_tracking')
@@ -44,7 +83,7 @@ export const initTracking = async () => {
             screen: `${window.screen.width}x${window.screen.height}`,
             platform: navigator.platform
           },
-          referrer: document.referrer || null
+          referrer: referrer
         });
 
       if (error) {
@@ -531,6 +570,7 @@ export const markPaid = async (paymentData = {}) => {
 
     // Clear session after successful payment
     localStorage.removeItem('tracking_session_id');
+    localStorage.removeItem('tracking_referrer');
     sessionId = null;
     isInitialized = false;
   } catch (err) {
@@ -834,6 +874,7 @@ export const getSessionId = () => sessionId;
  */
 export const resetTracking = () => {
   localStorage.removeItem('tracking_session_id');
+  localStorage.removeItem('tracking_referrer');
   sessionId = null;
   isInitialized = false;
 };
