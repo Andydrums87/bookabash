@@ -2367,7 +2367,7 @@ const handleChildPhotoUpload = async (file) => {
                   {/* Left large image - Birthday candles */}
                   <div className="col-span-2 row-span-3 relative rounded-xl overflow-hidden aspect-[3/4]">
                     <Image
-                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226799/ChatGPT_Image_Mar_11_2026_10_59_46_AM_pjagbv.png"
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773228048/rsh1z7ZtjTy6Nad2MclM3_32AINAY7_1_hppzfu.png"
                       alt="Birthday candles moment"
                       fill
                       className="object-cover"
@@ -2391,11 +2391,11 @@ const handleChildPhotoUpload = async (file) => {
                       className="object-cover"
                     />
                   </div>
-                  {/* Bottom right - Relaxed parent */}
+                  {/* Bottom right - Kids running around */}
                   <div className="relative rounded-xl overflow-hidden aspect-square">
                     <Image
-                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226216/image_67_dwr0oh.jpg"
-                      alt="Relaxed parent"
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773228214/pwgEjUvx-9LIzxoG5dlFv_qrH4B088_d9w50j.png"
+                      alt="Kids running around"
                       fill
                       className="object-cover"
                     />
