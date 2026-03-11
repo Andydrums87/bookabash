@@ -987,7 +987,9 @@ export default function MyPartyTabContent({
 
           {/* Complete Booking CTA - Only show when there are suppliers */}
           {allSuppliers.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            <p className="text-xs text-gray-500 text-center">Everything's ready. Tweak anything before securing your party.</p>
+
             <button
               onClick={handleImHappy}
               disabled={isProcessing}
@@ -1006,13 +1008,13 @@ export default function MyPartyTabContent({
               )}
             </button>
 
-            {/* Save for later link */}
+            {/* Save for later button - prominent secondary CTA */}
             {onSaveForLater && (
               <button
                 onClick={onSaveForLater}
-                className="w-full mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium underline underline-offset-2 transition-colors"
+                className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-3 px-8 w-full rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95 border border-gray-200"
               >
-                {hasSavedParty ? 'Update saved plan' : 'Save for later'}
+                {hasSavedParty ? 'Update saved plan' : 'Email me this plan'}
               </button>
             )}
 

@@ -149,8 +149,8 @@ const SmartStickyBottomBar = ({
       <div className="relative bg-white border-t border-gray-200 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
         {/* Subtle gradient fade at top for better separation */}
         <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-black/[0.06] to-transparent pointer-events-none" />
-        <div className="container mx-auto px-8 py-4">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between">
             {/* Left: Trust indicators */}
             <div className="flex items-center gap-6">
               {/* Expand toggle */}
@@ -197,7 +197,7 @@ const SmartStickyBottomBar = ({
             </div>
 
             {/* Right: Total + CTA */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
               <div className="text-right">
                 {flyerDiscount > 0 ? (
                   <>
@@ -214,19 +214,19 @@ const SmartStickyBottomBar = ({
                   </>
                 )}
               </div>
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={onContinue}
-                  className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md"
+                  className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md whitespace-nowrap"
                 >
                   Secure My Party
                 </button>
                 {onSaveForLater && (
                   <button
                     onClick={onSaveForLater}
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium underline underline-offset-2 transition-colors"
+                    className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95 border border-gray-200 whitespace-nowrap"
                   >
-                    {hasSavedParty ? 'Update saved plan' : 'Save for later'}
+                    {hasSavedParty ? 'Update saved plan' : 'Email me this plan'}
                   </button>
                 )}
               </div>
