@@ -59,12 +59,37 @@ export async function POST(request) {
       const childName = partyDetails?.childName || partyDetails?.firstName || 'your child';
       const theme = partyDetails?.theme;
       const partyDate = partyDetails?.date;
+      const guestCount = partyDetails?.guestCount;
+
+      // Extract suppliers from party plan for email breakdown
+      const supplierCategories = ['venue', 'entertainment', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'catering', 'balloons', 'photography', 'bouncyCastle'];
+      const suppliers = [];
+
+      if (partyPlan) {
+        supplierCategories.forEach(category => {
+          const supplier = partyPlan[category];
+          if (supplier) {
+            // Get supplier name from various possible locations
+            const name = supplier.data?.name || supplier.name || 'Selected supplier';
+            // Get price from various possible locations
+            const price = supplier.selectedPackage?.price || supplier.data?.priceFrom || supplier.priceFrom || supplier.price || 0;
+
+            suppliers.push({
+              category,
+              name,
+              price: Number(price) || 0
+            });
+          }
+        });
+      }
 
       const emailHtml = await render(SavedPartyPlanEmail({
         childName,
         theme,
         partyDate,
-        totalCost
+        totalCost,
+        suppliers,
+        guestCount
       }));
 
       await postmarkClient.sendEmail({

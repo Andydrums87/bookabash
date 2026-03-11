@@ -15,7 +15,9 @@ export default function SavedPartyPlanEmail({
   childName = 'your child',
   theme,
   partyDate,
-  totalCost
+  totalCost,
+  suppliers = [], // Array of { category, name, price }
+  guestCount
 }) {
   // Capitalize first letter of child's name
   const formattedChildName = childName
@@ -36,6 +38,24 @@ export default function SavedPartyPlanEmail({
         year: 'numeric'
       })
     : null;
+
+  // Format category name for display
+  const formatCategory = (category) => {
+    const categoryNames = {
+      venue: 'Venue',
+      entertainment: 'Entertainment',
+      cakes: 'Cake',
+      facePainting: 'Face Painting',
+      activities: 'Activities',
+      partyBags: 'Party Bags',
+      decorations: 'Decorations',
+      catering: 'Catering',
+      balloons: 'Balloons',
+      photography: 'Photography',
+      bouncyCastle: 'Bouncy Castle'
+    };
+    return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+  };
 
   return (
     <Html>
@@ -63,14 +83,44 @@ export default function SavedPartyPlanEmail({
             </Text>
 
             {/* Party Details */}
-            {(formattedTheme || formattedDate || totalCost > 0) && (
-              <>
-                <Text style={styles.detailRow}>
-                  {formattedTheme && <><strong>Theme:</strong> {formattedTheme}<br /></>}
-                  {formattedDate && <><strong>Date:</strong> {formattedDate}<br /></>}
-                  {totalCost > 0 && <><strong>Estimated total:</strong> £{totalCost.toLocaleString()}</>}
-                </Text>
-              </>
+            {(formattedTheme || formattedDate || guestCount) && (
+              <Section style={styles.partyDetailsBox}>
+                <Text style={styles.partyDetailsTitle}>Party Details</Text>
+                {formattedTheme && (
+                  <Text style={styles.partyDetailItem}>
+                    <strong>Theme:</strong> {formattedTheme}
+                  </Text>
+                )}
+                {formattedDate && (
+                  <Text style={styles.partyDetailItem}>
+                    <strong>Date:</strong> {formattedDate}
+                  </Text>
+                )}
+                {guestCount && (
+                  <Text style={styles.partyDetailItem}>
+                    <strong>Guests:</strong> {guestCount} children
+                  </Text>
+                )}
+              </Section>
+            )}
+
+            {/* Supplier Breakdown */}
+            {suppliers && suppliers.length > 0 && (
+              <Section style={styles.supplierSection}>
+                <Text style={styles.supplierSectionTitle}>Your Party Plan</Text>
+                {suppliers.map((supplier, index) => (
+                  <Section key={index} style={styles.supplierRow}>
+                    <Text style={styles.supplierCategory}>{formatCategory(supplier.category)}</Text>
+                    <Text style={styles.supplierName}>{supplier.name}</Text>
+                    <Text style={styles.supplierPrice}>£{supplier.price}</Text>
+                  </Section>
+                ))}
+                <Hr style={styles.supplierDivider} />
+                <Section style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Estimated Total</Text>
+                  <Text style={styles.totalPrice}>£{totalCost?.toLocaleString() || 0}</Text>
+                </Section>
+              </Section>
             )}
 
             {/* CTA Button */}
@@ -225,6 +275,82 @@ const styles = {
     color: '#374151',
     lineHeight: '1.8',
     textAlign: 'center',
+  },
+  partyDetailsBox: {
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '24px',
+  },
+  partyDetailsTitle: {
+    margin: '0 0 12px 0',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  partyDetailItem: {
+    margin: '0 0 6px 0',
+    fontSize: '15px',
+    color: '#4b5563',
+  },
+  supplierSection: {
+    backgroundColor: '#FFF7F5',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '24px',
+  },
+  supplierSectionTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1a1a1a',
+    textAlign: 'center',
+  },
+  supplierRow: {
+    marginBottom: '12px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #fee2e2',
+  },
+  supplierCategory: {
+    margin: '0 0 4px 0',
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  supplierName: {
+    margin: '0',
+    fontSize: '15px',
+    fontWeight: '500',
+    color: '#1a1a1a',
+  },
+  supplierPrice: {
+    margin: '4px 0 0 0',
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#FF7247',
+  },
+  supplierDivider: {
+    borderColor: '#FF7247',
+    borderWidth: '2px',
+    margin: '16px 0',
+  },
+  totalRow: {
+    textAlign: 'center',
+  },
+  totalLabel: {
+    margin: '0',
+    fontSize: '14px',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  totalPrice: {
+    margin: '4px 0 0 0',
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#1a1a1a',
   },
   trustPoint: {
     margin: '0 0 8px 0',
