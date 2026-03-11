@@ -128,9 +128,10 @@ export const trackStep = async (step, data = {}) => {
     timeline.push(newAction);
 
     // Build update object
+    // NOTE: We do NOT set party_data here - that should only contain persistent party details,
+    // not transient action data. Action data goes into action_timeline instead.
     const updateObj = {
       current_step: step,
-      party_data: data,
       action_timeline: timeline,
       last_activity: new Date().toISOString()
     };
@@ -139,6 +140,17 @@ export const trackStep = async (step, data = {}) => {
     // The data object has theme, guestCount, postcode, childName, childAge, hasOwnVenue, date directly from the form
     if (step === 'party_planning_started') {
       updateObj.status = 'started_planning'; // Change from 'browsing' to 'started_planning'
+      // Store party details in party_data column (this is the only time we should set it)
+      updateObj.party_data = {
+        theme: data.theme,
+        guestCount: data.guestCount,
+        childName: data.childName,
+        childAge: data.childAge,
+        hasOwnVenue: data.hasOwnVenue,
+        timeSlot: data.timeSlot,
+        postcode: data.postcode,
+        date: data.date
+      };
       if (data.theme) updateObj.party_theme = data.theme;
       if (data.guestCount) updateObj.guest_count = parseInt(data.guestCount) || null;
       if (data.postcode) updateObj.party_location = data.postcode;
