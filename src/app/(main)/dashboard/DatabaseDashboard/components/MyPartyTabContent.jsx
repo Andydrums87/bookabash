@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw, ShieldCheck } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Info, Calendar, Clock, MapPin, Camera, RefreshCw, ShieldCheck, MessageCircle, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -42,6 +42,17 @@ export default function MyPartyTabContent({
   const [isProcessing, setIsProcessing] = useState(false)
   const [flyerDiscount, setFlyerDiscount] = useState(0)
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false)
+  const [showHelpMenu, setShowHelpMenu] = useState(false)
+  const [showHelpButton, setShowHelpButton] = useState(false)
+
+  // Show help button after 25 seconds delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHelpButton(true)
+    }, 25000) // 25 seconds
+
+    return () => clearTimeout(timer)
+  }, [])
 
   // Check for flyer discount on mount
   useEffect(() => {
@@ -1155,6 +1166,73 @@ export default function MyPartyTabContent({
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Floating Help Button - appears after 25 seconds */}
+      {showHelpButton && (
+        <div className="fixed bottom-4 right-4 z-40 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Help menu popup */}
+          {showHelpMenu && (
+            <div className="absolute bottom-14 right-0 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-64 animate-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">Need help?</h4>
+                <button
+                  onClick={() => setShowHelpMenu(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Chat with a real person - no bots here!
+              </p>
+              <div className="space-y-2">
+                <a
+                  href="https://wa.me/447123456789?text=Hi!%20I%20have%20a%20question%20about%20my%20party%20plan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">WhatsApp us</p>
+                    <p className="text-xs text-gray-500">Quick response</p>
+                  </div>
+                </a>
+                <a
+                  href="mailto:hello@partysnap.co.uk?subject=Question%20about%20my%20party"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">Email us</p>
+                    <p className="text-xs text-gray-500">hello@partysnap.co.uk</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Help button - smaller pill with text */}
+          <button
+            onClick={() => setShowHelpMenu(!showHelpMenu)}
+            className={`
+              flex items-center gap-1.5 px-3 py-2 rounded-full shadow-lg transition-all
+              ${showHelpMenu
+                ? 'bg-gray-800 text-white'
+                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 hover:shadow-xl'
+              }
+            `}
+            aria-label="Need help?"
+          >
+            <Phone className="w-4 h-4" />
+            <span className="text-xs font-medium">Need help?</span>
+          </button>
         </div>
       )}
     </div>
