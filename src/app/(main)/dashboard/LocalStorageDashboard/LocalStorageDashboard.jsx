@@ -2365,7 +2365,7 @@ const handleChildPhotoUpload = async (file) => {
                 <p className="text-xs text-gray-500 text-center mt-8 mb-3">The kind of party PartySnap helps create</p>
                 <div className="grid grid-cols-3 gap-2">
                   {/* Left large image - Birthday candles */}
-                  <div className="col-span-2 row-span-3 relative rounded-xl overflow-hidden aspect-[3/4]">
+                  <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden aspect-square">
                     <Image
                       src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773228048/rsh1z7ZtjTy6Nad2MclM3_32AINAY7_1_hppzfu.png"
                       alt="Birthday candles moment"
@@ -2391,11 +2391,29 @@ const handleChildPhotoUpload = async (file) => {
                       className="object-cover"
                     />
                   </div>
-                  {/* Bottom right - Kids running around */}
+                  {/* Bottom left - Kids excited */}
                   <div className="relative rounded-xl overflow-hidden aspect-square">
                     <Image
                       src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773228214/pwgEjUvx-9LIzxoG5dlFv_qrH4B088_d9w50j.png"
+                      alt="Kids excited"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  {/* Bottom middle - Kids running around */}
+                  <div className="relative rounded-xl overflow-hidden aspect-square">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773229258/bt__GRAFRn7QZkKTaIEVL_XHERxlwq_ev3n0i.png"
                       alt="Kids running around"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  {/* Bottom right - Bouncy castle */}
+                  <div className="relative rounded-xl overflow-hidden aspect-square">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773229475/8a5acdf1-dcfc-4414-9946-463cad872c9b_zvl4zq.jpg"
+                      alt="Bouncy castle fun"
                       fill
                       className="object-cover"
                     />
