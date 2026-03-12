@@ -276,9 +276,9 @@ export default function SelectedSupplierCard({
                         onBrowseVenues()
                       }}
                       disabled={isDeleting}
-                      className="px-3 py-1.5 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 transition-all duration-200 shadow-md cursor-pointer"
+                      className="px-4 py-2 bg-white hover:bg-gray-100 rounded-full text-sm font-semibold text-gray-800 flex items-center gap-2 transition-all duration-200 shadow-lg cursor-pointer"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" />
+                      <RefreshCw className="w-4 h-4" />
                       Change
                     </button>
                   </div>

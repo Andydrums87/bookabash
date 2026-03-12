@@ -139,6 +139,41 @@ const THEMES = {
     colors: ["red", "blue", "yellow"],
     decorationStyle: "action-packed",
     priority: "character"
+  },
+  'pirate': {
+    name: "Pirate",
+    keywords: ["pirate", "treasure", "treasure-hunt", "adventure", "ship", "captain", "sea", "ocean"],
+    colors: ["red", "black", "gold", "brown"],
+    decorationStyle: "adventure",
+    priority: "character"
+  },
+  'underwater': {
+    name: "Underwater",
+    keywords: ["underwater", "ocean", "sea", "mermaid", "fish", "beach", "water", "marine"],
+    colors: ["blue", "teal", "aqua", "purple"],
+    decorationStyle: "magical",
+    priority: "fantasy"
+  },
+  'explorer': {
+    name: "Explorer",
+    keywords: ["explorer", "adventure", "safari", "jungle", "dinosaur", "discovery", "nature"],
+    colors: ["green", "brown", "khaki", "orange"],
+    decorationStyle: "adventure",
+    priority: "educational"
+  },
+  'safari': {
+    name: "Safari",
+    keywords: ["safari", "jungle", "animal", "zoo", "wildlife", "lion", "elephant", "explorer"],
+    colors: ["green", "brown", "khaki", "orange"],
+    decorationStyle: "adventure",
+    priority: "educational"
+  },
+  'mermaid': {
+    name: "Mermaid",
+    keywords: ["mermaid", "underwater", "ocean", "sea", "beach", "shells", "ariel"],
+    colors: ["blue", "teal", "purple", "pink"],
+    decorationStyle: "magical",
+    priority: "fantasy"
   }
 };
 
@@ -961,15 +996,28 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
           }
         }
       } else {
+        // Theme aliases - map similar themes together
+        const themeAliases = {
+          'pirate': ['treasure', 'adventure'],
+          'underwater': ['mermaid', 'ocean', 'sea', 'beach'],
+          'explorer': ['safari', 'jungle', 'adventure', 'dinosaur'],
+        };
+
+        // Get all themes to check (original + aliases)
+        const themesToCheck = [theme];
+        if (themeAliases[theme]) {
+          themesToCheck.push(...themeAliases[theme]);
+        }
+
         // Theme matching
         if (supplier?.themes && Array.isArray(supplier.themes)) {
-          if (supplier.themes.includes(theme)) {
+          if (supplier.themes.some(t => themesToCheck.includes(t))) {
             score += 50;
           }
         }
 
         if (supplier?.serviceDetails?.themes && Array.isArray(supplier.serviceDetails.themes)) {
-          if (supplier.serviceDetails.themes.includes(theme)) {
+          if (supplier.serviceDetails.themes.some(t => themesToCheck.includes(t))) {
             score += 30;
           }
         }
@@ -1005,9 +1053,10 @@ async selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date
             princess: ['princess', 'frozen', 'elsa', 'disney-princess', 'fairy'],
             dinosaur: ['dinosaur', 'jurassic', 'prehistoric'],
             unicorn: ['unicorn', 'rainbow', 'magical'],
-            pirate: ['pirate', 'treasure'],
+            pirate: ['pirate', 'treasure', 'treasure-hunt', 'adventure'],
             space: ['space', 'astronaut', 'galaxy'],
-            safari: ['safari', 'jungle', 'animal', 'zoo']
+            safari: ['safari', 'jungle', 'animal', 'zoo', 'explorer'],
+            underwater: ['underwater', 'mermaid', 'ocean', 'sea', 'beach', 'marine']
           };
 
           // Find which group the requested theme belongs to

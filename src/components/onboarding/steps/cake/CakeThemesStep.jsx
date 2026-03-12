@@ -20,7 +20,7 @@ const CAKE_THEMES = [
   { value: "jungle", label: "Jungle Safari", category: "Adventure" },
   { value: "space", label: "Space Adventure", category: "Adventure" },
   { value: "underwater", label: "Underwater World", category: "Adventure" },
-  { value: "treasure-hunt", label: "Treasure Hunt", category: "Adventure" },
+  { value: "pirate", label: "Treasure Hunt", category: "Adventure" },
   { value: "explorer", label: "Explorer Adventure", category: "Adventure" },
 
   // Fantasy themes
