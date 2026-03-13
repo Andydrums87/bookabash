@@ -1359,7 +1359,7 @@ export default function PaymentPageContent() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={promoCode}
@@ -1368,13 +1368,13 @@ export default function PaymentPageContent() {
                         setPromoCodeError('')
                       }}
                       placeholder="Promo code"
-                      className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full sm:flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
                       disabled={isApplyingPromo || flyerDiscount > 0}
                     />
                     <button
                       onClick={handleApplyPromoCode}
                       disabled={!promoCode.trim() || isApplyingPromo || flyerDiscount > 0}
-                      className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {isApplyingPromo ? '...' : 'Apply'}
                     </button>
