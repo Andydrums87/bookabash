@@ -60,6 +60,9 @@ export default function HomePage() {
   // Check if user came from flyer QR code
   const isFlyer = searchParams.get('flyer') !== null || searchParams.get('source') === 'flyer'
 
+  // Check if user came from party bags flyer (free party bags offer)
+  const isFlyerPartyBags = searchParams.get('flyer-partybags') !== null
+
   // Initialize tracking on mount and capture referral code from URL
   useEffect(() => {
     initTracking();
@@ -74,10 +77,16 @@ export default function HomePage() {
     // Store flyer source if present (for applying discount later)
     if (isFlyer) {
       localStorage.setItem('flyer_source', 'true')
-      localStorage.setItem('flyer_discount', '30')
-      console.log('🎫 Flyer source captured - 30% discount available')
+      localStorage.setItem('flyer_discount', '25')
+      console.log('🎫 Flyer source captured - £25 discount available')
     }
-  }, [searchParams, isFlyer]);
+
+    // Store party bags flyer source if present (for free party bags offer)
+    if (isFlyerPartyBags) {
+      localStorage.setItem('flyer_partybags', 'true')
+      console.log('🎁 Party bags flyer captured - Free party bags available')
+    }
+  }, [searchParams, isFlyer, isFlyerPartyBags]);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
@@ -454,6 +463,7 @@ export default function HomePage() {
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
         isFlyer={isFlyer}
+        isFlyerPartyBags={isFlyerPartyBags}
       />
 
       <FloatingCTA />
@@ -468,6 +478,7 @@ export default function HomePage() {
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
         isFlyer={isFlyer}
+        isFlyerPartyBags={isFlyerPartyBags}
       />
 
       <TrustIndicators />

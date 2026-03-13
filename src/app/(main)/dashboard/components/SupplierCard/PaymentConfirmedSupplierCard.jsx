@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Gift, CheckCircle2, Mail, Phone, CheckCircle, RotateCcw, Contact, Pencil, Lock } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { canEditBooking, formatEditDeadline } from "@/utils/editDeadline"
 
 export default function PaymentConfirmedSupplierCard({
@@ -28,6 +28,16 @@ export default function PaymentConfirmedSupplierCard({
 
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization
+
+  // Check if this is party bags and if free party bags flyer is active
+  const isPartyBagsSupplier = type === 'partyBags'
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isPartyBagsSupplier) {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+    }
+  }, [isPartyBagsSupplier])
 
   const flipContainerStyle = {
     perspective: '1000px',
@@ -116,7 +126,14 @@ export default function PaymentConfirmedSupplierCard({
                 <div className="text-white">
                   <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
                   <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
-                  <span className="text-3xl font-black text-white drop-shadow-lg">£{displayPrice}</span>
+                  {isFreePartyBags ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg line-through text-white/50 drop-shadow-lg">£{displayPrice}</span>
+                      <span className="text-3xl font-black drop-shadow-lg text-white">Free</span>
+                    </div>
+                  ) : (
+                    <span className="text-3xl font-black text-white drop-shadow-lg">£{displayPrice}</span>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Trash2, Pencil, Lock } from "lucide-react"
 import { canEditBooking } from "@/utils/editDeadline"
 import { roundMoney } from "@/utils/unifiedPricing"
@@ -12,6 +13,15 @@ export default function MyPlanTabContent({
   handleCancelEnquiry,
   handleEditSupplier,
 }) {
+  // Check for free party bags flyer
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+    }
+  }, [])
+
   // Category name mapping
   const categoryNames = {
     venue: 'Venue',
@@ -154,10 +164,21 @@ export default function MyPlanTabContent({
                   </h4>
 
                   <div className="mt-2">
-                    <p className="text-lg font-bold text-primary-600">
-                      £{totalPrice.toFixed(2)}
-                    </p>
-                    {supplierAddons.length > 0 && (
+                    {isPartyBags && isFreePartyBags ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg text-gray-400 line-through">
+                          £{totalPrice.toFixed(2)}
+                        </p>
+                        <p className="text-lg font-bold text-primary-600">
+                          Free
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold text-primary-600">
+                        £{totalPrice.toFixed(2)}
+                      </p>
+                    )}
+                    {supplierAddons.length > 0 && !(isPartyBags && isFreePartyBags) && (
                       <p className="text-xs text-gray-500 mt-1">
                         Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
                       </p>

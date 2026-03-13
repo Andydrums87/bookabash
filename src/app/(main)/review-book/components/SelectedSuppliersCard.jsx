@@ -1,6 +1,7 @@
 // Updated SelectedSuppliersCard with correct helper function usage
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, CheckCircle, Package, Clock } from "lucide-react"
@@ -23,10 +24,19 @@ const getSupplierGradient = (category) => {
   return gradients[category] || 'bg-gradient-to-br from-gray-400 to-slate-400'
 }
 
-export default function SelectedSuppliersCard({ 
+export default function SelectedSuppliersCard({
   selectedSuppliers = [],
   partyDetails = null
 }) {
+  // Check for free party bags flyer
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+    }
+  }, [])
+
   return (
     <Card className="border border-gray-200 shadow-lg">
       <CardContent className="p-4 sm:p-6">
@@ -70,7 +80,8 @@ export default function SelectedSuppliersCard({
               {selectedSuppliers.map((supplier) => {
                 const pricingInfo = calculateSupplierPrice(supplier, partyDetails)
                 const isLeadTime = isLeadTimeSupplier(supplier)
-                
+                const isPartyBagsItem = supplier.category?.toLowerCase().includes('party bag') && isFreePartyBags
+
                 return (
                   <div
                     key={supplier.id}
@@ -126,9 +137,20 @@ export default function SelectedSuppliersCard({
                           {supplier.name}
                         </h3>
                         <div>
-                          <p className="text-white/90 text-xs font-semibold drop-shadow-sm">
-                            £{pricingInfo.price.toFixed(2)}
-                          </p>
+                          {isPartyBagsItem ? (
+                            <div className="flex items-center gap-2">
+                              <p className="text-white/50 text-xs line-through drop-shadow-sm">
+                                £{pricingInfo.price.toFixed(2)}
+                              </p>
+                              <p className="text-white text-xs font-bold drop-shadow-sm">
+                                Free
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-white/90 text-xs font-semibold drop-shadow-sm">
+                              £{pricingInfo.price.toFixed(2)}
+                            </p>
+                          )}
                           {pricingInfo.breakdown && (
                             <p className="text-white/80 text-xs drop-shadow-sm">
                               {pricingInfo.breakdown}
@@ -158,10 +180,24 @@ export default function SelectedSuppliersCard({
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-gray-900">£{pricingInfo.price.toFixed(2)}</div>
-                          <div className="text-xs font-semibold text-green-600">
-                            ✓ Ready to send
-                          </div>
+                          {isPartyBagsItem ? (
+                            <>
+                              <div className="flex items-center gap-1 justify-end">
+                                <span className="text-xs text-gray-400 line-through">£{pricingInfo.price.toFixed(2)}</span>
+                                <span className="text-sm font-bold text-gray-900">Free</span>
+                              </div>
+                              <div className="text-xs font-semibold text-teal-600">
+                                ✓ Ready to send
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-sm font-bold text-gray-900">£{pricingInfo.price.toFixed(2)}</div>
+                              <div className="text-xs font-semibold text-teal-600">
+                                ✓ Ready to send
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -176,7 +212,8 @@ export default function SelectedSuppliersCard({
                 {selectedSuppliers.map((supplier) => {
                   const pricingInfo = calculateSupplierPrice(supplier, partyDetails)
                   const isLeadTime = isLeadTimeSupplier(supplier)
-                  
+                  const isPartyBagsItem = supplier.category?.toLowerCase().includes('party bag') && isFreePartyBags
+
                   return (
                     <div
                       key={supplier.id}
@@ -224,9 +261,20 @@ export default function SelectedSuppliersCard({
                           <h3 className="font-semibold text-white text-xs drop-shadow-sm truncate">
                             {supplier.name}
                           </h3>
-                          <p className="text-white/90 text-xs font-medium drop-shadow-sm">
-                            £{pricingInfo.price.toFixed(2)}
-                          </p>
+                          {isPartyBagsItem ? (
+                            <div className="flex items-center gap-1">
+                              <p className="text-white/50 text-xs line-through drop-shadow-sm">
+                                £{pricingInfo.price.toFixed(2)}
+                              </p>
+                              <p className="text-white text-xs font-bold drop-shadow-sm">
+                                Free
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-white/90 text-xs font-medium drop-shadow-sm">
+                              £{pricingInfo.price.toFixed(2)}
+                            </p>
+                          )}
                           {pricingInfo.breakdown && (
                             <p className="text-white/80 text-xs drop-shadow-sm">
                               {pricingInfo.breakdown}

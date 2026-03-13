@@ -147,6 +147,15 @@ export default function SelectedSupplierCard({
   const isActivitiesSupplier = type === 'activities' || type === 'softPlay'
   const isDecorationsSupplier = type === 'decorations'
   const isPartyBagsSupplier = type === 'partyBags'
+
+  // Check if free party bags flyer is active
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isPartyBagsSupplier) {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+    }
+  }, [isPartyBagsSupplier])
   const balloonPackageData = supplier?.packageData
   const facePaintingPackageData = supplier?.packageData
   const activitiesPackageData = supplier?.packageData
@@ -332,7 +341,14 @@ export default function SelectedSupplierCard({
                     <div className="flex items-center justify-between">
                       <div className="text-white">
                         <div className="flex items-center gap-2">
-                          <span className="text-3xl font-black drop-shadow-lg">£{displayPrice}</span>
+                          {isFreePartyBags ? (
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-lg line-through text-white/50 drop-shadow-lg">£{displayPrice}</span>
+                              <span className="text-3xl font-black drop-shadow-lg text-white">Free</span>
+                            </div>
+                          ) : (
+                            <span className="text-3xl font-black drop-shadow-lg">£{displayPrice}</span>
+                          )}
                           
                           {needsAdditionalEntertainers && (
                             <Tooltip>

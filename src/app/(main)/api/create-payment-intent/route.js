@@ -75,7 +75,8 @@ export async function POST(request) {
       referralCreditApplied = 0,
       flyerDiscountApplied = 0,
       promoCodeApplied = '',
-      promoCodeDiscountApplied = 0
+      promoCodeDiscountApplied = 0,
+      freePartyBagsApplied = 0
     } = await request.json()
 
     // Calculate payment breakdown for metadata
@@ -97,7 +98,7 @@ export async function POST(request) {
     const remainingBalance = '0.00'
 
     // Calculate total discounts applied
-    const totalDiscount = (flyerDiscountApplied || 0) + (promoCodeDiscountApplied || 0) + (referralCreditApplied || 0)
+    const totalDiscount = (flyerDiscountApplied || 0) + (promoCodeDiscountApplied || 0) + (referralCreditApplied || 0) + (freePartyBagsApplied || 0)
 
     const metadata = {
       party_id: partyDetails.id?.toString() || 'unknown',
@@ -112,6 +113,7 @@ export async function POST(request) {
       flyer_discount: (flyerDiscountApplied || 0).toFixed(2),
       promo_code: promoCodeApplied || '',
       promo_discount: (promoCodeDiscountApplied || 0).toFixed(2),
+      free_party_bags: (freePartyBagsApplied || 0).toFixed(2),
       referral_credit: (referralCreditApplied || 0).toFixed(2),
       total_discount: totalDiscount.toFixed(2),
       final_amount: (totalSupplierCost - totalDiscount).toFixed(2),
@@ -125,6 +127,7 @@ export async function POST(request) {
         flyerDiscount: flyerDiscountApplied,
         promoCode: promoCodeApplied,
         promoDiscount: promoCodeDiscountApplied,
+        freePartyBags: freePartyBagsApplied,
         referralCredit: referralCreditApplied,
         totalDiscount,
         subtotal: totalSupplierCost,

@@ -477,6 +477,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
       const flyerDiscount = parseFloat(paymentMetadata.flyer_discount || '0')
       const promoCode = paymentMetadata.promo_code || ''
       const promoDiscount = parseFloat(paymentMetadata.promo_discount || '0')
+      const freePartyBags = parseFloat(paymentMetadata.free_party_bags || '0')
       const referralCredit = parseFloat(paymentMetadata.referral_credit || '0')
       const totalDiscount = parseFloat(paymentMetadata.total_discount || '0')
 
@@ -502,6 +503,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         flyerDiscount: flyerDiscount > 0 ? flyerDiscount.toFixed(2) : null,
         promoCode: promoCode || null,
         promoDiscount: promoDiscount > 0 ? promoDiscount.toFixed(2) : null,
+        freePartyBags: freePartyBags > 0 ? freePartyBags.toFixed(2) : null,
         referralCredit: referralCredit > 0 ? referralCredit.toFixed(2) : null,
         totalDiscount: totalDiscount > 0 ? totalDiscount.toFixed(2) : null
       }

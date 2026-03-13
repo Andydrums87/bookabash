@@ -39,6 +39,7 @@ export default function PaymentConfirmation({
   flyerDiscount = null,
   promoCode = null,
   promoDiscount = null,
+  freePartyBags = null,
   referralCredit = null,
   totalDiscount = null,
 }) {
@@ -150,7 +151,7 @@ export default function PaymentConfirmation({
               {flyerDiscount && parseFloat(flyerDiscount) > 0 && (
                 <Row style={styles.discountRow}>
                   <Column>
-                    <Text style={styles.discountLabel}>🎉 Launch Offer (30% off)</Text>
+                    <Text style={styles.discountLabel}>🎉 Limited Time Offer (£25 off)</Text>
                   </Column>
                   <Column style={{ textAlign: 'right', width: '100px' }}>
                     <Text style={styles.discountAmount}>-£{flyerDiscount}</Text>
@@ -166,6 +167,18 @@ export default function PaymentConfirmation({
                   </Column>
                   <Column style={{ textAlign: 'right', width: '100px' }}>
                     <Text style={styles.discountAmount}>-£{promoDiscount}</Text>
+                  </Column>
+                </Row>
+              )}
+
+              {/* Free party bags discount */}
+              {freePartyBags && parseFloat(freePartyBags) > 0 && (
+                <Row style={styles.discountRow}>
+                  <Column>
+                    <Text style={styles.discountLabel}>🎁 Free Party Bags{promoCode === 'FREEBAGS' ? ' (FREEBAGS)' : ''}</Text>
+                  </Column>
+                  <Column style={{ textAlign: 'right', width: '100px' }}>
+                    <Text style={styles.discountAmount}>-£{freePartyBags}</Text>
                   </Column>
                 </Row>
               )}

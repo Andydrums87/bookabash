@@ -27,6 +27,7 @@ export async function POST(req) {
         flyerDiscount: requestData.flyerDiscount,
         promoCode: requestData.promoCode,
         promoDiscount: requestData.promoDiscount,
+        freePartyBags: requestData.freePartyBags,
         referralCredit: requestData.referralCredit,
         totalDiscount: requestData.totalDiscount
       });
@@ -60,6 +61,7 @@ export async function POST(req) {
         flyerDiscount={requestData.flyerDiscount}
         promoCode={requestData.promoCode}
         promoDiscount={requestData.promoDiscount}
+        freePartyBags={requestData.freePartyBags}
         referralCredit={requestData.referralCredit}
         totalDiscount={requestData.totalDiscount}
       />

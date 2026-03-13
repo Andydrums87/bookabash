@@ -55,14 +55,19 @@ export default function MyPartyTabContent({
     return () => clearTimeout(timer)
   }, [])
 
-  // Check for flyer discount on mount
+  // Check for flyer discount and free party bags on mount
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
-      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
-      if (isFlyerSource && flyerDiscountPercent > 0) {
-        setFlyerDiscount(flyerDiscountPercent)
+      const flyerDiscountFixed = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountFixed > 0) {
+        setFlyerDiscount(flyerDiscountFixed)
       }
+
+      // Check for free party bags flyer
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
     }
   }, [])
 
@@ -485,7 +490,14 @@ export default function MyPartyTabContent({
               <div className="flex items-center justify-between">
                 <div className="text-white">
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-black drop-shadow-lg">£{totalPrice.toFixed(2)}</span>
+                    {isPartyBags && isFreePartyBags ? (
+                      <>
+                        <span className="text-lg line-through text-white/50 drop-shadow-lg">£{totalPrice.toFixed(2)}</span>
+                        <span className="text-3xl font-black drop-shadow-lg">Free</span>
+                      </>
+                    ) : (
+                      <span className="text-3xl font-black drop-shadow-lg">£{totalPrice.toFixed(2)}</span>
+                    )}
                   </div>
                   {supplierAddons.length > 0 && (
                     <div className="text-sm text-white/90 mt-1">
@@ -892,7 +904,14 @@ export default function MyPartyTabContent({
                       return (
                         <div key={type} className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">{supplier.name}</span>
-                          <span className="font-semibold text-gray-900">£{displayPrice}</span>
+                          {isPartyBags && isFreePartyBags ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400 line-through">£{displayPrice}</span>
+                              <span className="font-semibold text-gray-900">Free</span>
+                            </div>
+                          ) : (
+                            <span className="font-semibold text-gray-900">£{displayPrice}</span>
+                          )}
                         </div>
                       )
                     })}
@@ -932,9 +951,12 @@ export default function MyPartyTabContent({
             {/* Total */}
             {(() => {
               // ✅ FIX: Use unified pricing for all suppliers including party bags
+              let partyBagsPrice = 0
               const supplierTotal = Object.entries(suppliers)
                 .filter(([type, s]) => s)
                 .reduce((sum, [type, supplier]) => {
+                  const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+
                   if (getSupplierDisplayPricing) {
                     // ✅ FIX: Merge global addons with supplier.selectedAddons
                     const globalAddons = Array.isArray(addons) ? addons.filter(addon =>
@@ -948,47 +970,73 @@ export default function MyPartyTabContent({
                       arr.findIndex(a => a.id === addon.id) === index
                     )
                     const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
-                    return sum + (pricing?.basePrice || 0)
+                    const price = pricing?.basePrice || 0
+
+                    // Track party bags price for free party bags discount
+                    if (isPartyBags) partyBagsPrice = price
+
+                    return sum + price
                   }
 
                   // ✅ FIX: For party bags, use supplier.price (total) not packageData.price (per bag)
-                  const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
                   if (isPartyBags) {
-                    return sum + (supplier.partyBagsMetadata?.totalPrice || supplier.price || 0)
+                    const price = supplier.partyBagsMetadata?.totalPrice || supplier.price || 0
+                    partyBagsPrice = price
+                    return sum + price
                   }
 
                   return sum + (supplier.packageData?.price || supplier.price || 0)
                 }, 0)
 
               const addonTotal = addons?.reduce((sum, a) => sum + (a.price || 0), 0) || 0
-              const totalCost = supplierTotal + addonTotal
+              const totalCostBeforeDiscounts = supplierTotal + addonTotal
 
-              return totalCost > 0 ? (
+              // Apply free party bags discount
+              const freePartyBagsDiscount = isFreePartyBags ? partyBagsPrice : 0
+              const totalAfterPartyBags = totalCostBeforeDiscounts - freePartyBagsDiscount
+
+              // Apply flyer discount (now fixed £25, not percentage)
+              const flyerDiscountAmount = flyerDiscount > 0 ? Math.min(flyerDiscount, totalAfterPartyBags) : 0
+              const finalTotal = totalAfterPartyBags - flyerDiscountAmount
+
+              const hasAnyDiscount = freePartyBagsDiscount > 0 || flyerDiscountAmount > 0
+
+              return totalCostBeforeDiscounts > 0 ? (
                 <div className="pt-4 border-t-2 border-gray-300">
-                  {flyerDiscount > 0 && (
+                  {freePartyBagsDiscount > 0 && (
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
-                        🎉 Launch Offer ({flyerDiscount}% off)
+                        🎁 Free party bags
                       </span>
                       <span className="text-sm text-teal-600 font-semibold">
-                        -£{(totalCost * flyerDiscount / 100).toFixed(2)}
+                        -£{freePartyBagsDiscount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {flyerDiscountAmount > 0 && (
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
+                        🎉 Limited Time Offer (£{flyerDiscount} off)
+                      </span>
+                      <span className="text-sm text-teal-600 font-semibold">
+                        -£{flyerDiscountAmount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-base text-gray-900">Total</span>
-                    {flyerDiscount > 0 ? (
+                    {hasAnyDiscount ? (
                       <div className="text-right">
                         <span className="text-sm text-gray-400 line-through mr-2">
-                          £{totalCost.toFixed(2)}
+                          £{totalCostBeforeDiscounts.toFixed(2)}
                         </span>
                         <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
-                          £{(totalCost * (1 - flyerDiscount / 100)).toFixed(2)}
+                          £{finalTotal.toFixed(2)}
                         </span>
                       </div>
                     ) : (
                       <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
-                        £{totalCost.toFixed(2)}
+                        £{totalCostBeforeDiscounts.toFixed(2)}
                       </span>
                     )}
                   </div>

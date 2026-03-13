@@ -13,16 +13,21 @@ const SmartStickyBottomBar = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [flyerDiscount, setFlyerDiscount] = useState(0)
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
   const panelRef = useRef(null)
 
-  // Check for flyer discount on mount
+  // Check for flyer discount and free party bags on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
-      const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
-      if (isFlyerSource && flyerDiscountPercent > 0) {
-        setFlyerDiscount(flyerDiscountPercent)
+      const flyerDiscountFixed = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountFixed > 0) {
+        setFlyerDiscount(flyerDiscountFixed)
       }
+
+      // Check for free party bags flyer
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
     }
   }, [])
 
@@ -97,25 +102,35 @@ const SmartStickyBottomBar = ({
                   Your Party Plan ({selectedCount}/{totalSlots})
                 </h4>
                 <div className="space-y-2">
-                  {selectedSuppliers.map(({ type, name, supplierName, price }) => (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                  {selectedSuppliers.map(({ type, name, supplierName, price }) => {
+                    const isPartyBagsItem = type === 'partyBags' && isFreePartyBags
+                    return (
+                      <div
+                        key={type}
+                        className="flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900">{name}</span>
+                            {supplierName && (
+                              <span className="text-sm text-gray-500 ml-2">— {supplierName}</span>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-semibold text-gray-900">{name}</span>
-                          {supplierName && (
-                            <span className="text-sm text-gray-500 ml-2">— {supplierName}</span>
-                          )}
-                        </div>
+                        {isPartyBagsItem ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-400 line-through">£{price}</span>
+                            <span className="font-bold text-primary-700">Free</span>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-primary-700">£{price}</span>
+                        )}
                       </div>
-                      <span className="font-bold text-primary-700">£{price}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -199,20 +214,41 @@ const SmartStickyBottomBar = ({
             {/* Right: Total + CTA */}
             <div className="flex items-center gap-4">
               <div className="text-right">
-                {flyerDiscount > 0 ? (
-                  <>
-                    <p className="text-xs text-teal-600 font-semibold">🎉 {flyerDiscount}% OFF</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-400 line-through">£{totalCost.toLocaleString()}</p>
-                      <p className="text-2xl font-bold text-gray-900">£{Math.round(totalCost * (1 - flyerDiscount / 100)).toLocaleString()}</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">£{totalCost.toLocaleString()}</p>
-                  </>
-                )}
+                {(() => {
+                  // Calculate party bags discount if applicable
+                  const partyBagsPrice = isFreePartyBags && suppliers.partyBags ? (suppliers.partyBags.totalPrice || suppliers.partyBags.price || 0) : 0
+                  const adjustedTotal = totalCost - partyBagsPrice
+                  const finalTotal = flyerDiscount > 0 ? Math.max(0, adjustedTotal - flyerDiscount) : adjustedTotal
+
+                  if (isFreePartyBags && partyBagsPrice > 0) {
+                    return (
+                      <>
+                        <p className="text-xs text-teal-600 font-semibold">🎁 Free party bags{flyerDiscount > 0 ? ' + £25 off' : ''}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-400 line-through">£{totalCost.toLocaleString()}</p>
+                          <p className="text-2xl font-bold text-gray-900">£{finalTotal.toLocaleString()}</p>
+                        </div>
+                      </>
+                    )
+                  } else if (flyerDiscount > 0) {
+                    return (
+                      <>
+                        <p className="text-xs text-teal-600 font-semibold">🎉 £{flyerDiscount} OFF</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-400 line-through">£{totalCost.toLocaleString()}</p>
+                          <p className="text-2xl font-bold text-gray-900">£{finalTotal.toLocaleString()}</p>
+                        </div>
+                      </>
+                    )
+                  } else {
+                    return (
+                      <>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+                        <p className="text-2xl font-bold text-gray-900">£{totalCost.toLocaleString()}</p>
+                      </>
+                    )
+                  }
+                })()}
               </div>
               <div className="flex items-center gap-3">
                 <button

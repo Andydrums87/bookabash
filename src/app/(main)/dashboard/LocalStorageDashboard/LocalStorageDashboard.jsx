@@ -2771,10 +2771,10 @@ const handleChildPhotoUpload = async (file) => {
                 {flyerDiscount > 0 && (
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
-                      🎉 Launch Offer ({flyerDiscount}% off)
+                      🎉 Limited Time Offer (£{flyerDiscount} off)
                     </span>
                     <span className="text-sm text-teal-600 font-semibold">
-                      -£{(totalCost * flyerDiscount / 100).toFixed(2)}
+                      -£{Math.min(flyerDiscount, totalCost).toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -2783,7 +2783,7 @@ const handleChildPhotoUpload = async (file) => {
                   {flyerDiscount > 0 ? (
                     <div className="text-right">
                       <span className="text-lg text-gray-400 line-through mr-2">£{totalCost.toFixed(2)}</span>
-                      <span className="text-3xl font-bold text-primary-600">£{(totalCost * (1 - flyerDiscount / 100)).toFixed(2)}</span>
+                      <span className="text-3xl font-bold text-primary-600">£{Math.max(0, totalCost - flyerDiscount).toFixed(2)}</span>
                     </div>
                   ) : (
                     <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>

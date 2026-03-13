@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode, isFlyer = false }){
+export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode, isFlyer = false, isFlyerPartyBags = false }){
   const router = useRouter()
 
   return (
@@ -26,15 +26,27 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             {/* Hero Text - Left Side */}
             <div className="space-y-8">
               <div>
-                {isFlyer ? (
+                {isFlyerPartyBags ? (
                   <>
-                    {/* Launch Offer Badge */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
-                      <span className="text-lg">🎉</span>
-                      LAUNCH OFFER: 30% OFF
+                    {/* Free Party Bags Offer Badge */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
+                      <span className="text-lg">🎁</span>
+                      FREE PARTY BAGS
                     </div>
                     <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
-                      Get <span className="text-primary-500 relative">30% off</span> your child's{' '}
+                      Get <span className="text-primary-500 relative">free party bags</span> for your child's{' '}
+                      <span className="text-primary-500 relative">perfect party</span>
+                    </h1>
+                  </>
+                ) : isFlyer ? (
+                  <>
+                    {/* Limited Time Offer Badge */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
+                      <span className="text-lg">🎉</span>
+                      LIMITED TIME: £25 OFF
+                    </div>
+                    <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
+                      Get <span className="text-primary-500 relative">£25 off</span> your child's{' '}
                       <span className="text-primary-500 relative">perfect party</span>
                     </h1>
                   </>
@@ -53,7 +65,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               </div>
 
               <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
-                {isFlyer
+                {isFlyerPartyBags
+                  ? "Limited time offer. Add party bags and we'll make them free!"
+                  : isFlyer
                   ? "Limited time launch offer. We handle the venue and suppliers - you enjoy the day."
                   : "Build your party plan for free in seconds. No sign-up required."
                 }
@@ -335,20 +349,36 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
             <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
-                {isFlyer ? (
+                {isFlyerPartyBags ? (
                   <>
-                    {/* Launch Offer Badge - Mobile */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
-                      <span>🎉</span>
-                      LAUNCH OFFER: 30% OFF
+                    {/* Free Party Bags Badge - Mobile */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
+                      <span>🎁</span>
+                      FREE PARTY BAGS
                     </div>
                     <h1 className="text-3xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
-                      <span className="block">Get <span className="text-primary-500">30% off</span></span>
+                      <span className="block">Get <span className="text-primary-500">free party bags</span></span>
+                      <span className="block">for your child's</span>
+                      <span className="text-primary-500 block">perfect party</span>
+                    </h1>
+                    <p className="text-sm text-gray-700 max-w-4xl leading-relaxed font-medium">
+                      Limited time offer. Add party bags and we'll make them free!
+                    </p>
+                  </>
+                ) : isFlyer ? (
+                  <>
+                    {/* Limited Time Offer Badge - Mobile */}
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
+                      <span>🎉</span>
+                      LIMITED TIME: £25 OFF
+                    </div>
+                    <h1 className="text-3xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
+                      <span className="block">Get <span className="text-primary-500">£25 off</span></span>
                       <span className="block">your child's</span>
                       <span className="text-primary-500 block">perfect party</span>
                     </h1>
                     <p className="text-sm text-gray-700 max-w-4xl leading-relaxed font-medium">
-                      Limited time launch offer. We handle the suppliers - you enjoy the day.
+                      Limited time offer. We handle the suppliers - you enjoy the day.
                     </p>
                   </>
                 ) : (

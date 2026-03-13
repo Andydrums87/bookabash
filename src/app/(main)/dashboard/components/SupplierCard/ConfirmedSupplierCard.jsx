@@ -1,7 +1,7 @@
 // ConfirmedSupplierCard.js - Updated with subtle cancel request functionality
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,16 @@ export default function ConfirmedSupplierCard({
   // Extract cake customization data
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization
+
+  // Check if this is party bags and if free party bags flyer is active
+  const isPartyBagsSupplier = type === 'partyBags'
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isPartyBagsSupplier) {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+    }
+  }, [isPartyBagsSupplier])
 
   const handleConfirmCancel = () => {
     console.log("✅ User confirmed cancellation - proceeding")
@@ -131,7 +141,14 @@ export default function ConfirmedSupplierCard({
             <div className="text-white">
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
               <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
-              <span className="text-3xl font-black text-white drop-shadow-lg">£{displayPrice}</span>
+              {isFreePartyBags ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg line-through text-white/50 drop-shadow-lg">£{displayPrice}</span>
+                  <span className="text-3xl font-black drop-shadow-lg text-white">Free</span>
+                </div>
+              ) : (
+                <span className="text-3xl font-black text-white drop-shadow-lg">£{displayPrice}</span>
+              )}
             </div>
           </div>
         </div>

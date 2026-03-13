@@ -155,7 +155,8 @@ const calculatePaymentBreakdown = (suppliers, partyDetails, addons = []) => {
   }
 
   suppliers.forEach(supplier => {
-    const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
+    const cat = supplier.category?.toLowerCase() || ''
+    const isPartyBags = cat.includes('party bag') || cat.includes('partybag')
 
     // ✅ CRITICAL FIX: For party bags, use stored totalPrice from metadata
     let totalPrice
@@ -633,6 +634,8 @@ export default function PaymentPageContent() {
   const [referralCredit, setReferralCredit] = useState(0)
   const [creditApplied, setCreditApplied] = useState(0)
   const [flyerDiscount, setFlyerDiscount] = useState(0)
+  const [freePartyBags, setFreePartyBags] = useState(false)
+  const [partyBagsDiscount, setPartyBagsDiscount] = useState(0)
   const [promoCode, setPromoCode] = useState('')
   const [promoCodeDiscount, setPromoCodeDiscount] = useState(0)
   const [promoCodeError, setPromoCodeError] = useState('')
@@ -747,7 +750,8 @@ export default function PaymentPageContent() {
           })
           .map(([key, supplier]) => {
             // ✅ CRITICAL FIX: For party bags, use totalPrice from metadata
-            const isPartyBags = key === 'partyBags' || supplier.category?.toLowerCase().includes('party bag')
+            const supplierCat = supplier.category?.toLowerCase() || ''
+            const isPartyBags = key === 'partyBags' || supplierCat.includes('party bag') || supplierCat.includes('partybag')
             let supplierPrice = supplier.price || 0
 
             if (isPartyBags) {
@@ -890,22 +894,43 @@ export default function PaymentPageContent() {
         const creditToApply = Math.min(availableCredit, breakdown.totalPaymentToday)
         setCreditApplied(creditToApply)
 
-        // Check for flyer discount (30% off for flyer visitors)
+        // Check for flyer discount (£25 off for flyer visitors)
         let flyerDiscountAmount = 0
+        let partyBagsDiscountAmount = 0
         if (typeof window !== 'undefined') {
           const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
-          const flyerDiscountPercent = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+          const flyerDiscountFixed = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
 
-          if (isFlyerSource && flyerDiscountPercent > 0) {
-            // Calculate 30% of subtotal (before referral credit)
-            flyerDiscountAmount = Math.round((breakdown.totalPaymentToday * flyerDiscountPercent / 100) * 100) / 100
+          if (isFlyerSource && flyerDiscountFixed > 0) {
+            // Apply fixed £25 discount (capped at subtotal to prevent negative)
+            flyerDiscountAmount = Math.min(flyerDiscountFixed, breakdown.totalPaymentToday)
             setFlyerDiscount(flyerDiscountAmount)
-            console.log('🎫 Flyer discount applied:', flyerDiscountAmount, `(${flyerDiscountPercent}% off)`)
+            console.log('🎫 Flyer discount applied:', flyerDiscountAmount, `(£${flyerDiscountFixed} off)`)
+          }
+
+          // Check for free party bags flyer
+          const isFlyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+          if (isFlyerPartyBags) {
+            // Find party bags in the breakdown and calculate total discount
+            // Handle both 'Party Bags' and 'PartyBags' category names
+            const partyBagsTotal = breakdown.paymentDetails
+              .filter(item => {
+                const cat = item.category?.toLowerCase() || ''
+                return cat.includes('party bag') || cat.includes('partybag')
+              })
+              .reduce((sum, item) => sum + (item.amountToday || 0), 0)
+
+            if (partyBagsTotal > 0) {
+              partyBagsDiscountAmount = partyBagsTotal
+              setFreePartyBags(true)
+              setPartyBagsDiscount(partyBagsDiscountAmount)
+              console.log('🎁 Free party bags applied:', partyBagsDiscountAmount)
+            }
           }
         }
 
-        // Calculate final payment amount after flyer discount and referral credit
-        const finalPaymentAmount = breakdown.totalPaymentToday - flyerDiscountAmount - creditToApply
+        // Calculate final payment amount after all discounts
+        const finalPaymentAmount = breakdown.totalPaymentToday - flyerDiscountAmount - partyBagsDiscountAmount - creditToApply
         const paymentAmount = Math.round(finalPaymentAmount * 100)
 
         // Only enable Klarna for orders £200+ (20000 pence)
@@ -925,7 +950,8 @@ export default function PaymentPageContent() {
               paymentType: 'unified',
               enableKlarna: shouldEnableKlarna,
               referralCreditApplied: creditToApply,
-              flyerDiscountApplied: flyerDiscountAmount
+              flyerDiscountApplied: flyerDiscountAmount,
+              freePartyBagsApplied: partyBagsDiscountAmount
             }),
           })
 
@@ -1078,24 +1104,98 @@ export default function PaymentPageContent() {
     setIsApplyingPromo(true)
     setPromoCodeError('')
 
-    // Valid promo codes (case-insensitive)
+    // Valid promo codes (case-insensitive) - fixed £ amount discounts
     const validPromoCodes = {
-      'PARTYSNAP30': 30,  // Instagram followers - 30% off
+      'PARTYSNAP25': 25,  // Instagram followers - £25 off
     }
 
-    const code = promoCode.trim().toUpperCase()
-    const discountPercent = validPromoCodes[code]
+    // Special promo codes
+    const specialPromoCodes = ['FREEBAGS']
 
-    if (discountPercent) {
-      // Calculate discount amount
-      const discountAmount = Math.round((paymentBreakdown.totalPaymentToday * discountPercent / 100) * 100) / 100
+    const code = promoCode.trim().toUpperCase()
+    const discountFixed = validPromoCodes[code]
+    const isSpecialCode = specialPromoCodes.includes(code)
+
+    if (code === 'FREEBAGS') {
+      // FREEBAGS promo code - makes party bags free
+      // Check if already has free party bags from flyer
+      const isFlyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      if (isFlyerPartyBags) {
+        setPromoCodeError('Free party bags already applied')
+        setIsApplyingPromo(false)
+        return
+      }
+
+      // Calculate party bags total from the breakdown
+      // Handle both 'Party Bags' and 'PartyBags' category names
+      const partyBagsTotal = paymentBreakdown.paymentDetails
+        .filter(item => {
+          const cat = item.category?.toLowerCase() || ''
+          return cat.includes('party bag') || cat.includes('partybag')
+        })
+        .reduce((sum, item) => sum + (item.amountToday || 0), 0)
+
+      if (partyBagsTotal > 0) {
+        // Apply free party bags via the existing mechanism
+        setFreePartyBags(true)
+        setPartyBagsDiscount(partyBagsTotal)
+        setPromoCodeApplied(true)
+        console.log(`🎁 Promo code FREEBAGS applied: Free party bags = £${partyBagsTotal} off`)
+
+        // Store in localStorage for tracking
+        localStorage.setItem('promo_code', code)
+        localStorage.setItem('promo_freebags', 'true')
+
+        // Re-create payment intent with new amount
+        const finalPaymentAmount = paymentBreakdown.totalPaymentToday - partyBagsTotal - flyerDiscount - creditApplied
+        const paymentAmount = Math.round(Math.max(0, finalPaymentAmount) * 100)
+
+        if (paymentAmount > 0) {
+          try {
+            const response = await fetch('/api/create-payment-intent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                amount: paymentAmount,
+                currency: 'gbp',
+                partyDetails: { id: partyId },
+                suppliers: confirmedSuppliers,
+                addons: [],
+                paymentType: 'unified',
+                enableKlarna: paymentAmount >= 20000,
+                referralCreditApplied: creditApplied,
+                promoCodeApplied: code,
+                freePartyBagsApplied: partyBagsTotal
+              }),
+            })
+
+            const { clientSecret: secret, error: backendError } = await response.json()
+
+            if (backendError) {
+              console.error('❌ Payment intent update failed:', backendError)
+            } else if (secret) {
+              setClientSecret(secret)
+            }
+          } catch (error) {
+            console.error('Error updating payment intent:', error)
+          }
+        } else {
+          // Promo code covers entire payment
+          setClientSecret('credit_only')
+        }
+      } else {
+        setPromoCodeError('No party bags in your order')
+      }
+    } else if (discountFixed) {
+      // Apply fixed discount (capped at total to prevent negative)
+      const discountAmount = Math.min(discountFixed, paymentBreakdown.totalPaymentToday)
       setPromoCodeDiscount(discountAmount)
       setPromoCodeApplied(true)
-      console.log(`🎫 Promo code ${code} applied: ${discountPercent}% off = £${discountAmount}`)
+      console.log(`🎫 Promo code ${code} applied: £${discountFixed} off = £${discountAmount}`)
 
       // Store in localStorage for tracking
       localStorage.setItem('promo_code', code)
-      localStorage.setItem('promo_discount', String(discountPercent))
+      localStorage.setItem('promo_discount', String(discountFixed))
 
       // Re-create payment intent with new amount
       const finalPaymentAmount = paymentBreakdown.totalPaymentToday - discountAmount - creditApplied
@@ -1171,20 +1271,35 @@ export default function PaymentPageContent() {
             {partyDetails.date && (
               <p className="text-sm text-gray-500 mb-2">{formatDateWithOrdinal(partyDetails.date)}</p>
             )}
-            <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - creditApplied).toFixed(2)}</p>
+            <p className="text-4xl font-bold text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - partyBagsDiscount - creditApplied).toFixed(2)}</p>
           </div>
 
           {/* Order Items */}
           <div className="space-y-4 mb-6">
-            {paymentBreakdown.paymentDetails.map((supplier) => (
-              <div key={supplier.id} className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{supplier.category}</p>
-                  <p className="text-xs text-gray-500">{supplier.name}</p>
+            {paymentBreakdown.paymentDetails.map((supplier) => {
+              const supplierCat = supplier.category?.toLowerCase() || ''
+              const isPartyBags = supplierCat.includes('party bag') || supplierCat.includes('partybag')
+              const isFreePartyBagsItem = freePartyBags && isPartyBags
+
+              return (
+                <div key={supplier.id} className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 capitalize">
+                      {supplier.category}
+                    </p>
+                    <p className="text-xs text-gray-500">{supplier.name}</p>
+                  </div>
+                  {isFreePartyBagsItem ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-400 line-through">£{supplier.amountToday.toFixed(2)}</p>
+                      <p className="text-sm font-medium text-gray-900">Free</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-900">£{supplier.amountToday.toFixed(2)}</p>
+                  )}
                 </div>
-                <p className="text-sm text-gray-900">£{supplier.amountToday.toFixed(2)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Subtotal & Credits */}
@@ -1203,11 +1318,39 @@ export default function PaymentPageContent() {
                     Promo: {promoCode.toUpperCase()}
                   </span>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setPromoCode('')
                       setPromoCodeDiscount(0)
                       setPromoCodeApplied(false)
                       setPromoCodeError('')
+                      setFreePartyBags(false)
+                      setPartyBagsDiscount(0)
+
+                      // Recreate payment intent without the promo discount
+                      if (paymentBreakdown?.totalPaymentToday > 0) {
+                        try {
+                          const response = await fetch('/api/payments/create-payment-intent', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              partyId,
+                              amount: Math.round((paymentBreakdown.totalPaymentToday - flyerDiscount) * 100),
+                              metadata: {
+                                partyId,
+                                flyerDiscount: flyerDiscount > 0 ? flyerDiscount.toFixed(2) : '0',
+                                promoCode: '',
+                                promoDiscount: '0'
+                              }
+                            })
+                          })
+                          const data = await response.json()
+                          if (data.clientSecret) {
+                            setClientSecret(data.clientSecret)
+                          }
+                        } catch (error) {
+                          console.error('Error recreating payment intent:', error)
+                        }
+                      }
                     }}
                     className="text-xs text-gray-500 hover:text-gray-700 underline"
                   >
@@ -1248,14 +1391,21 @@ export default function PaymentPageContent() {
 
             {flyerDiscount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-teal-600">🎉 Launch Offer (30% off)</span>
+                <span className="text-teal-600">🎉 Limited Time Offer (£25 off)</span>
                 <span className="text-teal-600">-£{flyerDiscount.toFixed(2)}</span>
+              </div>
+            )}
+
+            {partyBagsDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-teal-600">🎁 Free Party Bags</span>
+                <span className="text-teal-600">-£{partyBagsDiscount.toFixed(2)}</span>
               </div>
             )}
 
             {promoCodeDiscount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-teal-600">🎉 Promo Code (30% off)</span>
+                <span className="text-teal-600">🎉 Promo Code (£25 off)</span>
                 <span className="text-teal-600">-£{promoCodeDiscount.toFixed(2)}</span>
               </div>
             )}
@@ -1269,7 +1419,7 @@ export default function PaymentPageContent() {
 
             <div className="flex justify-between pt-2 border-t border-gray-200">
               <span className="text-sm font-medium text-gray-900">Total due today</span>
-              <span className="text-sm font-medium text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - creditApplied).toFixed(2)}</span>
+              <span className="text-sm font-medium text-gray-900">£{(paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - partyBagsDiscount - creditApplied).toFixed(2)}</span>
             </div>
           </div>
 
@@ -1411,6 +1561,7 @@ export default function PaymentPageContent() {
               />
             ) : clientSecret ? (
               <Elements
+                key={clientSecret}
                 stripe={stripePromise}
                 options={{
                   clientSecret: clientSecret,

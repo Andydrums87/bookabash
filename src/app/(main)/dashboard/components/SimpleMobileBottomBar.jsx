@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Home, ClipboardList, Wallet, Clock, X, DollarSign, Sparkles, PoundSterling, Plus, ChevronRight, PartyPopper, Calendar, MapPin, Cake } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
@@ -20,7 +20,23 @@ const SimpleMobileBottomTabBar = ({
 }) => {
   const [activeTab, setActiveTab] = useState("party")
   const [showModal, setShowModal] = useState(false)
+  const [isFreePartyBags, setIsFreePartyBags] = useState(false)
+  const [flyerDiscount, setFlyerDiscount] = useState(0)
   const router = useRouter()
+
+  // Check for free party bags and flyer discount on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const flyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
+      setIsFreePartyBags(flyerPartyBags)
+
+      const isFlyerSource = localStorage.getItem('flyer_source') === 'true'
+      const flyerDiscountFixed = parseInt(localStorage.getItem('flyer_discount') || '0', 10)
+      if (isFlyerSource && flyerDiscountFixed > 0) {
+        setFlyerDiscount(flyerDiscountFixed)
+      }
+    }
+  }, [])
 
   // Calculate unified total cost using the same logic as dashboard
   const unifiedTotalCost = useMemo(() => {
@@ -413,7 +429,14 @@ const SimpleMobileBottomTabBar = ({
                 </div>
                 <div className="flex items-center gap-2">
                   {isBooked && price ? (
-                    <span className="font-bold text-[hsl(var(--primary-700))] text-base flex-shrink-0">£{price}</span>
+                    type === 'partyBags' && isFreePartyBags ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400 line-through flex-shrink-0">£{price}</span>
+                        <span className="font-bold text-[hsl(var(--primary-700))] text-base flex-shrink-0">Free</span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-[hsl(var(--primary-700))] text-base flex-shrink-0">£{price}</span>
+                    )
                   ) : (
                     <>
                       <span className="text-xs text-[hsl(var(--primary-500))] font-medium flex-shrink-0">Add</span>
@@ -427,8 +450,33 @@ const SimpleMobileBottomTabBar = ({
     
           {/* Total Cost */}
           <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl p-4 text-center shadow-lg">
-            <div className="text-xs text-white/80 mb-1 font-medium">Total Party Cost</div>
-            <div className="text-3xl font-black text-white">£{unifiedTotalCost.toLocaleString()}</div>
+            {(() => {
+              // Calculate party bags discount if applicable
+              const partyBagsSupplier = suppliers.partyBags
+              const partyBagsPrice = isFreePartyBags && partyBagsSupplier
+                ? calculateFinalPrice(partyBagsSupplier, partyDetails, addons.filter(a => a.supplierId === partyBagsSupplier?.id)).finalPrice
+                : 0
+              const adjustedTotal = unifiedTotalCost - partyBagsPrice
+              const finalTotal = flyerDiscount > 0 ? Math.max(0, adjustedTotal - flyerDiscount) : adjustedTotal
+              const hasDiscount = isFreePartyBags && partyBagsPrice > 0 || flyerDiscount > 0
+
+              return (
+                <>
+                  <div className="text-xs text-white/80 mb-1 font-medium">
+                    {isFreePartyBags && partyBagsPrice > 0 ? '🎁 Free party bags applied' :
+                     flyerDiscount > 0 ? `🎉 £${flyerDiscount} off applied` : 'Total Party Cost'}
+                  </div>
+                  {hasDiscount ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-lg text-white/60 line-through">£{unifiedTotalCost.toLocaleString()}</span>
+                      <span className="text-3xl font-black text-white">£{finalTotal.toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    <div className="text-3xl font-black text-white">£{unifiedTotalCost.toLocaleString()}</div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
         )
