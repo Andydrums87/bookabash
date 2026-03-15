@@ -17,7 +17,9 @@ export default function SavedPartyPlanEmail({
   partyDate,
   totalCost,
   suppliers = [], // Array of { category, name, price }
-  guestCount
+  guestCount,
+  discountCode = null, // SAVE20-XXXXX format
+  discountAmount = 20
 }) {
   // Capitalize first letter of child's name
   const formattedChildName = childName
@@ -81,6 +83,17 @@ export default function SavedPartyPlanEmail({
             <Text style={styles.text}>
               Great news! We've saved your party plan so you can come back anytime to complete your booking.
             </Text>
+
+            {/* Discount Code Box */}
+            {discountCode && (
+              <Section style={styles.discountBox}>
+                <Text style={styles.discountTitle}>🎁 Your exclusive discount</Text>
+                <Text style={styles.discountCode}>{discountCode}</Text>
+                <Text style={styles.discountDescription}>
+                  Use this code at checkout to get £{discountAmount} off your booking
+                </Text>
+              </Section>
+            )}
 
             {/* Party Details */}
             {(formattedTheme || formattedDate || guestCount) && (
@@ -281,6 +294,33 @@ const styles = {
     borderRadius: '12px',
     padding: '20px',
     marginBottom: '24px',
+  },
+  discountBox: {
+    backgroundColor: '#ecfdf5',
+    borderRadius: '12px',
+    padding: '24px',
+    marginBottom: '24px',
+    textAlign: 'center',
+    border: '2px dashed #10b981',
+  },
+  discountTitle: {
+    margin: '0 0 12px 0',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#059669',
+  },
+  discountCode: {
+    margin: '0 0 12px 0',
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#047857',
+    letterSpacing: '2px',
+    fontFamily: 'monospace',
+  },
+  discountDescription: {
+    margin: '0',
+    fontSize: '14px',
+    color: '#065f46',
   },
   partyDetailsTitle: {
     margin: '0 0 12px 0',

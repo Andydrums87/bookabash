@@ -41,6 +41,7 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
 import SavePartyPlanModal from "@/components/SavePartyPlanModal"
+import SavePlanBanner from "@/components/SavePlanBanner"
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import { usePartyDetails } from '../hooks/usePartyDetails'
@@ -2851,6 +2852,16 @@ const handleChildPhotoUpload = async (file) => {
         partyDetails={partyDetails}
         partyPlan={partyPlan}
         totalCost={totalCost}
+      />
+
+      {/* Timed Save Plan Banner - appears after 2.5 minutes */}
+      <SavePlanBanner
+        partyDetails={partyDetails}
+        partyPlan={partyPlan}
+        totalCost={totalCost}
+        childName={partyDetails?.childName || partyDetails?.firstName}
+        onSuccess={() => setHasSavedParty(true)}
+        delayMinutes={2.5}
       />
 
       {/* Mobile Add Supplier Button */}

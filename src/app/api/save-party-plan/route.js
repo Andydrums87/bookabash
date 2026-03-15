@@ -12,6 +12,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Generate a unique discount code
+function generateDiscountCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let suffix = '';
+  for (let i = 0; i < 5; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `SAVE20-${suffix}`;
+}
+
 export async function POST(request) {
   try {
     const { email, sessionId, partyDetails, partyPlan, marketingConsent, totalCost } = await request.json();
@@ -21,38 +31,92 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 });
     }
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'No session found' }, { status: 400 });
-    }
-
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Update tracking record with saved party data
-    const { error: dbError } = await supabase
-      .from('party_tracking')
-      .update({
-        email: normalizedEmail,
-        status: 'saved',
-        saved_party_details: partyDetails,
-        saved_party_plan: partyPlan,
-        saved_at: new Date().toISOString(),
-        marketing_consent: marketingConsent || false,
-        child_name: partyDetails?.childName || partyDetails?.firstName,
-        party_theme: partyDetails?.theme,
-        party_date: partyDetails?.date,
-        party_location: partyDetails?.postcode || partyDetails?.location,
-        guest_count: partyDetails?.guestCount ? parseInt(partyDetails.guestCount) : null,
-        estimated_value: totalCost || 0,
-        last_activity: new Date().toISOString()
-      })
-      .eq('session_id', sessionId);
+    // Check if this email already has a SAVE20 discount code
+    let discountCode = null;
+    const { data: existingCode } = await supabase
+      .from('discount_codes')
+      .select('code')
+      .eq('email', normalizedEmail)
+      .ilike('code', 'SAVE20-%')
+      .single();
 
-    if (dbError) {
-      console.error('Database error saving party:', dbError);
-      return NextResponse.json({ error: 'Failed to save party plan' }, { status: 500 });
+    if (existingCode) {
+      // Use the existing code
+      discountCode = existingCode.code;
+      console.log('📋 Using existing discount code:', discountCode);
+    } else {
+      // Generate unique discount code
+      discountCode = generateDiscountCode();
+
+      // Ensure code is unique
+      let attempts = 0;
+      while (attempts < 5) {
+        const { data: existingCodeCheck } = await supabase
+          .from('discount_codes')
+          .select('code')
+          .eq('code', discountCode)
+          .single();
+
+        if (!existingCodeCheck) break;
+        discountCode = generateDiscountCode();
+        attempts++;
+      }
+
+      // Store discount code in Supabase
+      const { error: codeError } = await supabase
+        .from('discount_codes')
+        .insert({
+          code: discountCode,
+          email: normalizedEmail,
+          discount_type: 'fixed',
+          discount_value: 20,
+          is_active: true,
+          source: 'save_plan_email',
+          session_id: sessionId || null,
+          created_at: new Date().toISOString()
+        });
+
+      if (codeError) {
+        console.error('Error storing discount code:', codeError);
+        // Continue anyway - we can still save the party
+      } else {
+        console.log('✅ Discount code created:', discountCode);
+      }
     }
 
-    console.log('✅ Party plan saved to database for:', normalizedEmail);
+    // Update tracking record with saved party data (only if we have a sessionId)
+    if (sessionId) {
+      const { error: dbError } = await supabase
+        .from('party_tracking')
+        .update({
+          email: normalizedEmail,
+          status: 'saved',
+          saved_party_details: partyDetails,
+          saved_party_plan: partyPlan,
+          save_plan_discount_code: discountCode,
+          saved_at: new Date().toISOString(),
+          marketing_consent: marketingConsent || false,
+          child_name: partyDetails?.childName || partyDetails?.firstName,
+          party_theme: partyDetails?.theme,
+          party_date: partyDetails?.date,
+          party_location: partyDetails?.postcode || partyDetails?.location,
+          guest_count: partyDetails?.guestCount ? parseInt(partyDetails.guestCount) : null,
+          estimated_value: totalCost || 0,
+          last_activity: new Date().toISOString()
+        })
+        .eq('session_id', sessionId);
+
+      if (dbError) {
+        console.error('Database error saving party:', dbError);
+        // Don't fail - we still have the discount code
+      } else {
+        console.log('✅ Party plan saved to database for:', normalizedEmail);
+      }
+    } else {
+      console.log('⚠️ No sessionId - skipping party_tracking update, but discount code created');
+    }
 
     // Send confirmation email
     try {
@@ -89,15 +153,17 @@ export async function POST(request) {
         partyDate,
         totalCost,
         suppliers,
-        guestCount
+        guestCount,
+        discountCode,
+        discountAmount: 20
       }));
 
       await postmarkClient.sendEmail({
         From: 'hello@partysnap.co.uk',
         To: normalizedEmail,
-        Subject: `${childName}'s party plan is saved! 🎉`,
+        Subject: `Your £20 off code + ${childName}'s party plan 🎁`,
         HtmlBody: emailHtml,
-        TextBody: `Your party plan for ${childName} has been saved! Return anytime to complete your booking at partysnap.co.uk/dashboard`
+        TextBody: `Your party plan for ${childName} has been saved! Use code ${discountCode} to get £20 off your booking. Return to partysnap.co.uk/dashboard to complete your booking.`
       });
 
       console.log('✅ Confirmation email sent to:', normalizedEmail);
@@ -106,7 +172,7 @@ export async function POST(request) {
       console.error('Email error (non-critical):', emailError);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, discountCode });
   } catch (error) {
     console.error('Save party plan error:', error);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });

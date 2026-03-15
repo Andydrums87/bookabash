@@ -20,6 +20,7 @@ export default function SavePartyPlanModal({
   const [marketingConsent, setMarketingConsent] = useState(false)
   const [status, setStatus] = useState("idle") // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState("")
+  const [discountCode, setDiscountCode] = useState("")
 
   const handleSubmit = async (e) => {
     e?.preventDefault()
@@ -57,9 +58,15 @@ export default function SavePartyPlanModal({
       })
 
       if (res.ok) {
+        const data = await res.json()
         setStatus("success")
         // Store email locally for checkout pre-fill
         localStorage.setItem('saved_party_email', email.toLowerCase().trim())
+        // Store discount code if received
+        if (data.discountCode) {
+          setDiscountCode(data.discountCode)
+          localStorage.setItem('save_plan_discount_code', data.discountCode)
+        }
         // Notify parent component of success
         onSuccess?.()
       } else {
@@ -82,12 +89,14 @@ export default function SavePartyPlanModal({
         setMarketingConsent(false)
         setStatus("idle")
         setErrorMessage("")
+        setDiscountCode("")
       }, 300)
     } else {
       setEmail("")
       setMarketingConsent(false)
       setStatus("idle")
       setErrorMessage("")
+      setDiscountCode("")
     }
     onClose()
   }
@@ -114,8 +123,15 @@ export default function SavePartyPlanModal({
             <p className="text-gray-600 mb-2">
               Your party plan{totalCost > 0 && <> worth <strong>£{totalCost.toLocaleString()}</strong></>} is saved!
             </p>
+            {discountCode && (
+              <div className="my-4 p-4 bg-green-50 border-2 border-dashed border-green-300 rounded-lg">
+                <p className="text-sm text-green-700 font-medium mb-1">🎁 Your £20 off code:</p>
+                <p className="text-2xl font-bold text-green-600 tracking-wider font-mono">{discountCode}</p>
+                <p className="text-xs text-green-600 mt-1">Use at checkout</p>
+              </div>
+            )}
             <p className="text-sm text-gray-500">
-              Return anytime to complete your booking.
+              {discountCode ? "Check your email for your discount code and party plan." : "Return anytime to complete your booking."}
             </p>
           </div>
         ) : (
