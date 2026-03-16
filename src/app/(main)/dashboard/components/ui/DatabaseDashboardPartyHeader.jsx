@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Camera, MapPin, Sparkles, ChevronDown, X, Users } from "lucide-react"
 import ChatNotificationIcon from "../../DatabaseDashboard/components/ChatNotificationIcon";
 import { format } from "date-fns"
+import { getThemeDisplayName, parseCompoundTheme, isPerformanceParty } from "@/utils/compoundTheme"
 
 export default function DatabasePartyHeader({
   theme,
@@ -199,14 +200,9 @@ export default function DatabasePartyHeader({
 
   // ✅ Get formatted theme name
   const getFormattedTheme = () => {
-    // Try to use currentTheme (from partyTheme or currentParty)
     const themeSource = currentTheme || (dataSource === 'database' && currentParty?.theme);
     if (!themeSource) return null;
-    // Capitalize first letter and replace hyphens with spaces
-    return themeSource
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    return getThemeDisplayName(themeSource);
   };
 
   // Get theme image helper
@@ -234,7 +230,11 @@ export default function DatabasePartyHeader({
       frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png"
     }
 
-    return themeImages[themeSource.toLowerCase()] || null
+    // For compound themes like 'dance-party:princess', use the sub-theme for image lookup
+    const lookupKey = isPerformanceParty(themeSource)
+      ? (parseCompoundTheme(themeSource).subTheme || themeSource)
+      : themeSource;
+    return themeImages[lookupKey.toLowerCase()] || null
   }
 
   // Get theme gradient fallback
@@ -262,7 +262,11 @@ export default function DatabasePartyHeader({
       default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
     }
 
-    return themeGradients[themeSource.toLowerCase()] || themeGradients.default
+    // For compound themes like 'dance-party:princess', use the sub-theme for gradient lookup
+    const lookupKey = isPerformanceParty(themeSource)
+      ? (parseCompoundTheme(themeSource).subTheme || themeSource)
+      : themeSource;
+    return themeGradients[lookupKey.toLowerCase()] || themeGradients.default
   }
 
   // ✅ SIMPLIFIED: For database users, check currentParty directly instead of waiting for partyDetails

@@ -936,16 +936,33 @@ export const suppliersAPI = {
       console.log(`🎭 [getEntertainmentByTheme] Searching for theme: "${theme}"`)
       console.log(`🎭 [getEntertainmentByTheme] Total suppliers: ${allSuppliers.length}`)
 
+      // Parse compound performance party themes (e.g. 'dance-party:princess')
+      const PERFORMANCE_ENTERTAINMENT_TYPES = {
+        'drama-party': 'Drama Party',
+        'dance-party': 'Dance Party',
+        'music-party': 'Music Party',
+      };
+      const themeParts = theme?.split(':') || [];
+      const activityType = themeParts.length === 2 ? themeParts[0] :
+                           (PERFORMANCE_ENTERTAINMENT_TYPES[theme] ? theme : null);
+      const isPerformanceTheme = !!activityType && !!PERFORMANCE_ENTERTAINMENT_TYPES[activityType];
+
       const entertainmentSuppliers = allSuppliers.filter(supplier => {
-        const isEntertainment = supplier.category === 'Entertainment' || 
+        const isEntertainment = supplier.category === 'Entertainment' ||
                                supplier.serviceType === 'entertainer' ||
                                supplier.serviceType === 'magician' ||
                                supplier.serviceType === 'clown' ||
                                supplier.serviceType === 'dj' ||
                                supplier.serviceType === 'musician';
-        
+
         if (!isEntertainment) return false;
-        
+
+        // For performance party themes, match by entertainmentType
+        if (isPerformanceTheme) {
+          const requiredType = PERFORMANCE_ENTERTAINMENT_TYPES[activityType];
+          return supplier.serviceDetails?.entertainmentType === requiredType;
+        }
+
         // STRICT theme matching - only use themes array and name, NOT description
         // Description matching is too loose (e.g., Frozen entertainer mentioning "we also do superhero")
         const matchesTheme =

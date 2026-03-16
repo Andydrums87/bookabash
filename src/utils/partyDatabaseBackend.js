@@ -254,14 +254,22 @@ class PartyDatabaseBackend {
         postcode: partyDetails.postcode,
         child_photo: partyDetails.childPhoto, 
         
-        // NEW: Delivery address fields
+        // Delivery address fields
         delivery_address_line_1: partyDetails.deliveryAddressLine1,
         delivery_address_line_2: partyDetails.deliveryAddressLine2,
         delivery_city: partyDetails.deliveryCity,
         delivery_postcode: partyDetails.deliveryPostcode,
         full_delivery_address: partyDetails.fullDeliveryAddress,
-        
-        // NEW: Contact information
+
+        // Venue address fields (own venue users)
+        has_own_venue: partyDetails.hasOwnVenue || false,
+        venue_address_line_1: partyDetails.venueAddressLine1 || null,
+        venue_address_line_2: partyDetails.venueAddressLine2 || null,
+        venue_city: partyDetails.venueCity || null,
+        venue_postcode: partyDetails.venuePostcode || null,
+        full_venue_address: partyDetails.fullVenueAddress || null,
+
+        // Contact information
         parent_name: partyDetails.parentName,
         parent_email: partyDetails.parentEmail,
         parent_phone: partyDetails.parentPhone,

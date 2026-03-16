@@ -8,6 +8,7 @@ import { suppliersAPI } from './mockBackend';
 import { LocationService } from './locationService';
 import { partyDatabaseBackend } from './partyDatabaseBackend';
 import { calculateFinalPrice } from './unifiedPricing'; // ✅ Import unified pricing
+import { parseCompoundTheme, isPerformanceParty, getEffectiveThemeForCategory } from './compoundTheme';
 
 // ✅ Utility function to calculate total attendees (children + adults)
 // For parties, assume 1.5 adults per child on average (1-2 parents, sometimes siblings)
@@ -306,10 +307,19 @@ class PartyBuilderBackend {
 
         // If no colour match, try theme-specific package
         if (!selectedPackage) {
+          // For performance party themes, extract the sub-theme for package matching
+          // (packages store ["princess"] not ["dance-party:princess"])
+          const effectivePkgTheme = isPerformanceParty(theme)
+            ? (parseCompoundTheme(theme).subTheme || 'general')
+            : theme;
+          console.log(`🎭 [PackageMatch] theme="${theme}", effectivePkgTheme="${effectivePkgTheme}", isPerformance=${isPerformanceParty(theme)}, packages=${sortedPackages.length}`)
+          console.log(`🎭 [PackageMatch] Package themes:`, sortedPackages.map(p => ({ id: p.id, name: p.name, theme: p.theme, themes: p.themes })))
           const themePackages = sortedPackages.filter(pkg =>
-            pkg.theme === theme || pkg.themes?.includes(theme)
+            pkg.theme === effectivePkgTheme || pkg.themes?.includes(effectivePkgTheme)
           );
+          console.log(`🎭 [PackageMatch] Found ${themePackages.length} matching packages:`, themePackages.map(p => p.name))
           selectedPackage = themePackages.length > 0 ? themePackages[0] : sortedPackages[0];
+          console.log(`🎭 [PackageMatch] Selected: "${selectedPackage?.name}" (id: ${selectedPackage?.id})`)
         }
       }
 
@@ -1166,6 +1176,9 @@ checkSupplierLocation(supplier, partyLocation) {
     const isLargeParty = guests >= 30;
     const age = parseInt(childAge) || 6;
 
+    // For performance party themes, use sub-theme for non-entertainment categories
+    const categoryTheme = getEffectiveThemeForCategory(theme) || 'no-theme';
+
     // AGE-BASED RECOMMENDATIONS - DISABLED: Previously excluded entertainers for ages 1-2
     // Now treating all ages the same for party building
     const isToddlerParty = false; // Disabled - was: age <= 2
@@ -1278,8 +1291,10 @@ checkSupplierLocation(supplier, partyLocation) {
       }
       
       if (categorySuppliers.length > 0) {
+        // Use sub-theme for non-entertainment categories (cake, decorations, etc.)
+        const themeForCategory = (category === 'entertainment') ? theme : categoryTheme;
         const result = this.selectBestSupplier(
-          categorySuppliers, category, theme, timeSlot, duration, date, location, categoryBudget, partyDetails
+          categorySuppliers, category, themeForCategory, timeSlot, duration, date, location, categoryBudget, partyDetails
         );
         
         if (result.supplier) {

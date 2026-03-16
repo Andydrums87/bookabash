@@ -80,10 +80,14 @@ const MobileBottomTabBar = ({
   // ✅ SMART: Check if venue is confirmed (manually accepted by venue, not just paid)
   const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
   const venueExists = !!suppliers.venue
+  // User has own venue if explicitly set OR if party plan has no venue but has other suppliers
+  const partyPlan = partyDetails?.partyPlan
+  const hasOwnVenue = partyDetails?.hasOwnVenue === true ||
+    (partyPlan && partyPlan.venue === null && Object.values(partyPlan).some(v => v && v.id))
   // QA bypass: set NEXT_PUBLIC_BYPASS_VENUE_LOCK=true to unlock e-invites without venue confirmation
   const bypassVenueLock = process.env.NEXT_PUBLIC_BYPASS_VENUE_LOCK === 'true'
-  const isVenueConfirmed = bypassVenueLock || (venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false)
-  const venueAwaitingConfirmation = !bypassVenueLock && venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
+  const isVenueConfirmed = bypassVenueLock || hasOwnVenue || (venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false)
+  const venueAwaitingConfirmation = !hasOwnVenue && !bypassVenueLock && venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
 
   // ✅ SMART: Check if suppliers are confirmed (at least one paid supplier)
   const hasPaidSuppliers = enquiries.some(e =>

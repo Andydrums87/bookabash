@@ -82,7 +82,9 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
       postcode: party.postcode || 'W1A 1AA',
       timeSlot: party.time_slot || (party.party_time && (party.party_time.startsWith('0') || party.party_time.startsWith('1')) ? 'morning' : 'afternoon'),
       duration: party.duration || 2,
-      id: party.id 
+      id: party.id,
+      hasOwnVenue: party.has_own_venue || false,
+      partyPlan: party.party_plan || null
     };
 
     return mapped;

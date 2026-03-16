@@ -13,6 +13,7 @@ import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { UniversalModal, ModalHeader, ModalContent } from "@/components/ui/UniversalModal"
 import { roundMoney } from "@/utils/unifiedPricing"
 import { trackSupplierViewed } from "@/utils/partyTracking"
+import { getThemeDisplayName } from "@/utils/compoundTheme"
 
 export default function MyPartyTabContent({
   suppliers = {},
@@ -456,7 +457,7 @@ export default function MyPartyTabContent({
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
               <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
-                {supplierName}
+                {(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplierName}
               </h3>
 
               {/* Sweet Treats selected items display */}
@@ -670,7 +671,7 @@ export default function MyPartyTabContent({
         <div>
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-gray-700 leading-tight">
-              {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${partyDetails.theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} ` : ''}Party is Ready 🎉
+              {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${getThemeDisplayName(partyDetails.theme)} ` : ''}{getThemeDisplayName(partyDetails?.theme)?.endsWith('Party') ? '' : 'Party '}is Ready 🎉
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               We've selected everything for you. Tweak anything in seconds.
@@ -849,7 +850,7 @@ export default function MyPartyTabContent({
               {partyDetails?.theme && (
                 <p>
                   <span className="font-semibold">Theme:</span>{' '}
-                  <span className="capitalize">{partyDetails.theme.replace(/-/g, ' ')}</span>
+                  <span className="capitalize">{getThemeDisplayName(partyDetails.theme)}</span>
                 </p>
               )}
             </div>
@@ -903,7 +904,7 @@ export default function MyPartyTabContent({
 
                       return (
                         <div key={type} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{supplier.name}</span>
+                          <span className="text-gray-700">{(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplier.name}</span>
                           {isPartyBags && isFreePartyBags ? (
                             <div className="flex items-center gap-2">
                               <span className="text-gray-400 line-through">£{displayPrice}</span>

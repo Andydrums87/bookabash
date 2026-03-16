@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/toast"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
+import { getThemeDisplayName, parseCompoundTheme, isPerformanceParty } from "@/utils/compoundTheme"
 
 // Theme Edit Modal - Using your existing searchable select
 const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
@@ -42,7 +43,11 @@ const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
       "kpop-demon-hunters": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771611975/Screenshot_2026-02-20_at_18.25.53_nzx9if.png",
       frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png",
     }
-    return themeImages[themeName.toLowerCase()] || null
+    // For compound themes like 'dance-party:princess', use the sub-theme for image lookup
+    const lookupKey = isPerformanceParty(themeName)
+      ? (parseCompoundTheme(themeName).subTheme || themeName)
+      : themeName;
+    return themeImages[lookupKey.toLowerCase()] || null
   }
 
   const themeImage = getThemeImage(theme)
@@ -711,7 +716,11 @@ export default function LocalStoragePartyHeader({
       frozen: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1771607548/ChatGPT_Image_Feb_20_2026_05_12_17_PM_s03qyg.png"
     }
 
-    return themeImages[theme.toLowerCase()] || null
+    // For compound themes like 'dance-party:princess', use the sub-theme for image lookup
+    const lookupKey = isPerformanceParty(theme)
+      ? (parseCompoundTheme(theme).subTheme || theme)
+      : theme;
+    return themeImages[lookupKey.toLowerCase()] || null
   }
 
   // Get theme gradient fallback
@@ -737,7 +746,11 @@ export default function LocalStoragePartyHeader({
       default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
     }
 
-    return themeGradients[theme.toLowerCase()] || themeGradients.default
+    // For compound themes like 'dance-party:princess', use the sub-theme for gradient lookup
+    const lookupKey = isPerformanceParty(theme)
+      ? (parseCompoundTheme(theme).subTheme || theme)
+      : theme;
+    return themeGradients[lookupKey.toLowerCase()] || themeGradients.default
   }
 
   // Photo upload handler
@@ -1009,7 +1022,7 @@ export default function LocalStoragePartyHeader({
 
   const displayDate = getDisplayDate()
   const displayTimeRange = getDisplayTimeRange()
-  const capitalizedTheme = currentTheme?.charAt(0).toUpperCase() + currentTheme?.slice(1)
+  const capitalizedTheme = currentTheme ? getThemeDisplayName(currentTheme) : ''
 
   if (!partyDetails) {
     return (

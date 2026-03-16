@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 // Icons
 import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building, AlertTriangle } from "lucide-react"
+import { getThemeDisplayName, isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -779,9 +780,19 @@ useEffect(() => {
                   newRecommendations[categoryKey] = bestMatch
                   console.log(`🏠 Venue recommendation: ${bestMatch.name} (proximity: ${sortedByProximity[0].proximityScore}, theme: ${sortedByProximity[0].themeScore})`)
                 } else {
+                  // For performance party entertainment, filter to the correct supplier type first
+                  let suppliersToScore = availableSuppliers
+                  if (categoryKey === 'entertainment' && isPerformanceParty(partyTheme)) {
+                    const { activityType } = parseCompoundTheme(partyTheme)
+                    const PERFORMANCE_TYPES = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' }
+                    const requiredType = PERFORMANCE_TYPES[activityType]
+                    const performanceFiltered = availableSuppliers.filter(s => s.serviceDetails?.entertainmentType === requiredType)
+                    if (performanceFiltered.length > 0) suppliersToScore = performanceFiltered
+                  }
+
                   // For non-venue suppliers: sort by theme score and pick the best match
                   // Pass gender for no-theme parties so colour-based suppliers rank correctly
-                  const sortedByTheme = availableSuppliers
+                  const sortedByTheme = suppliersToScore
                     .map(supplier => ({
                       supplier,
                       themeScore: scoreSupplierWithTheme(supplier, partyTheme, 'afternoon', 2, partyGender)
@@ -789,6 +800,18 @@ useEffect(() => {
                     .sort((a, b) => b.themeScore - a.themeScore)
 
                   const bestMatch = sortedByTheme[0].supplier
+
+                  // For performance party entertainment, attach the themed package
+                  if (categoryKey === 'entertainment' && isPerformanceParty(partyTheme)) {
+                    const packages = bestMatch.packages || bestMatch.data?.packages || []
+                    const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
+                    const themedPkg = packages.find(pkg => pkg.themes?.includes(subTheme))
+                    if (themedPkg) {
+                      bestMatch.packageData = themedPkg
+                      bestMatch.name = themedPkg.name
+                    }
+                  }
+
                   newRecommendations[categoryKey] = bestMatch
                 }
 
@@ -1972,12 +1995,13 @@ const handleChildPhotoUpload = async (file) => {
                         const childName = partyDetails?.childName || partyDetails?.firstName;
                         const firstName = childName?.split(' ')[0];
                         const isPlaceholder = firstName === 'Your' || firstName === 'Your Child';
-                        const theme = partyDetails?.theme?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        const theme = partyDetails?.theme ? getThemeDisplayName(partyDetails.theme) : undefined;
 
+                        const partyWord = theme?.endsWith('Party') ? '' : 'Party ';
                         if (isPlaceholder || !firstName) {
-                          return `Your ${theme ? `${theme} ` : ''}Party is Ready 🎉`;
+                          return `Your ${theme ? `${theme} ` : ''}${partyWord}is Ready 🎉`;
                         }
-                        return `${firstName}'s ${theme ? `${theme} ` : ''}Party is Ready 🎉`;
+                        return `${firstName}'s ${theme ? `${theme} ` : ''}${partyWord}is Ready 🎉`;
                       })()}
                     </h2>
                     <p className="text-sm md:text-base text-gray-600 mt-1">
@@ -2854,14 +2878,14 @@ const handleChildPhotoUpload = async (file) => {
         totalCost={totalCost}
       />
 
-      {/* Timed Save Plan Banner - appears after 2.5 minutes */}
+      {/* Timed Save Plan Banner - appears after 2 minutes */}
       <SavePlanBanner
         partyDetails={partyDetails}
         partyPlan={partyPlan}
         totalCost={totalCost}
         childName={partyDetails?.childName || partyDetails?.firstName}
         onSuccess={() => setHasSavedParty(true)}
-        delayMinutes={2.5}
+        delayMinutes={2}
       />
 
       {/* Mobile Add Supplier Button */}

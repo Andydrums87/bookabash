@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarSign, CreditCard, Calendar, Clock, MapPin, User } from "lucide-react"
 import { useState } from "react"
+import { getThemeDisplayName } from "@/utils/compoundTheme"
 import SupplierChatTabs from '@/components/SupplierChatTabs'
 import SnappyLoader from "@/components/ui/SnappyLoader"
 
@@ -202,7 +203,7 @@ const PartyDetailsCard = ({ partyDetails, currentParty, dataSource }) => {
   };
 
   const getTheme = () => {
-    const formatTheme = (theme) => theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const formatTheme = (theme) => getThemeDisplayName(theme);
 
     if (dataSource === 'database' && currentParty?.theme) {
       return formatTheme(currentParty.theme);

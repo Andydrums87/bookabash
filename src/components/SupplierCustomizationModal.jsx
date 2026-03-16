@@ -43,6 +43,7 @@ import {
   formatDuration,
   roundMoney,
 } from "@/utils/unifiedPricing"
+import { isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
 
 // Default cake flavors (only used if supplier hasn't specified any)
 const DEFAULT_CAKE_FLAVORS = [
@@ -1088,11 +1089,12 @@ export default function SupplierCustomizationModal({
     })
 
     if (supplierPackages.length > 0) {
-      // For multi-select suppliers, show all items; for others, limit to 3 (except venues and cakes which show all)
+      // For multi-select suppliers, show all items; for others, limit to 3 (except venues, cakes, and entertainment which show all)
       const catLower = (supplier?.category || dataObj?.category || '').toLowerCase()
       const isVenueType = catLower.includes('venue') || catLower.includes('function room') || catLower.includes('hall')
       const isCakeType = catLower.includes('cake') || supplierTypeDetection?.isCake
-      const packagesToShow = (isMultiSelectSupplier || isVenueType || isCakeType) ? supplierPackages : supplierPackages.slice(0, 3)
+      const isEntertainmentType = supplierTypeDetection?.isEntertainment
+      const packagesToShow = (isMultiSelectSupplier || isVenueType || isCakeType || isEntertainmentType) ? supplierPackages : supplierPackages.slice(0, 3)
       return packagesToShow.map((pkg, index) => {
         const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
         return {
@@ -1108,6 +1110,7 @@ export default function SupplierCustomizationModal({
           contents: pkg.contents || [], // Catering lunchbox contents
           popular: pkg.popular || index === 1,
           description: pkg.description,
+          themes: pkg.themes, // Theme tags for package matching
           // Cake-specific fields
           serves: pkg.serves,
           feeds: pkg.feeds,
@@ -1585,6 +1588,20 @@ export default function SupplierCustomizationModal({
         }
       }
 
+      // ✅ For entertainment with performance party themes, auto-select the themed package
+      if (supplierTypeDetection.isEntertainment) {
+        const partyTheme = databasePartyData?.theme || partyDetails?.theme
+        if (partyTheme && isPerformanceParty(partyTheme)) {
+          const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
+          const themedPkg = packages.find(pkg => pkg.themes?.includes(subTheme))
+          if (themedPkg) {
+            console.log('🎭 [Auto-Select] Setting entertainment package based on party theme:', partyTheme, '->', themedPkg.id)
+            setSelectedPackageId(themedPkg.id)
+            return
+          }
+        }
+      }
+
       // ✅ For face painting and balloons, try to auto-select based on party theme
       if (supplierTypeDetection.isFacePainting || supplierTypeDetection.isBalloons) {
         const partyTheme = databasePartyData?.theme || partyDetails?.theme
@@ -2042,7 +2059,7 @@ export default function SupplierCustomizationModal({
         ...(supplierTypeDetection.isEntertainment && {
           entertainmentMetadata: {
             specialRequests: specialRequests.trim(),
-            duration: 2, // Standardised 2-hour party
+            duration: selectedPackage?.duration || 2,
             totalPrice: calculateModalPricing.totalPrice,
           },
         }),
@@ -2630,22 +2647,33 @@ export default function SupplierCustomizationModal({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h4 className="font-semibold text-gray-900 mb-3">What's included:</h4>
                   <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      2 hours of professional entertainment
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Games, activities & prizes
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Music and dancing
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Includes a break for party food
-                    </li>
+                    {selectedPackage?.features?.length > 0 ? (
+                      selectedPackage.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="text-green-500">✓</span>
+                          {feature}
+                        </li>
+                      ))
+                    ) : (
+                      <>
+                        <li className="flex items-center gap-2">
+                          <span className="text-green-500">✓</span>
+                          2 hours of professional entertainment
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-green-500">✓</span>
+                          Games, activities & prizes
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-green-500">✓</span>
+                          Music and dancing
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-green-500">✓</span>
+                          Includes a break for party food
+                        </li>
+                      </>
+                    )}
                   </ul>
                 </div>
 

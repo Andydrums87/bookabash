@@ -127,6 +127,7 @@ export function JourneyStep({
           <VenueConfirmationStep
             venueSupplier={step.venueSupplier}
             venueEnquiry={step.venueEnquiry}
+            hasOwnVenue={step.hasOwnVenue}
             onAddSupplier={onAddSupplier}
             onRemoveSupplier={onRemoveSupplier}
             getSupplierDisplayName={getSupplierDisplayName}

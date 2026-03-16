@@ -7,6 +7,7 @@ import { useSuppliers } from "@/utils/mockBackend"
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
 import { calculateFinalPrice } from "@/utils/unifiedPricing"
+import { isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { supabase } from "@/lib/supabase"
 
@@ -216,8 +217,18 @@ export default function AddTabContent({
       })
     }
 
+    // For performance parties, pre-filter entertainment to matching type
+    let suppliersToScore = matchingSuppliers
+    if (type === 'entertainment' && isPerformanceParty(partyTheme)) {
+      const { activityType } = parseCompoundTheme(partyTheme)
+      const PERFORMANCE_TYPES = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' }
+      const requiredType = PERFORMANCE_TYPES[activityType]
+      const performanceFiltered = matchingSuppliers.filter(s => s.serviceDetails?.entertainmentType === requiredType)
+      if (performanceFiltered.length > 0) suppliersToScore = performanceFiltered
+    }
+
     // Sort by theme score and rating
-    const sorted = matchingSuppliers
+    const sorted = suppliersToScore
       .map(supplier => ({
         supplier,
         themeScore: scoreSupplierWithTheme(supplier, partyTheme)
@@ -232,7 +243,20 @@ export default function AddTabContent({
         return bScore - aScore
       })
 
-    return sorted[0]?.supplier || null
+    const bestMatch = sorted[0]?.supplier || null
+
+    // For performance party entertainment, attach the themed package
+    if (bestMatch && type === 'entertainment' && isPerformanceParty(partyTheme)) {
+      const packages = bestMatch.packages || bestMatch.data?.packages || []
+      const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
+      const themedPkg = packages.find(pkg => pkg.themes?.includes(subTheme))
+      if (themedPkg) {
+        bestMatch.packageData = themedPkg
+        bestMatch.name = themedPkg.name
+      }
+    }
+
+    return bestMatch
   }
 
   // Fetch full supplier data for modal

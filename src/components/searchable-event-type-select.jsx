@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronDown, Search, X, UsersIcon, RefreshCw, Sparkles, Check } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ACTIVITY_TYPES, getThemeDisplayName, buildCompoundTheme, isPerformanceParty } from "@/utils/compoundTheme"
 
 // Theme recommendations based on age and gender
 // Structure: { gender: { ageGroup: [themes] } }
@@ -96,6 +97,11 @@ const eventTypes = [
   // { value: "martial-arts", label: "Martial Arts", category: "Sports" },
   // { value: "swimming", label: "Swimming Party", category: "Sports" },
 
+  // Performance Parties
+  { value: "drama-party", label: "Drama Party", category: "Performance Parties" },
+  { value: "dance-party", label: "Dance Party", category: "Performance Parties" },
+  { value: "music-party", label: "Music Party", category: "Performance Parties" },
+
   // Creative themes
   // { value: "art-craft", label: "Art & Craft", category: "Creative" },
   // { value: "cooking", label: "Cooking Party", category: "Creative" },
@@ -140,6 +146,8 @@ export default function SearchableEventTypeSelect({
   const [ripples, setRipples] = useState([])
   const [itemRipples, setItemRipples] = useState([])
   const [showThemePickerModal, setShowThemePickerModal] = useState(false)
+  const [showSubThemeModal, setShowSubThemeModal] = useState(false)
+  const [pendingActivityType, setPendingActivityType] = useState(null)
   const [pickerStep, setPickerStep] = useState('age') // 'age' | 'gender' | 'result'
   const [pickerAge, setPickerAge] = useState(null)
   const [pickerGender, setPickerGender] = useState(null)
@@ -205,8 +213,11 @@ export default function SearchableEventTypeSelect({
   }, {})
 
   // Get selected label
-  const selectedLabel =
-    eventTypes.find(type => type.value === selectedValue)?.label || placeholder
+  const selectedLabel = (() => {
+    if (!selectedValue) return placeholder
+    if (isPerformanceParty(selectedValue)) return getThemeDisplayName(selectedValue)
+    return eventTypes.find(type => type.value === selectedValue)?.label || placeholder
+  })()
 
   // Handle selection
   const handleSelect = value => {
@@ -221,6 +232,16 @@ export default function SearchableEventTypeSelect({
       setPickerGender(null)
       setRecommendedTheme(null)
       setShowThemePickerModal(true)
+      return
+    }
+
+    // If a performance party type is selected, show sub-theme picker
+    if (ACTIVITY_TYPES.includes(value)) {
+      setIsOpen(false)
+      setSearchQuery("")
+      setHighlightedIndex(-1)
+      setPendingActivityType(value)
+      setShowSubThemeModal(true)
       return
     }
 
@@ -416,8 +437,11 @@ export default function SearchableEventTypeSelect({
               Object.entries(groupedEventTypes).map(([category, types]) => (
                 <div key={category}>
                   {/* Category Header */}
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-100">
-                    {category}
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-xs font-semibold text-gray-500">{category}</span>
+                    {category === 'Performance Parties' && (
+                      <span className="text-[10px] text-gray-400 ml-1.5">— great for ages 2–4</span>
+                    )}
                   </div>
 
                   {/* Category Items */}
@@ -573,6 +597,56 @@ export default function SearchableEventTypeSelect({
               </button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-Theme Picker Modal for Performance Parties */}
+      <Dialog open={showSubThemeModal} onOpenChange={setShowSubThemeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              Add a theme to your {getThemeDisplayName(pendingActivityType)}?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 text-center -mt-2 mb-2">
+            Optional — pick a theme or go theme-free
+          </p>
+          <div className="grid grid-cols-3 gap-2 py-2 max-h-72 overflow-y-auto">
+            {/* No theme option */}
+            <button
+              onClick={() => {
+                const value = pendingActivityType
+                setSelectedValue(value)
+                onValueChange?.(value)
+                setShowSubThemeModal(false)
+              }}
+              className="p-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:bg-primary-50 transition-all text-center text-xs font-semibold text-gray-600"
+            >
+              <span className="text-2xl block mb-1">✨</span>
+              No theme
+            </button>
+            {Object.entries(THEME_DISPLAY_NAMES).map(([key, { label, emoji }]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  const value = buildCompoundTheme(pendingActivityType, key)
+                  setSelectedValue(value)
+                  onValueChange?.(value)
+                  setShowSubThemeModal(false)
+                }}
+                className="p-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:bg-primary-50 transition-all text-center text-xs font-semibold text-gray-700"
+              >
+                <span className="text-2xl block mb-1">{emoji}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowSubThemeModal(false)}
+            className="text-sm text-gray-500 hover:text-gray-700 mt-2 w-full text-center"
+          >
+            Cancel
+          </button>
         </DialogContent>
       </Dialog>
     </div>

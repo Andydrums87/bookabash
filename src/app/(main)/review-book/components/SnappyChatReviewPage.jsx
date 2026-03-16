@@ -140,10 +140,20 @@ export default function SnappyChatReviewPage() {
     parentName: "",
     phoneNumber: "",
     email: "",
+    // Venue address (for own venue users - where the party is)
+    venueAddressLine1: "",
+    venueAddressLine2: "",
+    venueCity: "",
+    venuePostcode: "",
+    // Event time (for own venue users)
+    eventStartTime: "",
+    eventEndTime: "",
+    // Delivery address
     addressLine1: "",
     addressLine2: "",
     city: "",
     postcode: "",
+    deliverySameAsVenue: false,
     numberOfChildren: "",
     dietaryRequirements: {
       vegetarian: false,
@@ -305,6 +315,11 @@ export default function SnappyChatReviewPage() {
         return "TBD";
       };
 
+      // Detect own venue: explicit flag or inferred from party plan (no venue but has other suppliers)
+      const partyPlanRaw = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
+      const hasOwnVenue = details.hasOwnVenue === true ||
+        (!partyPlanRaw.venue && Object.entries(partyPlanRaw).some(([k, v]) => k !== 'venue' && v && v.id));
+
       setPartyDetails({
         date: formatDateForDisplay(details.date),
         time: formatTimeForDisplay(details),
@@ -318,8 +333,8 @@ export default function SnappyChatReviewPage() {
         startTime: details.startTime,
         duration: details.duration,
         postcode: details.postcode,
-        childPhoto: details.childPhoto || null
-
+        childPhoto: details.childPhoto || null,
+        hasOwnVenue: hasOwnVenue,
       });
 
       const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
@@ -527,7 +542,13 @@ export default function SnappyChatReviewPage() {
       const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}");
       const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
 
-      if (!formData.addressLine1 || !formData.city || !formData.postcode) {
+      // Resolve delivery address (may be same as venue)
+      const resolvedDeliveryLine1 = formData.deliverySameAsVenue ? formData.venueAddressLine1 : formData.addressLine1;
+      const resolvedDeliveryLine2 = formData.deliverySameAsVenue ? formData.venueAddressLine2 : formData.addressLine2;
+      const resolvedDeliveryCity = formData.deliverySameAsVenue ? formData.venueCity : formData.city;
+      const resolvedDeliveryPostcode = formData.deliverySameAsVenue ? formData.venuePostcode : formData.postcode;
+
+      if (!resolvedDeliveryLine1 || !resolvedDeliveryCity || !resolvedDeliveryPostcode) {
         throw new Error("Please complete all required address fields");
       }
 
@@ -536,10 +557,10 @@ export default function SnappyChatReviewPage() {
         lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
         email: formData.email, // Use the email from the form (user may have entered their real email)
         phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
-        addressLine1: formData.addressLine1,
-        addressLine2: formData.addressLine2 || "",
-        city: formData.city,
-        postcode: formData.postcode,
+        addressLine1: resolvedDeliveryLine1,
+        addressLine2: resolvedDeliveryLine2 || "",
+        city: resolvedDeliveryCity,
+        postcode: resolvedDeliveryPostcode,
         child_photo: partyDetailsLS.childPhoto || null
       });
 
@@ -560,6 +581,21 @@ export default function SnappyChatReviewPage() {
       };
 
       const getTimeData = () => {
+        // Own venue users: use event times from form
+        if (partyDetails.hasOwnVenue && formData.eventStartTime && formData.eventEndTime) {
+          return {
+            time: formData.eventStartTime,
+            startTime: formData.eventStartTime,
+            endTime: formData.eventEndTime,
+            duration: partyDetailsLS.duration || 2,
+            timePreference: {
+              type: 'specific',
+              startTime: formData.eventStartTime,
+              endTime: formData.eventEndTime,
+              duration: partyDetailsLS.duration || 2
+            }
+          };
+        }
         if (partyDetailsLS.startTime) {
           const duration = partyDetailsLS.duration || 2;
           const endTime = calculateEndTime(partyDetailsLS.startTime, duration);
@@ -588,7 +624,12 @@ export default function SnappyChatReviewPage() {
       const timeData = getTimeData();
 
       const formatFullAddress = () => {
-        const parts = [formData.addressLine1, formData.addressLine2, formData.city, formData.postcode].filter(Boolean);
+        const parts = [resolvedDeliveryLine1, resolvedDeliveryLine2, resolvedDeliveryCity, resolvedDeliveryPostcode].filter(Boolean);
+        return parts.join(', ');
+      };
+
+      const formatVenueAddress = () => {
+        const parts = [formData.venueAddressLine1, formData.venueAddressLine2, formData.venueCity, formData.venuePostcode].filter(Boolean);
         return parts.join(', ');
       };
 
@@ -616,18 +657,35 @@ export default function SnappyChatReviewPage() {
         timePreference: timeData.timePreference,
         guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
         location: partyDetailsLS.location || formatFullAddress(),
-        postcode: formData.postcode || partyDetailsLS.postcode || "",
+        postcode: resolvedDeliveryPostcode || partyDetailsLS.postcode || "",
+        hasOwnVenue: partyDetails.hasOwnVenue || false,
+        // Venue address (where the party is - for own venue users)
+        ...(partyDetails.hasOwnVenue && formData.venueAddressLine1 ? {
+          venueAddress: {
+            line1: formData.venueAddressLine1,
+            line2: formData.venueAddressLine2,
+            city: formData.venueCity,
+            postcode: formData.venuePostcode,
+            fullAddress: formatVenueAddress()
+          },
+          venueAddressLine1: formData.venueAddressLine1,
+          venueAddressLine2: formData.venueAddressLine2,
+          venueCity: formData.venueCity,
+          venuePostcode: formData.venuePostcode,
+          fullVenueAddress: formatVenueAddress(),
+        } : {}),
+        // Delivery address (where items are sent before the party)
         deliveryAddress: {
-          line1: formData.addressLine1,
-          line2: formData.addressLine2,
-          city: formData.city,
-          postcode: formData.postcode,
+          line1: resolvedDeliveryLine1,
+          line2: resolvedDeliveryLine2,
+          city: resolvedDeliveryCity,
+          postcode: resolvedDeliveryPostcode,
           fullAddress: formatFullAddress()
         },
-        deliveryAddressLine1: formData.addressLine1,
-        deliveryAddressLine2: formData.addressLine2,
-        deliveryCity: formData.city,
-        deliveryPostcode: formData.postcode,
+        deliveryAddressLine1: resolvedDeliveryLine1,
+        deliveryAddressLine2: resolvedDeliveryLine2,
+        deliveryCity: resolvedDeliveryCity,
+        deliveryPostcode: resolvedDeliveryPostcode,
         fullDeliveryAddress: formatFullAddress(),
         parentName: formData.parentName,
         parentEmail: formData.email,
@@ -1009,12 +1067,26 @@ export default function SnappyChatReviewPage() {
       const cleanedPattern = /^7\d{9}$/;
       const phoneValid = phone.length > 0 && (ukMobilePattern.test(phone) || cleanedPattern.test(cleanedPhone));
 
-      const addressValid = formData.addressLine1.trim().length > 0 &&
-                          formData.city.trim().length > 0 &&
-                          formData.postcode.trim().length > 0;
+      // Venue address + event time required for own venue users
+      const venueAddressValid = !partyDetails.hasOwnVenue || (
+        formData.venueAddressLine1.trim().length > 0 &&
+        formData.venueCity.trim().length > 0 &&
+        formData.venuePostcode.trim().length > 0 &&
+        formData.eventStartTime.length > 0 &&
+        formData.eventEndTime.length > 0
+      );
+
+      // Delivery address - if same as venue, use venue fields
+      const deliveryLine1 = formData.deliverySameAsVenue ? formData.venueAddressLine1 : formData.addressLine1;
+      const deliveryCity = formData.deliverySameAsVenue ? formData.venueCity : formData.city;
+      const deliveryPostcode = formData.deliverySameAsVenue ? formData.venuePostcode : formData.postcode;
+      const addressValid = deliveryLine1.trim().length > 0 &&
+                          deliveryCity.trim().length > 0 &&
+                          deliveryPostcode.trim().length > 0;
+
       // Email must be present AND valid format
       const emailValid = formData.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
-      return formData.parentName.trim().length > 0 && phoneValid && emailValid && addressValid;
+      return formData.parentName.trim().length > 0 && phoneValid && emailValid && addressValid && venueAddressValid;
     }
     if (step.id === 'create-account') {
       if (authMode === "signin") {
@@ -1273,59 +1345,169 @@ export default function SnappyChatReviewPage() {
                           </div>
                         </div>
 
-                        {/* Delivery Address */}
-                        <div className="rounded-lg ">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            Your Address
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-3">
-                          For items that need delivering to you before the party (e.g. party bags, decorations)
-                          </p>
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 1 *</label>
-                              <Input
-                                placeholder="House number and street"
-                                value={formData.addressLine1}
-                                onChange={(e) => updateFormData('addressLine1', e.target.value)}
-                                className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 2 (optional)</label>
-                              <Input
-                                placeholder="Apartment, suite, floor"
-                                value={formData.addressLine2}
-                                onChange={(e) => updateFormData('addressLine2', e.target.value)}
-                                className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
-                              />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3">
+                        {/* Venue Address - Only for own venue users */}
+                        {partyDetails.hasOwnVenue && (
+                          <div className="rounded-lg">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                              <MapPin className="w-4 h-4" />
+                              Venue Address
+                            </h3>
+                            <p className="text-xs text-gray-600 mb-3">
+                              Where is the party happening? Suppliers will need this to arrive on the day.
+                            </p>
+
+                            <div className="space-y-3">
                               <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">City *</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 1 *</label>
                                 <Input
-                                  placeholder="City"
-                                  value={formData.city}
-                                  onChange={(e) => updateFormData('city', e.target.value)}
+                                  placeholder="House number and street"
+                                  value={formData.venueAddressLine1}
+                                  onChange={(e) => updateFormData('venueAddressLine1', e.target.value)}
                                   className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                                 />
                               </div>
-                              
+
                               <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Postcode *</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 2 (optional)</label>
                                 <Input
-                                  placeholder="SW1A 1AA"
-                                  value={formData.postcode}
-                                  onChange={(e) => updateFormData('postcode', e.target.value.toUpperCase())}
+                                  placeholder="Apartment, suite, floor"
+                                  value={formData.venueAddressLine2}
+                                  onChange={(e) => updateFormData('venueAddressLine2', e.target.value)}
                                   className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                                 />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">City *</label>
+                                  <Input
+                                    placeholder="City"
+                                    value={formData.venueCity}
+                                    onChange={(e) => updateFormData('venueCity', e.target.value)}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Postcode *</label>
+                                  <Input
+                                    placeholder="SW1A 1AA"
+                                    value={formData.venuePostcode}
+                                    onChange={(e) => updateFormData('venuePostcode', e.target.value.toUpperCase())}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Event Time */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Start Time *</label>
+                                  <Input
+                                    type="time"
+                                    value={formData.eventStartTime}
+                                    onChange={(e) => updateFormData('eventStartTime', e.target.value)}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">End Time *</label>
+                                  <Input
+                                    type="time"
+                                    value={formData.eventEndTime}
+                                    onChange={(e) => updateFormData('eventEndTime', e.target.value)}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
+                        )}
+
+                        {/* Delivery Address */}
+                        <div className="rounded-lg">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            Delivery Address
+                          </h3>
+                          <p className="text-xs text-gray-600 mb-3">
+                            For items that need delivering to you before the party (e.g. party bags, decorations)
+                          </p>
+
+                          {/* Same as venue checkbox - only if own venue */}
+                          {partyDetails.hasOwnVenue && (
+                            <div
+                              className="flex items-center gap-2 mb-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
+                              onClick={() => {
+                                const newValue = !formData.deliverySameAsVenue;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  deliverySameAsVenue: newValue,
+                                  ...(newValue ? {
+                                    addressLine1: prev.venueAddressLine1,
+                                    addressLine2: prev.venueAddressLine2,
+                                    city: prev.venueCity,
+                                    postcode: prev.venuePostcode,
+                                  } : {})
+                                }));
+                              }}
+                            >
+                              <Checkbox
+                                checked={formData.deliverySameAsVenue}
+                                className="data-[state=checked]:bg-[hsl(var(--primary-500))] w-4 h-4"
+                              />
+                              <label className="text-sm font-medium text-gray-700 cursor-pointer">
+                                Same as venue address
+                              </label>
+                            </div>
+                          )}
+
+                          {!formData.deliverySameAsVenue && (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 1 *</label>
+                                <Input
+                                  placeholder="House number and street"
+                                  value={formData.addressLine1}
+                                  onChange={(e) => updateFormData('addressLine1', e.target.value)}
+                                  className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Address Line 2 (optional)</label>
+                                <Input
+                                  placeholder="Apartment, suite, floor"
+                                  value={formData.addressLine2}
+                                  onChange={(e) => updateFormData('addressLine2', e.target.value)}
+                                  className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">City *</label>
+                                  <Input
+                                    placeholder="City"
+                                    value={formData.city}
+                                    onChange={(e) => updateFormData('city', e.target.value)}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Postcode *</label>
+                                  <Input
+                                    placeholder="SW1A 1AA"
+                                    value={formData.postcode}
+                                    onChange={(e) => updateFormData('postcode', e.target.value.toUpperCase())}
+                                    className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Dietary & Accessibility - TEMPORARILY COMMENTED OUT */}

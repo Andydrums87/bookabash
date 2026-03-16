@@ -17,9 +17,13 @@ export function usePartyJourney({
     // Venue confirmation logic
     const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
     const venueExists = !!suppliers.venue
-    const venueConfirmed = venueEnquiry?.status === 'accepted' && 
-                          venueEnquiry?.auto_accepted === false
-    const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && 
+    // User has own venue if explicitly set OR if party plan has no venue but has other suppliers
+    const partyPlan = partyDetails?.partyPlan
+    const hasOwnVenue = partyDetails?.hasOwnVenue === true ||
+      (partyPlan && partyPlan.venue === null && Object.values(partyPlan).some(v => v && v.id))
+    const venueConfirmed = hasOwnVenue || (venueEnquiry?.status === 'accepted' &&
+                          venueEnquiry?.auto_accepted === false)
+    const venueAwaitingConfirmation = !hasOwnVenue && venueEnquiry?.status === 'accepted' &&
                                       venueEnquiry?.auto_accepted === true
     
     // Guest list status
@@ -59,15 +63,19 @@ export function usePartyJourney({
       {
         id: 'venue_confirmation',
         number: 2,
-        title: 'Venue Locked In',
-        subtitle: 'Your party location is secured.',
-        status: !venueExists ? 'locked' :
+        title: hasOwnVenue ? 'Your Venue' : 'Venue Locked In',
+        subtitle: hasOwnVenue
+          ? `Party at your own venue (${partyDetails?.postcode || partyDetails?.location || ''})`
+          : 'Your party location is secured.',
+        status: hasOwnVenue ? 'completed' :
+                !venueExists ? 'locked' :
                 venueConfirmed ? 'completed' : 'current',
         icon: '/journey-icons/location.png',
         component: 'VenueConfirmationStep',
         venueSupplier: suppliers.venue,
         venueEnquiry: venueEnquiry,
         venueAwaitingConfirmation: venueAwaitingConfirmation,
+        hasOwnVenue: hasOwnVenue,
         unlockCondition: 'venue_added',
         unlockMessage: venueExists
           ? 'Hold tight — venue confirming soon!'

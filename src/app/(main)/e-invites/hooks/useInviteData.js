@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { DEFAULT_INVITE_DATA } from '../constants/inviteConstants'
+import { isPerformanceParty, getEffectiveThemeForCategory } from '@/utils/compoundTheme'
 
 export const useInviteData = () => {
   const [selectedTheme, setSelectedTheme] = useState("princess")
@@ -296,7 +297,11 @@ export const useInviteData = () => {
             const einvites = partyPlan.einvites
             console.log("✅ Found existing einvites:", einvites)
 
-            const themeToUse = einvites.theme || party.theme || "princess"
+            let themeToUse = einvites.theme || party.theme || "princess"
+            // For performance parties (drama-party:superhero), use the sub-theme for invitations
+            if (isPerformanceParty(themeToUse)) {
+              themeToUse = getEffectiveThemeForCategory(themeToUse) || "princess"
+            }
             setSelectedTheme(themeToUse)
 
             const inviteDataToUse = {
@@ -365,7 +370,11 @@ export const useInviteData = () => {
             })
 
             if (party.theme) {
-              setSelectedTheme(party.theme)
+              // For performance parties (drama-party:superhero), use the sub-theme for invitations
+              const themeForInvite = isPerformanceParty(party.theme)
+                ? (getEffectiveThemeForCategory(party.theme) || "princess")
+                : party.theme
+              setSelectedTheme(themeForInvite)
             }
           }
         } else {

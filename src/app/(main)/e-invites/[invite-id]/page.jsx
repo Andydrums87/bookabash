@@ -2,6 +2,7 @@
 import { Suspense } from 'react'
 import AnimatedRSVPPage from '../components/AnimatedRSVPPage'
 import { Loader2 } from "lucide-react"
+import { getThemeDisplayName } from "@/utils/compoundTheme"
 
 // In your page.jsx, replace the dynamic image generation with your static image:
 
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }) {
       }
     }
 
-    const formattedTheme = theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    const formattedTheme = getThemeDisplayName(theme)
     const title = `You're Invited to ${childName}'s ${formattedTheme} Party!`
     const description = `Join ${childName} for an amazing ${formattedTheme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
     const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.co.uk' : 'http://localhost:3000'}/e-invites/${inviteId}`

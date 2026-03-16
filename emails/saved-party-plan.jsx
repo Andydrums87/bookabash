@@ -28,7 +28,17 @@ export default function SavedPartyPlanEmail({
 
   // Format theme for display
   const formattedTheme = theme
-    ? theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    ? (() => {
+        // Handle compound performance party themes like 'dance-party:princess'
+        const parts = theme.split(':');
+        const activityTypes = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' };
+        if (parts.length === 2 && activityTypes[parts[0]]) {
+          const subLabel = parts[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          return `${subLabel} ${activityTypes[parts[0]]}`;
+        }
+        if (activityTypes[theme]) return activityTypes[theme];
+        return theme.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      })()
     : null;
 
   // Format date for display

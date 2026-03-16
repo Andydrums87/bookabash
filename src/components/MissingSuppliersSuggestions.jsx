@@ -6,6 +6,7 @@ import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
+import { isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
 
 export default function MissingSuppliersSuggestions({
   partyPlan,
@@ -192,6 +193,15 @@ export default function MissingSuppliersSuggestions({
             )
             return availabilityCheck.available
           })
+        }
+
+        // For performance parties, pre-filter entertainment to matching type
+        if (type === 'entertainment' && isPerformanceParty(partyTheme)) {
+          const { activityType } = parseCompoundTheme(partyTheme)
+          const PERFORMANCE_TYPES = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' }
+          const requiredType = PERFORMANCE_TYPES[activityType]
+          const performanceFiltered = availableSuppliers.filter(s => s.serviceDetails?.entertainmentType === requiredType)
+          if (performanceFiltered.length > 0) availableSuppliers = performanceFiltered
         }
 
         // Sort by theme-based scoring (same as party builder)

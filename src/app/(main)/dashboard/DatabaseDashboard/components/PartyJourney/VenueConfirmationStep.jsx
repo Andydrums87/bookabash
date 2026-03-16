@@ -3,17 +3,39 @@
 
 import { CheckCircle, Clock, MapPin, Sparkles, Calendar, Users, Mail, Gift, ExternalLink } from 'lucide-react'
 
-export function VenueConfirmationStep({ 
+export function VenueConfirmationStep({
   venueSupplier,
   venueEnquiry,
   venueAwaitingConfirmation,
   onAddSupplier,
   partyDetails,
+  hasOwnVenue,
 }) {
-  
-  const venueConfirmed = venueEnquiry?.status === 'accepted' && 
+
+  const venueConfirmed = venueEnquiry?.status === 'accepted' &&
                         venueEnquiry?.auto_accepted === false
-  
+
+  // ✅ OWN VENUE - Show confirmed state with postcode
+  if (hasOwnVenue && !venueSupplier) {
+    return (
+      <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle className="w-5 h-5 text-white flex-shrink-0" />
+          <h3 className="font-bold text-base">Your Venue</h3>
+        </div>
+        <div className="flex items-center gap-3 bg-white/15 rounded-lg p-3">
+          <MapPin className="w-5 h-5 text-teal-100 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-white text-sm">Party at your own venue</h4>
+            {(partyDetails?.postcode || partyDetails?.location) && (
+              <p className="text-teal-100 text-xs">{partyDetails?.postcode || partyDetails?.location}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ✅ NO VENUE ADDED YET - Compact
   if (!venueSupplier) {
     return (

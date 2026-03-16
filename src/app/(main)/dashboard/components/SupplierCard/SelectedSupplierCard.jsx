@@ -335,7 +335,7 @@ export default function SelectedSupplierCard({
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="text-white">
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
-                      {supplier.name}
+                      {(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplier.name}
                     </h3>
 
                     <div className="flex items-center justify-between">

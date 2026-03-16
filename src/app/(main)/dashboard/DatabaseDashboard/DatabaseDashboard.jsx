@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 
 // Import unified pricing system
 import { calculateFinalPrice, calculatePartyTotal } from '@/utils/unifiedPricing'
+import { isPerformanceParty, parseCompoundTheme } from '@/utils/compoundTheme'
 
 // Hooks
 import { usePartyData } from '../hooks/usePartyData'
@@ -343,8 +344,18 @@ const childPhotoRef = useRef(null)
               }
 
               if (availableSuppliers.length > 0) {
+                // For performance parties, pre-filter entertainment to matching type
+                let suppliersToScore = availableSuppliers
+                if (categoryKey === 'entertainment' && isPerformanceParty(partyTheme)) {
+                  const { activityType } = parseCompoundTheme(partyTheme)
+                  const PERFORMANCE_TYPES = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' }
+                  const requiredType = PERFORMANCE_TYPES[activityType]
+                  const performanceFiltered = availableSuppliers.filter(s => s.serviceDetails?.entertainmentType === requiredType)
+                  if (performanceFiltered.length > 0) suppliersToScore = performanceFiltered
+                }
+
                 // Sort by theme score
-                const sortedByTheme = availableSuppliers
+                const sortedByTheme = suppliersToScore
                   .map(supplier => ({
                     supplier,
                     themeScore: scoreSupplierWithTheme(supplier, partyTheme)
@@ -352,6 +363,18 @@ const childPhotoRef = useRef(null)
                   .sort((a, b) => b.themeScore - a.themeScore)
 
                 const bestMatch = sortedByTheme[0].supplier
+
+                // For performance party entertainment, attach the themed package
+                if (categoryKey === 'entertainment' && isPerformanceParty(partyTheme)) {
+                  const packages = bestMatch.packages || bestMatch.data?.packages || []
+                  const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
+                  const themedPkg = packages.find(pkg => pkg.themes?.includes(subTheme))
+                  if (themedPkg) {
+                    bestMatch.packageData = themedPkg
+                    bestMatch.name = themedPkg.name
+                  }
+                }
+
                 newRecommendations[categoryKey] = bestMatch
                 console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
               } else if (allUnavailable) {
@@ -844,10 +867,30 @@ useEffect(() => {
           })
           
           if (!hasSupplier) {
-            // Find first supplier in this category
-            const categorySupplier = allSuppliers.find(s => s.category === categoryName)
-            
+            // Find best supplier in this category
+            let categorySupplier = null
+            if (categoryKey === 'entertainment' && partyDetails?.theme && isPerformanceParty(partyDetails.theme)) {
+              // For performance parties, find the matching entertainment type
+              const { activityType } = parseCompoundTheme(partyDetails.theme)
+              const PERFORMANCE_TYPES = { 'drama-party': 'Drama Party', 'dance-party': 'Dance Party', 'music-party': 'Music Party' }
+              const requiredType = PERFORMANCE_TYPES[activityType]
+              categorySupplier = allSuppliers.find(s => s.category === categoryName && s.serviceDetails?.entertainmentType === requiredType)
+            }
+            if (!categorySupplier) {
+              categorySupplier = allSuppliers.find(s => s.category === categoryName)
+            }
+
             if (categorySupplier) {
+              // For performance party entertainment, attach the themed package
+              if (categoryKey === 'entertainment' && partyDetails?.theme && isPerformanceParty(partyDetails.theme)) {
+                const packages = categorySupplier.packages || categorySupplier.data?.packages || []
+                const subTheme = parseCompoundTheme(partyDetails.theme).subTheme || 'general'
+                const themedPkg = packages.find(pkg => pkg.themes?.includes(subTheme))
+                if (themedPkg) {
+                  categorySupplier.packageData = themedPkg
+                  categorySupplier.name = themedPkg.name
+                }
+              }
               newRecommendations[categoryKey] = categorySupplier
               console.log(`✅ Recommending ${categorySupplier.name} for ${categoryKey}`)
             } else {
