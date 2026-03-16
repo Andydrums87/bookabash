@@ -84,7 +84,9 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
       duration: party.duration || 2,
       id: party.id,
       hasOwnVenue: party.has_own_venue || false,
-      partyPlan: party.party_plan || null
+      partyPlan: party.party_plan || null,
+      fullVenueAddress: party.full_venue_address || null,
+      venuePostcode: party.venue_postcode || null
     };
 
     return mapped;

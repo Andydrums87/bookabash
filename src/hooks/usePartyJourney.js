@@ -65,7 +65,7 @@ export function usePartyJourney({
         number: 2,
         title: hasOwnVenue ? 'Your Venue' : 'Venue Locked In',
         subtitle: hasOwnVenue
-          ? `Party at your own venue (${partyDetails?.postcode || partyDetails?.location || ''})`
+          ? `Party at your own venue (${partyDetails?.fullVenueAddress || partyDetails?.postcode || partyDetails?.location || ''})`
           : 'Your party location is secured.',
         status: hasOwnVenue ? 'completed' :
                 !venueExists ? 'locked' :

@@ -6,7 +6,7 @@ import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
-import { isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
+import { isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory } from "@/utils/compoundTheme"
 
 export default function MissingSuppliersSuggestions({
   partyPlan,
@@ -204,11 +204,16 @@ export default function MissingSuppliersSuggestions({
           if (performanceFiltered.length > 0) availableSuppliers = performanceFiltered
         }
 
+        // For non-entertainment categories, use sub-theme so "drama-party:superhero" scores as "superhero"
+        const themeForScoring = (type !== 'entertainment' && isPerformanceParty(partyTheme))
+          ? (getEffectiveThemeForCategory(partyTheme) || partyTheme)
+          : partyTheme
+
         // Sort by theme-based scoring (same as party builder)
         const sortedSuppliers = availableSuppliers
           .map(supplier => ({
             supplier,
-            themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+            themeScore: scoreSupplierWithTheme(supplier, themeForScoring)
           }))
           .sort((a, b) => {
             // First, sort by theme score (higher is better)

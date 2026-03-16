@@ -27,8 +27,8 @@ export function VenueConfirmationStep({
           <MapPin className="w-5 h-5 text-teal-100 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-white text-sm">Party at your own venue</h4>
-            {(partyDetails?.postcode || partyDetails?.location) && (
-              <p className="text-teal-100 text-xs">{partyDetails?.postcode || partyDetails?.location}</p>
+            {(partyDetails?.fullVenueAddress || partyDetails?.postcode || partyDetails?.location) && (
+              <p className="text-teal-100 text-xs">{partyDetails?.fullVenueAddress || partyDetails?.postcode || partyDetails?.location}</p>
             )}
           </div>
         </div>

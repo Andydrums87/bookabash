@@ -7,7 +7,7 @@ import { useSuppliers } from "@/utils/mockBackend"
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
 import { calculateFinalPrice } from "@/utils/unifiedPricing"
-import { isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
+import { isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory } from "@/utils/compoundTheme"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { supabase } from "@/lib/supabase"
 
@@ -227,11 +227,16 @@ export default function AddTabContent({
       if (performanceFiltered.length > 0) suppliersToScore = performanceFiltered
     }
 
+    // For performance parties, use sub-theme for non-entertainment scoring
+    const themeForScoring = (type !== 'entertainment' && isPerformanceParty(partyTheme))
+      ? (getEffectiveThemeForCategory(partyTheme) || partyTheme)
+      : partyTheme
+
     // Sort by theme score and rating
     const sorted = suppliersToScore
       .map(supplier => ({
         supplier,
-        themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+        themeScore: scoreSupplierWithTheme(supplier, themeForScoring)
       }))
       .sort((a, b) => {
         if (a.themeScore !== b.themeScore) return b.themeScore - a.themeScore

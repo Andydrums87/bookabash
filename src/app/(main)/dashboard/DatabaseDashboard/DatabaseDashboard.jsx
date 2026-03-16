@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 
 // Import unified pricing system
 import { calculateFinalPrice, calculatePartyTotal } from '@/utils/unifiedPricing'
-import { isPerformanceParty, parseCompoundTheme } from '@/utils/compoundTheme'
+import { isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory } from '@/utils/compoundTheme'
 
 // Hooks
 import { usePartyData } from '../hooks/usePartyData'
@@ -354,11 +354,16 @@ const childPhotoRef = useRef(null)
                   if (performanceFiltered.length > 0) suppliersToScore = performanceFiltered
                 }
 
+                // For performance parties, use sub-theme for non-entertainment scoring
+                const themeForScoring = (categoryKey !== 'entertainment' && isPerformanceParty(partyTheme))
+                  ? (getEffectiveThemeForCategory(partyTheme) || partyTheme)
+                  : partyTheme
+
                 // Sort by theme score
                 const sortedByTheme = suppliersToScore
                   .map(supplier => ({
                     supplier,
-                    themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+                    themeScore: scoreSupplierWithTheme(supplier, themeForScoring)
                   }))
                   .sort((a, b) => b.themeScore - a.themeScore)
 

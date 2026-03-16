@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 // Icons
 import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building, AlertTriangle } from "lucide-react"
-import { getThemeDisplayName, isPerformanceParty, parseCompoundTheme } from "@/utils/compoundTheme"
+import { getThemeDisplayName, isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory } from "@/utils/compoundTheme"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -752,6 +752,10 @@ useEffect(() => {
                 // ✅ For venues: prioritize proximity to user's postcode
                 // For other suppliers: sort by theme score
                 if (categoryKey === 'venue') {
+                  // For performance parties, use sub-theme for venue scoring
+                  const venueTheme = isPerformanceParty(partyTheme)
+                    ? (getEffectiveThemeForCategory(partyTheme) || partyTheme)
+                    : partyTheme
                   // Sort venues by proximity (closest first) if user postcode available
                   const sortedByProximity = availableSuppliers
                     .map(supplier => {
@@ -765,7 +769,7 @@ useEffect(() => {
                       return {
                         supplier,
                         proximityScore,
-                        themeScore: scoreSupplierWithTheme(supplier, partyTheme, 'afternoon', 2, partyGender)
+                        themeScore: scoreSupplierWithTheme(supplier, venueTheme, 'afternoon', 2, partyGender)
                       }
                     })
                     // Sort by proximity first, then by theme score as tiebreaker
@@ -791,11 +795,16 @@ useEffect(() => {
                   }
 
                   // For non-venue suppliers: sort by theme score and pick the best match
+                  // For performance parties, use sub-theme for non-entertainment categories
+                  const themeForScoring = (categoryKey !== 'entertainment' && isPerformanceParty(partyTheme))
+                    ? (getEffectiveThemeForCategory(partyTheme) || partyTheme)
+                    : partyTheme
+
                   // Pass gender for no-theme parties so colour-based suppliers rank correctly
                   const sortedByTheme = suppliersToScore
                     .map(supplier => ({
                       supplier,
-                      themeScore: scoreSupplierWithTheme(supplier, partyTheme, 'afternoon', 2, partyGender)
+                      themeScore: scoreSupplierWithTheme(supplier, themeForScoring, 'afternoon', 2, partyGender)
                     }))
                     .sort((a, b) => b.themeScore - a.themeScore)
 
