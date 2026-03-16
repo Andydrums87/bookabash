@@ -169,7 +169,7 @@ export default function BookingConfirmedAllSuppliers({
               Questions? We're here to help.
             </Text>
             <Text style={styles.contactInfo}>
-              📧 hello@partysnap.co.uk · 📞 07123 456789
+              📧 hello@partysnap.co.uk · 📞 07405 243293
             </Text>
 
             <Text style={styles.closing}>

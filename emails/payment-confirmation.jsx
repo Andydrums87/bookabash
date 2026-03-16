@@ -278,9 +278,8 @@ export default function PaymentConfirmation({
           {/* Footer */}
           <Section style={styles.footer}>
             <Text style={styles.footerTitle}>PartySnap Ltd</Text>
-            <Text style={styles.footerText}>123 Party Street, London, UK</Text>
-            <Text style={styles.footerText}>hello@partysnap.co.uk • 0800 123 4567</Text>
-            <Text style={styles.footerText}>VAT: GB123456789</Text>
+            <Text style={styles.footerText}>St Albans, UK</Text>
+            <Text style={styles.footerText}>hello@partysnap.co.uk • 07405 243293</Text>
             <Hr style={styles.footerDivider} />
             <Text style={styles.footerSmall}>
               This email serves as your official payment receipt and booking confirmation.
