@@ -612,7 +612,7 @@ export default function SearchableEventTypeSelect({
             Optional — pick a theme or go theme-free
           </p>
           <div className="grid grid-cols-3 gap-2 py-2 max-h-72 overflow-y-auto">
-            {/* No theme option */}
+            {/* No theme option - temporarily hidden
             <button
               onClick={() => {
                 const value = pendingActivityType
@@ -625,6 +625,7 @@ export default function SearchableEventTypeSelect({
               <span className="text-2xl block mb-1">✨</span>
               No theme
             </button>
+            */}
             {Object.entries(THEME_DISPLAY_NAMES).map(([key, { label, emoji }]) => (
               <button
                 key={key}
