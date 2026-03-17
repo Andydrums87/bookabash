@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron, Nunito } from "next/font/google";
+import { Poppins, Montserrat, Fredoka, Orbitron, Nunito } from "next/font/google";
 import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
@@ -7,36 +7,44 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import PageViewTracker from "@/components/PageViewTracker";
 
+// Homepage fonts — preloaded
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "900"],
+  display: 'swap',
 });
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
   display: 'swap',
-  preload: true,
 });
 
-const fredoka = Fredoka({ 
+// E-invite / secondary fonts — NOT preloaded, loaded on demand
+const fredoka = Fredoka({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-fredoka'
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-fredoka',
+  display: 'swap',
+  preload: false,
 });
 
 const orbitron = Orbitron({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-orbitron'
+  weight: ['400', '700'],
+  variable: '--font-orbitron',
+  display: 'swap',
+  preload: false,
 });
 
 const nunito = Nunito({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-nunito'
+  weight: ['400', '600', '700'],
+  variable: '--font-nunito',
+  display: 'swap',
+  preload: false,
 });
 
 export const metadata = {
