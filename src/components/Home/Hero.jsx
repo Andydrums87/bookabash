@@ -140,6 +140,11 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       <Calendar
                         mode="single"
                         selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
+                        defaultMonth={(() => {
+                          const d = new Date()
+                          d.setDate(d.getDate() + 21)
+                          return d
+                        })()}
                         onSelect={(date) => {
                           if (date) {
                             const formattedDate = format(date, "yyyy-MM-dd")
