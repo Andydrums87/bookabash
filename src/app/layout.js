@@ -2,7 +2,6 @@ import { Poppins, Montserrat, Fredoka, Orbitron, Nunito } from "next/font/google
 import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
-import SitePasswordGate from "@/components/SitePasswordGate";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import PageViewTracker from "@/components/PageViewTracker";
@@ -177,10 +176,8 @@ export default function RootLayout({ children }) {
       </head>
       
       <body className={`${montserrat.className} antialiased`}>
-        <SitePasswordGate>
           {children}
           <CookieConsent />
-        </SitePasswordGate>
         <Analytics />
         <PageViewTracker />
       </body>
