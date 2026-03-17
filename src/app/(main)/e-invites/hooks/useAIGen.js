@@ -38,24 +38,10 @@ export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
       let partyTheme = "colorful kids party"
       let themeName = "colorful kids party"
 
-      try {
-        const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-
-        if (partyResult.success && partyResult.party) {
-          partyTheme = partyResult.party.theme || selectedTheme
-          themeName = themes[partyTheme]?.name || partyTheme || "colorful kids party"
-          console.log("🎯 Using party theme from database:", partyTheme, "-", themeName)
-        } else {
-          partyTheme = selectedTheme
-          themeName = themes[selectedTheme]?.name || "colorful kids party"
-          console.log("🔄 Using fallback theme:", partyTheme, "-", themeName)
-        }
-      } catch (error) {
-        console.warn("⚠️ Could not load party theme, using selected theme:", error)
-        partyTheme = selectedTheme
-        themeName = themes[selectedTheme]?.name || "colorful kids party"
-      }
+      // Always use the user-selected theme from the dropdown
+      partyTheme = selectedTheme
+      themeName = themes[selectedTheme]?.name || selectedTheme || "colorful kids party"
+      console.log("🎯 Using selected theme:", partyTheme, "-", themeName)
 
       // Extract first name only
       const firstName = getFirstNameOnly(inviteData.childName)
@@ -155,24 +141,10 @@ The invitation should look complete and ready to send, with all party informatio
       let partyTheme = "colorful kids party"
       let themeName = "colorful kids party"
 
-      try {
-        const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-
-        if (partyResult.success && partyResult.party) {
-          partyTheme = partyResult.party.theme || selectedTheme
-          themeName = themes[partyTheme]?.name || partyTheme || "colorful kids party"
-          console.log("🎯 Using party theme from database:", partyTheme, "-", themeName)
-        } else {
-          partyTheme = selectedTheme
-          themeName = themes[selectedTheme]?.name || "colorful kids party"
-          console.log("🔄 Using fallback theme:", partyTheme, "-", themeName)
-        }
-      } catch (error) {
-        console.warn("⚠️ Could not load party theme, using selected theme:", error)
-        partyTheme = selectedTheme
-        themeName = themes[selectedTheme]?.name || "colorful kids party"
-      }
+      // Always use the user-selected theme from the dropdown
+      partyTheme = selectedTheme
+      themeName = themes[selectedTheme]?.name || selectedTheme || "colorful kids party"
+      console.log("🎯 Using selected theme for options:", partyTheme, "-", themeName)
 
       // Extract first name only
       const firstName = getFirstNameOnly(inviteData.childName)
@@ -308,21 +280,10 @@ Important: Use only the exact information provided. No extra text.`
       let partyTheme = "colorful kids party"
       let themeName = "colorful kids party"
 
-      try {
-        const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-
-        if (partyResult.success && partyResult.party) {
-          partyTheme = partyResult.party.theme || selectedTheme
-          themeName = themes[partyTheme]?.name || partyTheme || "colorful kids party"
-        } else {
-          partyTheme = selectedTheme
-          themeName = themes[selectedTheme]?.name || "colorful kids party"
-        }
-      } catch (error) {
-        partyTheme = selectedTheme
-        themeName = themes[selectedTheme]?.name || "colorful kids party"
-      }
+      // Always use the user-selected theme from the dropdown
+      partyTheme = selectedTheme
+      themeName = themes[selectedTheme]?.name || selectedTheme || "colorful kids party"
+      console.log("🎯 Using selected theme for verified invite:", partyTheme, "-", themeName)
 
       const firstName = getFirstNameOnly(inviteData.childName)
 
