@@ -30,7 +30,7 @@ export default function FounderStory() {
                 {/* Andrew's photo */}
                 <div className="aspect-square w-[140px] md:w-[160px] lg:w-[170px] relative rounded-2xl overflow-hidden shadow-xl">
                   <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772096949/74ba51c0-78ae-4230-a617-bf75240bda22_2_vy3g0i.jpg"
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1772096949/74ba51c0-78ae-4230-a617-bf75240bda22_2_vy3g0i.jpg"
                     alt="Andrew with his child"
                     fill
                     className="object-cover"
@@ -41,7 +41,7 @@ export default function FounderStory() {
                 {/* Neil's photo */}
                 <div className="aspect-square w-[140px] md:w-[160px] lg:w-[170px] relative rounded-2xl overflow-hidden shadow-xl">
                   <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1772193071/146c1cd7-5bfc-47ad-a91b-083ba5c66cfe_cjdlqz.jpg"
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1772193071/146c1cd7-5bfc-47ad-a91b-083ba5c66cfe_cjdlqz.jpg"
                     alt="Neil with his child"
                     fill
                     className="object-cover"

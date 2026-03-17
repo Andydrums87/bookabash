@@ -102,7 +102,7 @@ export default function FloatingCTA() {
       {/* Snappy the crocodile */}
       <div className="w-20 h-20 absolute top-2 left-[-15px] z-200">
         <Image
-          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
+          src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
           alt="Snappy the crocodile"
           fill
           className="object-contain"

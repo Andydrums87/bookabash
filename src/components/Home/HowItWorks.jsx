@@ -19,7 +19,7 @@ export default function HowItWorks() {
         "Pick from popular themes",
         "Takes less than a minute"
       ],
-      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102943/IMG_6574_gwt1hj.png",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1772102943/IMG_6574_gwt1hj.png",
       imageAlt: "PartySnap form showing date, theme, and location fields",
       reverse: false,
       darkBg: true,
@@ -41,7 +41,7 @@ export default function HowItWorks() {
         "Vetted local suppliers",
         "Transparent pricing"
       ],
-      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102954/IMG_6576_b3zd7h.png",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1772102954/IMG_6576_b3zd7h.png",
       imageAlt: "PartySnap dashboard showing matched suppliers",
       reverse: true,
       darkBg: false,
@@ -60,7 +60,7 @@ export default function HowItWorks() {
         "100% money-back guarantee",
         "Personal support from our team"
       ],
-      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1772102928/IMG_6580_qofg58.png",
+      screenImage: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1772102928/IMG_6580_qofg58.png",
       imageAlt: "PartySnap checkout and confirmation screen",
       reverse: false,
       darkBg: true,

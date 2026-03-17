@@ -47,7 +47,7 @@ export default function FinalCTA() {
               {/* Image */}
               <div className="w-1/2 relative min-h-[280px] bg-primary-200">
                 <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752827950/iStock-469207460__1_-removebg-preview_kzlham.png"
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1752827950/iStock-469207460__1_-removebg-preview_kzlham.png"
                   alt="Happy children celebrating at a birthday party"
                   fill
                   className="object-cover"

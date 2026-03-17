@@ -570,7 +570,7 @@ const handleSignOut = async () => {
           <div className="flex-shrink-0">
             <Link href="/">
               <Image 
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png" 
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1752578876/Transparent_With_Text2_xtq8n5.png" 
                 alt="PartySnap" 
                 width={150} 
                 height={32} 

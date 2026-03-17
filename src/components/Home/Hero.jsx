@@ -85,7 +85,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 {/* Main party image */}
                 <div className="relative w-full h-full bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] rounded-xl">
                   <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/e_improve,e_sharpen/v1772716302/iStock-1149320278_l50ppe.jpg"
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto,e_improve,e_sharpen/v1772716302/iStock-1149320278_l50ppe.jpg"
                     alt="People celebrating at a party"
                     fill
                     sizes="(max-width: 1024px) 100vw, 50vw"

@@ -7,25 +7,25 @@ export default function CategoryGrid() {
       title: "Princess & Fairy Tale",
       subtitle: "Magical & elegant",
       badge: "MOST POPULAR 👑",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1757708173/iStock-1071368448_ui59nx.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1757708173/iStock-1071368448_ui59nx.jpg",
     },
     {
       title: "Superhero Adventure",
       subtitle: "Action-packed fun",
       badge: "TRENDING 🔥",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1757707855/iStock-804401550_s0oljx.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1757707855/iStock-804401550_s0oljx.jpg",
     },
     {
       title: "Dinosaur Discovery",
       subtitle: "Prehistoric excitement",
       badge: "SNAP CHOICE 🦕",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1757707966/iStock-1313585311_ytfxgh.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1757707966/iStock-1313585311_ytfxgh.jpg",
     },
     {
       title: "Unicorn Magic",
       subtitle: "Dreamy & colourful",
       badge: "GIRL'S FAVORITE 🦄",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1757707916/iStock-1369714109_s8tdtt.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1757707916/iStock-1369714109_s8tdtt.jpg",
     },
   ]
 
