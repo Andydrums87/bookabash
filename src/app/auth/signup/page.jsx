@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,29 +10,42 @@ import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Link from "next/link"
 
+// Read URL params once at module level (client-side only)
+function getUrlParams() {
+  if (typeof window === 'undefined') return {}
+  const params = new URLSearchParams(window.location.search)
+  return {
+    returnTo: params.get('returnTo') || '/dashboard',
+    email: params.get('email') || '',
+    phone: params.get('phone') || '',
+    name: params.get('name') || '',
+    context: params.get('context'),
+  }
+}
+
 export default function SignupPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
 
-  // Get params from URL
-  const returnTo = searchParams.get('returnTo') || '/dashboard'
-  const defaultEmail = searchParams.get('email') || ''
-  const defaultPhone = searchParams.get('phone') || ''
-  const defaultName = searchParams.get('name') || ''
-  const context = searchParams.get('context') // 'payment' means they're in checkout flow
+  // Get params from URL (client-side only)
+  const urlParams = useMemo(() => getUrlParams(), [])
+  const returnTo = urlParams.returnTo || '/dashboard'
+  const defaultEmail = urlParams.email || ''
+  const defaultPhone = urlParams.phone || ''
+  const defaultName = urlParams.name || ''
+  const context = urlParams.context
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     firstName: defaultName.split(" ")[0] || "",
     lastName: defaultName.split(" ").slice(1).join(" ") || "",
     email: defaultEmail,
     password: "",
     confirmPassword: "",
-  })
+  }))
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
