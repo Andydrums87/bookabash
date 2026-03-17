@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function ClaimVerifyPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [status, setStatus] = useState("verifying") // verifying, success, error
   const [error, setError] = useState(null)
 
@@ -24,7 +23,8 @@ export default function ClaimVerifyPage() {
         }
 
         // Get claim token from URL or localStorage
-        const token = searchParams.get("token") || localStorage.getItem("claim_token")
+        const params = new URLSearchParams(window.location.search)
+        const token = params.get("token") || localStorage.getItem("claim_token")
         const supplierId = localStorage.getItem("claim_supplier_id")
 
         if (!token) {
@@ -68,7 +68,7 @@ export default function ClaimVerifyPage() {
     }
 
     handleVerification()
-  }, [router, searchParams])
+  }, [router])
 
   if (status === "verifying") {
     return (
