@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, MapPin, Palette } from 'lucide-react'
 import { formatDateForDisplay } from '../utils/helperFunctions'
-import { getThemeCategory, THEME_CATEGORIES } from '@/lib/inviteTemplates'
+import { getThemeCategory } from '@/lib/inviteTemplates'
 
-const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, setSelectedTheme }) => {
+const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme }) => {
   const date = formatDateForDisplay(inviteData.date)
 
   // Helper function to get first name only from childName
@@ -232,34 +232,27 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, setSel
             />
           </div>
 
-          {/* Theme Selector */}
-          <div>
-            <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              Party Theme
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl pointer-events-none">
-                {getThemeCategory(selectedTheme)?.icon || '🎨'}
-              </span>
-              <select
-                value={selectedTheme || ''}
-                onChange={(e) => {
-                  console.log('🎨 Theme dropdown changed to:', e.target.value, 'from:', selectedTheme)
-                  setSelectedTheme(e.target.value)
-                }}
-                className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base font-medium text-gray-800 appearance-none cursor-pointer"
+          {/* Theme Display - Read only */}
+          {selectedTheme && (
+            <div>
+              <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                Party Theme
+              </label>
+              <div
+                className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg"
                 style={{ borderColor: getThemeCategory(selectedTheme)?.color + '40' }}
               >
-                {THEME_CATEGORIES.map((theme) => (
-                  <option key={theme.id} value={theme.id}>
-                    {theme.icon} {theme.name}
-                  </option>
-                ))}
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▾</span>
+                <span className="text-2xl">{getThemeCategory(selectedTheme)?.icon}</span>
+                <span className="font-medium text-gray-800">
+                  {getThemeCategory(selectedTheme)?.name || selectedTheme}
+                </span>
+                <span className="ml-auto text-xs text-gray-500">
+                  From your party plan
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
       </CardContent>

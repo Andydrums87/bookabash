@@ -49,7 +49,7 @@ export default function HomePage() {
     duration: "2",
     hasOwnVenue: false, // IMPORTANT: This is here
   })
-
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
@@ -81,12 +81,12 @@ export default function HomePage() {
       console.log('🎫 Flyer source captured - £25 discount available')
     }
 
-    // Store party bags flyer if present
+    // Store party bags flyer source if present (for free party bags offer)
     if (isFlyerPartyBags) {
       localStorage.setItem('flyer_partybags', 'true')
       console.log('🎁 Party bags flyer captured - Free party bags available')
     }
-  }, []);
+  }, [searchParams, isFlyer, isFlyerPartyBags]);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
