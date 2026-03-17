@@ -5,19 +5,18 @@ import { Loader2, X } from "lucide-react"
 import ComingSoon from "@/components/ComingSoon"
 
 export default function SitePasswordGate({ children }) {
-  const [isLoading, setIsLoading] = useState(true)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [email, setEmail] = useState("")
   const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState("")
-  const [hasAccess, setHasAccess] = useState(false)
 
-  // Check if coming soon mode is enabled
+  // Check if coming soon mode is enabled (build-time env var)
   const isComingSoonEnabled = process.env.NEXT_PUBLIC_ENABLE_COMING_SOON === "true"
 
-  useEffect(() => {
-    setIsLoading(false)
+  // If coming soon is not enabled, render children immediately — no loading state
+  const [hasAccess, setHasAccess] = useState(!isComingSoonEnabled)
 
+  useEffect(() => {
     // Check if user has already verified their email (stored in localStorage)
     if (isComingSoonEnabled) {
       const storedAccess = localStorage.getItem("founder_access")
@@ -49,15 +48,6 @@ export default function SitePasswordGate({ children }) {
     } finally {
       setVerifying(false)
     }
-  }
-
-  // Show nothing while loading
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-rose-50 to-amber-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    )
   }
 
   // If coming soon is enabled and user doesn't have access

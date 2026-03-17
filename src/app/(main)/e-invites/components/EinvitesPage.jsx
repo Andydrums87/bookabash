@@ -193,7 +193,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
               inviteData={inviteData}
               handleInputChange={handleInputChange}
               selectedTheme={selectedTheme}
-              useAIGeneration={true} // Force AI mode
+              setSelectedTheme={setSelectedTheme}
             />
           </div>
         )
