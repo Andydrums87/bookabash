@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
@@ -23,6 +23,14 @@ import { initTracking, trackStep } from '@/utils/partyTracking'
 import { storeReferralCode } from '@/utils/referralUtils'
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomePageContent />
+    </Suspense>
+  )
+}
+
+function HomePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
