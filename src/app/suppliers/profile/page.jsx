@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import ServiceSpecificDetails from "./components/EntertainerServiceDetails"
@@ -421,7 +420,6 @@ export default function SupplierProfilePage() {
   // ✅ Use business-aware hooks
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
-  const searchParams = useSearchParams()
 
   const [activeTab, setActiveTab] = useState("general")
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -671,7 +669,7 @@ if (loading) {
     )
   }
 
-  const isSettingsMode = searchParams.get('settings') === 'true'
+  const isSettingsMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('settings') === 'true'
 
   const isNewSupplier = supplierData && !supplierData.isComplete
   const categoryLower = (supplierData?.category || supplierData?.serviceType || '')?.toLowerCase()

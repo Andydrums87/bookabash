@@ -1,17 +1,17 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function PaymentProcessingPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const partyId = searchParams.get('party_id')
-  const paymentIntentId = searchParams.get('payment_intent')
 
+  const [partyId, setPartyId] = useState(null)
+  const [paymentIntentId, setPaymentIntentId] = useState(null)
+  const [paramsReady, setParamsReady] = useState(false)
   const [status, setStatus] = useState('processing') // 'processing' | 'complete' | 'failed'
   const [message, setMessage] = useState('Processing your payment...')
   const [pollCount, setPollCount] = useState(0)
@@ -21,7 +21,16 @@ export default function PaymentProcessingPage() {
   const MAX_POLLS = 30
   const POLL_INTERVAL = 1000 // 1 second
 
+  // Read search params from window.location on mount
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setPartyId(params.get('party_id'))
+    setPaymentIntentId(params.get('payment_intent'))
+    setParamsReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!paramsReady) return
     if (!partyId || !paymentIntentId) {
       setStatus('failed')
       setMessage('Invalid payment information')
@@ -130,7 +139,7 @@ export default function PaymentProcessingPage() {
         clearTimeout(pollTimer)
       }
     }
-  }, [partyId, paymentIntentId, pollCount, router])
+  }, [paramsReady, partyId, paymentIntentId, pollCount, router])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">

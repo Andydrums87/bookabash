@@ -3,8 +3,7 @@
 
 "use client"
 
-import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -33,9 +32,14 @@ import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import CakeOrderCard from "./components/CakeOrderCard"
 
 export default function SupplierEnquiriesPage() {
-  const searchParams = useSearchParams()
-  const initialStatus = searchParams.get("status") || "all"
-  const [activeTab, setActiveTab] = useState(initialStatus)
+  const [activeTab, setActiveTab] = useState("all")
+
+  // Read initial status from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get("status")
+    if (status) setActiveTab(status)
+  }, [])
 
   // Load enquiries based on active tab
   const statusFilter = activeTab === "all" ? null : activeTab
