@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Cookie, Settings } from "lucide-react"
+import { Cookie, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function CookieConsent() {
@@ -17,8 +17,8 @@ export default function CookieConsent() {
     // Check if user has already made a choice
     const consent = localStorage.getItem('cookieConsent')
     if (!consent) {
-      // Small delay so banner doesn't flash on initial load
-      setTimeout(() => setShowBanner(true), 1000)
+      // 3 second delay so it doesn't compete with page load / ad clicks
+      setTimeout(() => setShowBanner(true), 3000)
     } else {
       // Load their existing preferences
       const savedPrefs = localStorage.getItem('cookiePreferences')
@@ -98,146 +98,117 @@ export default function CookieConsent() {
 
   if (!showBanner) return null
 
-  return (
-    <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" />
+  // Settings panel (same on mobile & desktop)
+  if (showSettings) {
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" />
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 md:p-8">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Cookie Preferences</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-      {/* Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
-        <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200">
-          {!showSettings ? (
-            // Main Banner
-            <div className="p-6 md:p-8">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Cookie className="w-6 h-6 text-primary-600" />
-                  </div>
-                </div>
+            <div className="space-y-3 mb-5">
+              {/* Essential Cookies */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    We value your privacy
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    We use cookies to enhance your browsing experience, analyze site traffic, and provide personalized content. 
-                    By clicking "Accept All", you consent to our use of cookies. You can also customize your preferences or reject non-essential cookies.
-                  </p>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Read our <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a> and{" "}
-                    <a href="/cookies" className="text-primary-600 hover:underline">Cookie Policy</a> for more information.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      onClick={handleAcceptAll}
-                      className="bg-primary-600 hover:bg-primary-700 text-white font-semibold"
-                    >
-                      Accept All
-                    </Button>
-                    <Button
-                      onClick={handleRejectAll}
-                      variant="outline"
-                      className="border-gray-300 hover:bg-gray-50 font-semibold"
-                    >
-                      Reject All
-                    </Button>
-                    <Button
-                      onClick={() => setShowSettings(true)}
-                      variant="ghost"
-                      className="text-gray-700 hover:bg-gray-100 font-semibold"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Customize
-                    </Button>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm text-gray-900">Essential</h4>
+                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Always Active</span>
                   </div>
+                  <p className="text-xs text-gray-500 mt-0.5">Required for basic site functionality and security.</p>
                 </div>
+                <input type="checkbox" checked={true} disabled className="w-4 h-4 rounded border-gray-300 text-primary-600" />
+              </div>
+
+              {/* Analytics Cookies */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-sm text-gray-900">Analytics</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Helps us understand how visitors use the site.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={preferences.analytics}
+                  onChange={(e) => setPreferences({ ...preferences, analytics: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                />
+              </div>
+
+              {/* Marketing Cookies */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-sm text-gray-900">Marketing</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Used for relevant ads and campaign tracking.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={preferences.marketing}
+                  onChange={(e) => setPreferences({ ...preferences, marketing: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                />
               </div>
             </div>
-          ) : (
-            // Settings Panel
-            <div className="p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Cookie Preferences</h3>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              <div className="space-y-4 mb-6">
-                {/* Essential Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-gray-900">Essential Cookies</h4>
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Always Active</span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Required for basic site functionality, security, and payment processing. Cannot be disabled.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={true}
-                    disabled
-                    className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600"
-                  />
-                </div>
-
-                {/* Analytics Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1">Analytics Cookies</h4>
-                    <p className="text-sm text-gray-600">
-                      Help us understand how visitors use our site to improve user experience (Google Analytics, Heap).
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={preferences.analytics}
-                    onChange={(e) => setPreferences({ ...preferences, analytics: e.target.checked })}
-                    className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                  />
-                </div>
-
-                {/* Marketing Cookies */}
-                <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1">Marketing Cookies</h4>
-                    <p className="text-sm text-gray-600">
-                      Used to deliver relevant advertisements and track campaign effectiveness.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={preferences.marketing}
-                    onChange={(e) => setPreferences({ ...preferences, marketing: e.target.checked })}
-                    className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={handleSavePreferences}
-                  className="bg-primary-600 hover:bg-primary-700 text-white font-semibold"
-                >
-                  Save Preferences
-                </Button>
-                <Button
-                  onClick={() => setShowSettings(false)}
-                  variant="outline"
-                  className="border-gray-300 hover:bg-gray-50 font-semibold"
-                >
-                  Cancel
-                </Button>
-              </div>
+            <div className="flex gap-3">
+              <Button onClick={handleSavePreferences} className="bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm">
+                Save Preferences
+              </Button>
+              <Button onClick={() => setShowSettings(false)} variant="outline" className="border-gray-300 hover:bg-gray-50 font-semibold text-sm">
+                Cancel
+              </Button>
             </div>
-          )}
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // Compact banner
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 md:gap-4">
+        <Cookie className="w-5 h-5 text-primary-600 flex-shrink-0 hidden md:block" />
+        <p className="flex-1 text-xs md:text-sm text-gray-600 leading-snug">
+          We use cookies to improve your experience.{" "}
+          <a href="/privacy-policy" className="text-primary-600 hover:underline">Privacy Policy</a>
+        </p>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="text-xs text-gray-500 hover:text-gray-700 underline hidden md:block"
+          >
+            Customize
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="md:hidden p-1.5 text-gray-400 hover:text-gray-600"
+            aria-label="Cookie settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <Button
+            onClick={handleRejectAll}
+            variant="outline"
+            className="text-xs px-3 h-8 min-w-[70px] border-gray-300 font-medium"
+          >
+            Reject
+          </Button>
+          <Button
+            onClick={handleAcceptAll}
+            className="text-xs px-3 h-8 min-w-[70px] bg-primary-600 hover:bg-primary-700 text-white font-medium"
+          >
+            Accept
+          </Button>
         </div>
       </div>
-    </>
+    </div>
   )
 }
