@@ -3,7 +3,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,14 @@ import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import CakeOrderCard from "./components/CakeOrderCard"
 
 export default function SupplierEnquiriesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-600" /></div>}>
+      <SupplierEnquiriesContent />
+    </Suspense>
+  )
+}
+
+function SupplierEnquiriesContent() {
   const searchParams = useSearchParams()
   const initialStatus = searchParams.get("status") || "all"
   const [activeTab, setActiveTab] = useState(initialStatus)

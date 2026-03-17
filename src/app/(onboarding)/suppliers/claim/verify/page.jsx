@@ -1,11 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function ClaimVerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-violet-600" />
+      </div>
+    }>
+      <ClaimVerifyContent />
+    </Suspense>
+  )
+}
+
+function ClaimVerifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState("verifying") // verifying, success, error

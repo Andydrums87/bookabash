@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useBusiness } from "@/contexts/BusinessContext"
@@ -19,6 +19,14 @@ function getBusinessImage(business) {
 }
 
 export default function ListingManagementPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-600" /></div>}>
+      <ListingManagementContent />
+    </Suspense>
+  )
+}
+
+function ListingManagementContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()

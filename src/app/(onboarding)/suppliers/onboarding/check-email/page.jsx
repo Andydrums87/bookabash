@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Mail, CheckCircle, Loader2 } from "lucide-react"
@@ -8,6 +8,18 @@ import { Mail, CheckCircle, Loader2 } from "lucide-react"
 const STORAGE_KEY = 'supplierOnboardingData'
 
 export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <CheckEmailContent />
+    </Suspense>
+  )
+}
+
+function CheckEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
