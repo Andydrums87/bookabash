@@ -5,18 +5,24 @@ import { Loader2, X } from "lucide-react"
 import ComingSoon from "@/components/ComingSoon"
 
 export default function SitePasswordGate({ children }) {
+  const [isLoading, setIsLoading] = useState(true)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [email, setEmail] = useState("")
   const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState("")
+  const [hasAccess, setHasAccess] = useState(false)
 
-  // Check if coming soon mode is enabled (build-time env var)
+  // Check if coming soon mode is enabled
   const isComingSoonEnabled = process.env.NEXT_PUBLIC_ENABLE_COMING_SOON === "true"
 
-  // If coming soon is not enabled, render children immediately — no loading state
-  const [hasAccess, setHasAccess] = useState(!isComingSoonEnabled)
-
   useEffect(() => {
+    setIsLoading(false)
+
+    // If coming soon is not enabled, grant access immediately
+    if (!isComingSoonEnabled) {
+      setHasAccess(true)
+    }
+
     // Check if user has already verified their email (stored in localStorage)
     if (isComingSoonEnabled) {
       const storedAccess = localStorage.getItem("founder_access")
@@ -48,6 +54,12 @@ export default function SitePasswordGate({ children }) {
     } finally {
       setVerifying(false)
     }
+  }
+
+  // During SSR/prerender, don't render children (prevents useSearchParams errors)
+  // On the client this flips to false immediately in the useEffect
+  if (isLoading) {
+    return null
   }
 
   // If coming soon is enabled and user doesn't have access
