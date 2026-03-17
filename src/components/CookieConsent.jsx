@@ -17,8 +17,8 @@ export default function CookieConsent() {
     // Check if user has already made a choice
     const consent = localStorage.getItem('cookieConsent')
     if (!consent) {
-      // 3 second delay so it doesn't compete with page load / ad clicks
-      setTimeout(() => setShowBanner(true), 3000)
+      // 6 second delay so it doesn't compete with page load / ad clicks
+      setTimeout(() => setShowBanner(true), 6000)
     } else {
       // Load their existing preferences
       const savedPrefs = localStorage.getItem('cookiePreferences')
