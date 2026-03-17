@@ -244,7 +244,10 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, setSel
               </span>
               <select
                 value={selectedTheme || ''}
-                onChange={(e) => setSelectedTheme?.(e.target.value)}
+                onChange={(e) => {
+                  console.log('🎨 Theme dropdown changed to:', e.target.value, 'from:', selectedTheme)
+                  setSelectedTheme(e.target.value)
+                }}
                 className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base font-medium text-gray-800 appearance-none cursor-pointer"
                 style={{ borderColor: getThemeCategory(selectedTheme)?.color + '40' }}
               >
