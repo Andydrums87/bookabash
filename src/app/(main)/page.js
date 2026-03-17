@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
@@ -24,7 +24,6 @@ import { storeReferralCode } from '@/utils/referralUtils'
 
 export default function HomePage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Confirmation dialog state
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
@@ -49,7 +48,7 @@ export default function HomePage() {
     duration: "2",
     hasOwnVenue: false, // IMPORTANT: This is here
   })
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
@@ -57,36 +56,44 @@ export default function HomePage() {
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
-  // Check if user came from flyer QR code
-  const isFlyer = searchParams.get('flyer') !== null || searchParams.get('source') === 'flyer'
+  // URL params read on mount
+  const [isFlyer, setIsFlyer] = useState(false)
+  const [isFlyerPartyBags, setIsFlyerPartyBags] = useState(false)
 
-  // Check if user came from party bags flyer (free party bags offer)
-  const isFlyerPartyBags = searchParams.get('flyer-partybags') !== null
-
-  // Initialize tracking on mount and capture referral code from URL
+  // Initialize tracking on mount and capture referral/flyer params from URL
   useEffect(() => {
     initTracking();
 
+    const params = new URLSearchParams(window.location.search)
+
     // Capture referral code if present in URL
-    const refCode = searchParams.get('ref')
+    const refCode = params.get('ref')
     if (refCode) {
       storeReferralCode(refCode)
       console.log('📎 Referral code captured from URL:', refCode)
     }
 
+    // Check if user came from flyer QR code
+    const flyerSource = params.get('flyer') !== null || params.get('source') === 'flyer'
+    setIsFlyer(flyerSource)
+
+    // Check if user came from party bags flyer (free party bags offer)
+    const flyerPartyBags = params.get('flyer-partybags') !== null
+    setIsFlyerPartyBags(flyerPartyBags)
+
     // Store flyer source if present (for applying discount later)
-    if (isFlyer) {
+    if (flyerSource) {
       localStorage.setItem('flyer_source', 'true')
       localStorage.setItem('flyer_discount', '25')
       console.log('🎫 Flyer source captured - £25 discount available')
     }
 
     // Store party bags flyer source if present (for free party bags offer)
-    if (isFlyerPartyBags) {
+    if (flyerPartyBags) {
       localStorage.setItem('flyer_partybags', 'true')
       console.log('🎁 Party bags flyer captured - Free party bags available')
     }
-  }, [searchParams, isFlyer, isFlyerPartyBags]);
+  }, []);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
