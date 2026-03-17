@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,44 +12,27 @@ import Link from "next/link"
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
 
-  // Get params from URL using window.location.search (avoids Next.js static prerender issues)
-  const [returnTo, setReturnTo] = useState('/dashboard')
-  const [defaultPhone, setDefaultPhone] = useState('')
-  const [context, setContext] = useState(null) // 'payment' means they're in checkout flow
+  // Get params from URL
+  const returnTo = searchParams.get('returnTo') || '/dashboard'
+  const defaultEmail = searchParams.get('email') || ''
+  const defaultPhone = searchParams.get('phone') || ''
+  const defaultName = searchParams.get('name') || ''
+  const context = searchParams.get('context') // 'payment' means they're in checkout flow
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
+    firstName: defaultName.split(" ")[0] || "",
+    lastName: defaultName.split(" ").slice(1).join(" ") || "",
+    email: defaultEmail,
     password: "",
     confirmPassword: "",
   })
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const returnToParam = params.get('returnTo') || '/dashboard'
-    const emailParam = params.get('email') || ''
-    const phoneParam = params.get('phone') || ''
-    const nameParam = params.get('name') || ''
-    const contextParam = params.get('context')
-
-    setReturnTo(returnToParam)
-    setDefaultPhone(phoneParam)
-    setContext(contextParam)
-
-    setFormData(prev => ({
-      ...prev,
-      firstName: nameParam.split(" ")[0] || prev.firstName,
-      lastName: nameParam.split(" ").slice(1).join(" ") || prev.lastName,
-      email: emailParam || prev.email,
-    }))
-  }, [])
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

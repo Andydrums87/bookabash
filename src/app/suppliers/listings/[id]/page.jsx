@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -21,17 +21,14 @@ function getBusinessImage(business) {
 export default function ListingManagementPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { businesses, currentBusiness, switchBusiness, loading } = useBusiness()
 
   const [business, setBusiness] = useState(null)
   const [switching, setSwitching] = useState(false)
-  const [isSettingsMode, setIsSettingsMode] = useState(false)
 
-  // Read settings mode from URL on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    setIsSettingsMode(urlParams.get('settings') === 'true')
-  }, [])
+  // Check if settings mode
+  const isSettingsMode = searchParams.get('settings') === 'true'
 
   // Find and switch to the business for this listing
   useEffect(() => {

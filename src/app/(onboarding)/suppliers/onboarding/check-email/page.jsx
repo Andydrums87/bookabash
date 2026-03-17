@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Mail, CheckCircle, Loader2 } from "lucide-react"
 
@@ -9,13 +9,14 @@ const STORAGE_KEY = 'supplierOnboardingData'
 
 export default function CheckEmailPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [isVerified, setIsVerified] = useState(false)
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
 
   useEffect(() => {
     // Get email from URL params or localStorage
-    const emailParam = new URLSearchParams(window.location.search).get('email')
+    const emailParam = searchParams.get('email')
     if (emailParam) {
       setEmail(emailParam)
     } else {
@@ -30,7 +31,7 @@ export default function CheckEmailPage() {
         }
       }
     }
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     // Poll for email verification every 3 seconds
