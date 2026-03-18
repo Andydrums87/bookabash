@@ -112,6 +112,11 @@ export default function MobileSearchForm({
                       d.setDate(d.getDate() + 21)
                       return d
                     })()}
+                    startMonth={(() => {
+                      const d = new Date()
+                      d.setDate(d.getDate() + 21)
+                      return d
+                    })()}
                     onSelect={(date) => {
                       if (date) {
                         const formattedDate = format(date, "yyyy-MM-dd")

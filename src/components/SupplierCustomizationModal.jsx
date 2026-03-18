@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Maximize2,
   ShieldCheck,
+  Users,
 } from "lucide-react"
 import Image from "next/image"
 import SupplierNote from '@/components/SupplierNote'
@@ -2640,83 +2641,153 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Entertainment - Simplified view with what's included + special requests */}
-            {supplierTypeDetection.isEntertainment && (
-              <section className="space-y-4">
-                {/* What's Included */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">What's included:</h4>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    {selectedPackage?.features?.length > 0 ? (
-                      selectedPackage.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          {feature}
-                        </li>
-                      ))
-                    ) : (
-                      <>
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          2 hours of professional entertainment
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          Games, activities & prizes
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          Music and dancing
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          Includes a break for party food
-                        </li>
-                      </>
-                    )}
-                  </ul>
-                </div>
+            {/* Entertainment - Engaging view with party info, gallery & trust signals */}
+            {supplierTypeDetection.isEntertainment && (() => {
+              const sd = supplier?.serviceDetails || supplier?.service_details || {}
+              const ageGroups = sd?.ageGroups || []
+              const formatAgeRangeInline = (groups) => {
+                if (!groups?.length) return 'All ages'
+                const ages = groups.flatMap(g => { const m = g.match(/\d+/g); return m ? m.map(Number) : [] })
+                if (ages.length === 0) return groups.join(', ')
+                return `${Math.min(...ages)}-${Math.max(...ages)} years`
+              }
+              const galleryImages = supplierImages.slice(1, 5)
 
-                {/* PartySnap Guarantee */}
-                <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                    <h4 className="font-semibold text-gray-900">PartySnap Guarantee</h4>
+              return (
+                <section className="space-y-7">
+                  {/* What's Included */}
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base mb-4">What's included</h4>
+                    <ul className="space-y-3">
+                      {(selectedPackage?.features?.length > 0 ? selectedPackage.features : [
+                        "Professional themed entertainment for 2 hours",
+                        "Interactive games, activities & prizes",
+                        "Music and dancing",
+                        "A break for party food",
+                        "Special birthday child moment"
+                      ]).map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700 font-medium">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      DBS checked & verified
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      Public liability insured
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      Personally selected by our team
-                    </li>
-                  </ul>
-                </div>
 
-                {/* Special Requests */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Let the entertainer know about your child's interests or any special requirements
-                  </p>
-                  <Textarea
-                    placeholder="Add names, ages, colour preferences, or any other details here."
-                    value={specialRequests}
-                    onChange={(e) => setSpecialRequests(e.target.value)}
-                    className="bg-white border-gray-200 text-sm resize-none"
-                    rows={3}
-                  />
-                  <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
-                </div>
+                  {/* Divider */}
+                  <hr className="border-gray-100" />
 
-              </section>
-            )}
+                  {/* Party Info Grid */}
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base mb-4">Party info</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { img: "/category-icons/entertainment.png", label: "Party length", value: `${selectedPackage?.duration || 2} hours` },
+                        { img: "/category-icons/decorations.png", label: "Set up", value: `${sd.setupTime || 20} mins before` },
+                        { img: "/journey-icons/rsvps.png", label: "Ages suited", value: formatAgeRangeInline(ageGroups) },
+                        { img: "/journey-icons/guestlist.png", label: "Max attendance", value: `${sd.performanceSpecs?.maxGroupSize || 30} children` },
+                        { img: "/category-icons/cake.png", label: "Food break", value: "Halfway through" },
+                        { img: "/category-icons/party-bags.png", label: "Pack up", value: "15-30 mins after" },
+                      ].map(({ img, label, value }) => (
+                        <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 text-center shadow-sm">
+                          <div className="mx-auto mb-2.5 w-10 h-10 flex items-center justify-center">
+                            <img src={img} alt={label} className="w-9 h-9 object-contain" />
+                          </div>
+                          <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">{label}</p>
+                          <p className="text-sm text-gray-600 mt-0.5">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Testimonial - full bleed */}
+                  {supplierImages.length > 1 && (
+                    <div className="relative -mx-5 lg:-mx-6 overflow-hidden">
+                      <img
+                        src={supplierImages[1]}
+                        alt="Happy party moment"
+                        className="w-full h-52 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+                      <div className="absolute inset-0 flex flex-col justify-end p-6">
+                        <p className="text-white text-sm font-medium leading-relaxed italic mb-2">
+                          "The kids were absolutely mesmerised! Best party we've ever had. I didn't have to lift a finger."
+                        </p>
+                        <p className="text-white/70 text-xs font-medium">
+                          — Sarah, Marshalswick, mum of 2
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PartySnap Promise */}
+                  <div className="bg-[hsl(var(--primary-50))] -mx-5 lg:-mx-6 px-5 lg:px-6 py-5">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <ShieldCheck className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                      <h4 className="font-bold text-gray-900 text-base">The PartySnap Promise</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                      We personally vet every entertainer on our platform. Only the best make the cut — so you can relax and enjoy the party too.
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { icon: ShieldCheck, text: "DBS checked & verified" },
+                        { icon: CheckCircle, text: "Fully insured" },
+                        { icon: Sparkles, text: "Handpicked by our team" },
+                      ].map(({ icon: TrustIcon, text }) => (
+                        <div key={text} className="text-center">
+                          <div className="mx-auto mb-1.5 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                            <TrustIcon className="w-4 h-4 text-[hsl(var(--primary-500))]" />
+                          </div>
+                          <p className="text-xs text-gray-700 font-medium leading-tight">{text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Special Requests */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Let the entertainer know about your child's interests or any special requirements
+                    </p>
+                    <Textarea
+                      placeholder="Add names, ages, colour preferences, or any other details here."
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      className="bg-white border-gray-200 text-sm resize-none"
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
+                  </div>
+
+                  {/* Photo Gallery - full bleed */}
+                  {galleryImages.length >= 2 && (
+                    <div className="-mx-5 lg:-mx-6">
+                      <h4 className="font-bold text-gray-900 text-base mb-3 px-5 lg:px-6">Gallery</h4>
+                      <div className="grid grid-cols-2 gap-0.5 overflow-hidden">
+                        {galleryImages.map((src, i) => (
+                          <div
+                            key={i}
+                            className="relative aspect-square cursor-pointer"
+                            onClick={() => { setLightboxIndex(i + 1); setShowLightbox(true) }}
+                          >
+                            <Image
+                              src={src}
+                              alt={`${supplier.name} - Gallery ${i + 1}`}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 45vw, 200px"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </section>
+              )
+            })()}
 
             {/* Multi-Select Suppliers (Sweet Treats only, NOT soft play) - Item Selection */}
             {supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay && (
@@ -4039,12 +4110,6 @@ export default function SupplierCustomizationModal({
                   {/* ===== ENTERTAINMENT ACCORDIONS ===== */}
                   {supplierTypeDetection.isEntertainment && (
                     <>
-                      {ageGroups.length > 0 && (
-                        <AccordionItem id="entertainer-ages" title="Suitable Ages">
-                          <p>Perfect for children aged {formatAgeRange(ageGroups)}.</p>
-                        </AccordionItem>
-                      )}
-
                       {serviceDetails.performanceSpecs?.spaceRequired && (
                         <AccordionItem id="entertainer-space" title="Space Required">
                           <p>{serviceDetails.performanceSpecs.spaceRequired}</p>
@@ -4056,28 +4121,6 @@ export default function SupplierCustomizationModal({
                           <p>Available for bookings up to {serviceDetails.travelRadius} miles from their location.</p>
                         </AccordionItem>
                       )}
-
-                      <AccordionItem id="entertainer-schedule" title="Party Schedule">
-                        <p>• Entertainer arrives 15-30 minutes before to setup</p>
-                        <p>• First hour of games and activities</p>
-                        <p>• 20 minutes for food and refreshments</p>
-                        <p>• Final 40 minutes of more entertainment</p>
-                      </AccordionItem>
-
-                      {serviceDetails.personalBio?.personalStory && (
-                        <AccordionItem id="entertainer-bio" title="Meet the Entertainer">
-                          {serviceDetails.personalBio.yearsExperience && (
-                            <p className="mb-2">
-                              <span className="font-medium text-gray-900">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties.
-                            </p>
-                          )}
-                          <p>{serviceDetails.personalBio.personalStory}</p>
-                        </AccordionItem>
-                      )}
-
-                      <AccordionItem id="entertainer-equipment" title="What's Included">
-                        <p>Our entertainers bring all the equipment needed and keep the kids engaged throughout the party.</p>
-                      </AccordionItem>
                     </>
                   )}
 
