@@ -1234,25 +1234,6 @@ export default function LocalStoragePartyHeader({
                       Edit
                     </span>
                   </button>
-                  {onSaveForLater && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onSaveForLater()
-                      }}
-                      className="bg-white/90 hover:bg-white px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 shadow-md"
-                      aria-label={hasSavedParty ? "Update saved plan" : "Email plan"}
-                    >
-                      {hasSavedParty ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Bookmark className="w-3 h-3 text-gray-700" />
-                      )}
-                      <span className="text-gray-700 text-xs font-medium">
-                        {hasSavedParty ? 'Saved' : 'Email Plan'}
-                      </span>
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
