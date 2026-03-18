@@ -242,7 +242,8 @@ function PaymentForm({
   isRedirecting,
   setIsRedirecting,
   clientSecret,
-  creditApplied = 0
+  creditApplied = 0,
+  finalAmount = 0
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -403,20 +404,25 @@ function PaymentForm({
   const isFormDisabled = isProcessing || isRedirecting
 
   // Check if Klarna is available (payment over £200)
-  const totalPayment = paymentBreakdown?.totalPaymentToday || 0
-  const isKlarnaAvailable = (totalPayment - creditApplied) >= 200
+  const isKlarnaAvailable = finalAmount >= 200
+  const klarnaInstalment = (Math.ceil(finalAmount / 3 * 100) / 100).toFixed(2)
 
   return (
     <div className="space-y-4">
       {/* Klarna promo banner */}
       {isKlarnaAvailable && clientSecret && (
-        <div className="flex items-center gap-2 p-3 bg-pink-50 border border-pink-100 rounded-xl">
-          <svg className="w-5 h-5 text-pink-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-          <p className="text-sm text-gray-700">
-            Pay in 3 interest-free instalments with <span className="font-medium">Klarna</span>
-          </p>
+        <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+          <div className="flex-shrink-0 bg-pink-100 rounded-lg px-2.5 py-1.5">
+            <span className="text-sm font-extrabold text-gray-900 tracking-tight">Klarna</span>
+          </div>
+          <div>
+            <p className="text-sm text-gray-800">
+              3 payments of <span className="font-bold">£{klarnaInstalment}</span> at 0% interest with Klarna
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              18+, T&C apply, Credit subject to status.
+            </p>
+          </div>
         </div>
       )}
 
@@ -1616,6 +1622,7 @@ export default function PaymentPageContent() {
                   setIsRedirecting={setIsRedirecting}
                   clientSecret={clientSecret}
                   creditApplied={creditApplied}
+                  finalAmount={paymentBreakdown.totalPaymentToday - flyerDiscount - promoCodeDiscount - partyBagsDiscount - creditApplied}
                 />
               </Elements>
             ) : (
