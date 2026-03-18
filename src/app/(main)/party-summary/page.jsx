@@ -1,5 +1,6 @@
 "use client"
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
+import SnappyLoader from "@/components/ui/SnappyLoader"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +13,6 @@ import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarS
 import { useState } from "react"
 import { getThemeDisplayName } from "@/utils/compoundTheme"
 import SupplierChatTabs from '@/components/SupplierChatTabs'
-import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // Party Details Card Component
 const PartyDetailsCard = ({ partyDetails, currentParty, dataSource }) => {
@@ -610,7 +610,19 @@ const PartyServiceTableRow = ({ service, onAction, expandedRows, toggleRowExpans
   )
 }
 
-export default function PartyPlanSummary() {
+export default function PartyPlanSummaryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <SnappyLoader text="Loading your party..." />
+      </div>
+    }>
+      <PartyPlanSummary />
+    </Suspense>
+  )
+}
+
+function PartyPlanSummary() {
   const router = useRouter()
   const [expandedRows, setExpandedRows] = useState(new Set())
 
