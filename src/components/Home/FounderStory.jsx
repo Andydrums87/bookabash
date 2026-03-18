@@ -35,7 +35,7 @@ export default function FounderStory() {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 140px, (max-width: 1024px) 160px, 170px"
-                    priority
+                    loading="lazy"
                   />
                 </div>
                 {/* Neil's photo */}
@@ -46,7 +46,7 @@ export default function FounderStory() {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 140px, (max-width: 1024px) 160px, 170px"
-                    priority
+                    loading="lazy"
                   />
                 </div>
               </div>

@@ -120,19 +120,12 @@ export default function RootLayout({ children }) {
           name="facebook-domain-verification"
           content="6eexcunosrj4etelgt5zobc4ni1bq5"
         />
-        {/* Block analytics by default until consent */}
-        <Script id="gtag-consent" strategy="beforeInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('consent', 'default', {
-              'analytics_storage': 'denied',
-              'ad_storage': 'denied',
-              'ad_user_data': 'denied',
-              'ad_personalization': 'denied'
-            });
-          `}
-        </Script>
+        {/* Block analytics by default until consent — inline script to avoid render-blocking */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('consent','default',{'analytics_storage':'denied','ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied'});`,
+          }}
+        />
 
         {/* Load Google Analytics & Google Ads */}
         <Script
