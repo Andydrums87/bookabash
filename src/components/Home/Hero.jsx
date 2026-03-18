@@ -28,11 +28,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               <div>
                 {isFlyerPartyBags ? (
                   <>
-                    {/* Free Party Bags Offer Badge */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
-                      <span className="text-lg">🎁</span>
-                      FREE PARTY BAGS
-                    </div>
                     <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
                       Get <span className="text-primary-500 relative">free party bags</span> for your child's{' '}
                       <span className="text-primary-500 relative">perfect party</span>
@@ -40,11 +35,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   </>
                 ) : isFlyer ? (
                   <>
-                    {/* Limited Time Offer Badge */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg animate-pulse">
-                      <span className="text-lg">🎉</span>
-                      LIMITED TIME: £25 OFF
-                    </div>
                     <h1 className="text-6xl font-black text-gray-900 leading-tight animate-fade-in">
                       Get <span className="text-primary-500 relative">£25 off</span> your child's{' '}
                       <span className="text-primary-500 relative">perfect party</span>
@@ -356,7 +346,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               <div className="max-w-screen mx-auto text-center">
                 {isFlyerPartyBags ? (
                   <>
-                    {/* Free Party Bags Badge - Mobile */}
                     <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
                       <span>🎁</span>
                       FREE PARTY BAGS
@@ -372,7 +361,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   </>
                 ) : isFlyer ? (
                   <>
-                    {/* Limited Time Offer Badge - Mobile */}
                     <div className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1.5 rounded-full text-xs font-bold mb-3 shadow-lg animate-pulse">
                       <span>🎉</span>
                       LIMITED TIME: £25 OFF

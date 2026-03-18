@@ -45,6 +45,7 @@ const TemplateEInvitesPage = ({ onSaveSuccess }) => {
   // Custom hooks
   const {
     selectedTheme,
+    setSelectedTheme,
     inviteData,
     generatedImage,
     setGeneratedImage,
@@ -171,6 +172,7 @@ const TemplateEInvitesPage = ({ onSaveSuccess }) => {
               inviteData={inviteData}
               handleInputChange={handleInputChange}
               selectedTheme={selectedTheme}
+              onThemeChange={setSelectedTheme}
             />
           </div>
         )

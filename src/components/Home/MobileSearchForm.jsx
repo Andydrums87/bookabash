@@ -70,17 +70,6 @@ export default function MobileSearchForm({
       <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-4 shadow-2xl border-2 border-[hsl(var(--primary-500))]">
         <div className="space-y-4">
 
-          {/* Limited Time Offer Banner - Only shown for flyer visitors */}
-          {isFlyerPartyBags ? (
-            <div className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-3 py-2 rounded-xl text-center -mt-1 mb-2">
-              <p className="text-xs font-bold">🎁 Add party bags and get them FREE at checkout</p>
-            </div>
-          ) : isFlyer && (
-            <div className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-2 rounded-xl text-center -mt-1 mb-2">
-              <p className="text-xs font-bold">🎉 Your £25 discount will be applied at checkout</p>
-            </div>
-          )}
-
           {/* Event Date */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-700">
