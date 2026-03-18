@@ -2682,7 +2682,16 @@ export default function SupplierCustomizationModal({
                     <h4 className="font-bold text-gray-900 text-base mb-4">Party info</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { img: "/category-icons/entertainment.png", label: "Party length", value: `${selectedPackage?.duration || 2} hours` },
+                        { img: "/category-icons/entertainment.png", label: "Party length", value: (() => {
+                          const d = selectedPackage?.duration || 2
+                          // Performance parties (music, drama, dance) are 45-60 min sessions (premium are 75-90 min)
+                          const sub = supplier?.subcategory?.toLowerCase() || ''
+                          const isPerformance = ['music', 'drama', 'dance'].some(t => sub.includes(t))
+                          if (isPerformance) return d > 60 ? '75-90 mins' : '45-60 mins'
+                          // Standard entertainers: duration stored in hours (1-3) or minutes (60+)
+                          if (d >= 60) { const h = d / 60; return h === 1 ? '1 hour' : `${h} hours` }
+                          return d <= 3 ? (d === 1 ? '1 hour' : `${d} hours`) : `${d} mins`
+                        })() },
                         { img: "/category-icons/decorations.png", label: "Set up", value: `${sd.setupTime || 20} mins before` },
                         { img: "/journey-icons/rsvps.png", label: "Ages suited", value: formatAgeRangeInline(ageGroups) },
                         { img: "/journey-icons/guestlist.png", label: "Max attendance", value: `${sd.performanceSpecs?.maxGroupSize || 30} children` },
