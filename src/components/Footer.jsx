@@ -20,7 +20,7 @@ const Footer = () => {
             <div>
               <Link href="/" className="w-40 h-20 relative block">
                 <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1752578794/Transparent_With_Text_1_nfb1pi.png"
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto,w_400/v1752578794/Transparent_With_Text_1_nfb1pi.png"
                   alt="PartySnap Logo"
                   fill
                   className="object-contain"

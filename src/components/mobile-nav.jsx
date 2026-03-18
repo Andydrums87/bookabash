@@ -397,7 +397,7 @@ useEffect(() => {
           ) : (
             <div className="flex justify-center py-2">
               <img
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto,w_400/v1752578876/Transparent_With_Text2_xtq8n5.png"
                 alt="PartySnap"
                 className="h-10 w-auto"
               />
