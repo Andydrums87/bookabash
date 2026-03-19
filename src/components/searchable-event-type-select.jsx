@@ -99,8 +99,8 @@ const eventTypes = [
 
   // Performance Parties
   { value: "drama-party", label: "Drama Party", category: "Performance Parties" },
-  { value: "dance-party", label: "Dance Party", category: "Performance Parties" },
-  { value: "music-party", label: "Music Party", category: "Performance Parties" },
+  // { value: "dance-party", label: "Dance Party", category: "Performance Parties" },
+  // { value: "music-party", label: "Music Party", category: "Performance Parties" },
 
   // Creative themes
   // { value: "art-craft", label: "Art & Craft", category: "Creative" },
