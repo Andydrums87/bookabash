@@ -293,17 +293,18 @@ export default function SelectedSupplierCard({
                   </div>
                 )}
 
-                {/* Remove Button Only */}
+                {/* Remove Button */}
                 <div className="absolute top-4 right-4 z-20">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDeleteSupplier(type)
                     }}
-                    className="w-7 h-7 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-gray-600 hover:text-gray-900 flex items-center justify-center transition-all duration-200 shadow-md z-30"
+                    className="px-3 py-1.5 bg-white/95 hover:bg-red-50 backdrop-blur-sm rounded-full text-gray-600 hover:text-red-600 flex items-center gap-1.5 transition-all duration-200 shadow-lg z-30 text-xs font-medium"
                     aria-label="Remove supplier"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
+                    Remove
                   </button>
                 </div>
 

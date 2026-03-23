@@ -60,7 +60,7 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
   const checklistItems = useMemo(() => {
     const budget = partyDetails?.budget || 500
     const guestCount = parseInt(partyDetails?.guestCount || 0)
-    const isLargeParty = guestCount >= 30
+    const isLargeParty = guestCount >= 20
 
     const items = []
 
@@ -76,27 +76,17 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       type: "entertainment"
     })
     items.push({
-      animation: partyAnimation,
-      label: "Picking the perfect cake",
-      type: "cake"
-    })
-    items.push({
       animation: shoppingBagAnimation,
       label: "Choosing party bags",
       type: "partybags"
     })
 
-    // Budget > 700: Add decorations and activities
-    if (budget > 700) {
-      items.push({
-        animation: birthdayConfettiAnimation,
-        label: "Suggesting beautiful decorations",
-        type: "decorations"
-      })
+    // Large party (20+ guests): Add soft play
+    if (isLargeParty) {
       items.push({
         animation: trampolineAnimation,
-        label: "Finding fun activities",
-        type: "activities"
+        label: "Adding soft play fun",
+        type: "softPlay"
       })
     }
 
@@ -131,9 +121,9 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const advanceItem = () => {
       currentItem++
-      if (currentItem < checklistItems.length) {
+      if (currentItem <= checklistItems.length) {
         setCompletedItems(currentItem)
-        if (currentItem < checklistItems.length - 1) {
+        if (currentItem < checklistItems.length) {
           setTimeout(advanceItem, itemDuration)
         }
       }

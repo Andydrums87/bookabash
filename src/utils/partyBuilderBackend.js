@@ -1173,7 +1173,7 @@ checkSupplierLocation(supplier, partyLocation) {
     const selected = {};
     let remainingBudget = budget;
     const guests = parseInt(guestCount);
-    const isLargeParty = guests >= 30;
+    const isLargeParty = guests >= 20;
     const age = parseInt(childAge) || 6;
 
     // For performance party themes, use sub-theme for non-entertainment categories
@@ -1208,32 +1208,36 @@ checkSupplierLocation(supplier, partyLocation) {
       };
       console.log(`👶 Toddler budget allocation:`, budgetAllocation);
     } else if (budget <= 500) {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
-      budgetAllocation = { venue: 0.20, entertainment: 0.45, cakes: 0.25, partyBags: 0.05 };
-    } else if (budget <= 700) {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
-      budgetAllocation = { venue: 0.20, entertainment: 0.40, cakes: 0.30, partyBags: 0.05 };
-    } else {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
       if (isLargeParty) {
-        budgetAllocation = {
-          venue: 0.05,
-          entertainment: 0.30,
-          cakes: 0.20,
-          decorations: 0.10,
-          activities: 0.20,
-          partyBags: 0.05,
-          softPlay: 0.10
-        };
-        includedCategories.push('softPlay');
+        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
+        budgetAllocation = { venue: 0.20, entertainment: 0.45, activities: 0.25, partyBags: 0.10 };
       } else {
+        includedCategories = ['venue', 'entertainment', 'partyBags'];
+        budgetAllocation = { venue: 0.25, entertainment: 0.65, partyBags: 0.10 };
+      }
+    } else if (budget <= 700) {
+      if (isLargeParty) {
+        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
+        budgetAllocation = { venue: 0.20, entertainment: 0.40, activities: 0.25, partyBags: 0.15 };
+      } else {
+        includedCategories = ['venue', 'entertainment', 'partyBags'];
+        budgetAllocation = { venue: 0.25, entertainment: 0.60, partyBags: 0.15 };
+      }
+    } else {
+      if (isLargeParty) {
+        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
         budgetAllocation = {
           venue: 0.05,
-          entertainment: 0.30,
-          cakes: 0.25,
-          decorations: 0.20,
-          activities: 0.10,
-          partyBags: 0.05
+          entertainment: 0.45,
+          activities: 0.35,
+          partyBags: 0.15
+        };
+      } else {
+        includedCategories = ['venue', 'entertainment', 'partyBags'];
+        budgetAllocation = {
+          venue: 0.10,
+          entertainment: 0.70,
+          partyBags: 0.20
         };
       }
     }

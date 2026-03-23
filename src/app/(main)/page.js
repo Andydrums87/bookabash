@@ -378,10 +378,11 @@ function HomePageContent() {
         const budget = getDefaultBudgetForGuests(formData.guestCount)
 
         // Calculate number of items that will be shown
-        let itemCount = 4 // Core items: Venue, Entertainment, Cake, Party Bags
+        const guests = parseInt(formData.guestCount) || 0
+        let itemCount = 3 // Core items: Venue, Entertainment, Party Bags
 
-        if (budget > 700) {
-          itemCount += 2 // Decorations, Activities
+        if (guests >= 20) {
+          itemCount += 1 // Soft Play
         }
 
         const totalDuration = itemCount * 1000
