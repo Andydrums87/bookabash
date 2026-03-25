@@ -74,7 +74,7 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
   if (!business) return null
 
   const imageUrl = getBusinessImage(business)
-  const hasCompletedOnboarding = business.data?.onboardingCompleted || business.data?.isComplete
+  const hasCompletedOnboarding = business.data?.onboardingCompleted || business.data?.isComplete || (business.profile_status === 'live' && business.can_go_live)
 
   return (
     <div
@@ -176,14 +176,15 @@ function BusinessCard({ business, onSelect, onClick, isCake }) {
     const canGoLive = business.can_go_live
     const hasCompletedOnboarding = business.data?.onboardingCompleted || business.data?.isComplete
 
+    // Check profile_status from database first - live when profile_status is 'live' AND can_go_live is true
+    // This takes priority because suppliers can be set live without going through onboarding wizard
+    if (profileStatus === 'live' && canGoLive) {
+      return { label: "Listed", color: "bg-green-500" }
+    }
+
     // If onboarding not complete, show setup incomplete
     if (!hasCompletedOnboarding) {
       return { label: "Setup incomplete", color: "bg-amber-500" }
-    }
-
-    // Check profile_status from database - live when profile_status is 'live' AND can_go_live is true
-    if (profileStatus === 'live' && canGoLive) {
-      return { label: "Listed", color: "bg-green-500" }
     }
 
     if (profileStatus === 'under_review' || profileStatus === 'pending_review') {
@@ -364,7 +365,7 @@ export default function ListingsPage() {
     if (!selectedBusiness) return
 
     // Check if onboarding is completed
-    const hasCompletedOnboarding = selectedBusiness.data?.onboardingCompleted || selectedBusiness.data?.isComplete
+    const hasCompletedOnboarding = selectedBusiness.data?.onboardingCompleted || selectedBusiness.data?.isComplete || (selectedBusiness.profile_status === 'live' && selectedBusiness.can_go_live)
 
     if (!hasCompletedOnboarding) {
       // Redirect to wizard to complete onboarding first

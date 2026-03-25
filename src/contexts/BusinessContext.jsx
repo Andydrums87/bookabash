@@ -100,7 +100,7 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
         auth_user_id: business.auth_user_id,
         name: business.business_name || businessData.name || 'Unnamed Business',
         supplierData: business,
-        serviceType: businessData.serviceType || 'entertainer',
+        serviceType: businessData.serviceType || businessData.category || 'entertainer',
         theme: business.created_from_theme || businessData.themes?.[0] || 'general',
         description: businessData.description || '',
         location: businessData.location || '',
