@@ -42,6 +42,7 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
 import EntertainmentBrowserModal from "@/components/EntertainmentBrowserModal"
+import SupplierBrowserModal from "@/components/SupplierBrowserModal"
 import SavePartyPlanModal from "@/components/SavePartyPlanModal"
 import SavePlanBanner from "@/components/SavePlanBanner"
 // Hooks
@@ -134,6 +135,7 @@ export default function LocalStorageDashboard() {
     }
     return false
   })
+  const [showSupplierBrowserModal, setShowSupplierBrowserModal] = useState(null) // null or 'cakes' | 'balloons' | 'partyBags'
   const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
   const [showStickyBottomCTA, setShowStickyBottomCTA] = useState(false)
   const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
@@ -1792,6 +1794,47 @@ const handleSelectEntertainer = async (entertainer) => {
   }
 }
 
+// Handle selecting a supplier from the browse modal (cakes, balloons, party bags)
+const handleSelectBrowsedSupplier = async (supplier) => {
+  const categoryType = showSupplierBrowserModal // 'cakes', 'balloons', or 'partyBags'
+  if (!categoryType) return
+
+  const supplierName = supplier?.name || supplier?.businessName || 'Supplier'
+
+  try {
+    // Clear old supplier addons if replacing
+    if (suppliers[categoryType]) {
+      const oldId = suppliers[categoryType].id
+      const categoryAddons = addons.filter(addon =>
+        addon.supplierId === oldId ||
+        addon.supplierType === categoryType ||
+        addon.attachedToSupplier === categoryType
+      )
+      for (const addon of categoryAddons) {
+        await removeAddon(addon.id)
+      }
+    }
+
+    const result = await addSupplier(supplier, supplier.packageData || null)
+
+    if (result.success) {
+      setShowSupplierBrowserModal(null)
+      toast.success(`${supplierName} added to your party!`, {
+        duration: 4000
+      })
+    } else {
+      toast.error(result.error || 'Failed to add supplier. Please try again.', {
+        duration: 5000
+      })
+    }
+  } catch (error) {
+    console.error('Error selecting supplier:', error)
+    toast.error('Failed to add supplier. Please try again.', {
+      duration: 5000
+    })
+  }
+}
+
 // In LocalStorageDashboard.jsx - add this handler
 const handleCustomizeSupplier = (type, supplier) => {
 
@@ -2332,6 +2375,12 @@ const handleChildPhotoUpload = async (file) => {
                                 onBrowseVenues={() => setShowVenueBrowserModal(true)}
                                 onBrowseEntertainment={() => setShowEntertainmentBrowserModal(true)}
                                 onShowEntertainmentChoice={skipEntertainmentChoice ? null : () => setShowEntertainmentChoiceModal(true)}
+                                onBrowseSupplier={(() => {
+                                  if (!['cakes', 'balloons', 'partyBags', 'decorations'].includes(type)) return undefined
+                                  const effectiveTheme = getEffectiveThemeForCategory(partyDetails?.theme)
+                                  const isNonThemed = !effectiveTheme || effectiveTheme === 'general' || effectiveTheme === 'no-theme'
+                                  return isNonThemed ? () => setShowSupplierBrowserModal(type) : undefined
+                                })()}
                               />
 
                             </div>
@@ -2418,6 +2467,11 @@ const handleChildPhotoUpload = async (file) => {
                       onBrowseEntertainment={() => setShowEntertainmentBrowserModal(true)}
                       onShowVenueChoice={skipVenueChoice ? null : () => setShowVenueChoiceModal(true)}
                       onShowEntertainmentChoice={skipEntertainmentChoice ? null : () => setShowEntertainmentChoiceModal(true)}
+                      onBrowseSupplier={(() => {
+                        const effectiveTheme = getEffectiveThemeForCategory(partyDetails?.theme)
+                        const isNonThemed = !effectiveTheme || effectiveTheme === 'general' || effectiveTheme === 'no-theme'
+                        return isNonThemed ? (type) => setShowSupplierBrowserModal(type) : undefined
+                      })()}
                       onEditPartyDetails={handleEditPartyDetails}
                       childPhoto={partyDetails?.childPhoto}
                       onPhotoUpload={handleChildPhotoUpload}
@@ -2625,6 +2679,16 @@ const handleChildPhotoUpload = async (file) => {
         onSelectEntertainer={handleSelectEntertainer}
         partyDetails={partyDetails}
         currentEntertainer={suppliers.entertainment}
+      />
+
+      {/* Supplier Browser Modal (Cakes, Balloons, Party Bags) */}
+      <SupplierBrowserModal
+        isOpen={!!showSupplierBrowserModal}
+        onClose={() => setShowSupplierBrowserModal(null)}
+        onSelectSupplier={handleSelectBrowsedSupplier}
+        partyDetails={partyDetails}
+        currentSupplier={showSupplierBrowserModal ? suppliers[showSupplierBrowserModal] : null}
+        category={showSupplierBrowserModal || 'cakes'}
       />
 
       {/* Venue Conflict Modal - Bouncy Castle Restriction */}

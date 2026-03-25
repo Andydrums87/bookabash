@@ -58,6 +58,7 @@ export default function MobileSupplierNavigation({
   onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
   onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
   onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
+  onBrowseSupplier, // Callback to open supplier browser modal (cakes, balloons, party bags)
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -445,6 +446,7 @@ export default function MobileSupplierNavigation({
         onCustomizationComplete={onCustomizationComplete}
         onBrowseVenues={onBrowseVenues}
         onBrowseEntertainment={onBrowseEntertainment}
+        onBrowseSupplier={onBrowseSupplier}
         onEditPartyDetails={onEditPartyDetails}
         onPhotoUpload={onPhotoUpload}
         childPhoto={childPhoto}

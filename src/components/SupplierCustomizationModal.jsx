@@ -2716,12 +2716,15 @@ export default function SupplierCustomizationModal({
                   {/* Package Selector - only show if entertainer has multiple packages */}
                   {(() => {
                     const isPerformance = isPerformanceParty(partyTheme)
-                    // Also check if the supplier itself is a drama party supplier (by subcategory)
-                    const supplierSub = supplier?.subcategory?.toLowerCase() || ''
-                    const isDramaSupplier = supplierSub.includes('drama')
+                    // Also check if the supplier itself is a performance party supplier
+                    const entertainmentType = (supplier?.serviceDetails?.entertainmentType || supplier?.service_details?.entertainmentType || '').toLowerCase()
+                    const supplierName = (supplier?.name || supplier?.businessName || '').toLowerCase()
+                    const isPerformanceSupplier = ['drama party', 'dance party', 'music party'].some(t =>
+                      entertainmentType.includes(t.toLowerCase()) || supplierName.includes(t.split(' ')[0])
+                    )
 
-                    // For performance parties OR drama party suppliers: show a theme dropdown (pre-selected) + no radio cards
-                    if ((isPerformance || isDramaSupplier) && packages.length > 1) {
+                    // For performance parties OR performance party suppliers: show a theme dropdown
+                    if ((isPerformance || isPerformanceSupplier) && packages.length > 1) {
                       return (
                         <div>
                           <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">

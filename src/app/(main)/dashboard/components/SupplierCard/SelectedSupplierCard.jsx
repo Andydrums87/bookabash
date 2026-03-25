@@ -40,7 +40,8 @@ export default function SelectedSupplierCard({
   onSaveVenueAddons, // NEW: Handler for saving venue add-ons
   showBrowseVenues = false,
   onBrowseVenues,
-  onBrowseEntertainment
+  onBrowseEntertainment,
+  onBrowseSupplier,
 }) {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
@@ -300,6 +301,21 @@ export default function SelectedSupplierCard({
                       onClick={(e) => {
                         e.stopPropagation()
                         onBrowseEntertainment()
+                      }}
+                      disabled={isDeleting}
+                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Change
+                    </button>
+                  </div>
+                )}
+                {['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier && (
+                  <div className="absolute top-4 left-4 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onBrowseSupplier(type)
                       }}
                       disabled={isDeleting}
                       className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"

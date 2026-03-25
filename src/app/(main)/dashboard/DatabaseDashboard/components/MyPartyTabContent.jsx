@@ -38,6 +38,7 @@ export default function MyPartyTabContent({
   onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
   onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
   onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
+  onBrowseSupplier, // Callback to open supplier browser modal (cakes, balloons, party bags)
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -445,12 +446,27 @@ export default function MyPartyTabContent({
               </button>
             </div>
           )}
+          {['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier && (
+            <div className="absolute top-4 left-4 z-30">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onBrowseSupplier(type)
+                }}
+                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Change
+              </button>
+            </div>
+          )}
 
           {/* Status Badge (non-venues) and Remove Button */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
             <div>
               {/* Only show paid badge for types without Change button */}
-              {type !== 'venue' && !(type === 'entertainment' && onBrowseEntertainment) && isPaid && (
+              {type !== 'venue' && !(type === 'entertainment' && onBrowseEntertainment) && !(['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier) && isPaid && (
                 <Badge className="bg-green-500 text-white shadow-lg backdrop-blur-sm">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Paid
@@ -848,6 +864,7 @@ export default function MyPartyTabContent({
               onShowVenueChoice={onShowVenueChoice}
               onBrowseEntertainment={onBrowseEntertainment}
               onShowEntertainmentChoice={onShowEntertainmentChoice}
+              onBrowseSupplier={onBrowseSupplier}
             />
           </div>
 

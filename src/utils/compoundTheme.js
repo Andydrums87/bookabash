@@ -69,14 +69,22 @@ export function getThemeDisplayName(theme) {
     .join(' ');
 }
 
+// Activity-only themes that don't have matching cakes/bags/decorations
+// These should be treated as 'no-theme' for non-entertainment categories
+const ACTIVITY_ONLY_THEMES = ['disco', 'magic-and-games'];
+
 // For non-entertainment categories: extract sub-theme for matching
 // 'dance-party:princess' -> 'princess'
 // 'dance-party'          -> null
 // 'princess'             -> 'princess'
+// 'disco'                -> null (activity-only, no themed cakes/bags)
 export function getEffectiveThemeForCategory(theme) {
   const { activityType, subTheme } = parseCompoundTheme(theme);
   if (activityType && ACTIVITY_TYPES.includes(activityType)) {
     return subTheme; // may be null
+  }
+  if (ACTIVITY_ONLY_THEMES.includes(theme)) {
+    return null;
   }
   return theme;
 }

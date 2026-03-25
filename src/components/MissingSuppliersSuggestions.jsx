@@ -26,6 +26,7 @@ export default function MissingSuppliersSuggestions({
   onShowVenueChoice = null, // NEW: Callback for venue choice modal (own venue users)
   onBrowseEntertainment = null,
   onShowEntertainmentChoice = null,
+  onBrowseSupplier = null,
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -458,6 +459,7 @@ export default function MissingSuppliersSuggestions({
                 onShowVenueChoice={onShowVenueChoice}
                 onBrowseEntertainment={onBrowseEntertainment}
                 onShowEntertainmentChoice={onShowEntertainmentChoice}
+                onBrowseSupplier={onBrowseSupplier}
               />
             </div>
           );

@@ -231,6 +231,7 @@ export default function EmptySupplierCard({
   onShowVenueChoice = null, // Callback for venue choice modal (own venue users)
   onBrowseEntertainment = null, // Callback to open entertainment browser modal
   onShowEntertainmentChoice = null, // Callback for entertainment choice modal (auto vs browse)
+  onBrowseSupplier = null, // Callback to open supplier browser modal (cakes, balloons, party bags)
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -365,6 +366,12 @@ export default function EmptySupplierCard({
     }
     if (isEntertainmentSupplier && onBrowseEntertainment) {
       onBrowseEntertainment()
+      return
+    }
+
+    // For cakes, balloons, party bags, decorations: open browse modal if available
+    if ((isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isDecorationsSupplier) && onBrowseSupplier) {
+      onBrowseSupplier(type)
       return
     }
 
@@ -516,6 +523,10 @@ export default function EmptySupplierCard({
     }
     if (isEntertainmentSupplier && onBrowseEntertainment) {
       onBrowseEntertainment()
+      return
+    }
+    if ((isCakeSupplier || isBalloonSupplier || isPartyBagsSupplier || isDecorationsSupplier) && onBrowseSupplier) {
+      onBrowseSupplier(type)
       return
     }
     // Track that user clicked to view this supplier category
