@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, X, Clock, Users, Star, Info, Eye, Trash2, Wand2, RefreshCw } from "lucide-react"
+import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
@@ -38,7 +39,8 @@ export default function SelectedSupplierCard({
   onCustomizationComplete, // ✅ NEW PROP - handler for when customization is complete
   onSaveVenueAddons, // NEW: Handler for saving venue add-ons
   showBrowseVenues = false,
-  onBrowseVenues
+  onBrowseVenues,
+  onBrowseEntertainment
 }) {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
@@ -276,7 +278,7 @@ export default function SelectedSupplierCard({
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-80" />
 
-                {/* Change Venue Button - Top Left (venues only) */}
+                {/* Change Button - Top Left (venues and entertainment) */}
                 {type === 'venue' && onBrowseVenues && (
                   <div className="absolute top-4 left-4 z-20">
                     <button
@@ -285,9 +287,24 @@ export default function SelectedSupplierCard({
                         onBrowseVenues()
                       }}
                       disabled={isDeleting}
-                      className="px-4 py-2 bg-white hover:bg-gray-100 rounded-full text-sm font-semibold text-gray-800 flex items-center gap-2 transition-all duration-200 shadow-lg cursor-pointer"
+                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Change
+                    </button>
+                  </div>
+                )}
+                {type === 'entertainment' && onBrowseEntertainment && (
+                  <div className="absolute top-4 left-4 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onBrowseEntertainment()
+                      }}
+                      disabled={isDeleting}
+                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
                       Change
                     </button>
                   </div>
@@ -335,9 +352,28 @@ export default function SelectedSupplierCard({
                 {/* Supplier info */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="text-white">
-                    <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
-                      {(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplier.name}
+                    <h3 className="text-2xl font-bold mb-1 drop-shadow-lg">
+                      {(() => {
+                        const sub = (supplier.subcategory || supplier.serviceType || '').toLowerCase()
+                        const isPerformanceParty = ['drama', 'music', 'dance'].some(t => sub.includes(t))
+                        return (type === 'entertainment' && isPerformanceParty && supplier.packageData?.name)
+                          ? supplier.packageData.name
+                          : supplier.name
+                      })()}
                     </h3>
+
+                    {/* Google Rating - venues & entertainers only */}
+                    {(() => {
+                      if (type !== 'venue' && type !== 'entertainment') return null
+                      const gRating = supplier.googleRating || supplier.data?.googleRating || supplier.originalSupplier?.googleRating || supplier.originalSupplier?.data?.googleRating
+                      if (!gRating) return null
+                      const gCount = supplier.googleReviewCount || supplier.data?.googleReviewCount || supplier.originalSupplier?.googleReviewCount || supplier.originalSupplier?.data?.googleReviewCount || 0
+                      return (
+                        <div className="mb-2 drop-shadow-lg">
+                          <GoogleRatingBadge rating={gRating} reviewCount={gCount} size="sm" variant="dark" />
+                        </div>
+                      )
+                    })()}
 
                     <div className="flex items-center justify-between">
                       <div className="text-white">

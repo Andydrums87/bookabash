@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import Image from "next/image"
 import { Star, ChevronLeft, ChevronRight, X } from "lucide-react"
 import useEmblaCarousel from "embla-carousel-react"
+import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 
 // Check if venue has instant book enabled (via Google Calendar sync)
 const hasInstantBook = (venue) => {
@@ -131,6 +132,8 @@ export default function VenueMobileBottomSheet({
   const price = calculateVenuePrice(venue)
   const rating = venue.rating || venue.data?.rating || null
   const reviewCount = venue.reviewCount || venue.data?.reviewCount || 0
+  const googleRating = venue.googleRating || venue.data?.googleRating || null
+  const googleReviewCount = venue.googleReviewCount || venue.data?.googleReviewCount || 0
   const venueType = venue.serviceDetails?.venueType || venue.data?.serviceDetails?.venueType || "Venue"
   const postcode = venue.venueAddress?.postcode || venue.location || venue.serviceDetails?.venueAddress?.postcode || ""
   const capacity = venue.serviceDetails?.venueDetails?.capacity ||
@@ -259,6 +262,13 @@ export default function VenueMobileBottomSheet({
                 </div>
               )}
             </div>
+
+            {/* Google Rating */}
+            {googleRating && (
+              <div className="mb-1">
+                <GoogleRatingBadge rating={googleRating} reviewCount={googleReviewCount} size="sm" />
+              </div>
+            )}
 
             {/* Subtitle */}
             <p className="text-sm text-gray-500 mb-1">

@@ -186,6 +186,9 @@ export function transformSupplierRecord(row) {
   const priceUnit = d.priceUnit ?? "per event";
   const rating = toNum(row.json_rating ?? d.rating);
   const reviewCount = toNum(d.reviewCount, 0);
+  const googlePlaceId = d.googlePlaceId ?? null;
+  const googleRating = toNum(d.googleRating);
+  const googleReviewCount = toNum(d.googleReviewCount, 0);
   const avatar = row.json_avatar ?? d.avatar;
   const packages = Array.isArray(d.packages) ? d.packages : [];
   const availability = d.availability ?? null;
@@ -219,6 +222,9 @@ export function transformSupplierRecord(row) {
     priceUnit,
     rating,
     reviewCount,
+    googlePlaceId,
+    googleRating,
+    googleReviewCount,
     badges,
     workingHours,
     availability,

@@ -14,6 +14,7 @@ import { UniversalModal, ModalHeader, ModalContent } from "@/components/ui/Unive
 import { roundMoney } from "@/utils/unifiedPricing"
 import { trackSupplierViewed } from "@/utils/partyTracking"
 import { getThemeDisplayName } from "@/utils/compoundTheme"
+import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 
 export default function MyPartyTabContent({
   suppliers = {},
@@ -35,6 +36,8 @@ export default function MyPartyTabContent({
   onSaveForLater, // ✅ NEW PROP for save party plan
   hasSavedParty = false, // ✅ NEW PROP for saved state
   onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
+  onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
+  onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -411,7 +414,7 @@ export default function MyPartyTabContent({
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-90" />
 
-          {/* Change Button (venues only) - Top Left */}
+          {/* Change Button (venues and entertainment) - Top Left */}
           {type === 'venue' && onBrowseVenues && (
             <div className="absolute top-4 left-4 z-30">
               <button
@@ -420,9 +423,24 @@ export default function MyPartyTabContent({
                   e.preventDefault()
                   onBrowseVenues()
                 }}
-                className="px-4 py-2 bg-white hover:bg-gray-100 rounded-full text-sm font-semibold text-gray-800 flex items-center gap-2 transition-all duration-200 shadow-lg cursor-pointer"
+                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
+                Change
+              </button>
+            </div>
+          )}
+          {type === 'entertainment' && onBrowseEntertainment && (
+            <div className="absolute top-4 left-4 z-30">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onBrowseEntertainment()
+                }}
+                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
                 Change
               </button>
             </div>
@@ -431,8 +449,8 @@ export default function MyPartyTabContent({
           {/* Status Badge (non-venues) and Remove Button */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
             <div>
-              {/* Only show paid badge for non-venues (venues have Change button) */}
-              {type !== 'venue' && isPaid && (
+              {/* Only show paid badge for types without Change button */}
+              {type !== 'venue' && !(type === 'entertainment' && onBrowseEntertainment) && isPaid && (
                 <Badge className="bg-green-500 text-white shadow-lg backdrop-blur-sm">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Paid
@@ -457,9 +475,28 @@ export default function MyPartyTabContent({
           {/* Supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
             <div className="text-white">
-              <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
-                {(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplierName}
+              <h3 className="text-2xl font-bold mb-1 drop-shadow-lg">
+                {(() => {
+                  const sub = (supplier.subcategory || supplier.serviceType || '').toLowerCase()
+                  const isPerformanceParty = ['drama', 'music', 'dance'].some(t => sub.includes(t))
+                  return (type === 'entertainment' && isPerformanceParty && supplier.packageData?.name)
+                    ? supplier.packageData.name
+                    : supplierName
+                })()}
               </h3>
+
+              {/* Google Rating - venues & entertainers only */}
+              {(() => {
+                if (type !== 'venue' && type !== 'entertainment') return null
+                const gRating = supplier.googleRating || supplier.data?.googleRating || supplier.originalSupplier?.googleRating || supplier.originalSupplier?.data?.googleRating
+                if (!gRating) return null
+                const gCount = supplier.googleReviewCount || supplier.data?.googleReviewCount || supplier.originalSupplier?.googleReviewCount || supplier.originalSupplier?.data?.googleReviewCount || 0
+                return (
+                  <div className="mb-2 drop-shadow-lg">
+                    <GoogleRatingBadge rating={gRating} reviewCount={gCount} size="sm" variant="dark" />
+                  </div>
+                )
+              })()}
 
               {/* Sweet Treats selected items display */}
               {type === 'sweetTreats' && supplier?.packageData?.selectedItems?.length > 0 && (
@@ -809,6 +846,8 @@ export default function MyPartyTabContent({
               horizontalScroll={true}
               onBrowseVenues={onBrowseVenues}
               onShowVenueChoice={onShowVenueChoice}
+              onBrowseEntertainment={onBrowseEntertainment}
+              onShowEntertainmentChoice={onShowEntertainmentChoice}
             />
           </div>
 
@@ -905,7 +944,13 @@ export default function MyPartyTabContent({
 
                       return (
                         <div key={type} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{(type === 'entertainment' && supplier.packageData?.name) ? supplier.packageData.name : supplier.name}</span>
+                          <span className="text-gray-700">{(() => {
+                            const sub = (supplier.subcategory || supplier.serviceType || '').toLowerCase()
+                            const isPerformanceParty = ['drama', 'music', 'dance'].some(t => sub.includes(t))
+                            return (type === 'entertainment' && isPerformanceParty && supplier.packageData?.name)
+                              ? supplier.packageData.name
+                              : supplier.name
+                          })()}</span>
                           {isPartyBags && isFreePartyBags ? (
                             <div className="flex items-center gap-2">
                               <span className="text-gray-400 line-through">£{displayPrice}</span>

@@ -307,6 +307,8 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       advanceBookingDays: supplier.advanceBookingDays,
       availabilityNotes: supplier.availabilityNotes,
       weekendPremium: supplier.weekendPremium, // This line was added
+      googleRating: supplier.googleRating || supplier.data?.googleRating || null,
+      googleReviewCount: supplier.googleReviewCount || supplier.data?.googleReviewCount || 0,
 
       packageData: selectedPackage || null,
       selectedAddons: packageAddons,

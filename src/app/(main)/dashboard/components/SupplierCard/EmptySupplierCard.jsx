@@ -229,6 +229,8 @@ export default function EmptySupplierCard({
   selectedVenue = null, // Venue data to check for restrictions (e.g., bouncy castles not allowed)
   onBrowseVenues = null, // Callback to open venue browser modal (for "find different venue" CTA)
   onShowVenueChoice = null, // Callback for venue choice modal (own venue users)
+  onBrowseEntertainment = null, // Callback to open entertainment browser modal
+  onShowEntertainmentChoice = null, // Callback for entertainment choice modal (auto vs browse)
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -353,6 +355,16 @@ export default function EmptySupplierCard({
     // For venue type with venue choice callback, show venue choice modal instead
     if (isVenueSupplier && onShowVenueChoice) {
       onShowVenueChoice()
+      return
+    }
+
+    // For entertainment type, show choice modal (auto vs browse) or browse directly
+    if (isEntertainmentSupplier && onShowEntertainmentChoice) {
+      onShowEntertainmentChoice()
+      return
+    }
+    if (isEntertainmentSupplier && onBrowseEntertainment) {
+      onBrowseEntertainment()
       return
     }
 
@@ -497,6 +509,15 @@ export default function EmptySupplierCard({
 
   // Helper to open the customization modal
   const openCustomizationModal = () => {
+    // For entertainment, show choice modal or redirect to browse
+    if (isEntertainmentSupplier && onShowEntertainmentChoice) {
+      onShowEntertainmentChoice()
+      return
+    }
+    if (isEntertainmentSupplier && onBrowseEntertainment) {
+      onBrowseEntertainment()
+      return
+    }
     // Track that user clicked to view this supplier category
     trackSupplierViewed(type, recommendedSupplier?.name, recommendedSupplier?.id)
     setShowCustomizationModal(true)

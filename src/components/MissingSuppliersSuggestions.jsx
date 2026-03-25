@@ -24,6 +24,8 @@ export default function MissingSuppliersSuggestions({
   onCustomize, // NEW: Callback to open customization modal
   onBrowseVenues = null, // NEW: Callback to open venue browser modal
   onShowVenueChoice = null, // NEW: Callback for venue choice modal (own venue users)
+  onBrowseEntertainment = null,
+  onShowEntertainmentChoice = null,
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -454,6 +456,8 @@ export default function MissingSuppliersSuggestions({
                 selectedVenue={partyPlan?.venue}
                 onBrowseVenues={onBrowseVenues}
                 onShowVenueChoice={onShowVenueChoice}
+                onBrowseEntertainment={onBrowseEntertainment}
+                onShowEntertainmentChoice={onShowEntertainmentChoice}
               />
             </div>
           );

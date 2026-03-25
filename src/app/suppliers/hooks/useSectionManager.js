@@ -61,7 +61,10 @@ export const useSectionManager = (supplierData, updateProfile, supplier) => {
           addOnServices: {
             originalValue: serviceDetails.addOnServices || [],
           },
-          
+          whatsIncluded: {
+            originalValue: serviceDetails.whatsIncluded || [],
+          },
+
           // Venue-specific sections
           venueAddress: {
             originalValue: serviceDetails.venueAddress || {

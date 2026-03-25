@@ -34,6 +34,7 @@ import {
 import Image from "next/image"
 import SupplierNote from '@/components/SupplierNote'
 import VenueDisplay from '@/components/supplier/display/VenueDisplay'
+import GoogleRatingBadge from '@/components/GoogleRatingBadge'
 
 // ✅ UPDATED: Import unified pricing system
 import {
@@ -291,6 +292,9 @@ export default function SupplierCustomizationModal({
   // About section expand state (mobile)
   const [isAboutExpanded, setIsAboutExpanded] = useState(false)
 
+  // Video playing state (entertainment)
+  const [videoPlaying, setVideoPlaying] = useState(false)
+
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
 
@@ -431,6 +435,7 @@ export default function SupplierCustomizationModal({
     }
     // Reset about section expanded state when supplier changes
     setIsAboutExpanded(false)
+    setVideoPlaying(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplier?.id, emblaApi]) // Intentionally exclude packageIdToIndex - it's a new Map each render
 
@@ -2243,6 +2248,14 @@ export default function SupplierCustomizationModal({
                 <h2 className="text-xl font-bold text-gray-900">
                   {supplier.name || supplier.data?.name || 'Supplier'}
                 </h2>
+                {(supplierTypeDetection.isVenue || supplierTypeDetection.isEntertainment) &&
+                  (supplier?.googleRating || supplier?.data?.googleRating) && (
+                  <GoogleRatingBadge
+                    rating={supplier.googleRating || supplier.data?.googleRating}
+                    reviewCount={supplier.googleReviewCount || supplier.data?.googleReviewCount}
+                    size="sm"
+                  />
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -2415,6 +2428,18 @@ export default function SupplierCustomizationModal({
                 )}
               </div>
             </div>
+
+            {/* Google Rating - mobile only (desktop has it in header) */}
+            {(supplierTypeDetection.isVenue || supplierTypeDetection.isEntertainment) &&
+              (supplier?.googleRating || supplier?.data?.googleRating) && (
+              <div className="lg:hidden px-5 pt-4 pb-2">
+                <GoogleRatingBadge
+                  rating={supplier.googleRating || supplier.data?.googleRating}
+                  reviewCount={supplier.googleReviewCount || supplier.data?.googleReviewCount}
+                  size="md"
+                />
+              </div>
+            )}
 
             {/* About Section - Skip for venues (VenueDisplay has its own) */}
             {!supplierTypeDetection.isVenue && (() => {
@@ -2659,13 +2684,18 @@ export default function SupplierCustomizationModal({
                   <div>
                     <h4 className="font-bold text-gray-900 text-base mb-4">What's included</h4>
                     <ul className="space-y-3">
-                      {(selectedPackage?.features?.length > 0 ? selectedPackage.features : [
-                        "Professional themed entertainment for 2 hours",
-                        "Interactive games, activities & prizes",
-                        "Music and dancing",
-                        "A break for party food",
-                        "Special birthday child moment"
-                      ]).map((feature, i) => (
+                      {(selectedPackage?.features?.length > 0
+                        ? selectedPackage.features
+                        : sd.whatsIncluded?.length > 0
+                          ? sd.whatsIncluded
+                          : [
+                              "Professional themed entertainment for 2 hours",
+                              "Interactive games, activities & prizes",
+                              "Music and dancing",
+                              "A break for party food",
+                              "Special birthday child moment"
+                            ]
+                      ).map((feature, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
                           <span className="text-sm text-gray-700 font-medium">{feature}</span>
@@ -2709,25 +2739,112 @@ export default function SupplierCustomizationModal({
                     </div>
                   </div>
 
-                  {/* Testimonial - full bleed */}
-                  {supplierImages.length > 1 && (
-                    <div className="relative -mx-5 lg:-mx-6 overflow-hidden">
-                      <img
-                        src={supplierImages[1]}
-                        alt="Happy party moment"
-                        className="w-full h-52 object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-                      <div className="absolute inset-0 flex flex-col justify-end p-6">
-                        <p className="text-white text-sm font-medium leading-relaxed italic mb-2">
-                          "The kids were absolutely mesmerised! Best party we've ever had. I didn't have to lift a finger."
-                        </p>
-                        <p className="text-white/70 text-xs font-medium">
-                          — Sarah, Marshalswick, mum of 2
-                        </p>
+                  {/* Video Section */}
+                  {(() => {
+                    const portfolioVideos = supplier?.portfolioVideos || supplier?.data?.portfolioVideos || []
+                    if (portfolioVideos.length === 0) return null
+
+                    const firstVideo = portfolioVideos[0]
+                    const url = typeof firstVideo === 'string' ? firstVideo : firstVideo?.url
+                    if (!url) return null
+
+                    // Parse YouTube/Vimeo URL
+                    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
+                    const vimeoMatch = url.match(/(?:vimeo\.com\/)(?:.*\/)?(\d+)/)
+                    const videoInfo = ytMatch ? { platform: 'youtube', id: ytMatch[1] } : vimeoMatch ? { platform: 'vimeo', id: vimeoMatch[1] } : null
+                    if (!videoInfo) return null
+
+                    const thumbUrl = videoInfo.platform === 'youtube'
+                      ? `https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`
+                      : `https://vumbnail.com/${videoInfo.id}.jpg`
+                    const embedUrl = videoInfo.platform === 'youtube'
+                      ? `https://www.youtube.com/embed/${videoInfo.id}?autoplay=1&rel=0`
+                      : `https://player.vimeo.com/video/${videoInfo.id}?autoplay=1`
+
+                    return (
+                      <div className="-mx-5 lg:-mx-6">
+                        <h4 className="font-bold text-gray-900 text-base mb-3 px-5 lg:px-6">Watch us in action</h4>
+                        <div className="relative aspect-video bg-gray-200 cursor-pointer"
+                             onClick={() => setVideoPlaying(true)}>
+                          {videoPlaying ? (
+                            <iframe src={embedUrl} className="w-full h-full" frameBorder="0"
+                              allow="autoplay; encrypted-media" allowFullScreen />
+                          ) : (
+                            <>
+                              <img src={thumbUrl} alt={firstVideo.title || 'Video'} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-current ml-1">
+                                    <path d="M8 5v14l11-7z"/>
+                                  </svg>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {firstVideo.title && (
+                          <p className="text-sm text-gray-600 px-5 lg:px-6 pt-2">{firstVideo.title}</p>
+                        )}
                       </div>
+                    )
+                  })()}
+
+                  {/* Google Rating - venues & entertainers only */}
+                  {(supplierTypeDetection.isVenue || supplierTypeDetection.isEntertainment) &&
+                    (supplier?.googleRating || supplier?.data?.googleRating) && (
+                    <div className="px-5 lg:px-0">
+                      <GoogleRatingBadge
+                        rating={supplier.googleRating || supplier.data?.googleRating}
+                        reviewCount={supplier.googleReviewCount || supplier.data?.googleReviewCount}
+                        size="md"
+                      />
                     </div>
                   )}
+
+                  {/* Reviews Section */}
+                  {(() => {
+                    const reviews = supplier?.reviews || supplier?.data?.reviews || []
+                    if (reviews.length === 0) return null
+
+                    const avgRating = reviews.reduce((sum, r) => sum + (r.rating || 5), 0) / reviews.length
+
+                    return (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <h4 className="font-bold text-gray-900 text-base">What parents say</h4>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                            ))}
+                            <span className="text-xs text-gray-500 ml-1">{avgRating.toFixed(1)}</span>
+                          </div>
+                        </div>
+                        <div className="-mx-5 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+                          <div className="flex gap-3 px-5 pb-2" style={{ width: 'max-content' }}>
+                            {reviews.map((review) => (
+                              <div key={review.id} className="flex-shrink-0 w-72 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--primary-600))]">
+                                    {review.name?.charAt(0)?.toUpperCase() || '?'}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900">{review.name}</p>
+                                    {review.date && <p className="text-xs text-gray-400">{review.date}</p>}
+                                  </div>
+                                  <div className="flex ml-auto">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star key={i} className={`w-3 h-3 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-700 leading-relaxed">{review.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                   {/* PartySnap Promise */}
                   <div className="bg-[hsl(var(--primary-50))] -mx-5 lg:-mx-6 px-5 lg:px-6 py-5">
@@ -2769,6 +2886,49 @@ export default function SupplierCustomizationModal({
                     />
                     <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
                   </div>
+
+                  {/* Meet the Entertainer */}
+                  {(() => {
+                    const personalBio = sd?.personalBio || supplier?.data?.serviceDetails?.personalBio || {}
+                    const hasContent = Object.values(personalBio).some(v => v?.toString().trim())
+                    if (!hasContent) return null
+
+                    return (
+                      <div>
+                        <hr className="border-gray-100 mb-6" />
+                        <h4 className="font-bold text-gray-900 text-base mb-4">Meet the entertainer</h4>
+                        <div className="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-100 rounded-xl p-5 space-y-4">
+                          {personalBio.yearsExperience && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                                <Star className="w-4 h-4 text-purple-500" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Experience</p>
+                                <p className="text-sm text-gray-800 font-medium">{personalBio.yearsExperience} years in events</p>
+                              </div>
+                            </div>
+                          )}
+                          {personalBio.inspiration && (
+                            <div className="flex items-start gap-3">
+                              <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                                <Sparkles className="w-4 h-4 text-pink-500" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Inspiration</p>
+                                <p className="text-sm text-gray-800">{personalBio.inspiration}</p>
+                              </div>
+                            </div>
+                          )}
+                          {personalBio.personalStory && (
+                            <div className="pt-1 border-t border-pink-100">
+                              <p className="text-sm text-gray-700 leading-relaxed italic">"{personalBio.personalStory}"</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                   {/* Photo Gallery - full bleed */}
                   {galleryImages.length >= 2 && (

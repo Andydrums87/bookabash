@@ -54,7 +54,8 @@ import {
   Palette,
   Leaf,
   Cake,
-  Truck
+  Truck,
+  Star
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -717,6 +718,8 @@ if (loading) {
     { id: 'themes', label: 'Themes', icon: Sparkles },
     { id: 'equipment', label: 'Equipment & skills', icon: Settings },
     { id: 'personalBio', label: 'Meet the entertainer', icon: Users },
+    { id: 'whatsIncluded', label: "What's included", icon: CheckCircle },
+    { id: 'reviews', label: 'Customer reviews', icon: Star },
     { id: 'addOns', label: 'Add-on services', icon: Package },
     { id: 'packages', label: 'Packages', icon: Package },
     { id: 'messageTemplates', label: 'Message templates', icon: MessageSquare },
@@ -1182,6 +1185,28 @@ if (loading) {
                     <h3 className="text-sm text-gray-500 mb-1">Meet the entertainer</h3>
                     <p className="font-medium text-gray-900">
                       {mobileBioPreview || 'Tell your story'}
+                    </p>
+                  </div>
+                )
+
+              case 'whatsIncluded':
+                const mobileWhatsIncluded = (serviceDetails.whatsIncluded || []).filter(item => item?.trim())
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">What's included</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileWhatsIncluded.length > 0 ? `${mobileWhatsIncluded.length} item${mobileWhatsIncluded.length !== 1 ? 's' : ''} listed` : "Add what's included"}
+                    </p>
+                  </div>
+                )
+
+              case 'reviews':
+                const mobileReviewCount = (supplierData?.reviews || []).length
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Customer reviews</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileReviewCount > 0 ? `${mobileReviewCount} review${mobileReviewCount !== 1 ? 's' : ''}` : 'Add customer reviews'}
                     </p>
                   </div>
                 )
@@ -1996,6 +2021,28 @@ if (loading) {
                         <h3 className="font-semibold text-gray-900 mb-1">Meet the entertainer</h3>
                         <p className="text-sm text-gray-500">
                           {bioPreview || 'Tell your story'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'whatsIncluded':
+                    const desktopWhatsIncluded = (serviceDetails.whatsIncluded || []).filter(item => item?.trim())
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">What's included</h3>
+                        <p className="text-sm text-gray-500">
+                          {desktopWhatsIncluded.length > 0 ? `${desktopWhatsIncluded.length} item${desktopWhatsIncluded.length !== 1 ? 's' : ''} listed` : "Add what's included"}
+                        </p>
+                      </div>
+                    )
+
+                  case 'reviews':
+                    const desktopReviewCount = (supplierData?.reviews || []).length
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Customer reviews</h3>
+                        <p className="text-sm text-gray-500">
+                          {desktopReviewCount > 0 ? `${desktopReviewCount} review${desktopReviewCount !== 1 ? 's' : ''}` : 'Add customer reviews'}
                         </p>
                       </div>
                     )

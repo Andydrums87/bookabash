@@ -9,6 +9,7 @@ import useEmblaCarousel from "embla-carousel-react"
 
 // Import the swipeable carousel
 import SwipeableSupplierCarousel from '@/components/supplier/SwipableSupplierCarousel'
+import GoogleRatingBadge from '@/components/GoogleRatingBadge'
 
 // Import service display components
 import ServiceDetailsDisplayRouter from '@/components/supplier/display/ServiceDetailsDisplayRouter'
@@ -447,6 +448,21 @@ export default function SupplierQuickViewModal({
                 <div className="lg:flex-1 lg:overflow-y-auto lg:h-full">
                   {/* Content with padding */}
                   <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
+
+                {/* Google Rating - venues & entertainers only */}
+                {(() => {
+                  const cat = displaySupplier?.category?.toLowerCase() || ''
+                  const isVenueOrEntertainer = cat === 'venue' || cat === 'venues' || cat === 'entertainment' || cat === 'entertainer'
+                  const gRating = displaySupplier?.googleRating || displaySupplier?.data?.googleRating
+                  if (!isVenueOrEntertainer || !gRating) return null
+                  return (
+                    <GoogleRatingBadge
+                      rating={gRating}
+                      reviewCount={displaySupplier?.googleReviewCount || displaySupplier?.data?.googleReviewCount}
+                      size="md"
+                    />
+                  )
+                })()}
 
                 {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for categories that have their own aboutUs section */}
                 {(() => {

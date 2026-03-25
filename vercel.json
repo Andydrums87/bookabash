@@ -27,6 +27,12 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/google-reviews/sync",
+      "schedule": "0 3 * * *"
+    }
   ]
 }
   

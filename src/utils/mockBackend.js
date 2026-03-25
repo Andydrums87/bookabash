@@ -1470,6 +1470,9 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       // ✅ THEMES: Update if explicitly provided (for cake products and themed suppliers)
       themes: updatedData.themes !== undefined ? updatedData.themes : (current.themes || []),
 
+      // Reviews (entertainer manual reviews)
+      reviews: updatedData.reviews !== undefined ? updatedData.reviews : (current.reviews || []),
+
       // Owner/Contact information
       owner: {
         ...current.owner,

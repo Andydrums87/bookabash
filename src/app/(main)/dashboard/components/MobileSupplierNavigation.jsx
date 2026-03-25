@@ -56,6 +56,8 @@ export default function MobileSupplierNavigation({
   onSaveForLater, // ✅ NEW PROP for save party plan
   hasSavedParty = false, // ✅ NEW PROP for saved state
   onShowVenueChoice, // ✅ NEW PROP for venue choice modal (own venue users)
+  onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
+  onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -442,6 +444,7 @@ export default function MobileSupplierNavigation({
         recommendedSuppliers={recommendedSuppliers}
         onCustomizationComplete={onCustomizationComplete}
         onBrowseVenues={onBrowseVenues}
+        onBrowseEntertainment={onBrowseEntertainment}
         onEditPartyDetails={onEditPartyDetails}
         onPhotoUpload={onPhotoUpload}
         childPhoto={childPhoto}
@@ -451,6 +454,7 @@ export default function MobileSupplierNavigation({
         onSaveForLater={onSaveForLater}
         hasSavedParty={hasSavedParty}
         onShowVenueChoice={onShowVenueChoice}
+        onShowEntertainmentChoice={onShowEntertainmentChoice}
       />
     )
   }

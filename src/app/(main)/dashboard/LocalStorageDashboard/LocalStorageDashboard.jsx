@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 // Icons
-import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building, AlertTriangle } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building, AlertTriangle, Music } from "lucide-react"
 import { getThemeDisplayName, isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory } from "@/utils/compoundTheme"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -41,6 +41,7 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 // import PartySummarySection from "../components/PartySummarySection" // Removed - functionality moved to SmartStickyBottomBar
 import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
+import EntertainmentBrowserModal from "@/components/EntertainmentBrowserModal"
 import SavePartyPlanModal from "@/components/SavePartyPlanModal"
 import SavePlanBanner from "@/components/SavePlanBanner"
 // Hooks
@@ -126,12 +127,21 @@ export default function LocalStorageDashboard() {
     }
     return false
   })
+  const [showEntertainmentBrowserModal, setShowEntertainmentBrowserModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('browseEntertainment') === 'true'
+    }
+    return false
+  })
   const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
   const [showStickyBottomCTA, setShowStickyBottomCTA] = useState(false)
   const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
   const [venueConflictData, setVenueConflictData] = useState(null)
   const [showVenueChoiceModal, setShowVenueChoiceModal] = useState(false)
   const [skipVenueChoice, setSkipVenueChoice] = useState(false) // Bypass venue choice on next click
+  const [showEntertainmentChoiceModal, setShowEntertainmentChoiceModal] = useState(false)
+  const [skipEntertainmentChoice, setSkipEntertainmentChoice] = useState(false)
   // Add these state variables near your other useState declarations
 
 
@@ -665,6 +675,22 @@ useEffect(() => {
     window.history.replaceState({}, '', currentUrl)
   }
 }, [showVenueBrowserModal, isMounted])
+
+// Sync entertainment browser modal state with URL
+useEffect(() => {
+  if (!isMounted) return
+
+  const currentUrl = new URL(window.location.href)
+  const hasParam = currentUrl.searchParams.get('browseEntertainment') === 'true'
+
+  if (showEntertainmentBrowserModal && !hasParam) {
+    currentUrl.searchParams.set('browseEntertainment', 'true')
+    window.history.replaceState({}, '', currentUrl)
+  } else if (!showEntertainmentBrowserModal && hasParam) {
+    currentUrl.searchParams.delete('browseEntertainment')
+    window.history.replaceState({}, '', currentUrl)
+  }
+}, [showEntertainmentBrowserModal, isMounted])
 
 useEffect(() => {
 
@@ -1723,6 +1749,48 @@ const handleNameSubmit = async (nameData) => {
   }
 }
 
+// Handle selecting an entertainer from the entertainment browser modal
+const handleSelectEntertainer = async (entertainer) => {
+  const entertainerName = entertainer?.name || entertainer?.businessName || 'Entertainer'
+
+  try {
+    // Clear old entertainment addons if replacing
+    if (suppliers.entertainment) {
+      const oldId = suppliers.entertainment.id
+      const entertainmentAddons = addons.filter(addon =>
+        addon.supplierId === oldId ||
+        addon.supplierType === 'entertainment' ||
+        addon.attachedToSupplier === 'entertainment'
+      )
+      for (const addon of entertainmentAddons) {
+        await removeAddon(addon.id)
+      }
+      if (suppliers.entertainment.selectedAddons?.length > 0) {
+        for (const addon of suppliers.entertainment.selectedAddons) {
+          await removeAddonFromSupplier('entertainment', addon.id)
+        }
+      }
+    }
+
+    const result = await addSupplier(entertainer, entertainer.packageData || null)
+
+    if (result.success) {
+      setShowEntertainmentBrowserModal(false)
+      toast.success(`${entertainerName} added to your party!`, {
+        duration: 4000
+      })
+    } else {
+      toast.error(result.error || 'Failed to add entertainer. Please try again.', {
+        duration: 5000
+      })
+    }
+  } catch (error) {
+    console.error('❌ Error selecting entertainer:', error)
+    toast.error('Failed to add entertainer. Please try again.', {
+      duration: 5000
+    })
+  }
+}
 
 // In LocalStorageDashboard.jsx - add this handler
 const handleCustomizeSupplier = (type, supplier) => {
@@ -2262,6 +2330,8 @@ const handleChildPhotoUpload = async (file) => {
                                 onCustomizationComplete={handleCustomizationComplete}
                                 selectedVenue={suppliers.venue}
                                 onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                                onBrowseEntertainment={() => setShowEntertainmentBrowserModal(true)}
+                                onShowEntertainmentChoice={skipEntertainmentChoice ? null : () => setShowEntertainmentChoiceModal(true)}
                               />
 
                             </div>
@@ -2345,7 +2415,9 @@ const handleChildPhotoUpload = async (file) => {
                       onCustomizationComplete={handleCustomizationComplete}
                       showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
                       onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                      onBrowseEntertainment={() => setShowEntertainmentBrowserModal(true)}
                       onShowVenueChoice={skipVenueChoice ? null : () => setShowVenueChoiceModal(true)}
+                      onShowEntertainmentChoice={skipEntertainmentChoice ? null : () => setShowEntertainmentChoiceModal(true)}
                       onEditPartyDetails={handleEditPartyDetails}
                       childPhoto={partyDetails?.childPhoto}
                       onPhotoUpload={handleChildPhotoUpload}
@@ -2546,6 +2618,15 @@ const handleChildPhotoUpload = async (file) => {
         isSelectingVenue={isSelectingVenue}
       />
 
+      {/* Entertainment Browser Modal */}
+      <EntertainmentBrowserModal
+        isOpen={showEntertainmentBrowserModal}
+        onClose={() => setShowEntertainmentBrowserModal(false)}
+        onSelectEntertainer={handleSelectEntertainer}
+        partyDetails={partyDetails}
+        currentEntertainer={suppliers.entertainment}
+      />
+
       {/* Venue Conflict Modal - Bouncy Castle Restriction */}
       <UniversalModal
         isOpen={showVenueConflictModal}
@@ -2671,6 +2752,62 @@ const handleChildPhotoUpload = async (file) => {
             <div className="flex flex-col items-start gap-0.5">
               <span className="font-semibold text-base">Browse venues</span>
               <span className="text-xs text-gray-500 font-normal">See all available venues</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Button>
+        </ModalContent>
+      </UniversalModal>
+
+      {/* Entertainment Choice Modal */}
+      <UniversalModal
+        isOpen={showEntertainmentChoiceModal}
+        onClose={() => setShowEntertainmentChoiceModal(false)}
+        size="sm"
+        theme="fun"
+      >
+        <ModalHeader
+          title="Choose your entertainer"
+          subtitle="How would you like to pick your entertainer?"
+          theme="fun"
+          icon={<Music className="w-6 h-6" />}
+        />
+
+        <ModalContent className="space-y-3 pb-6">
+          <Button
+            onClick={() => {
+              setShowEntertainmentChoiceModal(false)
+              // Set flag to bypass entertainment choice modal on next click, then simulate clicking entertainment card
+              setSkipEntertainmentChoice(true)
+              // Small delay to let modal close and state to update, then trigger entertainment card click
+              setTimeout(() => {
+                const entertainmentCard = document.querySelector('[data-supplier-type="entertainment"]')
+                if (entertainmentCard) {
+                  const addButton = entertainmentCard.querySelector('button')
+                  if (addButton) addButton.click()
+                }
+                // Reset flag after click
+                setTimeout(() => setSkipEntertainmentChoice(false), 100)
+              }, 200)
+            }}
+            className="w-full h-auto py-4 px-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-semibold text-base">Let PartySnap choose</span>
+              <span className="text-xs text-gray-500 font-normal">We&apos;ll recommend the best entertainer</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Button>
+
+          <Button
+            onClick={() => {
+              setShowEntertainmentChoiceModal(false)
+              setShowEntertainmentBrowserModal(true)
+            }}
+            className="w-full h-auto py-4 px-4 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-semibold text-base">Browse entertainers</span>
+              <span className="text-xs text-gray-500 font-normal">See all available entertainers</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </Button>

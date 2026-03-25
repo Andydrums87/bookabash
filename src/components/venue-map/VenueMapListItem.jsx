@@ -6,6 +6,7 @@ import { Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Loader2 } from "luci
 import { Badge } from "@/components/ui/badge"
 import useEmblaCarousel from "embla-carousel-react"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
+import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 
 // Helper function to calculate venue price
 // Check if venue has instant book enabled (manual flag or Google Calendar sync)
@@ -132,6 +133,8 @@ export default function VenueMapListItem({
   const price = calculateVenuePrice(venue)
   const rating = venue.rating || venue.data?.rating || null
   const reviewCount = venue.reviewCount || venue.data?.reviewCount || 0
+  const googleRating = venue.googleRating || venue.data?.googleRating || null
+  const googleReviewCount = venue.googleReviewCount || venue.data?.googleReviewCount || 0
   const location = venue.venueAddress?.city || venue.location || venue.data?.location || ""
   const venueType = venue.serviceDetails?.venueType || venue.data?.serviceDetails?.venueType || "Venue"
   const postcode = venue.venueAddress?.postcode || venue.location || venue.serviceDetails?.venueAddress?.postcode || ""
@@ -289,6 +292,11 @@ export default function VenueMapListItem({
             </div>
           )}
         </div>
+
+        {/* Google Rating */}
+        {googleRating && (
+          <GoogleRatingBadge rating={googleRating} reviewCount={googleReviewCount} size="sm" />
+        )}
 
         {/* Venue type and postcode */}
         <p className="text-sm text-gray-500">

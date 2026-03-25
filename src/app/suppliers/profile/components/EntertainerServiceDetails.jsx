@@ -50,7 +50,9 @@ const sectionMap = {
   'themes': 'themes',
   'equipment': 'equipment',
   'personalBio': 'personalBio',
+  'whatsIncluded': 'whatsIncluded',
   'addOns': 'addOns',
+  'reviews': 'reviews',
 }
 
 const sectionTitles = {
@@ -63,7 +65,9 @@ const sectionTitles = {
   'themes': 'Themes',
   'equipment': 'Equipment & Skills',
   'personalBio': 'Meet the Entertainer',
+  'whatsIncluded': "What's Included",
   'addOns': 'Add-on Services',
+  'reviews': 'Customer Reviews',
 }
 
 // Business-Aware Entertainer Service Details Form
@@ -100,6 +104,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       dreamClient: "",
       personalStory: "",
     },
+    whatsIncluded: [""],
     addOnServices: [],
     performanceSpecs: {
       spaceRequired: "",
@@ -116,6 +121,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     hourlyRate: 0,
     ...serviceDetails,
   })
+
+  // Reviews state (lives at data.reviews, not in serviceDetails)
+  const [reviews, setReviews] = useState(supplierData?.reviews || [])
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, date: '', text: '' })
+  const [isAddingReview, setIsAddingReview] = useState(false)
+  const [editingReviewId, setEditingReviewId] = useState(null)
+  const [reviewsSaving, setReviewsSaving] = useState(false)
 
   // Replace all your individual section state with this one hook
   const { getSectionState, checkChanges, saveSection } = useSectionManager(
@@ -174,9 +186,15 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
         const bioFields = ['yearsExperience', 'inspiration', 'favoriteEvent', 'dreamClient', 'personalStory']
         const filledBio = bioFields.filter(f => details.personalBio?.[f]?.toString().trim()).length
         return `${filledBio} of ${bioFields.length} fields complete`
+      case 'whatsIncluded':
+        const includedCount = (details.whatsIncluded || []).filter(item => item?.trim()).length
+        return includedCount > 0 ? `${includedCount} item${includedCount !== 1 ? 's' : ''} listed` : 'Not started'
       case 'addOns':
         const addonCount = details.addOnServices?.length || 0
         return addonCount > 0 ? `${addonCount} add-on${addonCount !== 1 ? 's' : ''} configured` : 'None added'
+      case 'reviews':
+        const reviewCount = reviews?.length || 0
+        return reviewCount > 0 ? `${reviewCount} review${reviewCount !== 1 ? 's' : ''}` : 'None added'
       default:
         return ''
     }
@@ -208,6 +226,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           dreamClient: "",
           personalStory: "",
         },
+        whatsIncluded: [""],
         addOnServices: [],
         performanceSpecs: {
           spaceRequired: "",
@@ -241,6 +260,9 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           ...businessServiceDetails.serviceArea,
         },
       })
+
+      // Sync reviews (lives at top-level data, not serviceDetails)
+      setReviews(supplierData.reviews || [])
     }
   }, [supplierData])
 
@@ -378,6 +400,8 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       checkChanges('themes', value);
     } else if (field === 'addOnServices') {
       checkChanges('addOnServices', value);
+    } else if (field === 'whatsIncluded') {
+      checkChanges('whatsIncluded', value);
     }
   }
 
@@ -536,6 +560,16 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     });
   };
 
+  const handleWhatsIncludedSave = () => {
+    const filtered = (details.whatsIncluded || []).filter(item => item?.trim())
+    saveSection('whatsIncluded', filtered, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        whatsIncluded: filtered
+      }
+    });
+  };
+
   const handleAddOnServicesSave = () => {
     saveSection('addOnServices', details.addOnServices, {
       serviceDetails: {
@@ -554,6 +588,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   const themesState = getSectionState('themes');
   const equipmentState = getSectionState('equipment');
   const personalBioState = getSectionState('personalBio');
+  const whatsIncludedState = getSectionState('whatsIncluded');
   const addOnServicesState = getSectionState('addOnServices');
 
   // Add-ons management functions
@@ -1661,6 +1696,215 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     </div>
   )
 
+  // What's Included Section Content
+  const renderWhatsIncluded = () => {
+    const items = details.whatsIncluded || [""]
+
+    const handleItemChange = (index, value) => {
+      const updated = items.map((item, i) => (i === index ? value : item))
+      handleFieldChange("whatsIncluded", updated)
+    }
+
+    const addItem = () => {
+      handleFieldChange("whatsIncluded", [...items, ""])
+    }
+
+    const removeItem = (index) => {
+      const updated = items.filter((_, i) => i !== index)
+      handleFieldChange("whatsIncluded", updated.length > 0 ? updated : [""])
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="hidden md:block">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">What's Included</h2>
+          <p className="text-gray-600">List what customers get when they book you — this shows on your listing</p>
+        </div>
+
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={index} className="flex gap-2">
+              <Input
+                value={item}
+                onChange={(e) => handleItemChange(index, e.target.value)}
+                placeholder="e.g. Interactive games, activities & prizes"
+                className="flex-1 px-4 py-3 text-sm"
+              />
+              {items.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeItem(index)}
+                  className="h-10 w-10 p-0 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Button
+          variant="outline"
+          onClick={addItem}
+          className="text-sm"
+        >
+          <PlusCircle className="w-4 h-4 mr-2" />
+          Add item
+        </Button>
+
+        <SectionSave
+          sectionName="What's Included"
+          hasChanges={whatsIncludedState.hasChanges}
+          onSave={handleWhatsIncludedSave}
+          saving={whatsIncludedState.saving}
+          lastSaved={whatsIncludedState.lastSaved}
+          error={whatsIncludedState.error}
+        />
+      </div>
+    )
+  }
+
+  // Reviews Section Content
+  const saveReviews = async (updatedReviews) => {
+    setReviewsSaving(true)
+    try {
+      const result = await updateProfile(
+        { ...supplierData, reviews: updatedReviews },
+        null,
+        supplier.id
+      )
+      if (result?.success && setSupplierData) {
+        setSupplierData(prev => ({ ...prev, reviews: updatedReviews }))
+      }
+    } catch (e) {
+      console.error('Failed to save reviews:', e)
+    } finally {
+      setReviewsSaving(false)
+    }
+  }
+
+  const renderReviews = () => (
+    <div className="space-y-6">
+      <div className="hidden md:block">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Customer Reviews</h2>
+        <p className="text-gray-600">Add reviews from past customers to build trust with new clients</p>
+      </div>
+
+      {/* Add Review Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={() => { setReviewForm({ name: '', rating: 5, date: '', text: '' }); setIsAddingReview(true); setEditingReviewId(null) }}
+          size="sm"
+          className="bg-gray-900 hover:bg-gray-800 text-white"
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add review
+        </Button>
+      </div>
+
+      {/* Review List */}
+      {reviews.length === 0 ? (
+        <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl">
+          <Star className="mx-auto h-8 w-8 text-gray-300 mb-3" />
+          <p className="text-gray-500 text-sm">No reviews yet. Add your first customer review.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((review) => (
+            <div key={review.id} className="p-4 bg-white border border-gray-200 rounded-xl flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-semibold text-gray-900 text-sm">{review.name}</p>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                  {review.date && <span className="text-xs text-gray-400">{review.date}</span>}
+                </div>
+                <p className="text-sm text-gray-700">{review.text}</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button variant="outline" size="sm"
+                  onClick={() => { setReviewForm({ name: review.name, rating: review.rating, date: review.date || '', text: review.text }); setEditingReviewId(review.id); setIsAddingReview(true) }}
+                  className="h-8 w-8 p-0">
+                  <Edit3 className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => { const updated = reviews.filter(r => r.id !== review.id); setReviews(updated); saveReviews(updated) }}
+                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit Form */}
+      {isAddingReview && (
+        <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4">
+          <h4 className="font-semibold text-gray-900">{editingReviewId ? 'Edit review' : 'Add review'}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Customer name</Label>
+              <Input value={reviewForm.name} onChange={e => setReviewForm(p => ({...p, name: e.target.value}))}
+                placeholder="e.g. Sarah M." className="h-11 border-gray-300 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Date</Label>
+              <Input type="date" value={reviewForm.date} onChange={e => setReviewForm(p => ({...p, date: e.target.value}))}
+                className="h-11 border-gray-300 rounded-xl" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Rating</Label>
+            <div className="flex gap-2">
+              {[1,2,3,4,5].map(n => (
+                <button key={n} type="button"
+                  onClick={() => setReviewForm(p => ({...p, rating: n}))}
+                  className="p-1">
+                  <Star className={`w-7 h-7 ${n <= reviewForm.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Review text</Label>
+            <Textarea value={reviewForm.text} onChange={e => setReviewForm(p => ({...p, text: e.target.value}))}
+              placeholder="What did the customer say about your performance?"
+              rows={3} className="border-gray-300 rounded-xl resize-none p-3" />
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => {
+                if (!reviewForm.name || !reviewForm.text) return
+                let updated
+                if (editingReviewId) {
+                  updated = reviews.map(r => r.id === editingReviewId ? { ...r, ...reviewForm } : r)
+                } else {
+                  updated = [...reviews, { ...reviewForm, id: Date.now().toString() }]
+                }
+                setReviews(updated)
+                saveReviews(updated)
+                setIsAddingReview(false)
+                setEditingReviewId(null)
+              }}
+              className="bg-gray-900 hover:bg-gray-800 text-white"
+              disabled={reviewsSaving}
+            >
+              {reviewsSaving ? 'Saving...' : editingReviewId ? 'Save changes' : 'Add review'}
+            </Button>
+            <Button variant="outline" onClick={() => { setIsAddingReview(false); setEditingReviewId(null) }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   // Render the appropriate section based on selectedSection
   const renderSection = () => {
     switch (activeSection) {
@@ -1682,8 +1926,12 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
         return renderEquipment()
       case 'personalBio':
         return renderPersonalBio()
+      case 'whatsIncluded':
+        return renderWhatsIncluded()
       case 'addOns':
         return renderAddOns()
+      case 'reviews':
+        return renderReviews()
       default:
         return renderListingName()
     }

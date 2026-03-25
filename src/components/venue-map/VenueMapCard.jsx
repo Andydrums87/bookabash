@@ -6,6 +6,7 @@ import { X, Star, MapPin, Users, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import useEmblaCarousel from "embla-carousel-react"
 import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
+import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 
 // Helper function to calculate venue price
 const calculateVenuePrice = (venue) => {
@@ -117,6 +118,8 @@ export default function VenueMapCard({
   const price = calculateVenuePrice(venue)
   const rating = venue.rating || venue.data?.rating || null
   const reviewCount = venue.reviewCount || venue.data?.reviewCount || 0
+  const googleRating = venue.googleRating || venue.data?.googleRating || null
+  const googleReviewCount = venue.googleReviewCount || venue.data?.googleReviewCount || 0
   const location = venue.venueAddress?.city || venue.location || venue.data?.location || ""
 
   // Capacity check
@@ -245,6 +248,13 @@ export default function VenueMapCard({
             </div>
           )}
         </div>
+
+        {/* Google Rating */}
+        {googleRating && (
+          <div className="mb-1">
+            <GoogleRatingBadge rating={googleRating} reviewCount={googleReviewCount} size="sm" />
+          </div>
+        )}
 
         {/* Venue type */}
         <p className="text-sm text-gray-500 mb-1">{venueType}</p>
