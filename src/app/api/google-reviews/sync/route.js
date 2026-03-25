@@ -79,11 +79,12 @@ async function syncGoogleRating(supplier) {
     }
   )
 
-  if (!response.ok) {
-    throw new Error(`Google API error: ${response.status} ${response.statusText}`)
-  }
-
   const placeData = await response.json()
+
+  if (!response.ok) {
+    const errorMsg = placeData?.error?.message || JSON.stringify(placeData)
+    throw new Error(`Google API error: ${response.status} ${response.statusText} - ${errorMsg}`)
+  }
 
   const updatedData = {
     ...supplier.data,
