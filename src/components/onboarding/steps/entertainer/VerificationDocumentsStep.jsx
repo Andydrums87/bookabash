@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { Shield, Camera, MapPin, CheckCircle, Clock, ExternalLink, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
-export default function VerificationDocumentsStep({ documents, onChange, userId, supplierId }) {
+export default function VerificationDocumentsStep({ documents, onChange, userId, supplierId, onSkip }) {
   const [localDocs, setLocalDocs] = useState(documents || {
     dbs: { file: null, fileName: '', uploaded: false },
     id: { file: null, fileName: '', uploaded: false },
@@ -264,6 +264,18 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
           </p>
         )}
       </div>
+
+      {/* Skip Option */}
+      {onSkip && (
+        <div className="text-center mt-6">
+          <button
+            onClick={onSkip}
+            className="text-gray-500 hover:text-gray-900 text-sm underline"
+          >
+            Skip for now
+          </button>
+        </div>
+      )}
     </div>
   )
 }

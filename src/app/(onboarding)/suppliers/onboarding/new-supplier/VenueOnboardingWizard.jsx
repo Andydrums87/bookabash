@@ -1718,6 +1718,10 @@ export default function VenueOnboardingWizard() {
     }
   }
 
+  const handleDocumentsSkip = () => {
+    setCurrentStep(currentStep + 1)
+  }
+
   const handleCalendarSkip = () => {
     setWizardData({
       ...wizardData,
@@ -1866,12 +1870,8 @@ export default function VenueOnboardingWizard() {
           return wizardData.photos.length >= 3 // Minimum 3 photos for entertainers
         case 8: // Pricing
           return wizardData.entertainerPricing.basePrice > 0
-        case 9: // Verification Documents
-          return (
-            wizardData.verificationDocuments.dbs?.uploaded &&
-            wizardData.verificationDocuments.id?.uploaded &&
-            wizardData.verificationDocuments.address?.uploaded
-          )
+        case 9: // Verification Documents (optional - can be skipped)
+          return true
         case 10: // Calendar
           return true // Optional
         case 11: // Review & Complete
@@ -2290,6 +2290,7 @@ export default function VenueOnboardingWizard() {
               onChange={(docs) => setWizardData({ ...wizardData, verificationDocuments: docs })}
               userId={userId}
               supplierId={supplierId}
+              onSkip={handleDocumentsSkip}
             />
           )
         case 10: // Calendar
