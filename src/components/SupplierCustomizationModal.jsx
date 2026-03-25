@@ -2715,28 +2715,49 @@ export default function SupplierCustomizationModal({
                 <section className="space-y-7">
                   {/* Package Selector - only show if entertainer has multiple packages */}
                   {(() => {
-                    // For performance parties (drama/dance/music), filter to only show
-                    // the themed package + generic/extended options — not every theme variant
-                    let visiblePackages = packages
-                    if (isPerformanceParty(partyTheme) && packages.length > 1) {
-                      const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
-                      visiblePackages = packages.filter(pkg => {
-                        const pkgThemes = pkg.themes || []
-                        if (pkgThemes.length === 0) return true
-                        if (pkgThemes.includes('general')) return true
-                        if (pkgThemes.includes(subTheme)) return true
-                        return false
-                      })
-                      if (visiblePackages.length === 0) visiblePackages = packages
+                    const isPerformance = isPerformanceParty(partyTheme)
+
+                    // For performance parties: show a theme dropdown (pre-selected) + no radio cards
+                    if (isPerformance && packages.length > 1) {
+                      return (
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
+                            Theme
+                          </label>
+                          <Select
+                            value={selectedPackageId || ''}
+                            onValueChange={(value) => setSelectedPackageId(value)}
+                          >
+                            <SelectTrigger className="w-full h-11 text-sm font-normal bg-white border-gray-200 rounded-lg px-4">
+                              <SelectValue placeholder="Select theme">
+                                {selectedPackage && (
+                                  <span className="text-gray-700 font-normal">
+                                    {selectedPackage.name} — £{(selectedPackage.price || 0).toFixed(2)}
+                                  </span>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {packages.map((pkg) => (
+                                <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 text-sm font-normal">
+                                  <span className="text-gray-700">{pkg.name} — £{(pkg.price || 0).toFixed(2)}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )
                     }
-                    if (visiblePackages.length <= 1) return null
+
+                    // For regular entertainers: show radio-style cards
+                    if (packages.length <= 1) return null
                     return (
                       <div>
                         <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
                           Choose Package
                         </label>
                         <div className="space-y-2">
-                          {visiblePackages.map((pkg) => {
+                          {packages.map((pkg) => {
                             const isSelected = selectedPackageId === pkg.id
                             return (
                               <div
