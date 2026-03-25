@@ -167,6 +167,39 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   )
 }
 
+function ReviewCard({ review }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="flex-shrink-0 w-72 bg-gray-50 rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--primary-600))]">
+          {review.name?.charAt(0)?.toUpperCase() || '?'}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{review.name}</p>
+          {review.date && <p className="text-xs text-gray-400">{review.date}</p>}
+        </div>
+        <div className="flex ml-auto">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} className={`w-3 h-3 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+          ))}
+        </div>
+      </div>
+      <p className={`text-sm text-gray-700 leading-relaxed ${!expanded ? 'line-clamp-3' : ''}`}>
+        {review.text}
+      </p>
+      {review.text?.length > 120 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs font-semibold text-[hsl(var(--primary-500))] mt-1"
+        >
+          {expanded ? 'Less' : 'More'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function SupplierCustomizationModal({
   isOpen,
   onClose,
@@ -2680,6 +2713,80 @@ export default function SupplierCustomizationModal({
 
               return (
                 <section className="space-y-7">
+                  {/* Package Selector - only show if entertainer has multiple packages */}
+                  {(() => {
+                    // For performance parties (drama/dance/music), filter to only show
+                    // the themed package + generic/extended options — not every theme variant
+                    let visiblePackages = packages
+                    if (isPerformanceParty(partyTheme) && packages.length > 1) {
+                      const subTheme = parseCompoundTheme(partyTheme).subTheme || 'general'
+                      visiblePackages = packages.filter(pkg => {
+                        const pkgThemes = pkg.themes || []
+                        if (pkgThemes.length === 0) return true
+                        if (pkgThemes.includes('general')) return true
+                        if (pkgThemes.includes(subTheme)) return true
+                        return false
+                      })
+                      if (visiblePackages.length === 0) visiblePackages = packages
+                    }
+                    if (visiblePackages.length <= 1) return null
+                    return (
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                          Choose Package
+                        </label>
+                        <div className="space-y-2">
+                          {visiblePackages.map((pkg) => {
+                            const isSelected = selectedPackageId === pkg.id
+                            return (
+                              <div
+                                key={pkg.id}
+                                className={`relative rounded-xl cursor-pointer transition-all duration-200 border-2 p-3.5 ${
+                                  isSelected
+                                    ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
+                                    : "border-gray-200 hover:border-gray-300 bg-white"
+                                }`}
+                                onClick={() => setSelectedPackageId(pkg.id)}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                                      isSelected ? 'border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-500))]' : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4 className="font-semibold text-gray-900 text-sm leading-tight">{pkg.name}</h4>
+                                      {pkg.duration && (
+                                        <p className="text-xs text-gray-500 mt-0.5">{pkg.duration}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <p className="font-bold text-[hsl(var(--primary-600))] text-base">£{(pkg.price || 0).toFixed(2)}</p>
+                                    {(pkg.features?.length > 0) && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedPackageForModal(pkg)
+                                          setShowPackageModal(true)
+                                        }}
+                                        className="text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))]"
+                                      >
+                                        <Info className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {/* What's Included */}
                   <div>
                     <h4 className="font-bold text-gray-900 text-base mb-4">What's included</h4>
@@ -2834,23 +2941,7 @@ export default function SupplierCustomizationModal({
                         <div className="-mx-5 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
                           <div className="flex gap-3 px-5 pb-2" style={{ width: 'max-content' }}>
                             {reviews.map((review) => (
-                              <div key={review.id} className="flex-shrink-0 w-72 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center text-xs font-bold text-[hsl(var(--primary-600))]">
-                                    {review.name?.charAt(0)?.toUpperCase() || '?'}
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-semibold text-gray-900">{review.name}</p>
-                                    {review.date && <p className="text-xs text-gray-400">{review.date}</p>}
-                                  </div>
-                                  <div className="flex ml-auto">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star key={i} className={`w-3 h-3 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                                    ))}
-                                  </div>
-                                </div>
-                                <p className="text-sm text-gray-700 leading-relaxed">{review.text}</p>
-                              </div>
+                              <ReviewCard key={review.id} review={review} />
                             ))}
                           </div>
                         </div>

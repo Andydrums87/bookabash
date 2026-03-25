@@ -966,15 +966,21 @@ export const suppliersAPI = {
         // Exclude performance party suppliers (Drama/Dance/Music Party) from generic theme matching
         // They should only be selected when explicitly choosing drama-party, dance-party, or music-party
         const performanceTypes = ['Drama Party', 'Dance Party', 'Music Party'];
+        const nameLower = supplier.name.toLowerCase();
         if (performanceTypes.includes(supplier.serviceDetails?.entertainmentType) ||
-            performanceTypes.includes(supplier.subcategory)) {
+            performanceTypes.includes(supplier.subcategory) ||
+            nameLower.includes('drama tots') || nameLower.includes('drama party') ||
+            nameLower.includes('dance party') || nameLower.includes('music party')) {
+          console.log(`🎭 [getEntertainmentByTheme] ❌ Excluded performance supplier: "${supplier.name}"`)
           return false;
         }
 
-        // STRICT theme matching - only use themes array and name, NOT description
+        // STRICT theme matching - use themes array, serviceDetails.themes, and name, NOT description
         // Description matching is too loose (e.g., Frozen entertainer mentioning "we also do superhero")
+        const sdThemes = supplier.serviceDetails?.themes || [];
         const matchesTheme =
           supplier.themes?.includes(theme) ||
+          sdThemes.some(t => t.toLowerCase() === theme.toLowerCase()) ||
           supplier.serviceType === theme ||
           supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
           // Superhero theme - match superhero entertainers
