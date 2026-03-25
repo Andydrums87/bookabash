@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import Image from "next/image"
-import { Star, ChevronLeft, ChevronRight, ShieldCheck, Loader2 } from "lucide-react"
+import { Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import useEmblaCarousel from "embla-carousel-react"
 import GoogleRatingBadge from "@/components/GoogleRatingBadge"
@@ -120,9 +120,6 @@ export default function EntertainmentBrowseCard({
   const name = entertainer.name || entertainer.businessName || entertainer.data?.name || "Unnamed Entertainer"
   const price = calculateEntertainerPrice(entertainer)
   const ratingData = getAverageRating(entertainer)
-  const subcategory = entertainer.subcategory || entertainer.serviceType || entertainer.serviceDetails?.subcategory || entertainer.data?.serviceDetails?.subcategory || "Entertainer"
-  const location = entertainer.location || entertainer.data?.location || ""
-  const dbsChecked = entertainer.serviceDetails?.dbsChecked || entertainer.data?.serviceDetails?.dbsChecked || false
 
   return (
     <div
@@ -210,87 +207,37 @@ export default function EntertainmentBrowseCard({
       </div>
 
       {/* Content */}
-      <div className="space-y-0.5">
-        {/* Title and Rating */}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium text-gray-900 text-[15px] line-clamp-1">
-            {name}
-          </h3>
-          {entertainer.googleRating ? (
-            <GoogleRatingBadge
-              rating={entertainer.googleRating}
-              reviewCount={entertainer.googleReviewCount}
-              size="sm"
-            />
-          ) : ratingData && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
-              <span className="text-sm text-gray-900">
-                {ratingData.rating.toFixed(1)}
-                {ratingData.count > 0 && (
-                  <span className="text-gray-500"> ({ratingData.count})</span>
-                )}
-              </span>
-            </div>
-          )}
-        </div>
+      <div className="space-y-1 pt-2">
+        {/* Name */}
+        <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-1">
+          {name}
+        </h3>
 
-        {/* Subcategory and location */}
-        <p className="text-sm text-gray-500">
-          {subcategory}{location && ` · ${location}`}
-        </p>
-
-        {/* Distance if available */}
-        {entertainer.distanceKm != null && (
-          <p className="text-sm text-gray-500">
-            {entertainer.distanceKm < 1
-              ? "Less than 1 km away"
-              : `${entertainer.distanceKm.toFixed(1)} km away`
-            }
-          </p>
+        {/* Google Rating */}
+        {entertainer.googleRating ? (
+          <GoogleRatingBadge
+            rating={entertainer.googleRating}
+            reviewCount={entertainer.googleReviewCount}
+            size="sm"
+          />
+        ) : ratingData && (
+          <div className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
+            <span className="text-sm text-gray-900">
+              {ratingData.rating.toFixed(1)}
+              {ratingData.count > 0 && (
+                <span className="text-gray-500"> ({ratingData.count})</span>
+              )}
+            </span>
+          </div>
         )}
 
         {/* Price */}
         {price > 0 && (
-          <p className="text-[15px] text-gray-900 pt-1">
-            <span className="font-semibold">From £{price}</span>
+          <p className="text-sm text-gray-900">
+            <span className="font-bold">From £{price}</span>
           </p>
         )}
-
-        {/* Trust badges */}
-        <p className="text-xs text-gray-500 flex items-center gap-1 pt-1">
-          <ShieldCheck className="w-3 h-3 text-teal-500" />
-          {dbsChecked ? "DBS checked · " : ""}Free cancellation · Money back guarantee
-        </p>
-
-        {/* Select button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect?.(entertainer)
-          }}
-          disabled={isLoading}
-          className={`
-            text-sm font-semibold underline underline-offset-2 transition-colors mt-2 flex items-center gap-1.5
-            ${isCurrentlySelected
-              ? 'text-primary-500 hover:text-primary-600'
-              : !isLoading
-                ? 'text-gray-900 hover:text-gray-600'
-                : 'text-gray-400 cursor-not-allowed no-underline'
-            }
-          `}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Adding...
-            </>
-          ) : isCurrentlySelected ? (
-            'Selected'
-          ) : (
-            'Select entertainer'
-          )}
-        </button>
       </div>
     </div>
   )
