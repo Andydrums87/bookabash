@@ -2748,18 +2748,29 @@ export default function SupplierCustomizationModal({
                     const url = typeof firstVideo === 'string' ? firstVideo : firstVideo?.url
                     if (!url) return null
 
-                    // Parse YouTube/Vimeo URL
+                    // Parse YouTube/Vimeo/Cloudinary URL
                     const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
                     const vimeoMatch = url.match(/(?:vimeo\.com\/)(?:.*\/)?(\d+)/)
-                    const videoInfo = ytMatch ? { platform: 'youtube', id: ytMatch[1] } : vimeoMatch ? { platform: 'vimeo', id: vimeoMatch[1] } : null
+                    const isCloudinaryVideo = url.includes('res.cloudinary.com') && url.includes('/video/upload/')
+                    const videoInfo = ytMatch
+                      ? { platform: 'youtube', id: ytMatch[1] }
+                      : vimeoMatch
+                      ? { platform: 'vimeo', id: vimeoMatch[1] }
+                      : isCloudinaryVideo
+                      ? { platform: 'cloudinary' }
+                      : null
                     if (!videoInfo) return null
 
                     const thumbUrl = videoInfo.platform === 'youtube'
                       ? `https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`
-                      : `https://vumbnail.com/${videoInfo.id}.jpg`
+                      : videoInfo.platform === 'vimeo'
+                      ? `https://vumbnail.com/${videoInfo.id}.jpg`
+                      : url.replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill/').replace(/\.[^.]+$/, '.jpg')
                     const embedUrl = videoInfo.platform === 'youtube'
                       ? `https://www.youtube.com/embed/${videoInfo.id}?autoplay=1&rel=0`
-                      : `https://player.vimeo.com/video/${videoInfo.id}?autoplay=1`
+                      : videoInfo.platform === 'vimeo'
+                      ? `https://player.vimeo.com/video/${videoInfo.id}?autoplay=1`
+                      : null
 
                     return (
                       <div className="-mx-5 lg:-mx-6">
@@ -2767,8 +2778,12 @@ export default function SupplierCustomizationModal({
                         <div className="relative aspect-video bg-gray-200 cursor-pointer"
                              onClick={() => setVideoPlaying(true)}>
                           {videoPlaying ? (
-                            <iframe src={embedUrl} className="w-full h-full" frameBorder="0"
-                              allow="autoplay; encrypted-media" allowFullScreen />
+                            videoInfo.platform === 'cloudinary' ? (
+                              <video src={url} className="w-full h-full" controls autoPlay />
+                            ) : (
+                              <iframe src={embedUrl} className="w-full h-full" frameBorder="0"
+                                allow="autoplay; encrypted-media" allowFullScreen />
+                            )
                           ) : (
                             <>
                               <img src={thumbUrl} alt={firstVideo.title || 'Video'} className="w-full h-full object-cover" />
@@ -2782,9 +2797,6 @@ export default function SupplierCustomizationModal({
                             </>
                           )}
                         </div>
-                        {firstVideo.title && (
-                          <p className="text-sm text-gray-600 px-5 lg:px-6 pt-2">{firstVideo.title}</p>
-                        )}
                       </div>
                     )
                   })()}

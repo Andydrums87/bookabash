@@ -26,7 +26,7 @@ const getVideoInfo = (url) => {
   // Vimeo patterns
   const vimeoRegex = /(?:vimeo\.com\/)(\d+)/
   const vimeoMatch = url.match(vimeoRegex)
-  
+
   if (vimeoMatch) {
     return {
       platform: 'vimeo',
@@ -35,7 +35,21 @@ const getVideoInfo = (url) => {
       embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`
     }
   }
-  
+
+  // Cloudinary direct video upload
+  if (url && url.includes('res.cloudinary.com') && url.includes('/video/upload/')) {
+    const thumbnail = url
+      .replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill/')
+      .replace(/\.[^.]+$/, '.jpg')
+    return {
+      platform: 'cloudinary',
+      id: null,
+      thumbnail: thumbnail,
+      embedUrl: null,
+      directUrl: url,
+    }
+  }
+
   return null
 }
 
@@ -382,7 +396,15 @@ export default function SupplierPortfolioGallery({ portfolioImages = [], portfol
                     />
                   ) : (
                     <div className="w-full h-full">
-                      {selectedMedia.videoInfo?.embedUrl ? (
+                      {selectedMedia.videoInfo?.directUrl ? (
+                        <video
+                          src={selectedMedia.videoInfo.directUrl}
+                          className="w-full h-full rounded-lg"
+                          controls
+                          autoPlay
+                          title={selectedMedia.title || "Portfolio Video"}
+                        />
+                      ) : selectedMedia.videoInfo?.embedUrl ? (
                         <iframe
                           src={selectedMedia.videoInfo.embedUrl}
                           className="w-full h-full rounded-lg"

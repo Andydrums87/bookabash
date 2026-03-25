@@ -48,6 +48,11 @@ const getVideoId = (url) => {
     return { platform: 'vimeo', id: vimeoMatch[1] };
   }
 
+  // Cloudinary direct video upload
+  if (url && url.includes('res.cloudinary.com') && url.includes('/video/upload/')) {
+    return { platform: 'cloudinary', id: null, url: url };
+  }
+
   return null;
 };
 
@@ -108,10 +113,14 @@ const VideoEmbed = ({ video, onUpdate, onDelete }) => {
   }
 
   const embedUrl = getEmbedUrl(videoInfo.platform, videoInfo.id);
-  
-  const thumbnailUrl = videoInfo.platform === 'youtube' 
+
+  const thumbnailUrl = videoInfo.platform === 'youtube'
     ? `https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`
-    : `https://vumbnail.com/${videoInfo.id}.jpg`;
+    : videoInfo.platform === 'vimeo'
+    ? `https://vumbnail.com/${videoInfo.id}.jpg`
+    : videoInfo.platform === 'cloudinary'
+    ? video.url.replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill/').replace(/\.[^.]+$/, '.jpg')
+    : null;
 
   const handleSaveEdit = () => {
     onUpdate({ 
@@ -125,14 +134,24 @@ const VideoEmbed = ({ video, onUpdate, onDelete }) => {
     <div className="group relative bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="relative aspect-video bg-gray-200">
         {isPlaying ? (
-          <iframe
-            src={embedUrl}
-            className="w-full h-full"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={video.title}
-          />
+          videoInfo.platform === 'cloudinary' ? (
+            <video
+              src={video.url}
+              className="w-full h-full object-cover"
+              controls
+              autoPlay
+              title={video.title}
+            />
+          ) : (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={video.title}
+            />
+          )
         ) : (
           <div 
             className="relative w-full h-full cursor-pointer "
@@ -158,11 +177,13 @@ const VideoEmbed = ({ video, onUpdate, onDelete }) => {
             {/* Platform Badge moved to not overlap image */}
             <div className="absolute top-3 left-3 z-10">
               <span className={`px-2 py-1 text-xs font-medium rounded shadow-sm ${
-                videoInfo.platform === 'youtube' 
-                  ? 'bg-red-600 text-white' 
-                  : 'bg-blue-600 text-white'
+                videoInfo.platform === 'youtube'
+                  ? 'bg-red-600 text-white'
+                  : videoInfo.platform === 'vimeo'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-green-600 text-white'
               }`}>
-                {videoInfo.platform === 'youtube' ? 'YouTube' : 'Vimeo'}
+                {videoInfo.platform === 'youtube' ? 'YouTube' : videoInfo.platform === 'vimeo' ? 'Vimeo' : 'Uploaded'}
               </span>
             </div>
           </div>
@@ -240,7 +261,7 @@ const VideoEmbed = ({ video, onUpdate, onDelete }) => {
             )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 capitalize">
-                {videoInfo.platform}
+                {videoInfo.platform === 'cloudinary' ? 'Uploaded video' : videoInfo.platform}
               </span>
               {!isPlaying && (
                 <button
@@ -271,8 +292,11 @@ const PortfolioGalleryTabContent = () => {
   const [autoSaving, setAutoSaving] = useState(false)
   const [logoTipsOpen, setLogoTipsOpen] = useState(false)
   const [photoTipsOpen, setPhotoTipsOpen] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0)
   const fileInputRef = useRef(null)
   const logoInputRef = useRef(null)
+  const videoInputRef = useRef(null)
   const [coverPhoto, setCoverPhoto] = useState(null)
   const [logoUrl, setLogoUrl] = useState(null)
   const [logoTimestamp, setLogoTimestamp] = useState(Date.now())
@@ -631,6 +655,80 @@ const PortfolioGalleryTabContent = () => {
     await autoSaveGallery(portfolioImages, updatedVideos)
   }
 
+  // Upload video file directly to Cloudinary
+  const handleVideoFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid video file (MP4, MOV, or WebM)')
+      return
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      alert('Video file must be less than 100MB')
+      return
+    }
+
+    setUploadingVideo(true)
+    setVideoUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', 'portfolio_images')
+      formData.append('resource_type', 'video')
+
+      const cloudinaryUrl = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100)
+            setVideoUploadProgress(percent)
+          }
+        })
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText)
+            resolve(data.secure_url)
+          } else {
+            reject(new Error(`Upload failed: ${xhr.statusText}`))
+          }
+        })
+
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')))
+        xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')))
+
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dghzq6xtd/video/upload')
+        xhr.send(formData)
+      })
+
+      const newVideo = {
+        id: Date.now(),
+        url: cloudinaryUrl,
+        title: file.name.split('.')[0].replace(/[_-]/g, ' '),
+        description: '',
+      }
+
+      const updatedVideos = [...portfolioVideos, newVideo]
+      setPortfolioVideos(updatedVideos)
+
+      await autoSaveGallery(portfolioImages, updatedVideos)
+    } catch (error) {
+      console.error('Video upload failed:', error)
+      alert(`Failed to upload video: ${error.message}`)
+    } finally {
+      setUploadingVideo(false)
+      setVideoUploadProgress(0)
+      if (videoInputRef.current) {
+        videoInputRef.current.value = ''
+      }
+    }
+  }
+
   // Delete video with auto-save
   const handleDeleteVideo = async (videoId) => {
     const updatedVideos = portfolioVideos.filter((video) => video.id !== videoId)
@@ -855,7 +953,7 @@ const PortfolioGalleryTabContent = () => {
       {/* Video Links Section */}
       <div className="mb-8 pt-6 border-t border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-1">Videos</h2>
-        <p className="text-sm text-gray-500 mb-4">Add YouTube or Vimeo links to showcase your work</p>
+        <p className="text-sm text-gray-500 mb-4">Upload a video file or paste a YouTube/Vimeo link</p>
 
           {portfolioVideos.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -870,23 +968,72 @@ const PortfolioGalleryTabContent = () => {
             </div>
           )}
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Paste YouTube or Vimeo link..."
-              value={newVideoUrl}
-              onChange={(e) => setNewVideoUrl(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
-              className="w-full h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
-            />
+        {/* Upload progress bar */}
+        {uploadingVideo && (
+          <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                Uploading video... {videoUploadProgress}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gray-900 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${videoUploadProgress}%` }}
+              />
+            </div>
           </div>
-          <button
-            onClick={handleAddVideo}
-            disabled={!newVideoUrl.trim()}
-            className="h-12 px-6 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        )}
+
+        <div className="flex flex-col gap-3">
+          {/* Upload video file */}
+          <label
+            htmlFor="video-upload"
+            className={`inline-flex items-center justify-center gap-2 h-12 px-6 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-700 cursor-pointer transition-colors ${
+              uploadingVideo ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Add video
-          </button>
+            <Upload className="h-4 w-4" />
+            {uploadingVideo ? 'Uploading...' : 'Upload a video file'}
+            <span className="text-xs text-gray-400 ml-1">(MP4, MOV, WebM · max 100MB)</span>
+            <input
+              id="video-upload"
+              ref={videoInputRef}
+              type="file"
+              className="hidden"
+              accept="video/mp4,video/quicktime,video/webm"
+              onChange={handleVideoFileUpload}
+              disabled={uploadingVideo}
+            />
+          </label>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Existing URL input */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Paste YouTube or Vimeo link..."
+                value={newVideoUrl}
+                onChange={(e) => setNewVideoUrl(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
+                className="w-full h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={handleAddVideo}
+              disabled={!newVideoUrl.trim()}
+              className="h-12 px-6 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add video
+            </button>
+          </div>
         </div>
       </div>
 
