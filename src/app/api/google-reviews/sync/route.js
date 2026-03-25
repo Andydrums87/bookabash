@@ -4,7 +4,8 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
 
-const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+// Use server-side key (no referrer restrictions) with fallback to public key
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_SERVER_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 export async function GET(request) {
   console.log('Google Reviews sync started:', new Date().toISOString())
