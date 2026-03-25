@@ -74,6 +74,8 @@ const eventTypes = [
   { value: "kpop-demon-hunters", label: "K-Pop Demon Hunters", category: "Popular" },
   { value: "spiderman", label: "Spiderman", category: "Popular" },
   { value: "frozen", label: "Frozen", category: "Popular" },
+  { value: "disco", label: "Disco Party", category: "Popular" },
+  { value: "magic-and-games", label: "Magic & Games Party", category: "Popular" },
 
 
   // Adventure themes

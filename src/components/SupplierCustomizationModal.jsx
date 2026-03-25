@@ -2977,11 +2977,52 @@ export default function SupplierCustomizationModal({
                   {/* Special Requests */}
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Let the entertainer know about your child's interests or any special requirements
-                    </p>
+                    {(() => {
+                      const effectiveTheme = isPerformanceParty(partyTheme)
+                        ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
+                        : partyTheme
+                      const themeLower = effectiveTheme?.toLowerCase() || ''
+                      const characterThemes = ['princess', 'superhero', 'spiderman', 'frozen', 'mermaid']
+                      const isCharacterTheme = characterThemes.some(t => themeLower.includes(t))
+                      const themeHints = {
+                        princess: 'Is there a specific princess your child would love? e.g. Cinderella, Rapunzel, Belle',
+                        frozen: 'Would your child prefer Elsa or Anna, or both?',
+                        superhero: 'Is there a specific superhero your child loves? e.g. Spider-Man, Batman, Iron Man',
+                        spiderman: 'Any other favourite superheroes you\'d like included?',
+                        mermaid: 'Is there a specific mermaid character your child loves? e.g. Ariel, a custom mermaid look',
+                      }
+                      const matchedHint = Object.entries(themeHints).find(([key]) => themeLower.includes(key))
+                      return (
+                        <>
+                          {isCharacterTheme && matchedHint ? (
+                            <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg p-3 mb-3">
+                              <p className="text-sm font-medium text-[hsl(var(--primary-700))] mb-1">
+                                {matchedHint[1]}
+                              </p>
+                              <p className="text-xs text-[hsl(var(--primary-500))]">
+                                Subject to availability — we'll confirm with you after booking.
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600 mb-3">
+                              Let the entertainer know about your child's interests or any special requirements
+                            </p>
+                          )}
+                        </>
+                      )
+                    })()}
                     <Textarea
-                      placeholder="Add names, ages, colour preferences, or any other details here."
+                      placeholder={(() => {
+                        const effectiveTheme = isPerformanceParty(partyTheme)
+                          ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
+                          : partyTheme
+                        const themeLower = effectiveTheme?.toLowerCase() || ''
+                        if (themeLower.includes('princess')) return "e.g. We'd love a Cinderella princess! Birthday girl's name is..."
+                        if (themeLower.includes('frozen')) return "e.g. We'd love Elsa! Birthday girl's name is..."
+                        if (themeLower.includes('superhero') || themeLower.includes('spiderman')) return "e.g. We'd love Spider-Man! Birthday boy's name is..."
+                        if (themeLower.includes('mermaid')) return "e.g. We'd love Ariel! Birthday girl's name is..."
+                        return "Add names, ages, colour preferences, or any other details here."
+                      })()}
                       value={specialRequests}
                       onChange={(e) => setSpecialRequests(e.target.value)}
                       className="bg-white border-gray-200 text-sm resize-none"
