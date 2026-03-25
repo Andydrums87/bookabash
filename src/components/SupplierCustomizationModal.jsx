@@ -2716,9 +2716,12 @@ export default function SupplierCustomizationModal({
                   {/* Package Selector - only show if entertainer has multiple packages */}
                   {(() => {
                     const isPerformance = isPerformanceParty(partyTheme)
+                    // Also check if the supplier itself is a drama party supplier (by subcategory)
+                    const supplierSub = supplier?.subcategory?.toLowerCase() || ''
+                    const isDramaSupplier = supplierSub.includes('drama')
 
-                    // For performance parties: show a theme dropdown (pre-selected) + no radio cards
-                    if (isPerformance && packages.length > 1) {
+                    // For performance parties OR drama party suppliers: show a theme dropdown (pre-selected) + no radio cards
+                    if ((isPerformance || isDramaSupplier) && packages.length > 1) {
                       return (
                         <div>
                           <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
@@ -2738,7 +2741,12 @@ export default function SupplierCustomizationModal({
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              {packages.map((pkg) => (
+                              {[...packages].sort((a, b) => {
+                                // Put selected package first in the list
+                                if (a.id === selectedPackageId) return -1
+                                if (b.id === selectedPackageId) return 1
+                                return 0
+                              }).map((pkg) => (
                                 <SelectItem key={pkg.id} value={pkg.id} className="py-2.5 text-sm font-normal">
                                   <span className="text-gray-700">{pkg.name} — £{(pkg.price || 0).toFixed(2)}</span>
                                 </SelectItem>
