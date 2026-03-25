@@ -544,10 +544,15 @@ class PartyBuilderBackend {
     // Sort by composite score
     const sorted = scoredSuppliers.sort((a, b) => b.compositeScore - a.compositeScore);
 
-    // Try to find the best available supplier first
-    const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
+    // Get all available suppliers
+    const availableSuppliers = sorted.filter(s => s.isAvailable && s.canServeLocation);
 
-    if (bestAvailable) {
+    if (availableSuppliers.length > 0) {
+      // Find all suppliers tied at the top score, then randomly pick one
+      const topScore = availableSuppliers[0].compositeScore;
+      const topTied = availableSuppliers.filter(s => s.compositeScore === topScore);
+      const bestAvailable = topTied[Math.floor(Math.random() * topTied.length)];
+
       return {
         supplier: bestAvailable,
         reason: 'best-available-match',

@@ -963,6 +963,14 @@ export const suppliersAPI = {
           return supplier.serviceDetails?.entertainmentType === requiredType;
         }
 
+        // Exclude performance party suppliers (Drama/Dance/Music Party) from generic theme matching
+        // They should only be selected when explicitly choosing drama-party, dance-party, or music-party
+        const performanceTypes = ['Drama Party', 'Dance Party', 'Music Party'];
+        if (performanceTypes.includes(supplier.serviceDetails?.entertainmentType) ||
+            performanceTypes.includes(supplier.subcategory)) {
+          return false;
+        }
+
         // STRICT theme matching - only use themes array and name, NOT description
         // Description matching is too loose (e.g., Frozen entertainer mentioning "we also do superhero")
         const matchesTheme =
