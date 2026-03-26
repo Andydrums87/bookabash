@@ -548,10 +548,17 @@ class PartyBuilderBackend {
     const availableSuppliers = sorted.filter(s => s.isAvailable && s.canServeLocation);
 
     if (availableSuppliers.length > 0) {
-      // Find all suppliers tied at the top score, then randomly pick one
-      const topScore = availableSuppliers[0].compositeScore;
-      const topTied = availableSuppliers.filter(s => s.compositeScore === topScore);
-      const bestAvailable = topTied[Math.floor(Math.random() * topTied.length)];
+      // Among available suppliers with a positive theme score, pick the cheapest
+      // Any supplier with compositeScore > 0 is a valid theme match
+      const viableSuppliers = availableSuppliers.filter(s => s.compositeScore > 0);
+      // Sort viable suppliers by price (cheapest first), using enhanced package price
+      const bestAvailable = viableSuppliers.length > 0
+        ? viableSuppliers.sort((a, b) => {
+            const priceA = a.enhancedPrice || a.priceFrom || a.price || 0;
+            const priceB = b.enhancedPrice || b.priceFrom || b.price || 0;
+            return priceA - priceB;
+          })[0]
+        : availableSuppliers[0];
 
       return {
         supplier: bestAvailable,

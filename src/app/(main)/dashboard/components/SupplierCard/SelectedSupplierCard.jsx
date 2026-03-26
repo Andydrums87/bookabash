@@ -11,7 +11,7 @@ import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
-import { trackSupplierViewed } from '@/utils/partyTracking'
+import { trackSupplierViewed, trackSupplierChangeBrowse } from '@/utils/partyTracking'
 import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
 import {
   Tooltip,
@@ -285,6 +285,7 @@ export default function SelectedSupplierCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
                         onBrowseVenues()
                       }}
                       disabled={isDeleting}
@@ -300,6 +301,7 @@ export default function SelectedSupplierCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
                         onBrowseEntertainment()
                       }}
                       disabled={isDeleting}
@@ -315,6 +317,7 @@ export default function SelectedSupplierCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
                         onBrowseSupplier(type)
                       }}
                       disabled={isDeleting}

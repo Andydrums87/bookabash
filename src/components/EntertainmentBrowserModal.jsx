@@ -7,6 +7,7 @@ import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { checkSupplierAvailability } from "@/utils/availabilityChecker"
 import { LocationService } from "@/utils/locationService"
 import EntertainmentBrowseCard from "@/components/EntertainmentBrowseCard"
+import { trackSupplierBrowseView } from '@/utils/partyTracking'
 import Image from "next/image"
 import { isPerformanceParty, parseCompoundTheme, getEffectiveThemeForCategory, getThemeDisplayName } from "@/utils/compoundTheme"
 
@@ -324,6 +325,7 @@ export default function EntertainmentBrowserModal({
 
   // Handlers
   const handleCardClick = useCallback((entertainer) => {
+    trackSupplierBrowseView('entertainment', entertainer?.name || entertainer?.data?.name, entertainer?.id)
     setSelectedForCustomization(entertainer)
   }, [])
 

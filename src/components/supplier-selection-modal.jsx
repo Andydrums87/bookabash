@@ -13,6 +13,7 @@ import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { LocationService } from '@/utils/locationService'
 import SwipeableSupplierCarousel from "./supplier/SwipableSupplierCarousel"
 import useDisableScroll from "@/hooks/useDisableScroll"
+import { trackSupplierBrowseView } from '@/utils/partyTracking'
 import { 
   X, 
   Star, 
@@ -554,6 +555,7 @@ useEffect(() => {
 
   // Handle Quick Add - simplified
   const handleQuickAdd = (supplier) => {
+    trackSupplierBrowseView(category, supplier?.name || supplier?.data?.name, supplier?.id)
     setSelectedSupplierForCustomization(supplier)
     setShowCustomizationModal(true)
   }
@@ -1258,7 +1260,8 @@ useEffect(() => {
         console.log('❌ Supplier already being processed:', supplier.id)
         return
       }
-      
+
+      trackSupplierBrowseView(category, supplier?.name || supplier?.data?.name, supplier.id)
       console.log('🚀 Starting navigation to supplier:', supplier.id)
       
       // Add to clicked set

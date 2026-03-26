@@ -846,6 +846,114 @@ export const trackSupplierViewed = async (supplierCategory, supplierName = null,
 };
 
 /**
+ * Track when user clicks the "Change" button to browse alternative suppliers
+ */
+export const trackSupplierChangeBrowse = async (supplierCategory, currentSupplierName = null, currentSupplierId = null) => {
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('trackSupplierChangeBrowse: No session to update');
+    return;
+  }
+
+  try {
+    const { data: currentTracking } = await supabase
+      .from('party_tracking')
+      .select('action_timeline')
+      .eq('session_id', sessionId)
+      .single();
+
+    const timeline = currentTracking?.action_timeline || [];
+
+    const changeEvent = {
+      action: 'supplier_change_browse',
+      timestamp: new Date().toISOString(),
+      data: {
+        category: supplierCategory,
+        current_supplier_name: currentSupplierName,
+        current_supplier_id: currentSupplierId
+      }
+    };
+
+    timeline.push(changeEvent);
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update({
+        action_timeline: timeline,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.log('Track supplier change browse failed (non-critical):', error.message);
+    } else {
+      console.log('✅ Supplier change browse tracked:', supplierCategory, currentSupplierName);
+    }
+  } catch (err) {
+    console.log('Track supplier change browse error (non-critical):', err.message);
+  }
+};
+
+/**
+ * Track when user clicks to view a supplier in the browse/selection modal
+ */
+export const trackSupplierBrowseView = async (supplierCategory, supplierName = null, supplierId = null) => {
+  if (!sessionId) {
+    sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('tracking_session_id')
+      : null;
+  }
+
+  if (!sessionId) {
+    console.log('trackSupplierBrowseView: No session to update');
+    return;
+  }
+
+  try {
+    const { data: currentTracking } = await supabase
+      .from('party_tracking')
+      .select('action_timeline')
+      .eq('session_id', sessionId)
+      .single();
+
+    const timeline = currentTracking?.action_timeline || [];
+
+    const viewEvent = {
+      action: 'supplier_browse_view',
+      timestamp: new Date().toISOString(),
+      data: {
+        category: supplierCategory,
+        supplier_name: supplierName,
+        supplier_id: supplierId
+      }
+    };
+
+    timeline.push(viewEvent);
+
+    const { error } = await supabase
+      .from('party_tracking')
+      .update({
+        action_timeline: timeline,
+        last_activity: new Date().toISOString()
+      })
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.log('Track supplier browse view failed (non-critical):', error.message);
+    } else {
+      console.log('✅ Supplier browse view tracked:', supplierCategory, supplierName);
+    }
+  } catch (err) {
+    console.log('Track supplier browse view error (non-critical):', err.message);
+  }
+};
+
+/**
  * Helper: Extract supplier summary from party plan
  */
 const extractSupplierSummary = (partyPlan) => {
