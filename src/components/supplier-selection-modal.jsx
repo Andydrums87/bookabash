@@ -1571,6 +1571,10 @@ useEffect(() => {
         supplier={selectedSupplierForCustomization}
         isAdding={addingSupplier === selectedSupplierForCustomization?.id}
         onAddToPlan={handleCustomizationAddToPlan}
+        onBrowseOthers={() => {
+          setShowCustomizationModal(false)
+          setSelectedSupplierForCustomization(null)
+        }}
         // ✅ UPDATED: Pass unified pricing props
         selectedDate={null} // We don't have a selected calendar date in this context
         currentMonth={currentMonth}

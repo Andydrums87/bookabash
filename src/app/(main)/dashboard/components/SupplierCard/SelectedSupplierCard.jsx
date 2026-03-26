@@ -279,55 +279,7 @@ export default function SelectedSupplierCard({
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-80" />
 
-                {/* Change Button - Top Left (venues and entertainment) */}
-                {type === 'venue' && onBrowseVenues && (
-                  <div className="absolute top-4 left-4 z-20">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
-                        onBrowseVenues()
-                      }}
-                      disabled={isDeleting}
-                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Change
-                    </button>
-                  </div>
-                )}
-                {type === 'entertainment' && onBrowseEntertainment && (
-                  <div className="absolute top-4 left-4 z-20">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
-                        onBrowseEntertainment()
-                      }}
-                      disabled={isDeleting}
-                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Change
-                    </button>
-                  </div>
-                )}
-                {['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier && (
-                  <div className="absolute top-4 left-4 z-20">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
-                        onBrowseSupplier(type)
-                      }}
-                      disabled={isDeleting}
-                      className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Change
-                    </button>
-                  </div>
-                )}
+                {/* Change buttons removed - browse action moved to bottom CTA area */}
 
                 {/* Remove Button */}
                 <div className="absolute top-4 right-4 z-20">
@@ -488,19 +440,45 @@ export default function SelectedSupplierCard({
 
           {/* Bottom section */}
           <div className="p-4 bg-white">
-            {/* Action Button - Single unified modal */}
-            <Button
-              onClick={(e) => {
-                e.stopPropagation()
-                fetchFullSupplierData()
-              }}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white text-sm"
-              disabled={isDeleting}
-              data-tour={`view-supplier-${type}`}
-            >
-              <Eye className="w-4 h-4 mr-1.5" />
-              <span className="truncate">View & Edit</span>
-            </Button>
+            {/* Action Buttons - stacked */}
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fetchFullSupplierData()
+                }}
+                className="w-full h-10 bg-primary-500 hover:bg-primary-600 text-white text-sm"
+                disabled={isDeleting}
+                data-tour={`view-supplier-${type}`}
+              >
+                <Eye className="w-4 h-4 mr-1.5" />
+                <span className="truncate">View & Edit</span>
+              </Button>
+              {(
+                (type === 'entertainment' && onBrowseEntertainment) ||
+                (type === 'venue' && onBrowseVenues) ||
+                (['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier)
+              ) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
+                    if (type === 'entertainment' && onBrowseEntertainment) onBrowseEntertainment()
+                    else if (type === 'venue' && onBrowseVenues) onBrowseVenues()
+                    else if (onBrowseSupplier) onBrowseSupplier(type)
+                  }}
+                  disabled={isDeleting}
+                  className="w-full h-10 border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] font-semibold text-sm hover:bg-[hsl(var(--primary-50))] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 rounded-md"
+                >
+                  Browse other {
+                    type === 'entertainment' ? 'entertainers' :
+                    type === 'venue' ? 'venues' :
+                    type === 'cakes' ? 'cake suppliers' :
+                    'suppliers'
+                  }
+                </button>
+              )}
+            </div>
 
             {/* Image disclaimer - all categories except venue are white-labeled */}
             {/* For venue, add invisible spacer to match height */}
@@ -542,6 +520,16 @@ export default function SelectedSupplierCard({
           selectedDate={partyDetails?.date}
           partyDate={partyDetails?.date}
           supplierType={type}
+          onBrowseOthers={
+            type === 'entertainment' && onBrowseEntertainment
+              ? () => { setShowCustomizationModal(false); onBrowseEntertainment(); }
+              : type === 'venue' && onBrowseVenues
+              ? () => { setShowCustomizationModal(false); onBrowseVenues(); }
+              : onBrowseSupplier
+              ? () => { setShowCustomizationModal(false); onBrowseSupplier(type); }
+              : null
+          }
+          isAlreadyInParty={true}
         />
       </MicroConfettiWrapper>
     </TooltipProvider>

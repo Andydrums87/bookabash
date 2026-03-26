@@ -12,7 +12,7 @@ import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestion
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { UniversalModal, ModalHeader, ModalContent } from "@/components/ui/UniversalModal"
 import { roundMoney } from "@/utils/unifiedPricing"
-import { trackSupplierViewed } from "@/utils/partyTracking"
+import { trackSupplierViewed, trackSupplierChangeBrowse } from "@/utils/partyTracking"
 import { getThemeDisplayName } from "@/utils/compoundTheme"
 import GoogleRatingBadge from "@/components/GoogleRatingBadge"
 
@@ -415,58 +415,12 @@ export default function MyPartyTabContent({
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-90" />
 
-          {/* Change Button (venues and entertainment) - Top Left */}
-          {type === 'venue' && onBrowseVenues && (
-            <div className="absolute top-4 left-4 z-30">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  onBrowseVenues()
-                }}
-                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Change
-              </button>
-            </div>
-          )}
-          {type === 'entertainment' && onBrowseEntertainment && (
-            <div className="absolute top-4 left-4 z-30">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  onBrowseEntertainment()
-                }}
-                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Change
-              </button>
-            </div>
-          )}
-          {['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier && (
-            <div className="absolute top-4 left-4 z-30">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  onBrowseSupplier(type)
-                }}
-                className="px-3 py-1.5 bg-white/95 hover:bg-gray-100 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 flex items-center gap-1.5 transition-all duration-200 shadow-lg cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Change
-              </button>
-            </div>
-          )}
+          {/* Change buttons removed - browse action moved to bottom CTA area */}
 
           {/* Status Badge (non-venues) and Remove Button */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
             <div>
-              {/* Only show paid badge for types without Change button */}
-              {type !== 'venue' && !(type === 'entertainment' && onBrowseEntertainment) && !(['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier) && isPaid && (
+              {type !== 'venue' && isPaid && (
                 <Badge className="bg-green-500 text-white shadow-lg backdrop-blur-sm">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Paid
@@ -565,8 +519,8 @@ export default function MyPartyTabContent({
           </div>
         </div>
 
-        {/* Action Button - Single unified modal */}
-        <div className="px-4 bg-white">
+        {/* Action Buttons - stacked */}
+        <div className="px-4 bg-white flex flex-col gap-2">
           <Button
             onClick={(e) => {
               e.stopPropagation()
@@ -577,6 +531,29 @@ export default function MyPartyTabContent({
             <Eye className="w-4 h-4 mr-2" />
             View & Edit
           </Button>
+          {(
+            (type === 'entertainment' && onBrowseEntertainment) ||
+            (type === 'venue' && onBrowseVenues) ||
+            (['cakes', 'balloons', 'partyBags', 'decorations'].includes(type) && onBrowseSupplier)
+          ) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                trackSupplierChangeBrowse(type, supplier?.name || supplier?.data?.name, supplier?.id)
+                if (type === 'entertainment' && onBrowseEntertainment) onBrowseEntertainment()
+                else if (type === 'venue' && onBrowseVenues) onBrowseVenues()
+                else if (onBrowseSupplier) onBrowseSupplier(type)
+              }}
+              className="w-full h-10 border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] font-semibold text-sm hover:bg-[hsl(var(--primary-50))] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 rounded-md"
+            >
+              Browse other {
+                type === 'entertainment' ? 'entertainers' :
+                type === 'venue' ? 'venues' :
+                type === 'cakes' ? 'cake suppliers' :
+                'suppliers'
+              }
+            </button>
+          )}
         </div>
 
         {/* Image disclaimer - all categories except venue are white-labeled */}
@@ -1193,6 +1170,16 @@ export default function MyPartyTabContent({
           mobileHeight="max-h-[92vh]"
           desktopHeight="md:h-[95vh]"
           supplierType={selectedSupplierType}
+          onBrowseOthers={
+            selectedSupplierType === 'entertainment' && onBrowseEntertainment
+              ? () => { setSelectedSupplierForCustomize(null); setSelectedSupplierType(null); onBrowseEntertainment(); }
+              : selectedSupplierType === 'venue' && onBrowseVenues
+              ? () => { setSelectedSupplierForCustomize(null); setSelectedSupplierType(null); onBrowseVenues(); }
+              : onBrowseSupplier
+              ? () => { setSelectedSupplierForCustomize(null); setSelectedSupplierType(null); onBrowseSupplier(selectedSupplierType); }
+              : null
+          }
+          isAlreadyInParty={true}
         />
       )}
 

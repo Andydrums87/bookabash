@@ -628,6 +628,7 @@ export default function EntertainmentBrowserModal({
           supplier={selectedForCustomization}
           partyDetails={partyDetails}
           partyDate={partyDetails?.date}
+          onBrowseOthers={() => setSelectedForCustomization(null)}
           onAddToPlan={(customizationData) => {
             const entertainerWithPackageData = {
               ...customizationData.supplier,

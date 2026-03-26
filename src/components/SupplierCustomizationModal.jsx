@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import useEmblaCarousel from "embla-carousel-react"
+import { trackSupplierChangeBrowse } from '@/utils/partyTracking'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -225,6 +226,8 @@ export default function SupplierCustomizationModal({
   originalTotalPrice = null, // Original price for diff calculation
   // ✅ NEW: Allow parent to override supplier type detection
   supplierType = null, // e.g., "cakes", "partyBags" - forces specific UI mode
+  onBrowseOthers = null, // Callback to browse alternative suppliers
+  isAlreadyInParty = false, // Whether this supplier is already selected in the party
 }) {
 
 
@@ -2167,6 +2170,10 @@ export default function SupplierCustomizationModal({
 
     const formattedPrice = totalPrice.toFixed(2)
 
+    if (isAlreadyInParty) {
+      return `Save Changes - £${formattedPrice}`
+    }
+
     return `Add to Party - £${formattedPrice}`
   }
 
@@ -2178,7 +2185,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mx-auto bg-white rounded-t-2xl lg:rounded-xl max-w-5xl w-full max-h-[92dvh] lg:max-h-[85vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom lg:fade-in duration-200`}
+        className={`fixed bottom-0 left-0 right-0 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:mx-auto bg-white rounded-t-2xl lg:rounded-xl max-w-5xl w-full max-h-[97dvh] lg:max-h-[85vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom lg:fade-in duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Split Layout Container */}
@@ -4708,40 +4715,63 @@ export default function SupplierCustomizationModal({
           </div>
         </div>
 
-        <div className="border-t border-gray-200 p-5 flex-shrink-0 bg-white">
-          <Button
-            onClick={handleAddToPlan}
-            className={`w-full h-12 font-semibold shadow-lg hover:shadow-xl transition-all ${
-              !canAddCheck.canAdd
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-primary-500 hover:bg-primary-600 text-white"
-            }`}
-            disabled={
-              // For multi-select (NOT soft play), require at least one item; for others, require package selection
-              // Face painting doesn't need package selection (flat rate)
-              // Venues don't require package selection - they use priceFrom
-              // Soft play uses single select (selectedPackageId), not multi-select
-              ((supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
-              isAdding ||
-              !canAddCheck.canAdd
-            }
-          >
-            {isAdding ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                {getButtonText()}
-              </>
-            ) : !canAddCheck.canAdd ? (
-              <>
-                <Clock className="w-4 h-4 mr-2" />
-                {getButtonText()}
-              </>
-            ) : (
-              <>
-                {getButtonText()}
-              </>
+        <div className="border-t border-gray-200 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-white">
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={handleAddToPlan}
+              className={`w-full h-12 font-semibold shadow-lg hover:shadow-xl transition-all ${
+                !canAddCheck.canAdd
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-primary-500 hover:bg-primary-600 text-white"
+              }`}
+              disabled={
+                // For multi-select (NOT soft play), require at least one item; for others, require package selection
+                // Face painting doesn't need package selection (flat rate)
+                // Venues don't require package selection - they use priceFrom
+                // Soft play uses single select (selectedPackageId), not multi-select
+                ((supplierTypeDetection.isMultiSelect && !supplierTypeDetection.isSoftPlay) ? selectedPackageIds.length === 0 : (!selectedPackageId && !supplierTypeDetection.isFacePainting && !supplierTypeDetection.isVenue)) ||
+                isAdding ||
+                !canAddCheck.canAdd
+              }
+            >
+              {isAdding ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  {getButtonText()}
+                </>
+              ) : !canAddCheck.canAdd ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2" />
+                  {getButtonText()}
+                </>
+              ) : (
+                <>
+                  {getButtonText()}
+                </>
+              )}
+            </Button>
+            {isAlreadyInParty && onBrowseOthers && (
+              <button
+                onClick={() => {
+                  trackSupplierChangeBrowse(
+                    supplierType || supplier?.category || 'unknown',
+                    supplier?.name || supplier?.data?.name,
+                    supplier?.id
+                  )
+                  onClose()
+                  onBrowseOthers()
+                }}
+                className="w-full h-11 border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] font-semibold text-sm hover:bg-[hsl(var(--primary-50))] active:scale-[0.98] transition-all flex items-center justify-center gap-2 rounded-md"
+              >
+                Browse other {
+                  supplierTypeDetection.isEntertainment ? 'entertainers' :
+                  supplierTypeDetection.isVenue ? 'venues' :
+                  supplierTypeDetection.isCake ? 'cake suppliers' :
+                  'suppliers'
+                }
+              </button>
             )}
-          </Button>
+          </div>
         </div>
             </div>
           </div>
