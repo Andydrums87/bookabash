@@ -214,7 +214,11 @@ export default function VenueBrowserModal({
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
 
   // View mode state (map = split view with map, list = full-width list)
-  const [viewMode, setViewMode] = useState('map')
+  // Default to list on mobile since map view isn't useful on small screens
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list'
+    return 'map'
+  })
 
   // Filter state
   const [instantBookOnly, setInstantBookOnly] = useState(false)
