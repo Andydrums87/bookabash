@@ -460,6 +460,7 @@ export default function PartySetupPage() {
               <p className="text-gray-500 text-sm md:text-base">
                 We've found the best venues near you. Pick one or browse for more.
               </p>
+              <p className="text-gray-400 text-xs mt-1">You can always swap your choice later on.</p>
             </div>
 
             {/* Venue cards */}
@@ -542,6 +543,7 @@ export default function PartySetupPage() {
                   : "Here are our top-rated entertainers near you."
                 }
               </p>
+              <p className="text-gray-400 text-xs mt-1">You can always swap your choice later on.</p>
             </div>
 
             {/* Entertainer cards */}
