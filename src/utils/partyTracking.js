@@ -138,19 +138,11 @@ export const trackStep = async (step, data = {}) => {
 
     // If this is party_planning_started, also populate dedicated columns and update status
     // The data object has theme, guestCount, postcode, childName, childAge, hasOwnVenue, date directly from the form
-    if (step === 'party_planning_started') {
-      updateObj.status = 'started_planning'; // Change from 'browsing' to 'started_planning'
-      // Store party details in party_data column (this is the only time we should set it)
-      updateObj.party_data = {
-        theme: data.theme,
-        guestCount: data.guestCount,
-        childName: data.childName,
-        childAge: data.childAge,
-        hasOwnVenue: data.hasOwnVenue,
-        timeSlot: data.timeSlot,
-        postcode: data.postcode,
-        date: data.date
-      };
+    if (step === 'party_planning_started' || step === 'party_setup_started') {
+      if (step === 'party_planning_started') {
+        updateObj.status = 'started_planning';
+      }
+      // Populate dedicated columns from party data
       if (data.theme) updateObj.party_theme = data.theme;
       if (data.guestCount) updateObj.guest_count = parseInt(data.guestCount) || null;
       if (data.postcode) updateObj.party_location = data.postcode;
@@ -158,6 +150,19 @@ export const trackStep = async (step, data = {}) => {
       if (data.childAge) updateObj.child_age = parseInt(data.childAge) || null;
       if (data.hasOwnVenue !== undefined) updateObj.has_own_venue = data.hasOwnVenue;
       if (data.date) updateObj.party_date = data.date;
+      // Store party details in party_data column
+      if (step === 'party_planning_started') {
+        updateObj.party_data = {
+          theme: data.theme,
+          guestCount: data.guestCount,
+          childName: data.childName,
+          childAge: data.childAge,
+          hasOwnVenue: data.hasOwnVenue,
+          timeSlot: data.timeSlot,
+          postcode: data.postcode,
+          date: data.date
+        };
+      }
     }
 
     // Update with new timeline and party columns

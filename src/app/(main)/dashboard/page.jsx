@@ -251,16 +251,11 @@ import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
 import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardWelcome from "./components/DashboardWelcome"
-import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // Wrapper component to handle Suspense for useSearchParams
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <SnappyLoader text="Loading your party..." />
-      </div>
-    }>
+    <Suspense fallback={null}>
       <DashboardContent />
     </Suspense>
   )
@@ -275,14 +270,26 @@ function DashboardContent() {
   // Check if user explicitly wants to view their database parties
   const forcePartiesView = searchParams.get('view') === 'parties'
 
-  const [userType, setUserType] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Fast path: detect party_setup/show_welcome on first render to avoid blank frame
+  const isFastPath = searchParams.get("source") === "party_setup" || searchParams.get("show_welcome") === "true"
+
+  const [userType, setUserType] = useState(isFastPath ? 'localStorage' : null)
+  const [isLoading, setIsLoading] = useState(!isFastPath)
   const [debugInfo, setDebugInfo] = useState({})
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const determineUserType = async () => {
       setIsLoading(true)
+
+      // Fast path: if coming from party-setup or show_welcome, skip auth check
+      // We know it's a localStorage user who just finished the setup flow
+      const source = searchParams.get("source")
+      if (searchParams.get("show_welcome") === "true" || source === "party_setup") {
+        setUserType('localStorage')
+        setIsLoading(false)
+        return
+      }
 
       // Small delay to ensure localStorage is available after navigation
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -501,11 +508,7 @@ function DashboardContent() {
   // LOADING STATE
   // ============================================
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <SnappyLoader text="Loading your party..." />
-      </div>
-    )
+    return null
   }
 
 

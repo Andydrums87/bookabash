@@ -107,7 +107,9 @@ export default function LocalStorageDashboard() {
   const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false)
   const [welcomeFormSubmitted, setWelcomeFormSubmitted] = useState(false)
   const [isTourActiveOnNavigation, setIsTourActiveOnNavigation] = useState(false)
-  const [isCheckingWelcome, setIsCheckingWelcome] = useState(true) // NEW: Track if we're still checking for welcome popup
+  // Skip welcome check entirely when arriving from party-setup (welcome already completed there)
+  const fromPartySetup = searchParams.get('source') === 'party_setup'
+  const [isCheckingWelcome, setIsCheckingWelcome] = useState(!fromPartySetup)
 
   // Party header expansion state
   const [isPartyHeaderExpanded, setIsPartyHeaderExpanded] = useState(false)
@@ -432,9 +434,22 @@ const childPhotoRef = useRef(null)
           console.warn('⚠️ Cleanup error:', cleanupError)
         }
       } else {
-      
+
         // ✅ NEW: Done checking, allow dashboard to render
         setIsCheckingWelcome(false)
+
+        // If arriving from party-setup, trigger confetti + tour (name/age was collected there)
+        if (sourceFromURL === 'party_setup' && !confettiTriggeredRef.current) {
+          setWelcomeJustCompleted(true)
+          setWelcomeFormSubmitted(true)
+          // Start tour after confetti finishes
+          setTimeout(() => {
+            const tourCompleted = localStorage.getItem('dashboard_tour_completed') === 'true'
+            if (!tourCompleted && typeof startTour === 'function') {
+              startTour()
+            }
+          }, 3500)
+        }
       }
 
     } catch (error) {
@@ -2055,6 +2070,10 @@ const handleChildPhotoUpload = async (file) => {
   // The welcome popup will overlay immediately when needed
   return (
     <div className="min-h-screen">
+      {/* Full-screen cover to hide navbar/footer while welcome popup is loading */}
+      {(showWelcomePopup || isCheckingWelcome) && (
+        <div className="fixed inset-0 bg-white z-[45]" />
+      )}
       {/* ✅ Hide dashboard content while checking for welcome popup to prevent flashing */}
       <div className={showWelcomePopup || isCheckingWelcome ? "opacity-0 pointer-events-none" : "opacity-100 transition-opacity duration-200"}>
           <ContextualBreadcrumb currentPage="dashboard"/>
@@ -2125,7 +2144,7 @@ const handleChildPhotoUpload = async (file) => {
                       })()}
                     </h2>
                     <p className="text-sm md:text-base text-gray-600 mt-1">
-                      We've selected everything for you. Tweak anything in seconds.
+                      We built your party around your choices. Change or add anything in seconds.
                     </p>
                   </div>
 

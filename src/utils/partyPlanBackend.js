@@ -97,7 +97,8 @@ const setCachedPartyPlan = (data) => {
 // Default empty party plan
 const DEFAULT_PARTY_PLAN = {
   venue: null,
-  venueCarouselOptions: [], // ✅ ADD THIS LINE
+  venueCarouselOptions: [],
+  entertainmentCarouselOptions: [],
   entertainment: null,
   catering: null,
   facePainting: null,
@@ -860,6 +861,7 @@ export function usePartyPlan() {
   const [loading, setLoading] = useState(!hasCache); // ✅ Skip loading if cached
   const [error, setError] = useState(null);
   const [venueCarouselOptions, setVenueCarouselOptions] = useState(cachedData?.venueCarouselOptions || []);
+  const [entertainmentCarouselOptions, setEntertainmentCarouselOptions] = useState(cachedData?.entertainmentCarouselOptions || []);
 
   useEffect(() => {
     if (isClient) {
@@ -877,6 +879,7 @@ export function usePartyPlan() {
 
         setPartyPlan(updatedPlan);
         setVenueCarouselOptions(updatedPlan.venueCarouselOptions || []);
+        setEntertainmentCarouselOptions(updatedPlan.entertainmentCarouselOptions || []);
         // ✅ Update cache when data changes
         setCachedPartyPlan(updatedPlan);
 
@@ -951,8 +954,9 @@ export function usePartyPlan() {
       
       setPartyPlan(data);
       setVenueCarouselOptions(data.venueCarouselOptions || []);
+      setEntertainmentCarouselOptions(data.entertainmentCarouselOptions || []);
       setError(null);
-      
+
       // ✅ Cache the loaded data
       setCachedPartyPlan(data);
     } catch (err) {
@@ -1128,6 +1132,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     error,
     totalCost,
     venueCarouselOptions,
+    entertainmentCarouselOptions,
     addSupplier,
     addAddon,
     removeAddon,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -52,6 +52,7 @@ export default function EntertainmentBrowseCard({
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHovering, setIsHovering] = useState(false)
+  const pointerStart = useRef(null)
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
 
@@ -130,7 +131,18 @@ export default function EntertainmentBrowseCard({
     >
       {/* Image Carousel */}
       <div className="relative aspect-[20/19] rounded-xl overflow-hidden mb-3">
-        <div className="overflow-hidden h-full" ref={emblaRef}>
+        <div
+          className="overflow-hidden h-full"
+          ref={emblaRef}
+          onPointerDown={(e) => { pointerStart.current = { x: e.clientX, y: e.clientY } }}
+          onPointerUp={(e) => {
+            if (!pointerStart.current || !onClick) return
+            const dx = Math.abs(e.clientX - pointerStart.current.x)
+            const dy = Math.abs(e.clientY - pointerStart.current.y)
+            if (dx < 8 && dy < 8) onClick(e) // Tap, not drag
+            pointerStart.current = null
+          }}
+        >
           <div className="flex h-full">
             {images.map((img, index) => (
               <div key={index} className="flex-[0_0_100%] min-w-0 relative h-full">

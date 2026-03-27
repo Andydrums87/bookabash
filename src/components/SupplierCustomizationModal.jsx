@@ -1059,6 +1059,7 @@ export default function SupplierCustomizationModal({
       const supplierForPricing = {
         ...supplier,
         price: packagePrice,
+        originalPrice: packagePrice, // Override so getTrueBasePrice uses the package price
       }
 
      

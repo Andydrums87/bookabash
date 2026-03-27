@@ -577,6 +577,84 @@ class PartyBuilderBackend {
     };
   }
 
+// Select top N entertainers for the party setup carousel
+// Reuses the same scoring logic as selectBestSupplier but returns multiple results
+selectTopEntertainers(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 5) {
+  if (!suppliers || suppliers.length === 0) {
+    return [];
+  }
+
+  // Filter by budget with flexibility
+  const budgetFiltered = suppliers.filter(s => s.priceFrom <= budget * 1.3);
+
+  if (budgetFiltered.length === 0) {
+    // If nothing in budget, use all suppliers (user can still browse)
+    return suppliers.slice(0, count);
+  }
+
+  const gender = partyDetails?.gender || null;
+
+  // Score all suppliers (same logic as selectBestSupplier)
+  const scoredSuppliers = budgetFiltered.map(supplier => {
+    const availabilityCheck = this.checkSupplierAvailability(supplier, new Date(date), timeSlot);
+    const locationCheck = this.checkSupplierLocation(supplier, location);
+    const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration, gender);
+    const basicPackage = this.getBasicPackageForSupplier(supplier, theme, partyDetails);
+
+    const enhancedSupplier = {
+      ...supplier,
+      packageData: basicPackage,
+      originalPrice: supplier.priceFrom || supplier.price || 0
+    };
+
+    const pricingResult = calculateFinalPrice(enhancedSupplier, partyDetails, []);
+    enhancedSupplier.enhancedPrice = pricingResult.finalPrice;
+    enhancedSupplier.enhancedPricing = pricingResult;
+
+    let compositeScore = themeScore;
+    if (availabilityCheck.available) {
+      compositeScore += availabilityCheck.confidence === 'high' ? 25 : 10;
+    } else {
+      compositeScore -= 30;
+    }
+    if (locationCheck.canServe) {
+      compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+    } else {
+      compositeScore -= 20;
+    }
+
+    return {
+      ...enhancedSupplier,
+      compositeScore,
+      themeScore,
+      availabilityCheck,
+      locationCheck,
+      isAvailable: availabilityCheck.available,
+      canServeLocation: locationCheck.canServe
+    };
+  });
+
+  // Sort by composite score, then by price for tiebreaking
+  const sorted = scoredSuppliers
+    .filter(s => s.compositeScore > 0)
+    .sort((a, b) => {
+      if (b.compositeScore !== a.compositeScore) return b.compositeScore - a.compositeScore;
+      const priceA = a.enhancedPrice || a.priceFrom || 0;
+      const priceB = b.enhancedPrice || b.priceFrom || 0;
+      return priceA - priceB;
+    });
+
+  // Prefer available suppliers but include others if not enough
+  const available = sorted.filter(s => s.isAvailable && s.canServeLocation);
+  const result = available.length >= count ? available.slice(0, count) : [
+    ...available,
+    ...sorted.filter(s => !available.includes(s)).slice(0, count - available.length)
+  ].slice(0, count);
+
+  console.log(`🎭 Top ${result.length} entertainers selected for carousel`);
+  return result;
+}
+
 // In partyBuilderBackend.js
 // Replace the selectMultipleVenuesForCarousel method with this updated version:
 
@@ -1209,49 +1287,14 @@ checkSupplierLocation(supplier, partyLocation) {
     // Define budget allocation based on budget size AND age
     let budgetAllocation, includedCategories;
 
+    // Only auto-select venue + entertainment. Other suppliers (party bags, cakes, etc.)
+    // are left empty for users to discover and add from the dashboard.
     if (isToddlerParty) {
-      // TODDLER PARTY (ages 1-2): Focus on venue with catering, cake, and party bags
-      // No entertainment, activities, or bouncy castles
-      includedCategories = ['venue', 'cakes', 'partyBags'];
-      budgetAllocation = {
-        venue: 0.50,     // More budget for venue with catering
-        cakes: 0.35,     // Nice cake is important
-        partyBags: 0.15  // Simple party bags
-      };
-      console.log(`👶 Toddler budget allocation:`, budgetAllocation);
-    } else if (budget <= 500) {
-      if (isLargeParty) {
-        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
-        budgetAllocation = { venue: 0.20, entertainment: 0.45, activities: 0.25, partyBags: 0.10 };
-      } else {
-        includedCategories = ['venue', 'entertainment', 'partyBags'];
-        budgetAllocation = { venue: 0.25, entertainment: 0.65, partyBags: 0.10 };
-      }
-    } else if (budget <= 700) {
-      if (isLargeParty) {
-        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
-        budgetAllocation = { venue: 0.20, entertainment: 0.40, activities: 0.25, partyBags: 0.15 };
-      } else {
-        includedCategories = ['venue', 'entertainment', 'partyBags'];
-        budgetAllocation = { venue: 0.25, entertainment: 0.60, partyBags: 0.15 };
-      }
+      includedCategories = ['venue'];
+      budgetAllocation = { venue: 1.0 };
     } else {
-      if (isLargeParty) {
-        includedCategories = ['venue', 'entertainment', 'activities', 'partyBags'];
-        budgetAllocation = {
-          venue: 0.05,
-          entertainment: 0.45,
-          activities: 0.35,
-          partyBags: 0.15
-        };
-      } else {
-        includedCategories = ['venue', 'entertainment', 'partyBags'];
-        budgetAllocation = {
-          venue: 0.10,
-          entertainment: 0.70,
-          partyBags: 0.20
-        };
-      }
+      includedCategories = ['venue', 'entertainment'];
+      budgetAllocation = { venue: 0.30, entertainment: 0.70 };
     }
     
     // 1. SELECT ENTERTAINMENT FIRST (theme priority) - SKIP FOR TODDLER PARTIES
@@ -1332,6 +1375,7 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
   const partyPlan = {
     venue: null,
     venueCarouselOptions: [], // NEW: Store all venue options for carousel
+    entertainmentCarouselOptions: [], // Store top entertainment options for party setup
     entertainment: null,
     cakes: null,
     catering: null,
@@ -1341,17 +1385,7 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
     decorations: null,
     balloons: null,
     softPlay: null,
-    einvites: {
-      id: "digital-invites",
-      name: "Digital Themed Invites",
-      description: "Themed e-invitations with RSVP tracking",
-      price: 25,
-      status: "confirmed",
-      image: "/placeholder.jpg",
-      category: "Digital Services",
-      priceUnit: "per set",
-      addedAt: new Date().toISOString()
-    },
+    einvites: null,
     addons: []
   };
 
@@ -1405,10 +1439,37 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
 
   }
 
+  // Store entertainment carousel options (same pattern as venues)
+  if (selectedSuppliers.entertainmentCarouselOptions && selectedSuppliers.entertainmentCarouselOptions.length > 0) {
+    partyPlan.entertainmentCarouselOptions = selectedSuppliers.entertainmentCarouselOptions.map(entertainer => ({
+      id: entertainer.id,
+      name: entertainer.name,
+      description: entertainer.description || '',
+      price: entertainer.enhancedPrice || entertainer.priceFrom || 0,
+      originalPrice: entertainer.originalPrice || entertainer.priceFrom || 0,
+      status: "carousel_option",
+      image: entertainer.image || '',
+      category: entertainer.category || 'Entertainment',
+      priceUnit: entertainer.priceUnit || "per event",
+      location: entertainer.location,
+      rating: entertainer.rating,
+      addedAt: new Date().toISOString(),
+      packageData: entertainer.packageData,
+      serviceDetails: entertainer.serviceDetails,
+      originalSupplier: {
+        ...entertainer,
+        serviceDetails: entertainer.serviceDetails
+      },
+      compositeScore: entertainer.compositeScore,
+      isAvailable: entertainer.isAvailable,
+      canServeLocation: entertainer.canServeLocation
+    }));
+  }
+
   // Process all other suppliers (including main venue)
   Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
-    // Skip the carousel options array itself
-    if (category === 'venueCarouselOptions') return;
+    // Skip the carousel options arrays
+    if (category === 'venueCarouselOptions' || category === 'entertainmentCarouselOptions') return;
 
     if (supplier && partyPlan.hasOwnProperty(category)) {
       // Special handling for party bags - ensure quantity and metadata are preserved
@@ -1590,6 +1651,22 @@ async buildParty(partyDetails) {
     // Always store venue options
     selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues || [];
 
+    // Get top entertainers for party setup carousel
+    const entertainmentSources = (themedEntertainment && themedEntertainment.length > 0)
+      ? themedEntertainment
+      : allSuppliers.filter(s => s.category === 'Entertainment');
+    selectedSuppliers.entertainmentCarouselOptions = this.selectTopEntertainers(
+      entertainmentSources,
+      processedTheme,
+      processedTimeSlot,
+      duration,
+      date,
+      location,
+      finalBudget * 0.70, // Entertainment budget allocation
+      enhancedPartyDetails,
+      5
+    );
+
     // Create party plan with venue carousel options
     const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
 
@@ -1617,6 +1694,7 @@ async buildParty(partyDetails) {
       fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
       enhancedPricingUsed: true,
       venueCarouselOptions: venueCarouselResult.venues,
+      entertainmentCarouselOptions: selectedSuppliers.entertainmentCarouselOptions || [],
       hasOwnVenue,
       venueInfo,
       // Include party details with recommended theme for updating localStorage

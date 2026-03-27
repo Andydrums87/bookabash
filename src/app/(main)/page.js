@@ -1,11 +1,10 @@
 "use client"
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
 import MobileSearchForm from "@/components/Home/MobileSearchForm"
-import PartyBuildingLoader from "@/components/Home/PartyBuildingLoader"
+// PartyBuildingLoader removed - party setup flow replaces the loader
 import TrustIndicators from "@/components/Home/TrustIndicators"
 import CategoryGrid from "@/components/Home/CategoryGrid"
 import HowItWorks from "@/components/Home/HowItWorks"
@@ -43,8 +42,6 @@ function HomePageContent() {
   const [showPostcodeRestrictionModal, setShowPostcodeRestrictionModal] = useState(false)
   const [restrictedPostcode, setRestrictedPostcode] = useState("")
 
-  const { buildParty, loading, error } = usePartyBuilder()
-
   // Form state
   const [formData, setFormData] = useState({
     date: "",
@@ -59,11 +56,17 @@ function HomePageContent() {
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPartyLoader, setShowPartyLoader] = useState(false)
-  const [buildingProgress, setBuildingProgress] = useState(0)
-  const [builtPartyPlan, setBuiltPartyPlan] = useState(null)
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // Reset submitting state when user navigates back (bfcache)
+  useEffect(() => {
+    const handlePageShow = (e) => {
+      if (e.persisted) setIsSubmitting(false)
+    }
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
 
   // Check if user came from flyer QR code
   const isFlyer = searchParams.get('flyer') !== null || searchParams.get('source') === 'flyer'
@@ -239,14 +242,12 @@ function HomePageContent() {
       return
     }
 
-    // Track Plan My Party click
+    // Fire analytics before redirect — gtag/fbq just queue events locally (fast)
     if (window.gtag) {
-      // GA4 event for Analytics
       window.gtag('event', 'booking_started', {
         event_category: 'engagement',
         event_label: 'plan_my_party_click'
       });
-      // Google Ads conversion tracking for Plan My Party
       window.gtag('event', 'conversion', {
         'send_to': 'AW-17997070672/NpkFCM2U0YMcENCC1oVD'
       });
@@ -255,8 +256,6 @@ function HomePageContent() {
       window.fbq('track', 'InitiateCheckout');
     }
 
-    // ✅ NEW: Allow users to create multiple parties without warnings
-    // Just proceed directly with party creation
     proceedWithPartyCreation(formData)
   }
 
@@ -278,13 +277,14 @@ function HomePageContent() {
     setIsSubmitting(false)
   }
 
-  // Actual party creation logic
-  const proceedWithPartyCreation = async (data) => {
+  // Actual party creation logic — save details and redirect immediately
+  const proceedWithPartyCreation = (data) => {
     try {
       setIsSubmitting(true)
 
-      // Track party planning started
-      await trackStep('party_planning_started', {
+      // Track party planning started — fire and forget, don't block redirect
+      // This writes child_name, party_date, party_theme etc. to the tracking row
+      trackStep('party_planning_started', {
         theme: data.theme,
         guestCount: data.guestCount,
         childName: data.childName,
@@ -293,12 +293,7 @@ function HomePageContent() {
         timeSlot: data.timeSlot,
         postcode: data.postcode,
         date: data.date
-      });
-
-      setTimeout(() => {
-        setShowPartyLoader(true)
-        setBuildingProgress(0)
-      }, 200)
+      })
 
       const partyDetails = {
         date: data.date,
@@ -311,8 +306,8 @@ function HomePageContent() {
         timeSlot: data.timeSlot || "afternoon",
         duration: parseFloat(data.duration) || 2,
         time: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"),
-        startTime: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"), // Add startTime for header compatibility
-        hasOwnVenue: data.hasOwnVenue || false, // IMPORTANT: Pass this through
+        startTime: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"),
+        hasOwnVenue: data.hasOwnVenue || false,
 
         source: 'homepage_form',
         createdAt: new Date().toISOString(),
@@ -327,94 +322,48 @@ function HomePageContent() {
         }
       }
 
-      // Save party details to localStorage for tracking and dashboard
+      // Save party details to localStorage — party-setup page will call buildParty()
       localStorage.setItem('party_details', JSON.stringify(partyDetails));
 
-      // ✅ Build party immediately without artificial delays
-      const result = await buildParty(partyDetails)
+      // Set welcome flags
+      try {
+        const welcomeData = {
+          shouldShowWelcome: true,
+          partyCreated: true,
+          createdAt: new Date().toISOString(),
+          source: 'homepage_form',
+          environment: process.env.NODE_ENV || 'development',
+          childData: {
+            firstName: data.childName?.split(' ')[0] || '',
+            lastName: data.childName?.split(' ').slice(1).join(' ') || '',
+            childAge: data.childAge
+          }
+        }
 
-      // Store the party plan for the loader to display
-      if (result.success && result.data) {
-        setBuiltPartyPlan(result.data.partyPlan)
+        localStorage.removeItem('welcome_completed')
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('welcome_completed')
+        }
+
+        localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+        localStorage.setItem('show_welcome_popup', 'true')
+        localStorage.setItem('party_just_created', new Date().toISOString())
+        localStorage.setItem('redirect_welcome', 'true')
+
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+        }
+      } catch (storageError) {
+        console.error("Storage error:", storageError)
       }
 
-      if (result.success) {
-        setBuildingProgress(100)
+      // Redirect IMMEDIATELY — use window.location for fastest possible navigation
+      // router.push has overhead (prefetch, RSC payload) — we want instant
+      window.location.href = "/party-setup?source=homepage&t=" + Date.now()
 
-        try {
-          const welcomeData = {
-            shouldShowWelcome: true,
-            partyCreated: true,
-            createdAt: new Date().toISOString(),
-            source: 'homepage_form',
-            environment: process.env.NODE_ENV || 'development',
-            childData: {
-              firstName: data.childName?.split(' ')[0] || '',
-              lastName: data.childName?.split(' ').slice(1).join(' ') || '',
-              childAge: data.childAge
-            }
-          }
-
-          // Clear any previous welcome completion flags to ensure modal shows for new party
-          localStorage.removeItem('welcome_completed')
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem('welcome_completed')
-          }
-
-          localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
-          localStorage.setItem('show_welcome_popup', 'true')
-          localStorage.setItem('party_just_created', new Date().toISOString())
-
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
-          }
-
-        } catch (storageError) {
-          console.error("Storage error:", storageError)
-        }
-
-        // ✅ Calculate total duration dynamically based on budget and guest count
-        // Each item: 1 second
-        const budget = getDefaultBudgetForGuests(formData.guestCount)
-
-        // Calculate number of items that will be shown
-        const guests = parseInt(formData.guestCount) || 0
-        let itemCount = 3 // Core items: Venue, Entertainment, Party Bags
-
-        if (guests >= 20) {
-          itemCount += 1 // Soft Play
-        }
-
-        const totalDuration = itemCount * 1000
-
-        await new Promise((resolve) => setTimeout(resolve, totalDuration))
-
-        try {
-          const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
-
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem('redirect_welcome', 'true')
-          }
-
-          // Redirect to dashboard
-          router.push(redirectURL)
-
-        } catch (redirectError) {
-          console.error("Redirect error:", redirectError)
-          window.location.href = "/dashboard?show_welcome=true"
-        }
-        
-      } else {
-        console.error("Failed to build party:", result.error)
-        setIsSubmitting(false)
-        setShowPartyLoader(false)
-        setBuildingProgress(0)
-      }
     } catch (error) {
-      console.error("Error during party building:", error)
+      console.error("Error during party creation:", error)
       setIsSubmitting(false)
-      setShowPartyLoader(false)
-      setBuildingProgress(0)
     }
   }
 
@@ -427,40 +376,8 @@ function HomePageContent() {
     return timeSlotDefaults[timeSlot] || '14:00';
   }
 
-  // Calculate budget for loader based on guest count (matches partyBuilderBackend logic)
-  const getDefaultBudgetForGuests = (guestCount) => {
-    const guests = parseInt(guestCount);
-    if (guests <= 5) return 400;
-    if (guests <= 10) return 500;
-    if (guests <= 15) return 600;
-    if (guests <= 20) return 700;
-    if (guests <= 25) return 800;
-    return 900;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
-
-      <PartyBuildingLoader
-        isVisible={showPartyLoader}
-        theme={mapThemeValue(formData.theme)}
-        childName={formData.childName || "Your Child"}
-        progress={buildingProgress}
-        partyDetails={{
-          budget: getDefaultBudgetForGuests(formData.guestCount),
-          guestCount: formData.guestCount
-        }}
-        partyPlan={builtPartyPlan}
-        onRetry={() => {
-          // Reset states and retry party building
-          setBuildingProgress(0)
-          setBuiltPartyPlan(null)
-          proceedWithPartyCreation(formData)
-        }}
-        onTimeout={() => {
-          console.log('Party building timed out - user can retry')
-        }}
-      />
 
       <Hero
         handleSearch={handleSearch}

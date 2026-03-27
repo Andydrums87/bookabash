@@ -705,7 +705,7 @@ export default function MyPartyTabContent({
               {partyDetails?.childName ? `${partyDetails.childName}'s ` : ''}{partyDetails?.theme ? `${getThemeDisplayName(partyDetails.theme)} ` : ''}{getThemeDisplayName(partyDetails?.theme)?.endsWith('Party') ? '' : 'Party '}is Ready 🎉
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              We've selected everything for you. Tweak anything in seconds.
+              We built your party around your choices. Change or add anything in seconds.
             </p>
           </div>
 
