@@ -322,6 +322,10 @@ function HomePageContent() {
         }
       }
 
+      // Clear any previous party plan so buildParty() runs fresh
+      localStorage.removeItem('user_party_plan');
+      sessionStorage.removeItem('party_setup_step');
+
       // Save party details to localStorage — party-setup page will call buildParty()
       localStorage.setItem('party_details', JSON.stringify(partyDetails));
 
