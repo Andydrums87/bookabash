@@ -210,8 +210,8 @@ export default function EntertainmentBrowseCard({
           </div>
         )}
 
-        {/* Selected badge */}
-        {isCurrentlySelected && (
+        {/* Selected badge — only in browse modal context */}
+        {isCurrentlySelected && onSelect && (
           <div className="absolute top-2 left-2 z-10">
             <Badge className="bg-primary-500 text-white text-xs">
               Selected
@@ -253,22 +253,37 @@ export default function EntertainmentBrowseCard({
           </p>
         )}
 
-        {/* Select button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect?.(entertainer)
-          }}
-          className={`
-            w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
-            ${isCurrentlySelected
-              ? 'bg-primary-500 text-white hover:bg-primary-600'
-              : 'bg-gray-900 text-white hover:bg-gray-800'
-            }
-          `}
-        >
-          {isCurrentlySelected ? 'Selected ✓' : 'Select entertainer'}
-        </button>
+        {/* View details link — shown when no select button */}
+        {!onSelect && onClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onClick(e)
+            }}
+            className="text-sm font-medium text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] mt-2 transition-colors"
+          >
+            View details →
+          </button>
+        )}
+
+        {/* Select button — only shown when onSelect is provided */}
+        {onSelect && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect(entertainer)
+            }}
+            className={`
+              w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
+              ${isCurrentlySelected
+                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                : 'bg-gray-900 text-white hover:bg-gray-800'
+              }
+            `}
+          >
+            {isCurrentlySelected ? 'Selected ✓' : 'Select entertainer'}
+          </button>
+        )}
       </div>
     </div>
   )

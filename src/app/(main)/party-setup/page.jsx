@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { MapPin, Music, ArrowRight, Search, Sparkles, Check, User, Cake, Mail, Gift } from "lucide-react"
+import { MapPin, Music, ArrowRight, Search, Sparkles, User, Cake, Mail, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
@@ -402,17 +402,16 @@ export default function PartySetupPage() {
             <div className="h-8 w-72 bg-gray-200 rounded animate-pulse mx-auto mb-2" />
             <div className="h-4 w-56 bg-gray-200 rounded animate-pulse mx-auto" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-xl overflow-hidden border border-gray-100 bg-white">
-                <div className="h-48 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
-                <div className="p-3 space-y-2">
-                  <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 w-1/3 bg-gray-200 rounded animate-pulse" />
-                </div>
+          <div className="max-w-lg mx-auto">
+            <div className="rounded-xl overflow-hidden border border-gray-100 bg-white mb-6">
+              <div className="h-52 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+              <div className="p-4 space-y-2">
+                <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-1/3 bg-gray-200 rounded animate-pulse" />
+                <div className="h-10 w-full bg-gray-200 rounded animate-pulse mt-3" />
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -422,16 +421,10 @@ export default function PartySetupPage() {
   const childName = partyDetails?.childName || "Your Child"
   const theme = partyDetails?.theme || ""
   const cardsLoading = isBuildingParty
-  const baseVenueOptions = cardsLoading ? [] : (venueCarouselOptions || []).slice(0, 5)
-  const baseEntertainerOptions = cardsLoading ? [] : (entertainmentCarouselOptions || []).slice(0, 5)
 
-  // If selected supplier isn't in the recommendations, inject it at the front
-  const venueOptions = selectedVenue && !baseVenueOptions.some(v => v.id === selectedVenue.id)
-    ? [selectedVenue, ...baseVenueOptions]
-    : baseVenueOptions
-  const entertainerOptions = selectedEntertainer && !baseEntertainerOptions.some(e => e.id === selectedEntertainer.id)
-    ? [selectedEntertainer, ...baseEntertainerOptions]
-    : baseEntertainerOptions
+  // Pre-selected #1 recommendations (or user's browsed pick)
+  const recommendedVenue = selectedVenue || partyPlan?.venue
+  const recommendedEntertainer = selectedEntertainer || partyPlan?.entertainment
 
   const hasSelection = (currentStep === 1 && selectedVenue) || (currentStep === 2 && selectedEntertainer)
 
@@ -451,57 +444,43 @@ export default function PartySetupPage() {
 
         {/* Step 1: Venue */}
         {currentStep === 1 && !hasOwnVenue && (
-          <div>
+          <div className="max-w-lg mx-auto">
             {/* Header */}
             <div className="text-center mb-6">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                Choose a venue for {childName}'s party
+                We've picked a great venue for you
               </h1>
               <p className="text-gray-500 text-sm md:text-base">
-                We've found the best venues near you. Pick one or browse for more.
+                A popular choice for kids' parties near you. You can swap this anytime.
               </p>
-              <p className="text-gray-400 text-xs mt-1">You can always swap your choice later on.</p>
             </div>
 
-            {/* Venue cards */}
+            {/* Single recommendation card */}
             {cardsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="rounded-xl overflow-hidden border border-gray-100">
-                    <Skeleton className="h-48 w-full" />
-                    <div className="p-3 space-y-2">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-4 w-1/3" />
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-xl overflow-hidden border border-gray-100 bg-white mb-6">
+                <Skeleton className="h-40 md:h-52 w-full" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-10 w-full mt-3" />
+                </div>
               </div>
-            ) : venueOptions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {/* Sort selected venue to top */}
-                {[...venueOptions].sort((a, b) => {
-                  if (selectedVenue?.id === a.id) return -1
-                  if (selectedVenue?.id === b.id) return 1
-                  return 0
-                }).map((venue) => (
-                  <div
-                    key={venue.id}
-                    className={`relative transition-all duration-200 rounded-xl ${
-                      selectedVenue?.id === venue.id
-                        ? "ring-2 ring-[hsl(var(--primary-500))] ring-offset-2"
-                        : ""
-                    }`}
-                  >
-                    <VenueMapListItem
-                      venue={venue.originalSupplier || venue}
-                      isCurrentlySelected={selectedVenue?.id === venue.id}
-                      onClick={() => handleCardClick(venue)}
-                      onSelect={() => handleCardClick(venue)}
-                      partyDetails={partyDetails}
-                    />
-                  </div>
-                ))}
+            ) : recommendedVenue ? (
+              <div className="mb-6">
+                <div className="rounded-xl overflow-hidden ring-2 ring-[hsl(var(--primary-500))] ring-offset-2 [&_.aspect-\[20\/19\]]:aspect-[16/10] md:[&_.aspect-\[20\/19\]]:aspect-[20/19]">
+                  <VenueMapListItem
+                    venue={recommendedVenue.originalSupplier || recommendedVenue}
+                    isCurrentlySelected={!!selectedVenue}
+                    onClick={() => handleCardClick(recommendedVenue)}
+                    partyDetails={partyDetails}
+                  />
+                </div>
+                {/* PartySnap pick badge */}
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-medium text-gray-500">PartySnap recommendation</span>
+                </div>
               </div>
             ) : (
               <div className="text-center py-12 mb-6">
@@ -510,20 +489,17 @@ export default function PartySetupPage() {
               </div>
             )}
 
-            {/* Browse more button */}
-            <div className="flex justify-center mb-8">
-              <Button
-                variant="outline"
-                size="lg"
+            {/* Browse link */}
+            <div className="text-center">
+              <button
                 onClick={() => {
                   setShowVenueBrowserModal(true)
                   trackStep('party_setup_browse_venues', {})
                 }}
-                className="gap-2"
+                className="text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 rounded-lg px-4 py-2 transition-colors"
               >
-                <Search className="w-4 h-4" />
-                Browse More Venues
-              </Button>
+                Browse other venues
+              </button>
             </div>
 
           </div>
@@ -531,59 +507,47 @@ export default function PartySetupPage() {
 
         {/* Step 2: Entertainer */}
         {currentStep === 2 && !showNameCollection && (
-          <div>
+          <div className="max-w-lg mx-auto">
             {/* Header */}
             <div className="text-center mb-6">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                Choose entertainment for the party
+                We've found a top entertainer
               </h1>
               <p className="text-gray-500 text-sm md:text-base">
-                {theme && theme !== 'undecided' && theme !== 'no-theme'
-                  ? `Here are our top entertainers for a ${theme} party.`
-                  : "Here are our top-rated entertainers near you."
-                }
+                {(() => {
+                  const ent = recommendedEntertainer?.originalSupplier || recommendedEntertainer
+                  const gRating = ent?.googleRating
+                  const ratingText = gRating ? `Rated ${gRating}★ on Google. ` : ''
+                  return `${ratingText}Trusted by local parents for kids' parties. You can swap this anytime.`
+                })()}
               </p>
-              <p className="text-gray-400 text-xs mt-1">You can always swap your choice later on.</p>
             </div>
 
-            {/* Entertainer cards */}
+            {/* Single recommendation card */}
             {cardsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="rounded-xl overflow-hidden border border-gray-100">
-                    <Skeleton className="h-48 w-full" />
-                    <div className="p-3 space-y-2">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-4 w-1/3" />
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-xl overflow-hidden border border-gray-100 bg-white mb-6">
+                <Skeleton className="h-40 md:h-52 w-full" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-10 w-full mt-3" />
+                </div>
               </div>
-            ) : entertainerOptions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {/* Sort selected entertainer to top */}
-                {[...entertainerOptions].sort((a, b) => {
-                  if (selectedEntertainer?.id === a.id) return -1
-                  if (selectedEntertainer?.id === b.id) return 1
-                  return 0
-                }).map((entertainer) => (
-                  <div
-                    key={entertainer.id}
-                    className={`relative transition-all duration-200 rounded-xl ${
-                      selectedEntertainer?.id === entertainer.id
-                        ? "ring-2 ring-purple-500 ring-offset-2"
-                        : ""
-                    }`}
-                  >
-                    <EntertainmentBrowseCard
-                      entertainer={entertainer.originalSupplier || entertainer}
-                      isCurrentlySelected={selectedEntertainer?.id === entertainer.id}
-                      onClick={() => handleCardClick(entertainer)}
-                      onSelect={() => handleCardClick(entertainer)}
-                    />
-                  </div>
-                ))}
+            ) : recommendedEntertainer ? (
+              <div className="mb-6">
+                <div className="rounded-xl overflow-hidden ring-2 ring-[hsl(var(--primary-500))] ring-offset-2 [&_.aspect-\[20\/19\]]:aspect-[16/10] md:[&_.aspect-\[20\/19\]]:aspect-[20/19]">
+                  <EntertainmentBrowseCard
+                    entertainer={recommendedEntertainer.originalSupplier || recommendedEntertainer}
+                    isCurrentlySelected={!!selectedEntertainer}
+                    onClick={() => handleCardClick(recommendedEntertainer)}
+                  />
+                </div>
+                {/* PartySnap pick badge */}
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-medium text-gray-500">PartySnap recommendation</span>
+                </div>
               </div>
             ) : (
               <div className="text-center py-12 mb-6">
@@ -592,20 +556,17 @@ export default function PartySetupPage() {
               </div>
             )}
 
-            {/* Browse more button */}
-            <div className="flex justify-center mb-8">
-              <Button
-                variant="outline"
-                size="lg"
+            {/* Browse link */}
+            <div className="text-center">
+              <button
                 onClick={() => {
                   setShowEntertainmentBrowserModal(true)
                   trackStep('party_setup_browse_entertainers', {})
                 }}
-                className="gap-2"
+                className="text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 rounded-lg px-4 py-2 transition-colors"
               >
-                <Search className="w-4 h-4" />
-                Browse More Entertainers
-              </Button>
+                Browse other entertainers
+              </button>
             </div>
 
           </div>
@@ -706,7 +667,7 @@ export default function PartySetupPage() {
       </div>
 
       {/* Sticky bottom banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="max-w-4xl mx-auto">
           {showNameCollection ? (
             <div className="flex items-center justify-between">
@@ -735,25 +696,33 @@ export default function PartySetupPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div>
-                {currentStep === 2 && !hasOwnVenue && (
-                  <button
-                    onClick={handleBack}
-                    className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Back
-                  </button>
-                )}
-              </div>
+            <div className="flex flex-col gap-3">
               <Button
-                onClick={hasSelection ? handleContinue : handleSkip}
-                size="sm"
-                className="gap-1.5"
+                onClick={handleContinue}
+                size="lg"
+                className="w-full gap-1.5"
               >
-                {hasSelection ? "Continue" : "Skip for now"}
-                <ArrowRight className="w-3.5 h-3.5" />
+                Looks good, continue
+                <ArrowRight className="w-4 h-4" />
               </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  {currentStep === 2 && !hasOwnVenue && (
+                    <button
+                      onClick={handleBack}
+                      className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      ← Back
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={handleSkip}
+                  className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Skip for now
+                </button>
+              </div>
             </div>
           )}
         </div>

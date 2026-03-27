@@ -340,34 +340,49 @@ export default function VenueMapListItem({
           Free cancellation · Money back guarantee
         </p>
 
-        {/* Select venue button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect?.(venue)
-          }}
-          disabled={!hasCapacity || isLoading}
-          className={`
-            w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
-            ${isCurrentlySelected
-              ? 'bg-primary-500 text-white hover:bg-primary-600'
-              : hasCapacity && !isLoading
-                ? 'bg-gray-900 text-white hover:bg-gray-800'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }
-          `}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Adding...
-            </>
-          ) : isCurrentlySelected ? (
-            'Selected ✓'
-          ) : (
-            'Select venue'
-          )}
-        </button>
+        {/* View details link — shown when no select button */}
+        {!onSelect && onClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onClick(venue)
+            }}
+            className="text-sm font-medium text-[hsl(var(--primary-500))] hover:text-[hsl(var(--primary-600))] mt-2 transition-colors"
+          >
+            View details →
+          </button>
+        )}
+
+        {/* Select venue button — only shown when onSelect is provided */}
+        {onSelect && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect(venue)
+            }}
+            disabled={!hasCapacity || isLoading}
+            className={`
+              w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
+              ${isCurrentlySelected
+                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                : hasCapacity && !isLoading
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }
+            `}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Adding...
+              </>
+            ) : isCurrentlySelected ? (
+              'Selected ✓'
+            ) : (
+              'Select venue'
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
