@@ -340,7 +340,7 @@ export default function VenueMapListItem({
           Free cancellation · Money back guarantee
         </p>
 
-        {/* Select venue link */}
+        {/* Select venue button */}
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -348,12 +348,12 @@ export default function VenueMapListItem({
           }}
           disabled={!hasCapacity || isLoading}
           className={`
-            text-sm font-semibold underline underline-offset-2 transition-colors mt-2 flex items-center gap-1.5
+            w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
             ${isCurrentlySelected
-              ? 'text-primary-500 hover:text-primary-600'
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
               : hasCapacity && !isLoading
-                ? 'text-gray-900 hover:text-gray-600'
-                : 'text-gray-400 cursor-not-allowed no-underline'
+                ? 'bg-gray-900 text-white hover:bg-gray-800'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }
           `}
         >
@@ -363,7 +363,7 @@ export default function VenueMapListItem({
               Adding...
             </>
           ) : isCurrentlySelected ? (
-            'Selected'
+            'Selected ✓'
           ) : (
             'Select venue'
           )}

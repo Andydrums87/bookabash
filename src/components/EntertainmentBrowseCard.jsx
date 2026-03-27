@@ -252,6 +252,23 @@ export default function EntertainmentBrowseCard({
             <span className="font-bold">From £{price}</span>
           </p>
         )}
+
+        {/* Select button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect?.(entertainer)
+          }}
+          className={`
+            w-full text-sm font-semibold rounded-lg py-2 px-4 mt-2 flex items-center justify-center gap-1.5 transition-colors
+            ${isCurrentlySelected
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
+              : 'bg-gray-900 text-white hover:bg-gray-800'
+            }
+          `}
+        >
+          {isCurrentlySelected ? 'Selected ✓' : 'Select entertainer'}
+        </button>
       </div>
     </div>
   )
