@@ -489,8 +489,46 @@ export default function PartySetupPage() {
               </div>
             )}
 
+            {/* Other options thumbnails */}
+            {!cardsLoading && (() => {
+              const others = (venueCarouselOptions || []).filter(v => v.id !== recommendedVenue?.id).slice(0, 4)
+              if (others.length === 0) return null
+              return (
+                <div className="mt-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Other great options</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+                    {others.map(venue => {
+                      const v = venue.originalSupplier || venue
+                      const img = v.coverPhoto || v.image || v.serviceDetails?.photos?.[0]?.src || '/placeholder.png'
+                      return (
+                        <button
+                          key={venue.id}
+                          onClick={() => handleCardClick(venue)}
+                          className="flex-shrink-0 w-[45%] text-left bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group snap-start block"
+                        >
+                          <div className="aspect-[16/10] overflow-hidden">
+                            <img src={img} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          </div>
+                          <div className="p-2.5">
+                            <p className="text-sm font-semibold text-gray-900 leading-tight line-clamp-1">{v.name}</p>
+                            {(v.priceFrom || venue.price) ? (
+                              <p className="text-xs text-gray-500 mt-0.5">£{venue.price || v.priceFrom}</p>
+                            ) : null}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Browse link */}
-            <div className="text-center">
+            <div className="text-center mt-4">
               <button
                 onClick={() => {
                   setShowVenueBrowserModal(true)
@@ -556,8 +594,46 @@ export default function PartySetupPage() {
               </div>
             )}
 
+            {/* Other options thumbnails */}
+            {!cardsLoading && (() => {
+              const others = (entertainmentCarouselOptions || []).filter(e => e.id !== recommendedEntertainer?.id).slice(0, 4)
+              if (others.length === 0) return null
+              return (
+                <div className="mt-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Other great options</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+                    {others.map(entertainer => {
+                      const e = entertainer.originalSupplier || entertainer
+                      const img = e.coverPhoto || e.image || e.serviceDetails?.photos?.[0]?.src || e.portfolioImages?.[0]?.src || '/placeholder.png'
+                      return (
+                        <button
+                          key={entertainer.id}
+                          onClick={() => handleCardClick(entertainer)}
+                          className="flex-shrink-0 w-[45%] text-left bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group snap-start block"
+                        >
+                          <div className="aspect-[16/10] overflow-hidden">
+                            <img src={img} alt={e.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          </div>
+                          <div className="p-2.5">
+                            <p className="text-sm font-semibold text-gray-900 leading-tight line-clamp-1">{e.name}</p>
+                            {(e.priceFrom || entertainer.price) ? (
+                              <p className="text-xs text-gray-500 mt-0.5">From £{entertainer.price || e.priceFrom}</p>
+                            ) : null}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Browse link */}
-            <div className="text-center">
+            <div className="text-center mt-4">
               <button
                 onClick={() => {
                   setShowEntertainmentBrowserModal(true)
