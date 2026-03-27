@@ -62,15 +62,17 @@ export default function EntertainmentBrowseCard({
     const coverPhoto = entertainer.coverPhoto || entertainer.image || entertainer.imageUrl || entertainer.data?.coverPhoto
     if (coverPhoto) images.push(coverPhoto)
 
-    const gallery = entertainer.gallery ||
-                    entertainer.photos ||
-                    entertainer.data?.gallery ||
-                    entertainer.data?.photos ||
-                    entertainer.serviceDetails?.gallery ||
-                    entertainer.serviceDetails?.photos ||
-                    entertainer.serviceDetails?.portfolioImages ||
-                    entertainer.data?.serviceDetails?.portfolioImages ||
-                    []
+    const gallery = [
+      entertainer.gallery,
+      entertainer.photos,
+      entertainer.data?.gallery,
+      entertainer.data?.photos,
+      entertainer.serviceDetails?.gallery,
+      entertainer.serviceDetails?.photos,
+      entertainer.serviceDetails?.portfolioImages,
+      entertainer.portfolioImages,
+      entertainer.data?.serviceDetails?.portfolioImages,
+    ].find(arr => arr?.length > 0) || []
 
     gallery.forEach(img => {
       const imgUrl = typeof img === "string" ? img : (img.url || img.src)
