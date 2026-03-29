@@ -167,7 +167,6 @@ export const trackStep = async (step, data = {}) => {
 
     // Update child name/age and email when party setup is completed
     if (step === 'party_setup_completed') {
-      updateObj.status = 'setup_completed';
       if (data.childName) updateObj.child_name = data.childName;
       if (data.childAge) updateObj.child_age = parseInt(data.childAge) || null;
       if (data.email) updateObj.email = data.email;

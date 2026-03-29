@@ -57,6 +57,7 @@ export default function PartySetupPage() {
 
   // Load party details from localStorage and kick off buildParty (runs once on mount)
   useEffect(() => {
+    const init = async () => {
     try {
       const detailsStr = localStorage.getItem('party_details')
       if (!detailsStr) {
@@ -84,7 +85,8 @@ export default function PartySetupPage() {
 
       // Track setup started — also passes party details as fallback
       // in case party_planning_started didn't complete before page unload
-      trackStep('party_setup_started', {
+      // Awaited to ensure session row exists before any subsequent trackStep calls
+      await trackStep('party_setup_started', {
         hasOwnVenue: details.hasOwnVenue,
         theme: details.theme,
         guestCount: details.guestCount,
@@ -121,6 +123,8 @@ export default function PartySetupPage() {
       console.error('Error loading party details:', err)
       router.push('/')
     }
+    }
+    init()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -335,7 +339,7 @@ export default function PartySetupPage() {
       }
     }
 
-    trackStep('party_setup_completed', {
+    await trackStep('party_setup_completed', {
       venueSelected: !!selectedVenue,
       entertainerSelected: !!selectedEntertainer,
       childName: name,
@@ -348,7 +352,7 @@ export default function PartySetupPage() {
   }, [childFirstName, childAge, discountEmail, selectedVenue, selectedEntertainer, router])
 
   // Handle skip name collection
-  const handleSkipNameCollection = useCallback(() => {
+  const handleSkipNameCollection = useCallback(async () => {
     // Save with placeholder
     try {
       const detailsStr = localStorage.getItem('party_details')
@@ -369,7 +373,7 @@ export default function PartySetupPage() {
       console.error('Error saving child details:', e)
     }
 
-    trackStep('party_setup_completed', {
+    await trackStep('party_setup_completed', {
       venueSelected: !!selectedVenue,
       entertainerSelected: !!selectedEntertainer,
       skippedNameCollection: true
