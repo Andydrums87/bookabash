@@ -100,6 +100,34 @@ export const initTracking = async () => {
 };
 
 /**
+ * Safely fetch the current action_timeline and append a new event.
+ * Returns the updated timeline, or null if the fetch failed (caller should skip timeline update).
+ */
+const safeAppendTimeline = async (newEvent) => {
+  try {
+    const { data: currentTracking, error } = await supabase
+      .from('party_tracking')
+      .select('action_timeline')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (error || !currentTracking) {
+      console.warn('[safeAppendTimeline] Failed to fetch timeline:', error?.message);
+      return null; // Signal to caller: don't overwrite timeline
+    }
+
+    const timeline = Array.isArray(currentTracking.action_timeline)
+      ? [...currentTracking.action_timeline]
+      : [];
+    timeline.push(newEvent);
+    return timeline;
+  } catch (err) {
+    console.warn('[safeAppendTimeline] Error:', err.message);
+    return null;
+  }
+};
+
+/**
  * Track a step in the party planning journey
  * @param {string} step - The current step (e.g., 'theme_selected', 'supplier_added')
  * @param {object} data - Additional data about this step
@@ -110,31 +138,34 @@ export const trackStep = async (step, data = {}) => {
 
   try {
     // First, get the current timeline
-    const { data: currentTracking } = await supabase
+    const { data: currentTracking, error: fetchError } = await supabase
       .from('party_tracking')
-      .select('action_timeline')
+      .select('action_timeline, created_at')
       .eq('session_id', sessionId)
       .single();
 
-    const timeline = currentTracking?.action_timeline || [];
-
-    // Append new action to timeline
-    const newAction = {
-      action: step,
-      timestamp: new Date().toISOString(),
-      data: data
-    };
-
-    timeline.push(newAction);
+    if (fetchError) {
+      console.warn('[trackStep] Failed to fetch existing timeline:', fetchError.message, 'sessionId:', sessionId);
+    }
 
     // Build update object
-    // NOTE: We do NOT set party_data here - that should only contain persistent party details,
-    // not transient action data. Action data goes into action_timeline instead.
     const updateObj = {
       current_step: step,
-      action_timeline: timeline,
       last_activity: new Date().toISOString()
     };
+
+    // Only update timeline if we successfully fetched the existing one
+    // This prevents wiping the timeline if the fetch failed
+    if (!fetchError && currentTracking) {
+      const existingTimeline = currentTracking.action_timeline;
+      const timeline = Array.isArray(existingTimeline) ? [...existingTimeline] : [];
+      timeline.push({
+        action: step,
+        timestamp: new Date().toISOString(),
+        data: data
+      });
+      updateObj.action_timeline = timeline;
+    }
 
     // If this is party_planning_started, also populate dedicated columns and update status
     // The data object has theme, guestCount, postcode, childName, childAge, hasOwnVenue, date directly from the form
@@ -543,16 +574,6 @@ export const markPaid = async (paymentData = {}) => {
   if (!sessionId) return;
 
   try {
-    // First, get the current timeline
-    const { data: currentTracking } = await supabase
-      .from('party_tracking')
-      .select('action_timeline')
-      .eq('session_id', sessionId)
-      .single();
-
-    const timeline = currentTracking?.action_timeline || [];
-
-    // Add payment_completed event to timeline
     const paymentEvent = {
       action: 'payment_completed',
       timestamp: new Date().toISOString(),
@@ -564,14 +585,14 @@ export const markPaid = async (paymentData = {}) => {
       }
     };
 
-    timeline.push(paymentEvent);
+    const timeline = await safeAppendTimeline(paymentEvent);
 
     // Update status, timeline, and final value
     const updateData = {
       status: 'paid',
-      action_timeline: timeline,
       last_activity: new Date().toISOString()
     };
+    if (timeline) updateData.action_timeline = timeline;
 
     // Store final payment amount in estimated_value column
     if (paymentData.amount) {
@@ -747,24 +768,23 @@ export const trackDashboardEngagement = async (engagementData) => {
   }
 
   try {
-    // First get the current tracking record
-    const { data: currentTracking } = await supabase
-      .from('party_tracking')
-      .select('action_timeline, dashboard_engagement')
-      .eq('session_id', sessionId)
-      .single();
-
-    const timeline = currentTracking?.action_timeline || [];
-    const existingEngagement = currentTracking?.dashboard_engagement || {};
-
-    // Create engagement event for timeline
+    // Safely fetch and append to timeline
     const engagementEvent = {
       action: 'dashboard_engagement',
       timestamp: new Date().toISOString(),
       data: engagementData
     };
 
-    timeline.push(engagementEvent);
+    const timeline = await safeAppendTimeline(engagementEvent);
+
+    // Fetch dashboard_engagement separately (safe — won't overwrite timeline)
+    const { data: currentTracking } = await supabase
+      .from('party_tracking')
+      .select('dashboard_engagement')
+      .eq('session_id', sessionId)
+      .single();
+
+    const existingEngagement = currentTracking?.dashboard_engagement || {};
 
     // Merge with existing engagement data (keep max scroll depth, combine sections)
     const mergedEngagement = {
@@ -778,13 +798,15 @@ export const trackDashboardEngagement = async (engagementData) => {
       last_updated: new Date().toISOString()
     };
 
+    const updateData = {
+      dashboard_engagement: mergedEngagement,
+      last_activity: new Date().toISOString()
+    };
+    if (timeline) updateData.action_timeline = timeline;
+
     const { error } = await supabase
       .from('party_tracking')
-      .update({
-        action_timeline: timeline,
-        dashboard_engagement: mergedEngagement,
-        last_activity: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('session_id', sessionId);
 
     if (error) {
@@ -817,16 +839,6 @@ export const trackSupplierViewed = async (supplierCategory, supplierName = null,
   }
 
   try {
-    // First get the current timeline
-    const { data: currentTracking } = await supabase
-      .from('party_tracking')
-      .select('action_timeline')
-      .eq('session_id', sessionId)
-      .single();
-
-    const timeline = currentTracking?.action_timeline || [];
-
-    // Create view event
     const viewEvent = {
       action: 'supplier_viewed',
       timestamp: new Date().toISOString(),
@@ -837,14 +849,14 @@ export const trackSupplierViewed = async (supplierCategory, supplierName = null,
       }
     };
 
-    timeline.push(viewEvent);
+    const timeline = await safeAppendTimeline(viewEvent);
+
+    const updateData = { last_activity: new Date().toISOString() };
+    if (timeline) updateData.action_timeline = timeline;
 
     const { error } = await supabase
       .from('party_tracking')
-      .update({
-        action_timeline: timeline,
-        last_activity: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('session_id', sessionId);
 
     if (error) {
@@ -873,14 +885,6 @@ export const trackSupplierChangeBrowse = async (supplierCategory, currentSupplie
   }
 
   try {
-    const { data: currentTracking } = await supabase
-      .from('party_tracking')
-      .select('action_timeline')
-      .eq('session_id', sessionId)
-      .single();
-
-    const timeline = currentTracking?.action_timeline || [];
-
     const changeEvent = {
       action: 'supplier_change_browse',
       timestamp: new Date().toISOString(),
@@ -891,14 +895,14 @@ export const trackSupplierChangeBrowse = async (supplierCategory, currentSupplie
       }
     };
 
-    timeline.push(changeEvent);
+    const timeline = await safeAppendTimeline(changeEvent);
+
+    const updateData = { last_activity: new Date().toISOString() };
+    if (timeline) updateData.action_timeline = timeline;
 
     const { error } = await supabase
       .from('party_tracking')
-      .update({
-        action_timeline: timeline,
-        last_activity: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('session_id', sessionId);
 
     if (error) {
@@ -927,14 +931,6 @@ export const trackSupplierBrowseView = async (supplierCategory, supplierName = n
   }
 
   try {
-    const { data: currentTracking } = await supabase
-      .from('party_tracking')
-      .select('action_timeline')
-      .eq('session_id', sessionId)
-      .single();
-
-    const timeline = currentTracking?.action_timeline || [];
-
     const viewEvent = {
       action: 'supplier_browse_view',
       timestamp: new Date().toISOString(),
@@ -945,14 +941,14 @@ export const trackSupplierBrowseView = async (supplierCategory, supplierName = n
       }
     };
 
-    timeline.push(viewEvent);
+    const timeline = await safeAppendTimeline(viewEvent);
+
+    const updateData = { last_activity: new Date().toISOString() };
+    if (timeline) updateData.action_timeline = timeline;
 
     const { error } = await supabase
       .from('party_tracking')
-      .update({
-        action_timeline: timeline,
-        last_activity: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('session_id', sessionId);
 
     if (error) {
