@@ -2482,8 +2482,8 @@ export default function SupplierCustomizationModal({
               </div>
             )}
 
-            {/* About Section - Skip for venues (VenueDisplay has its own) */}
-            {!supplierTypeDetection.isVenue && (() => {
+            {/* About Section - Skip for venues (VenueDisplay has its own) and entertainment (has its own below) */}
+            {!supplierTypeDetection.isVenue && !supplierTypeDetection.isEntertainment && (() => {
               // Prioritize serviceDetails.aboutUs as it contains the detailed about content
               const description = supplier?.serviceDetails?.aboutUs ||
                                  supplier?.serviceDetails?.description ||
@@ -2707,7 +2707,7 @@ export default function SupplierCustomizationModal({
               </section>
             )}
 
-            {/* Entertainment - Engaging view with party info, gallery & trust signals */}
+            {/* Entertainment - Reordered for conversion: value → price → included → trust → CTA context */}
             {supplierTypeDetection.isEntertainment && (() => {
               const sd = supplier?.serviceDetails || supplier?.service_details || {}
               const ageGroups = sd?.ageGroups || []
@@ -2719,19 +2719,130 @@ export default function SupplierCustomizationModal({
               }
               const galleryImages = supplierImages.slice(1, 5)
 
+              // Dynamic duration text from selected package
+              const durationText = (() => {
+                const raw = selectedPackage?.duration
+                // If it's already a formatted string like "2 hours" or "90 minutes", use it directly
+                if (typeof raw === 'string' && raw.match(/hour|minute/i)) return raw
+                const d = Number(raw) || 2
+                const sub = supplier?.subcategory?.toLowerCase() || ''
+                const isPerformance = ['music', 'drama', 'dance'].some(t => sub.includes(t))
+                if (isPerformance) return d > 60 ? '75-90 minutes' : '45-60 minutes'
+                if (d >= 60) { const h = d / 60; return h === 1 ? '1 hour' : h === 1.5 ? '1.5 hours' : `${h} hours` }
+                if (d <= 3) return d === 1 ? '1 hour' : d === 1.5 ? '1.5 hours' : `${d} hours`
+                return `${d} minutes`
+              })()
+
+              // Theme-specific lines for What's Included
+              const effectiveTheme = isPerformanceParty(partyTheme)
+                ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
+                : partyTheme
+              const themeLower = effectiveTheme?.toLowerCase() || ''
+              const themeSpecificLines = (() => {
+                if (themeLower.includes('princess')) return [
+                  'Princess-themed games, storytelling and magical moments',
+                  'Character-led activities where kids become the princesses'
+                ]
+                if (themeLower.includes('frozen')) return [
+                  'Frozen-themed adventures with magical ice games and singalongs',
+                  'Character-led moments where kids join Elsa and Anna'
+                ]
+                if (themeLower.includes('superhero') || themeLower.includes('spiderman')) return [
+                  'Superhero training challenges and interactive games',
+                  'Fun character-led moments where kids become the heroes'
+                ]
+                if (themeLower.includes('mermaid')) return [
+                  'Mermaid-themed games, treasure hunts and ocean adventures',
+                  'Magical underwater storytelling and creative activities'
+                ]
+                if (themeLower.includes('unicorn')) return [
+                  'Unicorn-themed games, crafts and magical adventures',
+                  'Sparkly activities and enchanted storytelling'
+                ]
+                if (themeLower.includes('pirate')) return [
+                  'Pirate treasure hunts and swashbuckling adventures',
+                  'Interactive games where kids become fearless pirates'
+                ]
+                if (themeLower.includes('dinosaur')) return [
+                  'Dinosaur discovery games and prehistoric adventures',
+                  'Interactive activities where kids become dino explorers'
+                ]
+                if (themeLower.includes('disco') || themeLower.includes('dance')) return [
+                  'High-energy dance games, competitions and party anthems',
+                  'Fun choreography and freestyle sessions kids love'
+                ]
+                if (themeLower.includes('sports') || themeLower.includes('football')) return [
+                  'Action-packed sports challenges and team games',
+                  'Competitive activities that keep every child engaged'
+                ]
+                if (themeLower.includes('science')) return [
+                  'Mind-blowing science experiments kids can try themselves',
+                  'Interactive demos and hands-on discovery activities'
+                ]
+                if (themeLower.includes('magic') || themeLower.includes('magician')) return [
+                  'Amazing magic tricks with audience participation',
+                  'Interactive illusions that leave kids spellbound'
+                ]
+                // Generic fallback
+                return [
+                  'Themed activities and interactive games tailored to your party',
+                  'Fun, engaging moments your child and their friends will love'
+                ]
+              })()
+
+              // Google rating data
+              const gRating = supplier?.googleRating || supplier?.data?.googleRating
+              const gReviewCount = supplier?.googleReviewCount || supplier?.data?.googleReviewCount
+
               return (
                 <section className="space-y-7">
-                  {/* Package Selector - only show if entertainer has multiple packages */}
+
+                  {/* 1. VALUE LINE */}
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {durationText} of fully hosted entertainment — so you can relax while they run the party. Everything organised for you. No stress, no chasing.
+                  </p>
+
+                  {/* 3. WHAT'S INCLUDED — hardcoded + theme-specific */}
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base mb-4">What's included</h4>
+                    <ul className="space-y-3">
+                      {[
+                        'High-energy games and activities to keep kids fully engaged from start to finish',
+                        'A fully hosted party — they lead everything so you can relax',
+                        'A structured, stress-free flow (no awkward gaps or chaos)',
+                        'Music, games and themed activities throughout',
+                        'An unforgettable experience your child and their friends will love',
+                        ...themeSpecificLines,
+                      ].map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700 font-medium">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* 4. TRUST LINE — Google rating based */}
+                  {gRating && (
+                    <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2.5">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">{gRating}</span> · Trusted by {gReviewCount || '30'}+ local parents
+                      </p>
+                    </div>
+                  )}
+
+                  <hr className="border-gray-100" />
+
+                  {/* 5. PACKAGE SELECTOR — only show if multiple packages */}
                   {(() => {
                     const isPerformance = isPerformanceParty(partyTheme)
-                    // Also check if the supplier itself is a performance party supplier
                     const entertainmentType = (supplier?.serviceDetails?.entertainmentType || supplier?.service_details?.entertainmentType || '').toLowerCase()
                     const supplierName = (supplier?.name || supplier?.businessName || '').toLowerCase()
                     const isPerformanceSupplier = ['drama party', 'dance party', 'music party'].some(t =>
                       entertainmentType.includes(t.toLowerCase()) || supplierName.includes(t.split(' ')[0])
                     )
 
-                    // For performance parties OR performance party suppliers: show a theme dropdown
                     if ((isPerformance || isPerformanceSupplier) && packages.length > 1) {
                       return (
                         <div>
@@ -2753,7 +2864,6 @@ export default function SupplierCustomizationModal({
                             </SelectTrigger>
                             <SelectContent>
                               {[...packages].sort((a, b) => {
-                                // Put selected package first in the list
                                 if (a.id === selectedPackageId) return -1
                                 if (b.id === selectedPackageId) return 1
                                 return 0
@@ -2768,7 +2878,6 @@ export default function SupplierCustomizationModal({
                       )
                     }
 
-                    // For regular entertainers: show radio-style cards
                     if (packages.length <= 1) return null
                     return (
                       <div>
@@ -2827,48 +2936,114 @@ export default function SupplierCustomizationModal({
                     )
                   })()}
 
-                  {/* What's Included */}
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-base mb-4">What's included</h4>
-                    <ul className="space-y-3">
-                      {(selectedPackage?.features?.length > 0
-                        ? selectedPackage.features
-                        : sd.whatsIncluded?.length > 0
-                          ? sd.whatsIncluded
-                          : [
-                              "Professional themed entertainment for 2 hours",
-                              "Interactive games, activities & prizes",
-                              "Music and dancing",
-                              "A break for party food",
-                              "Special birthday child moment"
-                            ]
-                      ).map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-700 font-medium">{feature}</span>
-                        </li>
+                  {/* 6. PartySnap Promise */}
+                  <div className="bg-[hsl(var(--primary-50))] -mx-5 lg:-mx-6 px-5 lg:px-6 py-5">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <ShieldCheck className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                      <h4 className="font-bold text-gray-900 text-base">The PartySnap Promise</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                      We personally vet every entertainer on our platform. Only the best make the cut — so you can relax and enjoy the party too.
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { icon: ShieldCheck, text: "DBS checked & verified" },
+                        { icon: CheckCircle, text: "Fully insured" },
+                        { icon: Sparkles, text: "Handpicked by our team" },
+                      ].map(({ icon: TrustIcon, text }) => (
+                        <div key={text} className="text-center">
+                          <div className="mx-auto mb-1.5 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                            <TrustIcon className="w-4 h-4 text-[hsl(var(--primary-500))]" />
+                          </div>
+                          <p className="text-xs text-gray-700 font-medium leading-tight">{text}</p>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
 
-                  {/* Divider */}
+                  {/* 7. Special Requests */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
+                    {(() => {
+                      const characterThemes = ['princess', 'superhero', 'spiderman', 'frozen', 'mermaid']
+                      const isCharacterTheme = characterThemes.some(t => themeLower.includes(t))
+                      const themeHints = {
+                        princess: 'Is there a specific princess your child would love? e.g. Cinderella, Rapunzel, Belle',
+                        frozen: 'Would your child prefer Elsa or Anna, or both?',
+                        superhero: 'Is there a specific superhero your child loves? e.g. Spider-Man, Batman, Iron Man',
+                        spiderman: 'Any other favourite superheroes you\'d like included?',
+                        mermaid: 'Is there a specific mermaid character your child loves? e.g. Ariel, a custom mermaid look',
+                      }
+                      const matchedHint = Object.entries(themeHints).find(([key]) => themeLower.includes(key))
+                      return (
+                        <>
+                          {isCharacterTheme && matchedHint ? (
+                            <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg p-3 mb-3">
+                              <p className="text-sm font-medium text-[hsl(var(--primary-700))] mb-1">
+                                {matchedHint[1]}
+                              </p>
+                              <p className="text-xs text-[hsl(var(--primary-500))]">
+                                Subject to availability — we'll confirm with you after booking.
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600 mb-3">
+                              Let the entertainer know about your child's interests or any special requirements
+                            </p>
+                          )}
+                        </>
+                      )
+                    })()}
+                    <Textarea
+                      placeholder={(() => {
+                        if (themeLower.includes('princess')) return "e.g. We'd love a Cinderella princess! Birthday girl's name is..."
+                        if (themeLower.includes('frozen')) return "e.g. We'd love Elsa! Birthday girl's name is..."
+                        if (themeLower.includes('superhero') || themeLower.includes('spiderman')) return "e.g. We'd love Spider-Man! Birthday boy's name is..."
+                        if (themeLower.includes('mermaid')) return "e.g. We'd love Ariel! Birthday girl's name is..."
+                        return "Add names, ages, colour preferences, or any other details here."
+                      })()}
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      className="bg-white border-gray-200 text-sm resize-none"
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
+                  </div>
+
+                  {/* 8. ABOUT — collapsible */}
+                  {(() => {
+                    const aboutText = supplier?.serviceDetails?.aboutUs ||
+                                     supplier?.serviceDetails?.description ||
+                                     supplier?.description ||
+                                     supplier?.businessDescription || ''
+                    if (!aboutText) return null
+                    const needsTruncation = aboutText.length > 120
+                    return (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">About the entertainer</h4>
+                        <p className={`text-sm text-gray-600 leading-relaxed ${!isAboutExpanded && needsTruncation ? 'line-clamp-3' : ''}`}>{aboutText}</p>
+                        {needsTruncation && (
+                          <button
+                            onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+                            className="text-sm font-medium text-primary-600 hover:text-primary-700 mt-1"
+                          >
+                            {isAboutExpanded ? 'Show less' : 'More'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })()}
+
                   <hr className="border-gray-100" />
+
+                  {/* 9. LOWER PRIORITY — Party Info, Video, Reviews, Gallery */}
 
                   {/* Party Info Grid */}
                   <div>
                     <h4 className="font-bold text-gray-900 text-base mb-4">Party info</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { img: "/category-icons/entertainment.png", label: "Party length", value: (() => {
-                          const d = selectedPackage?.duration || 2
-                          // Performance parties (music, drama, dance) are 45-60 min sessions (premium are 75-90 min)
-                          const sub = supplier?.subcategory?.toLowerCase() || ''
-                          const isPerformance = ['music', 'drama', 'dance'].some(t => sub.includes(t))
-                          if (isPerformance) return d > 60 ? '75-90 mins' : '45-60 mins'
-                          // Standard entertainers: duration stored in hours (1-3) or minutes (60+)
-                          if (d >= 60) { const h = d / 60; return h === 1 ? '1 hour' : `${h} hours` }
-                          return d <= 3 ? (d === 1 ? '1 hour' : `${d} hours`) : `${d} mins`
-                        })() },
+                        { img: "/category-icons/entertainment.png", label: "Party length", value: durationText },
                         { img: "/category-icons/decorations.png", label: "Set up", value: `${sd.setupTime || 20} mins before` },
                         { img: "/journey-icons/rsvps.png", label: "Ages suited", value: formatAgeRangeInline(ageGroups) },
                         { img: "/journey-icons/guestlist.png", label: "Max attendance", value: `${sd.performanceSpecs?.maxGroupSize || 30} children` },
@@ -2895,7 +3070,6 @@ export default function SupplierCustomizationModal({
                     const url = typeof firstVideo === 'string' ? firstVideo : firstVideo?.url
                     if (!url) return null
 
-                    // Parse YouTube/Vimeo/Cloudinary URL
                     const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
                     const vimeoMatch = url.match(/(?:vimeo\.com\/)(?:.*\/)?(\d+)/)
                     const isCloudinaryVideo = url.includes('res.cloudinary.com') && url.includes('/video/upload/')
@@ -2948,18 +3122,6 @@ export default function SupplierCustomizationModal({
                     )
                   })()}
 
-                  {/* Google Rating - venues & entertainers only */}
-                  {(supplierTypeDetection.isVenue || supplierTypeDetection.isEntertainment) &&
-                    (supplier?.googleRating || supplier?.data?.googleRating) && (
-                    <div className="px-5 lg:px-0">
-                      <GoogleRatingBadge
-                        rating={supplier.googleRating || supplier.data?.googleRating}
-                        reviewCount={supplier.googleReviewCount || supplier.data?.googleReviewCount}
-                        size="md"
-                      />
-                    </div>
-                  )}
-
                   {/* Reviews Section */}
                   {(() => {
                     const reviews = supplier?.reviews || supplier?.data?.reviews || []
@@ -2988,88 +3150,6 @@ export default function SupplierCustomizationModal({
                       </div>
                     )
                   })()}
-
-                  {/* PartySnap Promise */}
-                  <div className="bg-[hsl(var(--primary-50))] -mx-5 lg:-mx-6 px-5 lg:px-6 py-5">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <ShieldCheck className="w-5 h-5 text-[hsl(var(--primary-500))]" />
-                      <h4 className="font-bold text-gray-900 text-base">The PartySnap Promise</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                      We personally vet every entertainer on our platform. Only the best make the cut — so you can relax and enjoy the party too.
-                    </p>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { icon: ShieldCheck, text: "DBS checked & verified" },
-                        { icon: CheckCircle, text: "Fully insured" },
-                        { icon: Sparkles, text: "Handpicked by our team" },
-                      ].map(({ icon: TrustIcon, text }) => (
-                        <div key={text} className="text-center">
-                          <div className="mx-auto mb-1.5 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                            <TrustIcon className="w-4 h-4 text-[hsl(var(--primary-500))]" />
-                          </div>
-                          <p className="text-xs text-gray-700 font-medium leading-tight">{text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Special Requests */}
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Special requests</h4>
-                    {(() => {
-                      const effectiveTheme = isPerformanceParty(partyTheme)
-                        ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
-                        : partyTheme
-                      const themeLower = effectiveTheme?.toLowerCase() || ''
-                      const characterThemes = ['princess', 'superhero', 'spiderman', 'frozen', 'mermaid']
-                      const isCharacterTheme = characterThemes.some(t => themeLower.includes(t))
-                      const themeHints = {
-                        princess: 'Is there a specific princess your child would love? e.g. Cinderella, Rapunzel, Belle',
-                        frozen: 'Would your child prefer Elsa or Anna, or both?',
-                        superhero: 'Is there a specific superhero your child loves? e.g. Spider-Man, Batman, Iron Man',
-                        spiderman: 'Any other favourite superheroes you\'d like included?',
-                        mermaid: 'Is there a specific mermaid character your child loves? e.g. Ariel, a custom mermaid look',
-                      }
-                      const matchedHint = Object.entries(themeHints).find(([key]) => themeLower.includes(key))
-                      return (
-                        <>
-                          {isCharacterTheme && matchedHint ? (
-                            <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg p-3 mb-3">
-                              <p className="text-sm font-medium text-[hsl(var(--primary-700))] mb-1">
-                                {matchedHint[1]}
-                              </p>
-                              <p className="text-xs text-[hsl(var(--primary-500))]">
-                                Subject to availability — we'll confirm with you after booking.
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-600 mb-3">
-                              Let the entertainer know about your child's interests or any special requirements
-                            </p>
-                          )}
-                        </>
-                      )
-                    })()}
-                    <Textarea
-                      placeholder={(() => {
-                        const effectiveTheme = isPerformanceParty(partyTheme)
-                          ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
-                          : partyTheme
-                        const themeLower = effectiveTheme?.toLowerCase() || ''
-                        if (themeLower.includes('princess')) return "e.g. We'd love a Cinderella princess! Birthday girl's name is..."
-                        if (themeLower.includes('frozen')) return "e.g. We'd love Elsa! Birthday girl's name is..."
-                        if (themeLower.includes('superhero') || themeLower.includes('spiderman')) return "e.g. We'd love Spider-Man! Birthday boy's name is..."
-                        if (themeLower.includes('mermaid')) return "e.g. We'd love Ariel! Birthday girl's name is..."
-                        return "Add names, ages, colour preferences, or any other details here."
-                      })()}
-                      value={specialRequests}
-                      onChange={(e) => setSpecialRequests(e.target.value)}
-                      className="bg-white border-gray-200 text-sm resize-none"
-                      rows={3}
-                    />
-                    <p className="text-xs text-gray-400 mt-2">We'll confirm all custom details with you after booking.</p>
-                  </div>
 
                   {/* Meet the Entertainer */}
                   {(() => {
