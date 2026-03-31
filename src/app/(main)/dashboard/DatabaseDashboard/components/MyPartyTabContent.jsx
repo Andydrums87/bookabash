@@ -1090,7 +1090,11 @@ export default function MyPartyTabContent({
           {/* Complete Booking CTA - Only show when there are suppliers */}
           {allSuppliers.length > 0 && (
           <div className="mt-4 space-y-3">
-            <p className="text-xs text-gray-500 text-center">Everything's ready. Tweak anything before securing your party.</p>
+            {/* Completion trigger */}
+            <p className="text-sm font-semibold text-gray-900 text-center">Your party is ready — just secure your date</p>
+
+            {/* Urgency line */}
+            <p className="text-xs text-[hsl(var(--primary-500))] text-center font-medium">Availability is limited for your selected date</p>
 
             <button
               onClick={handleImHappy}
@@ -1106,7 +1110,7 @@ export default function MyPartyTabContent({
                   Processing...
                 </span>
               ) : (
-                'Secure My Party'
+                'Confirm & Secure My Party'
               )}
             </button>
 
@@ -1125,17 +1129,78 @@ export default function MyPartyTabContent({
               <div className="flex gap-4">
                 <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
                   <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  Confirmed in 2 days
+                  We confirm all bookings within 48 hours
                 </span>
+              </div>
+              <div className="flex gap-4">
                 <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
                   <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                   Money-back guarantee
                 </span>
+                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  Fully vetted suppliers
+                </span>
               </div>
-              <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
-                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                Fully vetted suppliers
-              </span>
+            </div>
+
+            {/* Party images - emotional push */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-700 text-center mb-3">The kind of party PartySnap helps create</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {/* Left large image - Birthday candles */}
+                <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773228048/rsh1z7ZtjTy6Nad2MclM3_32AINAY7_1_hppzfu.png"
+                    alt="Birthday candles moment"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                {/* Top right - Party table setup */}
+                <div className="relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226229/image_66_dqc9rk.jpg"
+                    alt="Party table setup"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                {/* Bottom right - Entertainer with kids */}
+                <div className="relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773226219/image_65_pej2yq.jpg"
+                    alt="Entertainer with kids"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                {/* Bottom row - 3 smaller images */}
+                <div className="relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1774943753/2fe02fae-531b-4751-af75-1d8c0646f82a_1_lc0oxd.jpg"
+                    alt="Kids party fun"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1774943764/ujcd2v3qlyvji2agfbfb_1_dfisbh.png"
+                    alt="Party celebration"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative rounded-xl overflow-hidden aspect-square">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1773229475/8a5acdf1-dcfc-4414-9946-463cad872c9b_zvl4zq.jpg"
+                    alt="Bouncy castle fun"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
             </div>
 
           </div>
