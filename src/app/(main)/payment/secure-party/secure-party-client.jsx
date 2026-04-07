@@ -1116,14 +1116,14 @@ export default function PaymentPageContent() {
     }
 
     // Special promo codes
-    const specialPromoCodes = ['FREEBAGS']
+    const specialPromoCodes = ['FREEBAGS', 'LOCALPARTY']
 
     const code = promoCode.trim().toUpperCase()
     const discountFixed = validPromoCodes[code]
     const isSpecialCode = specialPromoCodes.includes(code)
 
-    if (code === 'FREEBAGS') {
-      // FREEBAGS promo code - makes party bags free
+    if (code === 'FREEBAGS' || code === 'LOCALPARTY') {
+      // FREEBAGS/LOCALPARTY promo code - makes party bags free
       // Check if already has free party bags from flyer
       const isFlyerPartyBags = localStorage.getItem('flyer_partybags') === 'true'
       if (isFlyerPartyBags) {

@@ -175,7 +175,7 @@ export default function PaymentConfirmation({
               {freePartyBags && parseFloat(freePartyBags) > 0 && (
                 <Row style={styles.discountRow}>
                   <Column>
-                    <Text style={styles.discountLabel}>🎁 Free Party Bags{promoCode === 'FREEBAGS' ? ' (FREEBAGS)' : ''}</Text>
+                    <Text style={styles.discountLabel}>🎁 Free Party Bags{promoCode === 'FREEBAGS' || promoCode === 'LOCALPARTY' ? ` (${promoCode})` : ''}</Text>
                   </Column>
                   <Column style={{ textAlign: 'right', width: '100px' }}>
                     <Text style={styles.discountAmount}>-£{freePartyBags}</Text>
