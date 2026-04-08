@@ -76,29 +76,32 @@ function HomePageContent() {
 
   // Initialize tracking on mount and capture referral code from URL
   useEffect(() => {
-    initTracking();
+    const init = async () => {
+      await initTracking();
 
-    // Capture referral code if present in URL
-    const refCode = searchParams.get('ref')
-    if (refCode) {
-      storeReferralCode(refCode)
-      console.log('📎 Referral code captured from URL:', refCode)
-    }
+      // Capture referral code if present in URL
+      const refCode = searchParams.get('ref')
+      if (refCode) {
+        storeReferralCode(refCode)
+        console.log('📎 Referral code captured from URL:', refCode)
+      }
 
-    // Store flyer source if present (for applying discount later)
-    if (isFlyer) {
-      localStorage.setItem('flyer_source', 'true')
-      localStorage.setItem('flyer_discount', '25')
-      updateReferrer('flyer')
-      console.log('🎫 Flyer source captured - £25 discount available')
-    }
+      // Store flyer source if present (for applying discount later)
+      if (isFlyer) {
+        localStorage.setItem('flyer_source', 'true')
+        localStorage.setItem('flyer_discount', '25')
+        await updateReferrer('flyer')
+        console.log('🎫 Flyer source captured - £25 discount available')
+      }
 
-    // Store party bags flyer source if present (for free party bags offer)
-    if (isFlyerPartyBags) {
-      localStorage.setItem('flyer_partybags', 'true')
-      updateReferrer('flyer-partybags')
-      console.log('🎁 Party bags flyer captured - Free party bags available')
+      // Store party bags flyer source if present (for free party bags offer)
+      if (isFlyerPartyBags) {
+        localStorage.setItem('flyer_partybags', 'true')
+        await updateReferrer('flyer-partybags')
+        console.log('🎁 Party bags flyer captured - Free party bags available')
+      }
     }
+    init();
   }, [searchParams, isFlyer, isFlyerPartyBags]);
 
   // IMPORTANT: This function handles all field changes
