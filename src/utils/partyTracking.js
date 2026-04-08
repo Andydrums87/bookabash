@@ -100,6 +100,26 @@ export const initTracking = async () => {
 };
 
 /**
+ * Update the referrer field for the current session
+ * Used to capture flyer/QR code sources that aren't in document.referrer
+ */
+export const updateReferrer = async (source) => {
+  if (!sessionId) {
+    sessionId = localStorage.getItem('tracking_session_id');
+  }
+  if (!sessionId || !source) return;
+
+  try {
+    await supabase
+      .from('party_tracking')
+      .update({ referrer: source })
+      .eq('session_id', sessionId);
+  } catch (err) {
+    console.log('Tracking referrer update failed (non-critical):', err.message);
+  }
+};
+
+/**
  * Safely fetch the current action_timeline and append a new event.
  * Returns the updated timeline, or null if the fetch failed (caller should skip timeline update).
  */

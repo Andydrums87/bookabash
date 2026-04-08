@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import FeaturesGrid from "@/components/Home/FeaturesGrid"
 import VideoSection from "@/components/Home/VideoSection"
-import { initTracking, trackStep } from '@/utils/partyTracking'
+import { initTracking, trackStep, updateReferrer } from '@/utils/partyTracking'
 import { storeReferralCode } from '@/utils/referralUtils'
 
 export default function HomePage() {
@@ -89,12 +89,14 @@ function HomePageContent() {
     if (isFlyer) {
       localStorage.setItem('flyer_source', 'true')
       localStorage.setItem('flyer_discount', '25')
+      updateReferrer('flyer')
       console.log('🎫 Flyer source captured - £25 discount available')
     }
 
     // Store party bags flyer source if present (for free party bags offer)
     if (isFlyerPartyBags) {
       localStorage.setItem('flyer_partybags', 'true')
+      updateReferrer('flyer-partybags')
       console.log('🎁 Party bags flyer captured - Free party bags available')
     }
   }, [searchParams, isFlyer, isFlyerPartyBags]);
