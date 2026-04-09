@@ -2733,11 +2733,15 @@ export default function SupplierCustomizationModal({
                 return `${d} minutes`
               })()
 
-              // Theme-specific lines for What's Included
-              const effectiveTheme = isPerformanceParty(partyTheme)
-                ? (parseCompoundTheme(partyTheme).subTheme || partyTheme)
-                : partyTheme
-              const themeLower = effectiveTheme?.toLowerCase() || ''
+              // Theme-specific lines for What's Included — derived from supplier/package, not user's party theme
+              const supplierThemeSource = [
+                selectedPackage?.name,
+                supplier?.name,
+                supplier?.businessName,
+                supplier?.serviceDetails?.entertainmentType,
+                supplier?.subcategory,
+              ].filter(Boolean).join(' ')
+              const themeLower = supplierThemeSource.toLowerCase()
               const themeSpecificLines = (() => {
                 if (themeLower.includes('princess')) return [
                   'Princess-themed games, storytelling and magical moments',
