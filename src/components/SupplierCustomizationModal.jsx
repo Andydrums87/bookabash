@@ -328,8 +328,8 @@ export default function SupplierCustomizationModal({
   // About section expand state (mobile)
   const [isAboutExpanded, setIsAboutExpanded] = useState(false)
 
-  // Video playing state (entertainment)
-  const [videoPlaying, setVideoPlaying] = useState(false)
+  // Video playing state (entertainment) - tracks which video index is playing
+  const [videoPlayingIndex, setVideoPlayingIndex] = useState(null)
 
   // Store scroll position in ref to avoid stale closure issues
   const scrollPositionRef = useRef(0)
@@ -471,7 +471,7 @@ export default function SupplierCustomizationModal({
     }
     // Reset about section expanded state when supplier changes
     setIsAboutExpanded(false)
-    setVideoPlaying(false)
+    setVideoPlayingIndex(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplier?.id, emblaApi]) // Intentionally exclude packageIdToIndex - it's a new Map each render
 
@@ -3066,57 +3066,66 @@ export default function SupplierCustomizationModal({
                     const portfolioVideos = supplier?.portfolioVideos || supplier?.data?.portfolioVideos || []
                     if (portfolioVideos.length === 0) return null
 
-                    const firstVideo = portfolioVideos[0]
-                    const url = typeof firstVideo === 'string' ? firstVideo : firstVideo?.url
-                    if (!url) return null
+                    const parsedVideos = portfolioVideos.map((v, i) => {
+                      const url = typeof v === 'string' ? v : v?.url
+                      if (!url) return null
 
-                    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
-                    const vimeoMatch = url.match(/(?:vimeo\.com\/)(?:.*\/)?(\d+)/)
-                    const isCloudinaryVideo = url.includes('res.cloudinary.com') && url.includes('/video/upload/')
-                    const videoInfo = ytMatch
-                      ? { platform: 'youtube', id: ytMatch[1] }
-                      : vimeoMatch
-                      ? { platform: 'vimeo', id: vimeoMatch[1] }
-                      : isCloudinaryVideo
-                      ? { platform: 'cloudinary' }
-                      : null
-                    if (!videoInfo) return null
+                      const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)
+                      const vimeoMatch = url.match(/(?:vimeo\.com\/)(?:.*\/)?(\d+)/)
+                      const isCloudinaryVideo = url.includes('res.cloudinary.com') && url.includes('/video/upload/')
+                      const videoInfo = ytMatch
+                        ? { platform: 'youtube', id: ytMatch[1] }
+                        : vimeoMatch
+                        ? { platform: 'vimeo', id: vimeoMatch[1] }
+                        : isCloudinaryVideo
+                        ? { platform: 'cloudinary' }
+                        : null
+                      if (!videoInfo) return null
 
-                    const thumbUrl = videoInfo.platform === 'youtube'
-                      ? `https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`
-                      : videoInfo.platform === 'vimeo'
-                      ? `https://vumbnail.com/${videoInfo.id}.jpg`
-                      : url.replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill/').replace(/\.[^.]+$/, '.jpg')
-                    const embedUrl = videoInfo.platform === 'youtube'
-                      ? `https://www.youtube.com/embed/${videoInfo.id}?autoplay=1&rel=0`
-                      : videoInfo.platform === 'vimeo'
-                      ? `https://player.vimeo.com/video/${videoInfo.id}?autoplay=1`
-                      : null
+                      const thumbUrl = videoInfo.platform === 'youtube'
+                        ? `https://img.youtube.com/vi/${videoInfo.id}/hqdefault.jpg`
+                        : videoInfo.platform === 'vimeo'
+                        ? `https://vumbnail.com/${videoInfo.id}.jpg`
+                        : url.replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill/').replace(/\.[^.]+$/, '.jpg')
+                      const embedUrl = videoInfo.platform === 'youtube'
+                        ? `https://www.youtube.com/embed/${videoInfo.id}?autoplay=1&rel=0`
+                        : videoInfo.platform === 'vimeo'
+                        ? `https://player.vimeo.com/video/${videoInfo.id}?autoplay=1`
+                        : null
+
+                      return { url, videoInfo, thumbUrl, embedUrl, title: v?.title || `Video ${i + 1}` }
+                    }).filter(Boolean)
+
+                    if (parsedVideos.length === 0) return null
 
                     return (
                       <div className="-mx-5 lg:-mx-6">
                         <h4 className="font-bold text-gray-900 text-base mb-3 px-5 lg:px-6">Watch us in action</h4>
-                        <div className="relative aspect-video bg-gray-200 cursor-pointer"
-                             onClick={() => setVideoPlaying(true)}>
-                          {videoPlaying ? (
-                            videoInfo.platform === 'cloudinary' ? (
-                              <video src={url} className="w-full h-full" controls autoPlay />
-                            ) : (
-                              <iframe src={embedUrl} className="w-full h-full" frameBorder="0"
-                                allow="autoplay; encrypted-media" allowFullScreen />
-                            )
-                          ) : (
-                            <>
-                              <img src={thumbUrl} alt={firstVideo.title || 'Video'} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
-                                  <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-current ml-1">
-                                    <path d="M8 5v14l11-7z"/>
-                                  </svg>
-                                </div>
-                              </div>
-                            </>
-                          )}
+                        <div className="flex flex-col gap-3">
+                          {parsedVideos.map((vid, i) => (
+                            <div key={i} className="relative aspect-video bg-gray-200 cursor-pointer"
+                                 onClick={() => setVideoPlayingIndex(videoPlayingIndex === i ? null : i)}>
+                              {videoPlayingIndex === i ? (
+                                vid.videoInfo.platform === 'cloudinary' ? (
+                                  <video src={vid.url} className="w-full h-full" controls autoPlay />
+                                ) : (
+                                  <iframe src={vid.embedUrl} className="w-full h-full" frameBorder="0"
+                                    allow="autoplay; encrypted-media" allowFullScreen />
+                                )
+                              ) : (
+                                <>
+                                  <img src={vid.thumbUrl} alt={vid.title} className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                      <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-current ml-1">
+                                        <path d="M8 5v14l11-7z"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )
