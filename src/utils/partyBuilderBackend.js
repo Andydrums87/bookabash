@@ -1287,14 +1287,14 @@ checkSupplierLocation(supplier, partyLocation) {
     // Define budget allocation based on budget size AND age
     let budgetAllocation, includedCategories;
 
-    // Only auto-select venue + entertainment. Other suppliers (party bags, cakes, etc.)
-    // are left empty for users to discover and add from the dashboard.
+    // Auto-select venue + entertainment + party bags (original flow).
+    // Cakes, decorations, etc. are left for users to add from the dashboard.
     if (isToddlerParty) {
       includedCategories = ['venue'];
       budgetAllocation = { venue: 1.0 };
     } else {
-      includedCategories = ['venue', 'entertainment'];
-      budgetAllocation = { venue: 0.30, entertainment: 0.70 };
+      includedCategories = ['venue', 'entertainment', 'partyBags'];
+      budgetAllocation = { venue: 0.30, entertainment: 0.60, partyBags: 0.10 };
     }
     
     // 1. SELECT ENTERTAINMENT FIRST (theme priority) - SKIP FOR TODDLER PARTIES

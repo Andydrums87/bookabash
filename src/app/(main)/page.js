@@ -1,12 +1,13 @@
 "use client"
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
 import PartyBagsCampaignBanner from "@/components/Home/PartyBagsCampaignBanner"
 import PartyBagsSocialProofToast from "@/components/Home/PartyBagsSocialProofToast"
 import MobileSearchForm from "@/components/Home/MobileSearchForm"
-// PartyBuildingLoader removed - party setup flow replaces the loader
+import PartyBuildingLoader from "@/components/Home/PartyBuildingLoader"
 import TrustIndicators from "@/components/Home/TrustIndicators"
 import CategoryGrid from "@/components/Home/CategoryGrid"
 import HowItWorks from "@/components/Home/HowItWorks"
@@ -44,6 +45,8 @@ function HomePageContent() {
   const [showPostcodeRestrictionModal, setShowPostcodeRestrictionModal] = useState(false)
   const [restrictedPostcode, setRestrictedPostcode] = useState("")
 
+  const { buildParty } = usePartyBuilder()
+
   // Form state
   const [formData, setFormData] = useState({
     date: "",
@@ -58,6 +61,9 @@ function HomePageContent() {
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPartyLoader, setShowPartyLoader] = useState(false)
+  const [buildingProgress, setBuildingProgress] = useState(0)
+  const [builtPartyPlan, setBuiltPartyPlan] = useState(null)
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
@@ -299,14 +305,13 @@ function HomePageContent() {
     setIsSubmitting(false)
   }
 
-  // Actual party creation logic — save details and redirect immediately
-  const proceedWithPartyCreation = (data) => {
+  // Actual party creation logic — build party then redirect to dashboard
+  const proceedWithPartyCreation = async (data) => {
     try {
       setIsSubmitting(true)
 
-      // Track party planning started — fire and forget, don't block redirect
-      // This writes child_name, party_date, party_theme etc. to the tracking row
-      trackStep('party_planning_started', {
+      // Track party planning started
+      await trackStep('party_planning_started', {
         theme: data.theme,
         guestCount: data.guestCount,
         childName: data.childName,
@@ -316,6 +321,11 @@ function HomePageContent() {
         postcode: data.postcode,
         date: data.date
       })
+
+      setTimeout(() => {
+        setShowPartyLoader(true)
+        setBuildingProgress(0)
+      }, 200)
 
       const partyDetails = {
         date: data.date,
@@ -344,53 +354,92 @@ function HomePageContent() {
         }
       }
 
-      // Clear any previous party plan so buildParty() runs fresh
+      // Clear any stale party plan so buildParty() runs fresh
       localStorage.removeItem('user_party_plan');
       sessionStorage.removeItem('party_setup_step');
 
-      // Save party details to localStorage — party-setup page will call buildParty()
+      // Save party details to localStorage for tracking and dashboard
       localStorage.setItem('party_details', JSON.stringify(partyDetails));
 
-      // Set welcome flags
-      try {
-        const welcomeData = {
-          shouldShowWelcome: true,
-          partyCreated: true,
-          createdAt: new Date().toISOString(),
-          source: 'homepage_form',
-          environment: process.env.NODE_ENV || 'development',
-          childData: {
-            firstName: data.childName?.split(' ')[0] || '',
-            lastName: data.childName?.split(' ').slice(1).join(' ') || '',
-            childAge: data.childAge
-          }
-        }
+      // Build party immediately
+      const result = await buildParty(partyDetails)
 
-        localStorage.removeItem('welcome_completed')
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.removeItem('welcome_completed')
-        }
-
-        localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
-        localStorage.setItem('show_welcome_popup', 'true')
-        localStorage.setItem('party_just_created', new Date().toISOString())
-        localStorage.setItem('redirect_welcome', 'true')
-
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
-        }
-      } catch (storageError) {
-        console.error("Storage error:", storageError)
+      if (result.success && result.data) {
+        setBuiltPartyPlan(result.data.partyPlan)
       }
 
-      // Redirect IMMEDIATELY — use window.location for fastest possible navigation
-      // router.push has overhead (prefetch, RSC payload) — we want instant
-      window.location.href = "/party-setup?source=homepage&t=" + Date.now()
+      if (result.success) {
+        setBuildingProgress(100)
 
+        try {
+          const welcomeData = {
+            shouldShowWelcome: true,
+            partyCreated: true,
+            createdAt: new Date().toISOString(),
+            source: 'homepage_form',
+            environment: process.env.NODE_ENV || 'development',
+            childData: {
+              firstName: data.childName?.split(' ')[0] || '',
+              lastName: data.childName?.split(' ').slice(1).join(' ') || '',
+              childAge: data.childAge
+            }
+          }
+
+          localStorage.removeItem('welcome_completed')
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('welcome_completed')
+          }
+
+          localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+          localStorage.setItem('show_welcome_popup', 'true')
+          localStorage.setItem('party_just_created', new Date().toISOString())
+          localStorage.setItem('redirect_welcome', 'true')
+
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+          }
+        } catch (storageError) {
+          console.error("Storage error:", storageError)
+        }
+
+        // Calculate loader duration based on item count (1s per item)
+        const guests = parseInt(formData.guestCount) || 0
+        let itemCount = 3 // Venue, Entertainment, Party Bags
+        if (guests >= 20) itemCount += 1 // Soft Play
+        const totalDuration = itemCount * 1000
+
+        await new Promise((resolve) => setTimeout(resolve, totalDuration))
+
+        try {
+          const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
+          router.push(redirectURL)
+        } catch (redirectError) {
+          console.error("Redirect error:", redirectError)
+          window.location.href = "/dashboard?show_welcome=true"
+        }
+      } else {
+        console.error("Failed to build party:", result.error)
+        setIsSubmitting(false)
+        setShowPartyLoader(false)
+        setBuildingProgress(0)
+      }
     } catch (error) {
-      console.error("Error during party creation:", error)
+      console.error("Error during party building:", error)
       setIsSubmitting(false)
+      setShowPartyLoader(false)
+      setBuildingProgress(0)
     }
+  }
+
+  // Budget helper for the loader display
+  const getDefaultBudgetForGuests = (guestCount) => {
+    const guests = parseInt(guestCount);
+    if (guests <= 5) return 400;
+    if (guests <= 10) return 500;
+    if (guests <= 15) return 600;
+    if (guests <= 20) return 700;
+    if (guests <= 25) return 800;
+    return 900;
   }
 
   // Helper function to convert time slot to legacy time format
@@ -404,6 +453,26 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+
+      <PartyBuildingLoader
+        isVisible={showPartyLoader}
+        theme={mapThemeValue(formData.theme)}
+        childName={formData.childName || "Your Child"}
+        progress={buildingProgress}
+        partyDetails={{
+          budget: getDefaultBudgetForGuests(formData.guestCount),
+          guestCount: formData.guestCount
+        }}
+        partyPlan={builtPartyPlan}
+        onRetry={() => {
+          setBuildingProgress(0)
+          setBuiltPartyPlan(null)
+          proceedWithPartyCreation(formData)
+        }}
+        onTimeout={() => {
+          console.log('Party building timed out - user can retry')
+        }}
+      />
 
       {isPartyBagsCampaignActive && <PartyBagsCampaignBanner />}
       {isPartyBagsCampaignActive && <PartyBagsSocialProofToast />}
