@@ -17,6 +17,7 @@ const FIRST_NAMES = [
 ]
 
 const LOCATIONS = [
+  // St Albans area
   "St Albans",
   "Marshalswick",
   "Jersey Farm",
@@ -28,6 +29,15 @@ const LOCATIONS = [
   "Redbourn",
   "London Colney",
   "Bricket Wood",
+  // Watford area
+  "Watford",
+  "Bushey",
+  "Rickmansworth",
+  "Croxley Green",
+  "Kings Langley",
+  "Abbots Langley",
+  "Borehamwood",
+  "Radlett",
 ]
 
 const TIME_PHRASES = [
