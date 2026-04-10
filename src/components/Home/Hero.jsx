@@ -43,7 +43,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 ) : (
                   <>
                     <p className="text-sm font-semibold text-primary-500 uppercase tracking-wide mb-3">
-                      St Albans' stress-free kids' party planner
+                      Herts' stress-free kids' party planner
                     </p>
                     <h1 className="text-7xl font-black text-gray-900 leading-tight animate-fade-in">
                       Plan your child's <span className="text-primary-500 relative">
@@ -382,7 +382,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 ) : (
                   <>
                     <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2">
-                      St Albans' stress-free kids' party planner
+                      Herts' stress-free kids' party planner
                     </p>
                     <h1 className="text-4xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
                       <span className="block">Plan your child's</span>

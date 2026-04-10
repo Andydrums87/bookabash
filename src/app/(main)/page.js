@@ -234,12 +234,14 @@ function HomePageContent() {
     return { isValid, formatted }
   }
 
-  // Check if postcode is in allowed AL1-AL5 area
+  // Check if postcode is in allowed service area (AL1-AL5 St Albans, WD1-WD7 Watford)
   const isPostcodeInAllowedArea = (postcode) => {
     if (!postcode) return false
     const clean = postcode.replace(/\s/g, "").toUpperCase()
-    // Check if postcode starts with AL1, AL2, AL3, AL4, or AL5
-    const allowedAreas = ["AL1", "AL2", "AL3", "AL4", "AL5"]
+    const allowedAreas = [
+      "AL1", "AL2", "AL3", "AL4", "AL5",
+      "WD1", "WD2", "WD3", "WD4", "WD5", "WD6", "WD7",
+    ]
     return allowedAreas.some(area => clean.startsWith(area))
   }
   
