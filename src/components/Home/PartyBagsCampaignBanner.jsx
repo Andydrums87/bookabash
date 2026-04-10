@@ -58,7 +58,7 @@ export default function PartyBagsCampaignBanner() {
               ⚡ Limited Time · Act Now
             </div>
             <div className="text-sm font-extrabold tracking-wide uppercase mt-0.5">
-              Free Party Bags
+              Free Party Bags<span className="normal-case font-semibold text-white/80"> with every booking</span>
             </div>
             <div className="text-[11px] text-white/75 mt-0.5">
               First 20 bookings ·{" "}
@@ -79,7 +79,7 @@ export default function PartyBagsCampaignBanner() {
             Limited time
           </span>
           <p className="text-sm leading-tight truncate">
-            <span className="font-semibold">Free party bags</span>
+            <span className="font-semibold">Free party bags with every booking</span>
             <span className="text-white/70"> — first 20 bookings · </span>
             <span className="font-semibold" style={{ color: "#FF6E4C" }}>Ends April 30</span>
           </p>
