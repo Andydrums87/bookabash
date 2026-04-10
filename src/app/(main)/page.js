@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
 import PartyBagsCampaignBanner from "@/components/Home/PartyBagsCampaignBanner"
+import PartyBagsSocialProofToast from "@/components/Home/PartyBagsSocialProofToast"
 import MobileSearchForm from "@/components/Home/MobileSearchForm"
 // PartyBuildingLoader removed - party setup flow replaces the loader
 import TrustIndicators from "@/components/Home/TrustIndicators"
@@ -403,6 +404,7 @@ function HomePageContent() {
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
 
       {isPartyBagsCampaignActive && <PartyBagsCampaignBanner />}
+      {isPartyBagsCampaignActive && <PartyBagsSocialProofToast />}
 
       <Hero
         handleSearch={handleSearch}
