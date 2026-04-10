@@ -15,7 +15,7 @@ import VenueBrowserModal from "@/components/VenueBrowserModal"
 import EntertainmentBrowserModal from "@/components/EntertainmentBrowserModal"
 import StepProgressIndicator from "./components/StepProgressIndicator"
 import { usePartyPlan } from "@/utils/partyPlanBackend"
-import { usePartyBuilder } from "@/utils/partyBuilderBackend"
+import { usePartyBuilder, partyBuilderBackend } from "@/utils/partyBuilderBackend"
 import { trackStep, trackSupplierViewed } from "@/utils/partyTracking"
 import { useToast } from "@/components/ui/toast"
 
@@ -277,6 +277,42 @@ export default function PartySetupPage() {
     }
   }, [currentStep])
 
+  // Auto-add free party bags when the campaign is active (or flyer flag set),
+  // so users land on the dashboard with party bags already included.
+  const autoAddFreePartyBagsIfEligible = useCallback(async () => {
+    try {
+      if (typeof window === 'undefined') return
+
+      const campaignActive = process.env.NEXT_PUBLIC_PARTYBAGS_CAMPAIGN_ACTIVE === 'true'
+      const flyerFlag = localStorage.getItem('flyer_partybags') === 'true'
+      if (!campaignActive && !flyerFlag) return
+
+      // Skip if the plan already has a party bags supplier
+      const currentPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
+      if (currentPlan?.partyBags) return
+
+      // Fetch party bags suppliers and pick the cheapest per-bag option
+      const result = await partyBuilderBackend.getSuppliersByCategory('Party Bags')
+      if (!result?.success || !Array.isArray(result.suppliers) || result.suppliers.length === 0) {
+        console.log('🎁 No party bags suppliers available to auto-add')
+        return
+      }
+
+      const cheapest = [...result.suppliers].sort(
+        (a, b) => (a.priceFrom || a.price || 0) - (b.priceFrom || b.price || 0)
+      )[0]
+
+      const addResult = await addSupplier(cheapest, null)
+      if (addResult?.success) {
+        console.log('🎁 Free party bags auto-added to plan:', cheapest.name)
+      } else {
+        console.warn('🎁 Failed to auto-add party bags:', addResult?.error)
+      }
+    } catch (e) {
+      console.error('🎁 Error auto-adding party bags:', e)
+    }
+  }, [addSupplier])
+
   // Handle final submit — save name/age, optionally submit email, and go to dashboard
   const handleFinalSubmit = useCallback(async () => {
     const name = childFirstName.trim()
@@ -347,9 +383,10 @@ export default function PartySetupPage() {
       emailProvided: !!email,
       email: email || null
     })
+    await autoAddFreePartyBagsIfEligible()
     sessionStorage.removeItem('party_setup_step')
     router.push(`/dashboard?source=party_setup&t=${Date.now()}`)
-  }, [childFirstName, childAge, discountEmail, selectedVenue, selectedEntertainer, router])
+  }, [childFirstName, childAge, discountEmail, selectedVenue, selectedEntertainer, router, autoAddFreePartyBagsIfEligible])
 
   // Handle skip name collection
   const handleSkipNameCollection = useCallback(async () => {
@@ -378,9 +415,10 @@ export default function PartySetupPage() {
       entertainerSelected: !!selectedEntertainer,
       skippedNameCollection: true
     })
+    await autoAddFreePartyBagsIfEligible()
     sessionStorage.removeItem('party_setup_step')
     router.push(`/dashboard?source=party_setup&t=${Date.now()}`)
-  }, [selectedVenue, selectedEntertainer, router])
+  }, [selectedVenue, selectedEntertainer, router, autoAddFreePartyBagsIfEligible])
 
   const handleBack = useCallback(() => {
     if (showNameCollection) {

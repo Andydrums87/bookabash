@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import Hero from "@/components/Home/Hero"
+import PartyBagsCampaignBanner from "@/components/Home/PartyBagsCampaignBanner"
 import MobileSearchForm from "@/components/Home/MobileSearchForm"
 // PartyBuildingLoader removed - party setup flow replaces the loader
 import TrustIndicators from "@/components/Home/TrustIndicators"
@@ -74,6 +75,10 @@ function HomePageContent() {
   // Check if user came from party bags flyer (free party bags offer)
   const isFlyerPartyBags = searchParams.get('flyer-partybags') !== null
 
+  // Site-wide free party bags campaign (first 20 bookings)
+  // Toggle via NEXT_PUBLIC_PARTYBAGS_CAMPAIGN_ACTIVE env var
+  const isPartyBagsCampaignActive = process.env.NEXT_PUBLIC_PARTYBAGS_CAMPAIGN_ACTIVE === 'true'
+
   // Initialize tracking on mount and capture referral code from URL
   useEffect(() => {
     const init = async () => {
@@ -100,9 +105,18 @@ function HomePageContent() {
         await updateReferrer('flyer-partybags')
         console.log('🎁 Party bags flyer captured - Free party bags available')
       }
+
+      // Site-wide free party bags campaign: auto-apply offer to every visitor
+      // while the campaign is active. Reuses the same flyer_partybags flag
+      // so all downstream discount logic works unchanged.
+      if (isPartyBagsCampaignActive && !isFlyerPartyBags) {
+        localStorage.setItem('flyer_partybags', 'true')
+        await updateReferrer('partybags-campaign')
+        console.log('🎁 Party bags campaign active - Free party bags applied site-wide')
+      }
     }
     init();
-  }, [searchParams, isFlyer, isFlyerPartyBags]);
+  }, [searchParams, isFlyer, isFlyerPartyBags, isPartyBagsCampaignActive]);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
@@ -387,6 +401,8 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+
+      {isPartyBagsCampaignActive && <PartyBagsCampaignBanner />}
 
       <Hero
         handleSearch={handleSearch}
