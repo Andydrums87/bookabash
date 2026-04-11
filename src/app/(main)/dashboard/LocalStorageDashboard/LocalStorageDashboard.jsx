@@ -211,6 +211,22 @@ const childPhotoRef = useRef(null)
     }
   }, [])
 
+  // Force scroll to top when arriving from the homepage flow, so the welcome
+  // popup opens over a page that's already at the top. Mobile browsers (iOS
+  // Safari bfcache especially) will otherwise restore the previous scroll
+  // position, leaving the user mid-page when the popup closes.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const fromHomepage = searchParams.get('source') === 'homepage'
+    if (fromHomepage) {
+      // Disable the browser's automatic scroll restoration for this navigation
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual'
+      }
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [searchParams])
+
   // Show sticky bottom CTA after scrolling 400px (desktop only)
   useEffect(() => {
     const handleScroll = () => {
@@ -615,36 +631,44 @@ useEffect(() => {
   if (!showWelcomePopup && isMounted && isClient) {
     const scrollToSupplier = searchParams.get('scrollTo')
     const lastAction = searchParams.get('action')
-    
+
     if (scrollToSupplier && lastAction === 'supplier-added') {
 
-      
       // Update mobile tab
       setActiveMobileSupplierType(scrollToSupplier)
-      
+
       setTimeout(() => {
         // Ensure scroll is unlocked
         document.body.style.overflow = 'unset'
         document.documentElement.style.overflow = 'unset'
-        
+
         // Try scrolling to the element
         const desktopElement = document.getElementById(`supplier-${scrollToSupplier}`)
         const mobileContent = document.getElementById('mobile-supplier-content')
-        
+
         if (desktopElement && window.innerWidth >= 768) {
-          desktopElement.scrollIntoView({ 
+          desktopElement.scrollIntoView({
             behavior: 'smooth',
             block: 'center',
             inline: 'nearest'
           })
         } else if (mobileContent) {
-          mobileContent.scrollIntoView({ 
+          mobileContent.scrollIntoView({
             behavior: 'smooth',
             block: 'start',
             inline: 'nearest'
           })
         }
       }, 500)
+    } else {
+      // Default: force scroll to top of dashboard after popup closes.
+      // Covers the homepage → dashboard flow where there's no scrollTo param,
+      // and guards against mobile browsers restoring a stale scroll position.
+      requestAnimationFrame(() => {
+        document.body.style.overflow = 'unset'
+        document.documentElement.style.overflow = 'unset'
+        window.scrollTo({ top: 0, behavior: 'auto' })
+      })
     }
   }
 }, [showWelcomePopup, isMounted, isClient, searchParams])
