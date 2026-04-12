@@ -1314,7 +1314,18 @@ checkSupplierLocation(supplier, partyLocation) {
 
       // Fallback to general entertainment if no themed entertainment selected
       if (!selected.entertainment) {
-        const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
+        const generalEntertainment = suppliers.filter(s => {
+          if (s.category !== 'Entertainment') return false;
+          if (isPerformanceParty(theme)) return true;
+          // Exclude performance suppliers from generic fallback
+          const nameLower = (s.name || '').toLowerCase();
+          const entType = (s.serviceDetails?.entertainmentType || '').toLowerCase();
+          const sThemes = (s.themes || []).map(t => t.toLowerCase());
+          const perfKw = ['drama', 'dance party', 'music party'];
+          return !perfKw.some(kw => nameLower.includes(kw)) &&
+                 !perfKw.some(kw => entType.includes(kw)) &&
+                 !sThemes.some(t => perfKw.some(kw => t.includes(kw)));
+        });
         const entertainmentResult = this.selectBestSupplier(
           generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
         );
@@ -1652,9 +1663,23 @@ async buildParty(partyDetails) {
     selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues || [];
 
     // Get top entertainers for party setup carousel
+    // When falling back to all entertainers, exclude performance party suppliers
+    // (drama, dance, music party) — they should only appear for their specific themes
+    const isPerformanceRequest = isPerformanceParty(processedTheme);
     const entertainmentSources = (themedEntertainment && themedEntertainment.length > 0)
       ? themedEntertainment
-      : allSuppliers.filter(s => s.category === 'Entertainment');
+      : allSuppliers.filter(s => {
+          if (s.category !== 'Entertainment') return false;
+          if (isPerformanceRequest) return true; // Don't exclude if user asked for drama/dance/music
+          // Exclude performance suppliers from generic fallback
+          const nameLower = (s.name || '').toLowerCase();
+          const entType = (s.serviceDetails?.entertainmentType || '').toLowerCase();
+          const themes = (s.themes || []).map(t => t.toLowerCase());
+          const performanceKeywords = ['drama', 'dance party', 'music party'];
+          return !performanceKeywords.some(kw => nameLower.includes(kw)) &&
+                 !performanceKeywords.some(kw => entType.includes(kw)) &&
+                 !themes.some(t => performanceKeywords.some(kw => t.includes(kw)));
+        });
     selectedSuppliers.entertainmentCarouselOptions = this.selectTopEntertainers(
       entertainmentSources,
       processedTheme,

@@ -966,11 +966,17 @@ export const suppliersAPI = {
         // Exclude performance party suppliers (Drama/Dance/Music Party) from generic theme matching
         // They should only be selected when explicitly choosing drama-party, dance-party, or music-party
         const performanceTypes = ['Drama Party', 'Dance Party', 'Music Party'];
+        const performanceKeywords = ['drama', 'dance party', 'music party'];
         const nameLower = supplier.name.toLowerCase();
-        if (performanceTypes.includes(supplier.serviceDetails?.entertainmentType) ||
+        const supplierThemes = (supplier.themes || []).map(t => t.toLowerCase());
+        const sdEntType = supplier.serviceDetails?.entertainmentType || '';
+        if (performanceTypes.includes(sdEntType) ||
             performanceTypes.includes(supplier.subcategory) ||
-            nameLower.includes('drama tots') || nameLower.includes('drama party') ||
-            nameLower.includes('dance party') || nameLower.includes('music party')) {
+            performanceKeywords.some(kw => nameLower.includes(kw)) ||
+            supplierThemes.some(t => performanceKeywords.some(kw => t.includes(kw))) ||
+            sdEntType.toLowerCase().includes('drama') ||
+            sdEntType.toLowerCase().includes('dance') ||
+            sdEntType.toLowerCase().includes('music party')) {
           console.log(`🎭 [getEntertainmentByTheme] ❌ Excluded performance supplier: "${supplier.name}"`)
           return false;
         }
