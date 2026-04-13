@@ -116,9 +116,10 @@ function HomePageContent() {
       // Site-wide free party bags campaign: auto-apply offer to every visitor
       // while the campaign is active. Reuses the same flyer_partybags flag
       // so all downstream discount logic works unchanged.
+      // NOTE: Do NOT call updateReferrer here — it overwrites the real referrer
+      // (instagram, facebook, etc.) that initTracking() already captured.
       if (isPartyBagsCampaignActive && !isFlyerPartyBags) {
         localStorage.setItem('flyer_partybags', 'true')
-        await updateReferrer('partybags-campaign')
         console.log('🎁 Party bags campaign active - Free party bags applied site-wide')
       }
     }
