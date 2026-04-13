@@ -118,7 +118,7 @@ function HomePageContent() {
       // so all downstream discount logic works unchanged.
       // NOTE: Do NOT call updateReferrer here — it overwrites the real referrer
       // (instagram, facebook, etc.) that initTracking() already captured.
-      if (isPartyBagsCampaignActive && !isFlyerPartyBags) {
+      if (isPartyBagsCampaignActive && !isFlyerPartyBags && !isFlyer) {
         localStorage.setItem('flyer_partybags', 'true')
         console.log('🎁 Party bags campaign active - Free party bags applied site-wide')
       }
@@ -475,8 +475,8 @@ function HomePageContent() {
         }}
       />
 
-      {isPartyBagsCampaignActive && <PartyBagsCampaignBanner />}
-      {isPartyBagsCampaignActive && <PartyBagsSocialProofToast />}
+      {isPartyBagsCampaignActive && !isFlyer && <PartyBagsCampaignBanner />}
+      {isPartyBagsCampaignActive && !isFlyer && <PartyBagsSocialProofToast />}
 
       <Hero
         handleSearch={handleSearch}
