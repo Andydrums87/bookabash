@@ -39,6 +39,7 @@ export default function MyPartyTabContent({
   onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
   onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
   onBrowseSupplier, // Callback to open supplier browser modal (cakes, balloons, party bags)
+  onCheckAvailability, // Callback to open check availability modal
 }) {
   const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
@@ -1089,59 +1090,37 @@ export default function MyPartyTabContent({
 
           {/* Complete Booking CTA - Only show when there are suppliers */}
           {allSuppliers.length > 0 && (
-          <div className="mt-4 space-y-3">
-            {/* Completion trigger */}
-            <p className="text-sm font-semibold text-gray-900 text-center">Your party is ready — just secure your date</p>
+          <div className="mt-6 space-y-4">
+            {/* Primary CTA — Check availability */}
+            <div>
+              <button
+                onClick={onCheckAvailability}
+                className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-semibold text-sm py-3.5 w-full rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95"
+              >
+                Check availability for my date
+              </button>
+              <p className="text-[11px] text-gray-400 text-center mt-1.5">No payment needed · We'll be in touch</p>
+            </div>
 
-            {/* Urgency line */}
-            <p className="text-xs text-[hsl(var(--primary-500))] text-center font-medium">Availability is limited for your selected date</p>
-
+            {/* Secondary CTA — Instant book */}
             <button
               onClick={handleImHappy}
               disabled={isProcessing}
-              className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 w-full rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+              className="bg-white hover:bg-gray-50 text-gray-600 font-medium text-xs py-2.5 w-full rounded-full border border-gray-200 transition-all cursor-pointer active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isProcessing ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                'Confirm & Secure My Party'
-              )}
+              {isProcessing ? 'Processing...' : 'Secure my party now'}
             </button>
 
-            {/* Save for later button - prominent secondary CTA */}
-            {onSaveForLater && (
-              <button
-                onClick={onSaveForLater}
-                className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-3 px-8 w-full rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95 border border-gray-200"
-              >
-                {hasSavedParty ? 'Update saved plan' : 'Email me this plan'}
-              </button>
-            )}
-
             {/* Trust badges */}
-            <div className="mt-4 flex flex-col items-center gap-1.5">
-              <div className="flex gap-4">
-                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
-                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  We confirm all bookings within 48 hours
-                </span>
-              </div>
-              <div className="flex gap-4">
-                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
-                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  Money-back guarantee
-                </span>
-                <span className="inline-flex items-center gap-1 text-gray-500 text-xs whitespace-nowrap">
-                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  Fully vetted suppliers
-                </span>
-              </div>
+            <div className="flex justify-center gap-3 pt-1">
+              <span className="inline-flex items-center gap-1 text-gray-400 text-[11px]">
+                <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                We confirm everything
+              </span>
+              <span className="inline-flex items-center gap-1 text-gray-400 text-[11px]">
+                <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                Money-back guarantee
+              </span>
             </div>
 
             {/* Party images - emotional push */}
@@ -1339,67 +1318,17 @@ export default function MyPartyTabContent({
       {/* Floating Help Button - appears after 25 seconds */}
       {showHelpButton && (
         <div className="fixed bottom-4 right-4 z-40 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {/* Help menu popup */}
-          {showHelpMenu && (
-            <div className="absolute bottom-14 right-0 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-64 animate-in slide-in-from-bottom-2 duration-200">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">Need help?</h4>
-                <button
-                  onClick={() => setShowHelpMenu(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 mb-4">
-                Chat with a real person - no bots here!
-              </p>
-              <div className="space-y-2">
-                <a
-                  href="https://wa.me/447123456789?text=Hi!%20I%20have%20a%20question%20about%20my%20party%20plan"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
-                    <MessageCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">WhatsApp us</p>
-                    <p className="text-xs text-gray-500">Quick response</p>
-                  </div>
-                </a>
-                <a
-                  href="mailto:hello@partysnap.co.uk?subject=Question%20about%20my%20party"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">Email us</p>
-                    <p className="text-xs text-gray-500">hello@partysnap.co.uk</p>
-                  </div>
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* Help button - smaller pill with text */}
-          <button
-            onClick={() => setShowHelpMenu(!showHelpMenu)}
-            className={`
-              flex items-center gap-1.5 px-3 py-2 rounded-full shadow-lg transition-all
-              ${showHelpMenu
-                ? 'bg-gray-800 text-white'
-                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 hover:shadow-xl'
-              }
-            `}
-            aria-label="Need help?"
+          {/* WhatsApp button */}
+          <a
+            href="https://wa.me/447123456789?text=Hi!%20I%20have%20a%20question%20about%20my%20party%20plan"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setShowHelpMenu(false)}
+            className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl transition-all flex items-center justify-center active:scale-95"
+            aria-label="Chat with us on WhatsApp"
           >
-            <Phone className="w-4 h-4" />
-            <span className="text-xs font-medium">Need help?</span>
-          </button>
+            <Phone className="w-5 h-5 text-white" />
+          </a>
         </div>
       )}
     </div>

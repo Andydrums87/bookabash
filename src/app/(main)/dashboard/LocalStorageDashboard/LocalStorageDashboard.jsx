@@ -40,6 +40,7 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 // import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
 // import PartySummarySection from "../components/PartySummarySection" // Removed - functionality moved to SmartStickyBottomBar
 import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
+import CheckAvailabilityModal from "../components/CheckAvailabilityModal"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
 import EntertainmentBrowserModal from "@/components/EntertainmentBrowserModal"
 import SupplierBrowserModal from "@/components/SupplierBrowserModal"
@@ -170,6 +171,7 @@ const childPhotoRef = useRef(null)
 
   // Save party plan modal state
   const [showSavePartyModal, setShowSavePartyModal] = useState(false)
+  const [showCheckAvailabilityModal, setShowCheckAvailabilityModal] = useState(false)
   const [hasSavedParty, setHasSavedParty] = useState(false)
 
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
@@ -2521,6 +2523,7 @@ const handleChildPhotoUpload = async (file) => {
                       uploadingPhoto={uploadingChildPhoto}
                       onSaveForLater={() => setShowSavePartyModal(true)}
                       hasSavedParty={hasSavedParty}
+                      onCheckAvailability={() => setShowCheckAvailabilityModal(true)}
                     />
                   )}
                 </div>
@@ -2533,8 +2536,8 @@ const handleChildPhotoUpload = async (file) => {
                   <div className="flex items-start gap-3">
                     <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">Secure your party</p>
-                      <p className="text-xs text-gray-500">Book your party with PartySnap in minutes.</p>
+                      <p className="text-sm font-semibold text-gray-900">Check availability</p>
+                      <p className="text-xs text-gray-500">Tell us your date and we'll confirm with your suppliers.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -2581,8 +2584,8 @@ const handleChildPhotoUpload = async (file) => {
           suppliers={suppliers}
           totalCost={totalCost}
           onContinue={() => setShowDesktopCompleteCTA(true)}
+          onCheckAvailability={() => setShowCheckAvailabilityModal(true)}
           isVisible={showStickyBottomCTA}
-          onSaveForLater={() => setShowSavePartyModal(true)}
           hasSavedParty={hasSavedParty}
         />
       </div>
@@ -2887,7 +2890,7 @@ const handleChildPhotoUpload = async (file) => {
                 </button>
               </div>
               <p className="text-sm text-white/90">
-                Review all the details before completing your booking
+                Nothing is booked yet — we'll confirm everything first
               </p>
             </div>
 
@@ -3010,40 +3013,56 @@ const handleChildPhotoUpload = async (file) => {
                   )}
                 </div>
               </div>
+              <p className="text-xs text-gray-400 text-center mt-1">Nothing is booked yet — we'll confirm everything first</p>
 
-              {/* CTA Button */}
+              {/* Heading */}
+              <p className="text-sm font-semibold text-gray-900 text-center mb-1 mt-4">Want us to confirm everything for you?</p>
+              <p className="text-xs text-gray-500 text-center mb-4">We'll check availability with all your selected suppliers and help you secure your date.</p>
+
+              {/* Primary CTA — Check availability */}
+              <button
+                onClick={() => {
+                  setShowDesktopCompleteCTA(false)
+                  setShowCheckAvailabilityModal(true)
+                }}
+                className="w-full cursor-pointer bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 active:shadow-md flex items-center justify-center gap-2"
+              >
+                Check availability for my date
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+              <p className="text-xs text-gray-400 text-center mt-2 mb-4">Speak to our team · No payment needed</p>
+
+              {/* Secondary CTA — Instant book */}
               <button
                 onClick={() => {
                   setIsNavigatingToReview(true)
                   router.push('/review-book')
                 }}
                 disabled={isNavigatingToReview}
-                className="w-full cursor-pointer bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 active:shadow-md flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-not-allowed"
+                className="w-full cursor-pointer bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl transition-all border border-gray-200 flex items-center justify-center gap-2 text-sm disabled:opacity-80 disabled:cursor-not-allowed"
               >
                 {isNavigatingToReview ? (
                   <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Loading...
                   </>
                 ) : (
-                  <>
-                    Secure My Party
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </>
+                  'Secure my party now'
                 )}
               </button>
+
               {/* Trust badges */}
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full">
                   <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
-                  Confirmed in 2 days
+                  We confirm everything
                 </span>
                 <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full">
                   <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3062,6 +3081,15 @@ const handleChildPhotoUpload = async (file) => {
           </div>
         </div>
       )}
+
+      {/* Check Availability Modal */}
+      <CheckAvailabilityModal
+        isOpen={showCheckAvailabilityModal}
+        onClose={() => setShowCheckAvailabilityModal(false)}
+        partyDetails={partyDetails}
+        suppliers={suppliers}
+        totalCost={totalCost}
+      />
 
       {/* Save Party Plan Modal */}
       <SavePartyPlanModal

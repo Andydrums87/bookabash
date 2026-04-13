@@ -7,6 +7,7 @@ const SmartStickyBottomBar = ({
   suppliers = {},
   totalCost = 0,
   onContinue,
+  onCheckAvailability,
   onSaveForLater,
   isVisible = true,
   hasSavedParty = false
@@ -198,15 +199,15 @@ const SmartStickyBottomBar = ({
                 <span className="text-gray-300">|</span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-green-500" />
-                  Confirmed within 2 working days
+                  Speak to our team
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-green-500" />
-                  100% money-back guarantee
+                  No payment needed
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-green-500" />
-                  Add extras anytime
+                  We confirm everything for you
                 </span>
               </div>
             </div>
@@ -252,19 +253,17 @@ const SmartStickyBottomBar = ({
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={onContinue}
+                  onClick={onCheckAvailability}
                   className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer active:scale-95 active:shadow-md whitespace-nowrap"
                 >
-                  Secure My Party
+                  Check availability for my date
                 </button>
-                {onSaveForLater && (
-                  <button
-                    onClick={onSaveForLater}
-                    className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95 border border-gray-200 whitespace-nowrap"
-                  >
-                    {hasSavedParty ? 'Update saved plan' : 'Email me this plan'}
-                  </button>
-                )}
+                <button
+                  onClick={onContinue}
+                  className="bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95 border border-gray-200 whitespace-nowrap text-sm"
+                >
+                  Secure my party now
+                </button>
               </div>
             </div>
           </div>

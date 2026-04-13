@@ -59,6 +59,7 @@ export default function MobileSupplierNavigation({
   onBrowseEntertainment, // ✅ NEW PROP for entertainment browsing
   onShowEntertainmentChoice, // ✅ NEW PROP for entertainment choice modal
   onBrowseSupplier, // Callback to open supplier browser modal (cakes, balloons, party bags)
+  onCheckAvailability, // Callback to open check availability modal
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -457,6 +458,7 @@ export default function MobileSupplierNavigation({
         hasSavedParty={hasSavedParty}
         onShowVenueChoice={onShowVenueChoice}
         onShowEntertainmentChoice={onShowEntertainmentChoice}
+        onCheckAvailability={onCheckAvailability}
       />
     )
   }
