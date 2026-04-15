@@ -2990,69 +2990,67 @@ const handleChildPhotoUpload = async (file) => {
             {/* Footer with Total and CTA */}
             <div className="border-t border-gray-200 px-6 pt-6 pb-8 bg-gray-50">
               {/* Total */}
-              <div className="mb-4 pb-4 border-b border-gray-200">
-                {flyerDiscount > 0 && (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-teal-600 font-semibold flex items-center gap-1">
-                      🎉 Limited Time Offer (£{flyerDiscount} off)
-                    </span>
-                    <span className="text-sm text-teal-600 font-semibold">
-                      -£{Math.min(flyerDiscount, totalCost).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  {flyerDiscount > 0 ? (
-                    <div className="text-right">
-                      <span className="text-lg text-gray-400 line-through mr-2">£{totalCost.toFixed(2)}</span>
-                      <span className="text-3xl font-bold text-primary-600">£{Math.max(0, totalCost - flyerDiscount).toFixed(2)}</span>
+              {(() => {
+                const isFreePartyBags = typeof window !== 'undefined' && localStorage.getItem('flyer_partybags') === 'true'
+                const partyBagsPrice = isFreePartyBags && suppliers.partyBags ? (suppliers.partyBags.partyBagsMetadata?.totalPrice || suppliers.partyBags.price || 0) : 0
+                const afterBags = totalCost - partyBagsPrice
+                const finalTotal = flyerDiscount > 0 ? Math.max(0, afterBags - flyerDiscount) : afterBags
+                const hasDiscount = isFreePartyBags || flyerDiscount > 0
+
+                return (
+                  <div className="mb-4 pb-4 border-b border-gray-200">
+                    {isFreePartyBags && partyBagsPrice > 0 && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-teal-600 font-semibold">🎁 Free party bags</span>
+                        <span className="text-sm text-teal-600 font-semibold">-£{partyBagsPrice.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {flyerDiscount > 0 && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-teal-600 font-semibold">🎉 Limited Time Offer (£{flyerDiscount} off)</span>
+                        <span className="text-sm text-teal-600 font-semibold">-£{Math.min(flyerDiscount, afterBags).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-gray-900">Total</span>
+                      {hasDiscount ? (
+                        <div className="text-right">
+                          <span className="text-lg text-gray-400 line-through mr-2">£{totalCost.toFixed(2)}</span>
+                          <span className="text-3xl font-bold text-primary-600">£{finalTotal.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>
+                      )}
                     </div>
-                  ) : (
-                    <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>
-                  )}
-                </div>
-              </div>
+                  </div>
+                )
+              })()}
               <p className="text-xs text-gray-400 text-center mt-1">Nothing is booked yet — we'll confirm everything first</p>
 
-              {/* Heading */}
-              <p className="text-sm font-semibold text-gray-900 text-center mb-1 mt-4">Want us to confirm everything for you?</p>
-              <p className="text-xs text-gray-500 text-center mb-4">We'll check availability with all your selected suppliers and help you secure your date.</p>
-
-              {/* Primary CTA — Check availability */}
-              <button
-                onClick={() => {
-                  setShowDesktopCompleteCTA(false)
-                  setShowCheckAvailabilityModal(true)
-                }}
-                className="w-full cursor-pointer bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 active:shadow-md flex items-center justify-center gap-2"
-              >
-                Check availability for my date
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-              <p className="text-xs text-gray-400 text-center mt-2 mb-4">Speak to our team · No payment needed</p>
-
-              {/* Secondary CTA — Instant book */}
+              {/* Primary CTA — Secure party (this modal is opened from "Secure my party now" button) */}
               <button
                 onClick={() => {
                   setIsNavigatingToReview(true)
                   router.push('/review-book')
                 }}
                 disabled={isNavigatingToReview}
-                className="w-full cursor-pointer bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl transition-all border border-gray-200 flex items-center justify-center gap-2 text-sm disabled:opacity-80 disabled:cursor-not-allowed"
+                className="w-full cursor-pointer bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 active:shadow-md flex items-center justify-center gap-2 mt-4 disabled:opacity-80 disabled:cursor-not-allowed"
               >
                 {isNavigatingToReview ? (
                   <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Loading...
                   </>
                 ) : (
-                  'Secure my party now'
+                  <>
+                    Secure my party
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
                 )}
               </button>
 
