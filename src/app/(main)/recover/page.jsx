@@ -1,10 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 
 export default function RecoverPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+        <div className="text-center p-8">
+          <div className="w-12 h-12 border-4 border-[hsl(var(--primary-500))] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-semibold text-gray-900">Loading your party plan...</p>
+        </div>
+      </div>
+    }>
+      <RecoverContent />
+    </Suspense>
+  )
+}
+
+function RecoverContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { buildParty } = usePartyBuilder()
